@@ -3,29 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Cabinet Planner — Powered by AI</title>
+<title>My Cabinet Planner — by Cabinet Daddy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --sidebar-bg: #0f1923;
+  --sidebar-bg: #2c1f14;
   --sidebar-width: 260px;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-light: #eff6ff;
-  --bg: #f0f4f8;
+  --accent: #b45309;
+  --accent-hover: #92400e;
+  --accent-light: #fef3c7;
+  --bg: #faf7f4;
   --surface: #ffffff;
-  --border: #e2e8f0;
-  --text: #0f172a;
-  --text-muted: #64748b;
+  --border: #e7ddd5;
+  --text: #1c1008;
+  --text-muted: #78614f;
   --danger: #ef4444;
   --success: #16a34a;
   --warning: #d97706;
   --panel-width: 290px;
+  --wood-light: #c8a882;
+  --wood-mid: #a07850;
+  --wood-dark: #6b4c2a;
 }
 
 body {
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   height: 100vh;
@@ -36,7 +42,7 @@ body {
 /* ── SIDEBAR ── */
 #sidebar {
   width: var(--sidebar-width);
-  background: var(--sidebar-bg);
+  background: linear-gradient(180deg, #2c1f14 0%, #1e1409 100%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -44,21 +50,23 @@ body {
 }
 .sidebar-brand {
   padding: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(200,168,130,0.06);
 }
 .sidebar-brand h1 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
 .sidebar-brand p  { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 2px; }
 .sidebar-actions  { padding: 10px; }
 #new-project-btn {
   width: 100%; padding: 9px 12px;
-  background: var(--accent); color: white;
+  background: linear-gradient(135deg,#c8a882,#92400e);
+  color: white;
   border: none; border-radius: 8px;
   font-size: 13px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: background 0.15s;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(107,76,42,0.25);
 }
-#new-project-btn:hover { background: var(--accent-hover); }
+#new-project-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); box-shadow: 0 3px 12px rgba(107,76,42,0.35); }
 .sidebar-label {
   padding: 6px 14px 4px;
   font-size: 10px; font-weight: 700;
@@ -75,7 +83,7 @@ body {
   transition: background 0.12s; position: relative;
 }
 .project-item:hover { background: rgba(255,255,255,0.06); }
-.project-item.active { background: rgba(37,99,235,0.3); }
+.project-item.active { background: rgba(180,83,9,0.3); }
 .project-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 22px; }
 .project-item-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
 .project-item-del {
@@ -137,7 +145,7 @@ body {
   font-size: 12px; font-weight: 600; cursor: pointer;
   border-radius: 6px; color: var(--text-muted); transition: all 0.12s;
 }
-.view-toggle-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.view-toggle-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(107,76,42,0.15); }
 
 /* ── ROOM TABS ── */
 .room-tabs-bar {
@@ -154,7 +162,7 @@ body {
   white-space: nowrap; transition: color 0.12s;
 }
 .room-tab:hover  { color: var(--text); }
-.room-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.room-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
 .room-tab-del { display: none; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 0 0 4px; }
 .room-tab.active .room-tab-del { display: inline; }
 .room-tab-del:hover { color: var(--danger); }
@@ -210,7 +218,7 @@ body {
   transition: all 0.12s;
 }
 .elev-wall-tab:hover { border-color: var(--accent); color: var(--accent); }
-.elev-wall-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+.elev-wall-tab.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
 
 /* Cabinet summary */
 #summary-table {
@@ -245,7 +253,7 @@ body {
 .style-grid::-webkit-scrollbar { width: 3px; }
 .style-opt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 3px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.12s; background: white; }
 .style-opt:hover  { border-color: var(--accent); }
-.style-opt.selected { border-color: var(--accent); background: #eff6ff; }
+.style-opt.selected { border-color: var(--accent); background: #fef3c7; }
 .style-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.12); }
 .style-code { font-size: 9px; font-weight: 700; color: var(--text-muted); }
 
@@ -253,13 +261,13 @@ body {
 .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .wall-btn { padding: 7px 6px; border: 2px solid var(--border); border-radius: 7px; background: white; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.12s; text-align: center; }
 .wall-btn:hover { border-color: var(--accent); color: var(--accent); }
-.wall-btn.active { border-color: var(--accent); background: #eff6ff; color: var(--accent); }
+.wall-btn.active { border-color: var(--accent); background: #fef3c7; color: var(--accent); }
 
 /* Openings section */
 .opening-type-row { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
 .opening-type-btn { padding: 4px 9px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
 .opening-type-btn:hover { border-color: var(--accent); color: var(--accent); }
-.opening-type-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.opening-type-btn.active { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
 .opening-inputs { display: flex; gap: 5px; align-items: center; }
 .opening-inputs input { flex: 1; padding: 6px 7px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
 .opening-inputs label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
@@ -269,8 +277,8 @@ body {
 .cp-select:focus { outline: none; border-color: var(--accent); }
 .cp-input { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: white; margin-bottom: 6px; font-family: inherit; }
 .cp-input:focus { outline: none; border-color: var(--accent); }
-.add-cab-btn { width: 100%; padding: 8px; background: var(--accent); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
-.add-cab-btn:hover { background: var(--accent-hover); }
+.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(107,76,42,0.2); }
+.add-cab-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); box-shadow:0 3px 10px rgba(107,76,42,0.3); }
 
 /* Cabinet list */
 #cabinet-list { padding: 8px; }
@@ -349,17 +357,17 @@ body {
 #ai-btn {
   position: fixed; bottom: 24px; right: 24px;
   width: 54px; height: 54px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg, #c8a882, #6b4c2a);
   color: white; border: none; border-radius: 50%;
   font-size: 22px; cursor: pointer;
-  box-shadow: 0 4px 20px rgba(37,99,235,0.45);
+  box-shadow: 0 4px 20px rgba(107,76,42,0.45);
   z-index: 300; transition: transform 0.2s, box-shadow 0.2s;
   display: flex; align-items: center; justify-content: center;
 }
-#ai-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(37,99,235,0.55); }
+#ai-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(107,76,42,0.55); }
 #ai-btn .ai-pulse {
   position: absolute; width: 54px; height: 54px; border-radius: 50%;
-  background: rgba(37,99,235,0.3); animation: pulse 2s infinite;
+  background: rgba(180,83,9,0.3); animation: pulse 2s infinite;
 }
 @keyframes pulse { 0%{transform:scale(1);opacity:1} 70%{transform:scale(1.5);opacity:0} 100%{transform:scale(1.5);opacity:0} }
 
@@ -367,7 +375,8 @@ body {
   position: fixed; bottom: 90px; right: 24px;
   width: 380px; max-height: 580px;
   background: white; border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  box-shadow: 0 20px 60px rgba(107,76,42,0.18);
+  border: 1px solid #e7ddd5;
   z-index: 299; display: flex; flex-direction: column;
   overflow: hidden; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
   transform-origin: bottom right;
@@ -376,7 +385,7 @@ body {
 
 .ai-panel-header {
   padding: 14px 16px; 
-  background: linear-gradient(135deg, #1e3a8a, #4c1d95);
+  background: linear-gradient(135deg, #3d2510, #6b4c2a);
   color: white; display: flex; align-items: center; gap: 10px;
 }
 .ai-panel-header-icon { font-size: 20px; }
@@ -409,7 +418,7 @@ body {
   background: #f1f5f9; color: #0f172a; border-bottom-left-radius: 4px;
 }
 .ai-msg.user .ai-msg-bubble {
-  background: linear-gradient(135deg,#2563eb,#7c3aed); color: white;
+  background: linear-gradient(135deg,#c8a882,#6b4c2a); color: white;
   border-bottom-right-radius: 4px;
 }
 .ai-msg-avatar {
@@ -417,7 +426,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; flex-shrink: 0;
 }
-.ai-msg.assistant .ai-msg-avatar { background: linear-gradient(135deg,#2563eb,#7c3aed); color: white; }
+.ai-msg.assistant .ai-msg-avatar { background: linear-gradient(135deg,#c8a882,#6b4c2a); color: white; }
 .ai-msg.user      .ai-msg-avatar { background: #e2e8f0; }
 
 .ai-typing { display: flex; gap: 4px; padding: 10px 14px; }
@@ -438,7 +447,7 @@ body {
   border-radius: 20px; font-size: 11px; font-weight: 600;
   cursor: pointer; color: #334155; transition: all 0.12s; white-space: nowrap;
 }
-.ai-suggestion-btn:hover { background: #eff6ff; border-color: var(--accent); color: var(--accent); }
+.ai-suggestion-btn:hover { background: #fef3c7; border-color: var(--accent); color: var(--accent); }
 
 .ai-input-row {
   padding: 10px 12px; border-top: 1px solid var(--border);
@@ -453,7 +462,7 @@ body {
 #ai-input:focus { outline: none; border-color: var(--accent); }
 #ai-send-btn {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg,#2563eb,#7c3aed);
+  background: linear-gradient(135deg,#c8a882,#6b4c2a);
   border: none; color: white; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   font-size: 15px; flex-shrink: 0; transition: opacity 0.15s;
@@ -468,24 +477,52 @@ body {
 <!-- SIDEBAR -->
 <aside id="sidebar">
   <div class="sidebar-brand">
-    <h1>📐 Cabinet Planner</h1>
-    <p>Matrix Cabinets · Forevermark · V2</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="
+        width:36px;height:36px;border-radius:8px;flex-shrink:0;
+        background:linear-gradient(135deg,#c8a882,#6b4c2a);
+        display:flex;align-items:center;justify-content:center;
+        font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3);
+      ">🪵</div>
+      <div>
+        <h1 style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</h1>
+        <p style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;letter-spacing:0.04em;">by Cabinet Daddy</p>
+      </div>
+    </div>
   </div>
   <div class="sidebar-actions">
     <button id="new-project-btn">＋ New Project</button>
   </div>
   <div class="sidebar-label">My Projects</div>
   <div id="project-list"></div>
+  <div style="
+    padding:12px 14px;border-top:1px solid rgba(255,255,255,0.07);
+    font-size:10px;color:rgba(255,255,255,0.25);line-height:1.5;
+    flex-shrink:0;
+  ">
+    <div style="font-weight:700;color:rgba(255,255,255,0.4);margin-bottom:2px;">Cabinet Daddy</div>
+    <div>mycabinetplanner.com</div>
+    <div style="margin-top:6px;color:rgba(255,255,255,0.15);">© 2025 · All rights reserved</div>
+  </div>
 </aside>
 
 <!-- MAIN -->
 <main id="main">
 
   <div id="welcome">
-    <div class="welcome-icon">📐</div>
-    <h2>Cabinet Planner V2</h2>
-    <p>Create a new project to get started.</p>
-    <button class="btn btn-primary" onclick="openNewProjectModal()">＋ Create First Project</button>
+    <div style="text-align:center;max-width:420px;padding:24px;">
+      <div style="
+        width:80px;height:80px;border-radius:20px;margin:0 auto 20px;
+        background:linear-gradient(135deg,#c8a882,#6b4c2a);
+        display:flex;align-items:center;justify-content:center;
+        font-size:38px;box-shadow:0 8px 32px rgba(107,76,42,0.25);
+      ">🪵</div>
+      <h2 style="font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
+      <p style="font-size:13px;color:#78614f;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">by Cabinet Daddy</p>
+      <p style="font-size:14px;color:#a07850;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
+      <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:12px 28px;font-size:14px;border-radius:10px;">＋ Create Your First Project</button>
+      <p style="font-size:11px;color:#b8a090;margin-top:16px;">Powered by AI · Matrix Cabinets · Forevermark</p>
+    </div>
   </div>
 
   <div id="project-view" class="hidden">
@@ -1733,7 +1770,13 @@ function openQuoteModal() {
   document.getElementById('quote-content').innerHTML=`
     <div class="quote-header">
       <div>
-        <h2>📐 Cabinet Quote</h2>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:16px;">🪵</div>
+          <div>
+            <h2 style="font-size:18px;font-weight:800;color:#1c1008;">My Cabinet Planner</h2>
+            <p style="font-size:10px;color:#78614f;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">by Cabinet Daddy</p>
+          </div>
+        </div>
         <p><strong>${escHtml(p.customer)}</strong> · ${p.type} · ${new Date().toLocaleDateString()}</p>
         ${p.notes?`<p style="font-size:12px;color:var(--text-muted);margin-top:4px">${escHtml(p.notes)}</p>`:''}
       </div>
@@ -1910,7 +1953,7 @@ if(state.activeProjectId && getProj(state.activeProjectId)){
 // ════════════════════════════════════════════════════
 // AI ASSISTANT
 // ════════════════════════════════════════════════════
-const ANTHROPIC_API_KEY = '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';
+const ANTHROPIC_API_KEY = 'your-key-here';
 
 let aiOpen = false;
 let aiHistory = [];
