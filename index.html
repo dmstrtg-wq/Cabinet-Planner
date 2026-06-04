@@ -1494,7 +1494,6 @@ function renderElevation() {
 
   wallCabs.filter(c=>c.type==='wall').forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
-    const x=WX+(cab.offset||0)*scale;
     const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
     const y=Math.max(WY, floorY-bottomIn*scale-cH);
     const x=eX(cab.offset||0, cab.width);
