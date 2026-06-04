@@ -1264,12 +1264,15 @@ function renderCanvas() {
     const cW = cab.width*scale, cD = cab.depth*scale;
     const cabOff = (cab.offset||0)*scale;
     const isActive = wall === state.activeWall;
-    const isCorner = cab.type === 'cornerBase' || cab.type === 'lazysusan';
+    const isCorner = cab.type === 'cornerBase';
+    const isLazySusan = cab.type === 'lazysusan';
+    // Lazy susan is a square corner piece — use width for both dimensions
+    const effD = isLazySusan ? cW : cD;
     let x,y,w,h;
-    if      (wall==='north') { x=RX+cabOff; y=RY;       w=cW; h=cD; }
-    else if (wall==='south') { x=RX+cabOff; y=RY+RH-cD; w=cW; h=cD; }
-    else if (wall==='west')  { x=RX;        y=RY+cabOff; w=cD; h=cW; }
-    else                     { x=RX+RW-cD;  y=RY+cabOff; w=cD; h=cW; }
+    if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=effD; }
+    else if (wall==='south') { x=RX+cabOff; y=RY+RH-effD; w=cW;  h=effD; }
+    else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=effD; h=cW; }
+    else                     { x=RX+RW-effD; y=RY+cabOff;  w=effD; h=cW; }
 
     if (isCorner) {
       ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
@@ -1286,6 +1289,21 @@ function renderCanvas() {
       else if (wall==='south') { ctx.moveTo(x+cW,y+cD*0.65); ctx.lineTo(x+cW*0.35,y); }
       else if (wall==='west')  { ctx.moveTo(x+cD,y+cW*0.35); ctx.lineTo(x+cD*0.35,y+cW); }
       else { ctx.moveTo(x,y+cW*0.35); ctx.lineTo(x+cD*0.65,y+cW); }
+      ctx.stroke(); ctx.setLineDash([]);
+    } else if (isLazySusan) {
+      // Square footprint — no diagonal face
+      ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
+      ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = isActive ? 2 : 1; ctx.strokeRect(x, y, w, h);
+      // Quarter-circle arc indicating rotating shelf
+      const arcR = Math.min(w, h) * 0.82;
+      ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+      ctx.beginPath();
+      if      (wall==='north') ctx.arc(x,   y,   arcR, 0,          Math.PI/2);
+      else if (wall==='south') ctx.arc(x+w, y+h, arcR, Math.PI,    Math.PI*1.5);
+      else if (wall==='west')  ctx.arc(x,   y+h, arcR, -Math.PI/2, 0);
+      else                     ctx.arc(x+w, y,   arcR, Math.PI/2,  Math.PI);
       ctx.stroke(); ctx.setLineDash([]);
     } else {
       ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
@@ -1465,7 +1483,7 @@ function renderElevation() {
   wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
-    const isCorner=cab.type==='cornerBase'||cab.type==='lazysusan';
+    const isCorner=cab.type==='cornerBase';
     if (isCorner) {
       const cutW=cW*0.28;
       ctx.fillStyle=styleInfo.swatch;
