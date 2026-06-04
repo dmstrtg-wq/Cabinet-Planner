@@ -531,6 +531,29 @@ body {
   </div>
 </div>
 
+<!-- SET PASSWORD MODAL (invite / recovery flow) -->
+<div id="modal-set-password" class="modal-overlay hidden">
+  <div class="modal" style="max-width:400px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:36px;margin-bottom:8px;">👋</div>
+      <h3 style="margin-bottom:6px;">Welcome! Set Your Password</h3>
+      <p style="font-size:13px;color:var(--text-muted);font-weight:400;">You're in. Choose a password so you can log in anytime.</p>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="sp-password" placeholder="At least 8 characters">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="sp-confirm" placeholder="Repeat password">
+    </div>
+    <div class="login-error" id="sp-error"></div>
+    <div class="modal-footer" style="border-top:none;padding-top:8px;">
+      <button class="btn btn-primary" style="width:100%;padding:11px;font-size:14px;" onclick="setNewPassword()">Set Password &amp; Continue →</button>
+    </div>
+  </div>
+</div>
+
 <!-- DRAG TOOLTIP -->
 <div id="drag-tooltip" style="display:none;position:fixed;z-index:400;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);bottom:80px;left:50%;transform:translateX(-50%);"></div>
 
@@ -1454,6 +1477,29 @@ function openQuoteModal() {
 })();
 
 // ════════════════════════════
+// INVITE / RECOVERY FLOW
+// ════════════════════════════
+function getHashParam(key) {
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  return params.get(key);
+}
+async function setNewPassword() {
+  const pw      = document.getElementById('sp-password').value;
+  const confirm = document.getElementById('sp-confirm').value;
+  const err     = document.getElementById('sp-error');
+  err.textContent = '';
+  if (pw.length < 8)  { err.textContent = 'Password must be at least 8 characters.'; return; }
+  if (pw !== confirm) { err.textContent = 'Passwords do not match.'; return; }
+  const btn = document.querySelector('#modal-set-password .btn-primary');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const { error } = await db.auth.updateUser({ password: pw });
+  btn.disabled = false; btn.textContent = 'Set Password & Continue →';
+  if (error) { err.textContent = error.message; return; }
+  closeModal('modal-set-password');
+  history.replaceState(null, '', window.location.pathname);
+}
+
+// ════════════════════════════
 // BOOT
 // ════════════════════════════
 document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
@@ -1463,11 +1509,15 @@ document.getElementById('login-email').addEventListener('keydown', e => { if (e.
 buildStylePanel();
 
 (async () => {
+  const urlType = getHashParam('type'); // 'invite' or 'recovery' if arriving via email link
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
     showApp();
     await loadProjects();
+    if (urlType === 'invite' || urlType === 'recovery') {
+      openModal('modal-set-password');
+    }
   } else {
     showLogin();
   }
