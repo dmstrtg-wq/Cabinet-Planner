@@ -40,34 +40,82 @@ body {
 /* ── LOGIN SCREEN ── */
 #login-screen {
   position: fixed; inset: 0;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
   z-index: 1000;
 }
-.login-card {
-  background: white; border-radius: 20px;
-  padding: 40px; width: 380px; max-width: calc(100vw - 32px);
-  box-shadow: 0 20px 60px rgba(107,76,42,0.15);
-  border: 1px solid var(--border);
+.login-left {
+  width: 52%; min-width: 300px;
+  background: linear-gradient(145deg, #2c1f14 0%, #130b04 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px; position: relative; overflow: hidden;
 }
-.login-brand { text-align: center; margin-bottom: 32px; }
-.login-brand .brand-icon {
-  width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 16px;
-  background: linear-gradient(135deg,#c8a882,#6b4c2a);
+/* Subtle wood grain lines */
+.login-left::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(
+    -52deg, transparent, transparent 38px,
+    rgba(255,255,255,0.018) 38px, rgba(255,255,255,0.018) 39px
+  );
+}
+/* Warm glow at center */
+.login-left::after {
+  content: ''; position: absolute;
+  width: 420px; height: 420px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(180,83,9,0.18) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 0;
+}
+.login-left > * { position: relative; z-index: 1; }
+.login-logo-mark { margin-bottom: 24px; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5)); }
+.login-brand-name {
+  font-size: 34px; font-weight: 800; color: #fff;
+  letter-spacing: -0.5px; text-align: center; line-height: 1.1;
+}
+.login-app-name {
+  font-size: 11px; color: #c8a882; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  margin-top: 8px; text-align: center;
+}
+.login-tagline {
+  font-size: 13px; color: rgba(255,255,255,0.38);
+  margin-top: 14px; text-align: center; line-height: 1.65;
+  max-width: 260px;
+}
+.login-divider {
+  width: 40px; height: 2px;
+  background: linear-gradient(90deg, transparent, #c8a882, transparent);
+  margin: 20px auto 0;
+}
+.login-domain {
+  position: absolute; bottom: 20px;
+  font-size: 10px; color: rgba(255,255,255,0.2);
+  letter-spacing: 0.08em; text-transform: lowercase;
+}
+.login-right {
+  flex: 1;
+  background: #faf7f4;
   display: flex; align-items: center; justify-content: center;
-  font-size: 34px; box-shadow: 0 8px 24px rgba(107,76,42,0.3);
+  padding: 48px 40px; overflow-y: auto;
 }
-.login-brand h1 { font-size: 22px; font-weight: 800; color: var(--text); }
-.login-brand p { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
-.login-field { margin-bottom: 14px; }
+.login-form-wrap { width: 100%; max-width: 360px; }
+.login-welcome { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+.login-field { margin-bottom: 16px; }
 .login-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
-.login-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; transition: border-color 0.12s; }
-.login-field input:focus { outline: none; border-color: var(--accent); }
-.login-btn { width: 100%; padding: 12px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; margin-top: 6px; }
-.login-btn:hover { opacity: 0.9; }
-.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.12s, box-shadow 0.12s; }
+.login-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,83,9,0.1); }
+.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
+.login-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.login-btn:active { transform: translateY(0); }
+.login-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .login-error { color: var(--danger); font-size: 12px; margin-top: 10px; text-align: center; min-height: 18px; }
-.login-footer { text-align: center; margin-top: 24px; font-size: 11px; color: var(--text-muted); }
+@media (max-width: 680px) {
+  #login-screen { flex-direction: column; }
+  .login-left { width: 100%; min-width: 0; flex: 0 0 auto; padding: 32px 24px 28px; }
+  .login-brand-name { font-size: 26px; }
+  .login-right { padding: 28px 20px; }
+}
 
 /* ── APP ROOT ── */
 #app-root { display: flex; width: 100%; height: 100vh; overflow: hidden; }
@@ -265,24 +313,57 @@ body {
 
 <!-- ═══ LOGIN SCREEN ═══ -->
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-brand">
-      <div class="brand-icon">🪵</div>
-      <h1>My Cabinet Planner</h1>
-      <p>by Cabinet Daddy</p>
-    </div>
-    <div class="login-field">
-      <label>Email</label>
-      <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
-    </div>
-    <div class="login-field">
-      <label>Password</label>
-      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
-    </div>
-    <button class="login-btn" id="login-btn">Sign In</button>
-    <div class="login-error" id="login-error"></div>
-    <div class="login-footer">mycabinetbuilder.com</div>
+
+  <!-- Left branding panel -->
+  <div class="login-left">
+    <!-- Cabinet door logo mark -->
+    <svg class="login-logo-mark" width="80" height="80" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#lgrad)" stroke="rgba(200,168,130,0.3)" stroke-width="1.5"/>
+      <!-- Cabinet door frame -->
+      <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+      <!-- Horizontal rail (upper third) -->
+      <line x1="7" y1="20" x2="45" y2="20" stroke="rgba(200,168,130,0.3)" stroke-width="1"/>
+      <!-- Upper panel inset -->
+      <rect x="11" y="10" width="30" height="8" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+      <!-- Lower panel inset -->
+      <rect x="11" y="23" width="30" height="19" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+      <!-- Door handle -->
+      <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+      <rect x="22.5" y="32" width="7" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+      <defs>
+        <linearGradient id="lgrad" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#5a3820"/>
+          <stop offset="100%" stop-color="#1e1208"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="login-brand-name">Cabinet Daddy</div>
+    <div class="login-app-name">My Cabinet Planner</div>
+    <div class="login-tagline">Professional Cabinet Design &amp; Installation</div>
+    <div class="login-divider"></div>
+    <div class="login-domain">mycabinetbuilder.com</div>
   </div>
+
+  <!-- Right form panel -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <div class="login-welcome">Welcome back</div>
+      <div class="login-sub">Sign in to your Cabinet Daddy account</div>
+
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="login-btn" id="login-btn">Sign In →</button>
+      <div class="login-error" id="login-error"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══ APP ROOT ═══ -->
