@@ -423,6 +423,11 @@ body {
             <label style="font-size:11px;white-space:nowrap;">H:</label>
             <input type="number" id="opening-height" placeholder='80"' min="6" style="width:52px;">
           </div>
+          <div class="opening-inputs" id="sill-height-row" style="margin-bottom:5px;display:none;">
+            <label style="font-size:11px;white-space:nowrap;">Sill ht:</label>
+            <input type="number" id="opening-sill" placeholder='36"' min="0" value="36" style="width:52px;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in. from floor</span>
+          </div>
           <div class="opening-inputs" style="margin-bottom:4px;">
             <label style="font-size:11px;white-space:nowrap;">From left:</label>
             <input type="number" id="opening-offset" placeholder='0"' min="0" value="0" style="width:52px;">
@@ -609,7 +614,7 @@ async function handleSignOut() {
 // ════════════════════════════
 const CATALOG = {
   base:       { label:'Base',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[34.5],     depth:24, color:'#3B82F6', abbr:'B',  basePrice: w => w*4.2 },
-  wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[30,36,42], depth:12, color:'#93C5FD', abbr:'W',  basePrice: w => w*3.8 },
+  wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[12,15,18,30,36,42], depth:12, color:'#93C5FD', abbr:'W',  basePrice: w => w*3.8 },
   tall:       { label:'Tall/Pantry', widths:[15,18,24,30],                  heights:[84,90,96], depth:24, color:'#1D4ED8', abbr:'WP', basePrice: w => w*11  },
   sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB', basePrice: w => w*4.8 },
   vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
@@ -878,6 +883,7 @@ function selectElevWall(wall) {
 function selectOpeningType(type) {
   state.activeOpeningType = type;
   document.querySelectorAll('.opening-type-btn').forEach(b => b.classList.toggle('active', b.dataset.otype === type));
+  document.getElementById('sill-height-row').style.display = type === 'window' ? 'flex' : 'none';
 }
 
 // ════════════════════════════
@@ -890,10 +896,12 @@ function addOpening() {
   const offset = parseInt(document.getElementById('opening-offset').value) || 0;
   if (!w || !h) { alert('Enter width and height for the opening.'); return; }
   if (!r.openings) r.openings = [];
-  r.openings.push({ id: uid(), type: state.activeOpeningType, wall: state.activeWall, width: w, height: h, offset });
+  const sillHeight = parseInt(document.getElementById('opening-sill').value) || 36;
+  r.openings.push({ id: uid(), type: state.activeOpeningType, wall: state.activeWall, width: w, height: h, offset, sillHeight });
   document.getElementById('opening-width').value  = '';
   document.getElementById('opening-height').value = '';
   document.getElementById('opening-offset').value = '0';
+  document.getElementById('opening-sill').value   = '36';
   persist(); renderCabinetList(); renderCanvas(); renderElevation();
 }
 function removeOpening(id) {
@@ -1092,6 +1100,45 @@ function renderCabinetList() {
 }
 
 // ════════════════════════════
+// RULER HELPER
+// ════════════════════════════
+function drawRuler(ctx, originX, originY, totalInches, scale, vertical, fromFloor) {
+  // vertical=true draws a Y-axis ruler; fromFloor=true reverses labels (0 at bottom)
+  const RULER_W = 22;
+  ctx.save();
+  ctx.fillStyle = '#f1f5f9';
+  if (!vertical) {
+    // X ruler — strip above the room edge
+    ctx.fillRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
+  } else {
+    // Y ruler — strip to the left of the room edge
+    ctx.fillRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
+  }
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 0.8;
+  ctx.fillStyle = '#475569'; ctx.font = '8px sans-serif';
+  for (let inch = 0; inch <= totalInches; inch += 6) {
+    const px = inch * scale;
+    const isFoot = inch % 12 === 0;
+    const tickLen = isFoot ? 10 : 5;
+    const label = fromFloor
+      ? `${Math.floor((totalInches - inch) / 12)}'`
+      : `${Math.floor(inch / 12)}'`;
+    if (!vertical) {
+      ctx.beginPath(); ctx.moveTo(originX + px, originY - tickLen); ctx.lineTo(originX + px, originY); ctx.stroke();
+      if (isFoot) { ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(label, originX + px, originY - RULER_W + 2); }
+    } else {
+      ctx.beginPath(); ctx.moveTo(originX - tickLen, originY + px); ctx.lineTo(originX, originY + px); ctx.stroke();
+      if (isFoot) { ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(label, originX - 12, originY + px); }
+    }
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════
 // RENDER: FLOOR PLAN
 // ════════════════════════════
 function renderCanvas() {
@@ -1194,6 +1241,10 @@ function renderCanvas() {
   if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+26);
   ctx.save(); ctx.translate(RX-28, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
   ctx.save(); ctx.translate(RX+RW+28, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
+  // Rulers
+  drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
+  drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
+
   ctx.fillStyle = '#94A3B8'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText('↑ N', RX+4, RY-28);
   const barPx = 24*scale, bx = RX+RW-barPx-8, by = RY+RH+40;
@@ -1246,7 +1297,7 @@ function renderElevation() {
   wallOpenings.forEach(op => {
     const ox = WX+(op.offset||0)*scale, oW = op.width*scale, oH = op.height*scale;
     if (op.type==='window') {
-      const sillY = floorY-42*scale-oH;
+      const sillY = floorY-(op.sillHeight||36)*scale-oH;
       ctx.fillStyle='#BAE6FD'; ctx.fillRect(ox+2,sillY,oW-4,oH);
       ctx.strokeStyle='#0369A1'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.strokeRect(ox+2,sillY,oW-4,oH);
       ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=1;
@@ -1332,6 +1383,10 @@ function renderElevation() {
     ctx.fillStyle=txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
   });
+
+  // Rulers
+  drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
+  drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor, 0 at top = ceiling)
 
   ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(WX,WY,WW,WH);
   ctx.fillStyle='#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
@@ -1498,6 +1553,118 @@ async function setNewPassword() {
   closeModal('modal-set-password');
   history.replaceState(null, '', window.location.pathname);
 }
+
+// ════════════════════════════
+// DRAG ON ELEVATION
+// ════════════════════════════
+(function(){
+  let elevDrag = null, elevHover = null;
+
+  function getElevInfo() {
+    const r = activeRoom(); if (!r) return null;
+    const scale = parseFloat(document.getElementById('elev-scale-sel').value) || 4;
+    const wall = state.elevWall;
+    const wallLength = r.walls[wall] || 120;
+    const ceiling = r.ceilingHeight || 96;
+    const PAD = 60;
+    return { scale, WX: PAD, WY: PAD, WW: wallLength*scale, WH: ceiling*scale, r, wall, ceiling, wallLength };
+  }
+
+  function hitTestElevCab(mx, my, info) {
+    const { scale, WX, WY, WH, r, wall } = info;
+    const floorY = WY + WH;
+    const wallCabs = r.cabinets.filter(c => c.wall === wall);
+    for (const cab of wallCabs) {
+      const cW = cab.width * scale, cH = cab.height * scale;
+      const x = WX + (cab.offset || 0) * scale;
+      let y;
+      if (cab.type === 'wall') y = Math.max(WY, floorY - 54*scale - cH);
+      else y = floorY - cH;
+      if (mx >= x && mx <= x + cW && my >= y && my <= y + cH) return cab;
+    }
+    return null;
+  }
+
+  const canvas  = document.getElementById('elevation-plan');
+  const tooltip = document.getElementById('drag-tooltip');
+
+  canvas.addEventListener('mousedown', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const cab  = hitTestElevCab(e.clientX - rect.left, e.clientY - rect.top, info);
+    if (!cab) return;
+    e.preventDefault();
+    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width };
+    canvas.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
+    if (elevDrag) {
+      const delta = mx - elevDrag.startMX;
+      const raw   = elevDrag.startOffset + delta / elevDrag.scale;
+      const newOffset = Math.max(0, Math.min(Math.round(raw / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
+      const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId);
+      if (cab) {
+        cab.offset = newOffset;
+        tooltip.style.display = 'block';
+        tooltip.textContent = `${newOffset}" from left`;
+        persist(); renderElevation(); renderCanvas(); renderCabinetList();
+      }
+    } else {
+      const cab = hitTestElevCab(mx, my, info);
+      if (cab) {
+        canvas.style.cursor = 'grab';
+        if (elevHover !== cab.id) {
+          elevHover = cab.id;
+          tooltip.style.display = 'block';
+          tooltip.textContent = `${CATALOG[cab.type].label} · ${cab.offset || 0}" from left — drag to move`;
+        }
+      } else {
+        canvas.style.cursor = 'default';
+        if (elevHover) { elevHover = null; tooltip.style.display = 'none'; }
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (elevDrag) {
+      elevDrag = null;
+      canvas.style.cursor = 'default';
+      setTimeout(() => { tooltip.style.display = 'none'; }, 1200);
+    }
+  });
+
+  // Touch support
+  canvas.addEventListener('touchstart', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+    const cab  = hitTestElevCab(t.clientX - rect.left, t.clientY - rect.top, info);
+    if (!cab) return; e.preventDefault();
+    elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width };
+  }, { passive: false });
+
+  window.addEventListener('touchmove', e => {
+    if (!elevDrag || state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+    const delta = t.clientX - rect.left - elevDrag.startMX;
+    const newOffset = Math.max(0, Math.min(Math.round((elevDrag.startOffset + delta / elevDrag.scale) / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
+    const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId);
+    if (cab) { cab.offset = newOffset; tooltip.style.display = 'block'; tooltip.textContent = `${newOffset}" from left`; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => {
+    if (elevDrag) { elevDrag = null; setTimeout(() => { tooltip.style.display = 'none'; }, 1200); }
+  });
+})();
 
 // ════════════════════════════
 // BOOT
