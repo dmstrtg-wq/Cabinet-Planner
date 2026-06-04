@@ -458,6 +458,28 @@ body {
           <input type="text" id="cab-note-input" class="cp-input" placeholder="Notes (optional)">
           <button class="add-cab-btn" onclick="addCabinet()">＋ Add to Wall</button>
         </div>
+        <!-- Add appliance -->
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Add Appliance</div>
+          <select id="app-type" class="cp-select" onchange="onAppTypeChange()">
+            <option value="">— Appliance Type —</option>
+            <option value="refrigerator">🧊 Refrigerator</option>
+            <option value="range">🔥 Range / Stove</option>
+            <option value="dishwasher">🫧 Dishwasher</option>
+            <option value="microwave">📡 OTR Microwave</option>
+            <option value="cooktop">🍳 Cooktop</option>
+            <option value="hood">💨 Range Hood</option>
+          </select>
+          <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
+            <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
+          </div>
+          <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)">
+          <button class="add-cab-btn" onclick="addAppliance()" style="background:linear-gradient(135deg,#6b7280,#374151);box-shadow:0 2px 6px rgba(55,65,81,0.3);">＋ Add Appliance</button>
+        </div>
+
         <div class="cp-section" style="flex-shrink:0;padding-bottom:5px;border-bottom:none;">
           <div class="cp-label" id="wall-list-label">North Wall</div>
         </div>
@@ -645,6 +667,15 @@ const STYLES = [
   {tier:'Titanium', code:'AA', name:'Blaze Black Shaker',     swatch:'#1C1B1A'},
   {tier:'Titanium', code:'AH', name:'Homestead Oak Shaker',   swatch:'#B99050'},
 ];
+const APPLIANCES = {
+  refrigerator: { label:'Refrigerator',  widths:[30,33,36], height:70,   depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
+  range:        { label:'Range / Stove', widths:[30,36],    height:36,   depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
+  dishwasher:   { label:'Dishwasher',    widths:[24],       height:34.5, depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
+  microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54 },
+  cooktop:      { label:'Cooktop',       widths:[30,36],    height:4,    depth:21, color:'#1F2937', abbr:'CTP', icon:'🍳', wallMount:false, elevBottom:32 },
+  hood:         { label:'Range Hood',    widths:[30,36,42], height:18,   depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+};
+
 const OPENING_ICONS  = { door:'🚪', window:'🪟', 'sink-loc':'🚰', arch:'🏛' };
 const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'Opening' };
 
@@ -960,6 +991,42 @@ function removeCabinet(id) {
 }
 
 // ════════════════════════════
+// APPLIANCE FORM
+// ════════════════════════════
+function onAppTypeChange() {
+  const type = document.getElementById('app-type').value;
+  const ws   = document.getElementById('app-width');
+  ws.innerHTML = '<option value="">— Width —</option>';
+  if (!type) return;
+  APPLIANCES[type].widths.forEach(w => {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = `${w}" wide  (${(w/12).toFixed(1)}')`;
+    ws.appendChild(o);
+  });
+}
+function addAppliance() {
+  const r = activeRoom(); if (!r) return;
+  const type  = document.getElementById('app-type').value;
+  const width = parseFloat(document.getElementById('app-width').value);
+  if (!type || !width) { alert('Select appliance type and width.'); return; }
+  const acat  = APPLIANCES[type];
+  const note  = document.getElementById('app-note').value.trim();
+  const offset = parseInt(document.getElementById('app-offset').value) || 0;
+  if (!r.appliances) r.appliances = [];
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, note, offset });
+  document.getElementById('app-note').value   = '';
+  document.getElementById('app-offset').value = '0';
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+function removeAppliance(id) {
+  const r = activeRoom(); if (!r) return;
+  r.appliances = (r.appliances || []).filter(a => a.id !== id);
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
+// ════════════════════════════
 // PRICING
 // ════════════════════════════
 function onPricingToggle() {
@@ -1020,7 +1087,7 @@ function openProject(projId, roomId) {
   state.activeProjectId = projId;
   const p = getProj(projId);
   state.activeRoomId = roomId || (p.rooms[0] && p.rooms[0].id);
-  p.rooms.forEach(r => { if (!r.openings) r.openings = []; });
+  p.rooms.forEach(r => { if (!r.openings) r.openings = []; if (!r.appliances) r.appliances = []; });
   persist(); renderProjectView();
 }
 function renderProjectView() {
@@ -1095,7 +1162,23 @@ function renderCabinetList() {
       </div>`;
     }).join('');
   }
-  if (!wallCabs.length && !wallOpenings.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets or openings above.</div>';
+  const wallApps = (r.appliances||[]).filter(a => a.wall === state.activeWall);
+  if (wallApps.length) {
+    html += '<div class="cab-wall-header">Appliances</div>';
+    html += wallApps.map(a => {
+      const acat = APPLIANCES[a.type];
+      return `<div class="cab-item">
+        <div class="cab-color" style="background:${acat.color}"></div>
+        <div class="cab-info">
+          <div class="cab-name">${acat.icon} ${acat.label}</div>
+          <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
+          ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
+        </div>
+        <button class="cab-remove" onclick="removeAppliance('${a.id}')">×</button>
+      </div>`;
+    }).join('');
+  }
+  if (!wallCabs.length && !wallOpenings.length && !wallApps.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
   list.innerHTML = html;
 }
 
@@ -1213,9 +1296,41 @@ function renderCanvas() {
     } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
   }
 
+  function drawAppOnFloor(app, wall) {
+    const acat = APPLIANCES[app.type]; if (!acat) return;
+    const aW = app.width*scale, aD = acat.depth*scale, aOff = (app.offset||0)*scale;
+    let x,y,w,h;
+    if      (wall==='north') { x=RX+aOff; y=RY;       w=aW; h=aD; }
+    else if (wall==='south') { x=RX+aOff; y=RY+RH-aD; w=aW; h=aD; }
+    else if (wall==='west')  { x=RX;       y=RY+aOff;  w=aD; h=aW; }
+    else                     { x=RX+RW-aD; y=RY+aOff;  w=aD; h=aW; }
+    ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
+    ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
+    // Burner circles for range/cooktop
+    if (app.type==='range'||app.type==='cooktop') {
+      const r2=Math.min(w,h)*0.12;
+      [[0.28,0.3],[0.72,0.3],[0.28,0.7],[0.72,0.7]].forEach(([fx,fy])=>{
+        ctx.beginPath(); ctx.arc(x+w*fx,y+h*fy,r2,0,Math.PI*2);
+        ctx.fillStyle='#6B7280'; ctx.fill();
+        ctx.strokeStyle='#9CA3AF'; ctx.lineWidth=0.6; ctx.stroke();
+      });
+    }
+    // Door line for fridge
+    if (app.type==='refrigerator') {
+      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
+      if (wall==='north'||wall==='south') { ctx.beginPath(); ctx.moveTo(x+w*0.5,y); ctx.lineTo(x+w*0.5,y+h); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.moveTo(x,y+h*0.5); ctx.lineTo(x+w,y+h*0.5); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.8,10))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, x+w/2, y+h/2);
+  }
+
   ['north','south','east','west'].forEach(wall => {
     cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
     cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    (r.appliances||[]).filter(a => a.wall===wall).forEach(app => drawAppOnFloor(app,wall));
   });
 
   (r.openings||[]).forEach(op => {
@@ -1384,6 +1499,87 @@ function renderElevation() {
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
   });
 
+  // Appliances in elevation
+  (r.appliances||[]).filter(a => a.wall === wall).forEach(app => {
+    const acat = APPLIANCES[app.type]; if (!acat) return;
+    const aW   = app.width * scale;
+    const aH   = acat.height * scale;
+    const x    = WX + (app.offset||0) * scale;
+    const botY = floorY - acat.elevBottom * scale; // bottom edge Y
+    const y    = botY - aH;                        // top edge Y
+
+    ctx.fillStyle = acat.color;
+    ctx.fillRect(x, y, aW, aH);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, aW, aH);
+
+    if (app.type === 'refrigerator') {
+      // Freezer / fridge split at 60% up from bottom
+      const splitY = botY - aH * 0.6;
+      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, splitY); ctx.lineTo(x+aW, splitY); ctx.stroke();
+      // Handle (vertical bar near right edge)
+      ctx.fillStyle = '#D1D5DB'; ctx.fillRect(x+aW*0.82, y+aH*0.15, aW*0.05, aH*0.3);
+      ctx.fillRect(x+aW*0.82, botY-aH*0.45, aW*0.05, aH*0.25);
+    } else if (app.type === 'range') {
+      // Oven door panel
+      ctx.strokeStyle = '#6B7280'; ctx.lineWidth = 1;
+      ctx.strokeRect(x+4, y+aH*0.25, aW-8, aH*0.65);
+      // Window in door
+      ctx.fillStyle = '#1F2937'; ctx.fillRect(x+8, y+aH*0.3, aW-16, aH*0.25);
+      // Knobs row at top
+      const knobY = y + aH*0.1;
+      [0.2,0.4,0.6,0.8].forEach(fx => {
+        ctx.beginPath(); ctx.arc(x+aW*fx, knobY, aW*0.04, 0, Math.PI*2);
+        ctx.fillStyle='#9CA3AF'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.5; ctx.stroke();
+      });
+    } else if (app.type === 'dishwasher') {
+      // Control panel strip at top
+      ctx.fillStyle = '#4B5563'; ctx.fillRect(x+2, y+2, aW-4, aH*0.15);
+      // Inner door panel
+      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 0.8;
+      ctx.strokeRect(x+5, y+aH*0.2, aW-10, aH*0.72);
+    } else if (app.type === 'microwave') {
+      // Vent grille lines on left
+      for (let i=1; i<=3; i++) {
+        ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
+        ctx.beginPath(); ctx.moveTo(x+2, y+aH*(i/4)); ctx.lineTo(x+aW*0.35, y+aH*(i/4)); ctx.stroke();
+      }
+      // Control panel on right
+      ctx.fillStyle='#374151'; ctx.fillRect(x+aW*0.6, y+2, aW*0.35, aH-4);
+    } else if (app.type === 'cooktop') {
+      // 4 burner circles across the thin rect
+      [0.15,0.38,0.62,0.85].forEach(fx => {
+        ctx.beginPath(); ctx.arc(x+aW*fx, y+aH/2, aH*0.35, 0, Math.PI*2);
+        ctx.fillStyle='#374151'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.6; ctx.stroke();
+      });
+    } else if (app.type === 'hood') {
+      // Tapered trapezoid shape (wider at bottom)
+      const taper = aW * 0.12;
+      ctx.fillStyle = acat.color;
+      ctx.beginPath();
+      ctx.moveTo(x,        y+aH);
+      ctx.lineTo(x+aW,     y+aH);
+      ctx.lineTo(x+aW-taper, y);
+      ctx.lineTo(x+taper,  y);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1; ctx.stroke();
+      // Vent slots
+      ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
+      [0.3,0.5,0.7].forEach(fy => {
+        ctx.beginPath(); ctx.moveTo(x+aW*0.2, y+aH*fy); ctx.lineTo(x+aW*0.8, y+aH*fy); ctx.stroke();
+      });
+    }
+
+    // Label
+    ctx.fillStyle='#F9FAFB'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, x+aW/2, y+aH/2);
+    if (app.note) {
+      ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
+      ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
+    }
+  });
+
   // Rulers
   drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
   drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor, 0 at top = ceiling)
@@ -1421,7 +1617,16 @@ function renderSummary(r) {
     </div>`;
   }).join('');
   const tax = subtotal*getTax(), total = subtotal+tax;
-  el.innerHTML = `<h4>Cabinet Summary (${r.cabinets.length} total)</h4>${rows}
+  const appRows = (r.appliances||[]).map(a => {
+    const acat = APPLIANCES[a.type];
+    return `<div class="summary-row">
+      <div class="summary-dot" style="background:${acat.color}"></div>
+      <div class="summary-name">${acat.icon} ${acat.label} — ${a.width}"W</div>
+      <div class="summary-count">×1</div>
+    </div>`;
+  }).join('');
+  const totalCount = r.cabinets.length + (r.appliances||[]).length;
+  el.innerHTML = `<h4>Summary (${totalCount} items)</h4>${rows}${appRows}
     ${showPrice ? `<div class="summary-total-row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>` : ''}
     ${showPrice && getTax()>0 ? `<div class="summary-total-row" style="font-size:12px;font-weight:600"><span>Tax (${(getTax()*100).toFixed(1)}%)</span><span>${fmtMoney(tax)}</span></div>` : ''}
     ${showPrice ? `<div class="summary-total-row" style="font-size:15px"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div>` : ''}`;
@@ -1455,7 +1660,15 @@ function openQuoteModal() {
       <thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th>${pricingOn()?'<th style="text-align:right">Price</th>':''}</tr></thead>
       <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No cabinets added yet.</td></tr>'}</tbody>
     </table>
-    ${pricingOn()?`<div class="quote-totals"><div class="quote-line"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>${tax>0?`<div class="quote-line"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}<div class="quote-line quote-grand"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div></div>`:''}`;
+    ${pricingOn()?`<div class="quote-totals"><div class="quote-line"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>${tax>0?`<div class="quote-line"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}<div class="quote-line quote-grand"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div></div>`:''}
+    ${(r.appliances||[]).length ? `
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Appliances</div>
+        <table class="quote-table">
+          <thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th></tr></thead>
+          <tbody>${(r.appliances||[]).map(a=>{const ac=APPLIANCES[a.type];return`<tr><td>${ac.icon} ${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${a.note||'—'}</td></tr>`;}).join('')}</tbody>
+        </table>
+      </div>` : ''}`;
   openModal('modal-quote');
 }
 
@@ -1476,11 +1689,21 @@ function openQuoteModal() {
     for (const cab of r.cabinets) {
       const cW=cab.width*scale, cD=cab.depth*scale, off=(cab.offset||0)*scale;
       let x,y,w,h;
-      if      (cab.wall==='north') { x=RX+off; y=RY;      w=cW; h=cD; }
+      if      (cab.wall==='north') { x=RX+off; y=RY;       w=cW; h=cD; }
       else if (cab.wall==='south') { x=RX+off; y=RY+RH-cD; w=cW; h=cD; }
-      else if (cab.wall==='west')  { x=RX;     y=RY+off;  w=cD; h=cW; }
+      else if (cab.wall==='west')  { x=RX;      y=RY+off;  w=cD; h=cW; }
       else                         { x=RX+RW-cD; y=RY+off; w=cD; h=cW; }
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
+    }
+    for (const app of (r.appliances||[])) {
+      const acat=APPLIANCES[app.type]; if(!acat) continue;
+      const aW=app.width*scale, aD=acat.depth*scale, off=(app.offset||0)*scale;
+      let x,y,w,h;
+      if      (app.wall==='north') { x=RX+off; y=RY;       w=aW; h=aD; }
+      else if (app.wall==='south') { x=RX+off; y=RY+RH-aD; w=aW; h=aD; }
+      else if (app.wall==='west')  { x=RX;      y=RY+off;  w=aD; h=aW; }
+      else                         { x=RX+RW-aD; y=RY+off; w=aD; h=aW; }
+      if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }
     return null;
   }
@@ -1502,13 +1725,17 @@ function openQuoteModal() {
     if (drag) {
       const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
       const newOffset = Math.max(0, snap(drag.startOffset + delta/drag.scale));
-      const cab = info.r.cabinets.find(c => c.id===drag.cabId);
+      const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
       if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
     } else {
       const hit = hitTestCab(mx,my,info);
       if (hit) {
         canvas.style.cursor = 'grab';
-        if (hoverCabId!==hit.cab.id) { hoverCabId=hit.cab.id; tooltip.style.display='block'; tooltip.textContent=`${CATALOG[hit.cab.type].label} · ${hit.cab.offset||0}" from left — drag to move`; }
+        if (hoverCabId!==hit.cab.id) {
+          hoverCabId=hit.cab.id;
+          const lbl = CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type;
+          tooltip.style.display='block'; tooltip.textContent=`${lbl} · ${hit.cab.offset||0}" from left — drag to move`;
+        }
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
     }
   });
@@ -1524,7 +1751,7 @@ function openQuoteModal() {
     const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
     const delta=drag.isNS?(t.clientX-rect.left-drag.startMX):(t.clientY-rect.top-drag.startMY);
     const newOffset=Math.max(0,snap(drag.startOffset+delta/drag.scale));
-    const cab=info.r.cabinets.find(c=>c.id===drag.cabId);
+    const cab=info.r.cabinets.find(c=>c.id===drag.cabId)||(info.r.appliances||[]).find(a=>a.id===drag.cabId);
     if(cab){cab.offset=newOffset;tooltip.style.display='block';tooltip.textContent=`${newOffset}" from left`;persist();renderCanvas();renderCabinetList();}
     e.preventDefault();
   },{passive:false});
@@ -1573,14 +1800,18 @@ async function setNewPassword() {
   function hitTestElevCab(mx, my, info) {
     const { scale, WX, WY, WH, r, wall } = info;
     const floorY = WY + WH;
-    const wallCabs = r.cabinets.filter(c => c.wall === wall);
-    for (const cab of wallCabs) {
-      const cW = cab.width * scale, cH = cab.height * scale;
-      const x = WX + (cab.offset || 0) * scale;
-      let y;
-      if (cab.type === 'wall') y = Math.max(WY, floorY - 54*scale - cH);
-      else y = floorY - cH;
-      if (mx >= x && mx <= x + cW && my >= y && my <= y + cH) return cab;
+    for (const cab of r.cabinets.filter(c => c.wall === wall)) {
+      const cW = cab.width*scale, cH = cab.height*scale;
+      const x = WX + (cab.offset||0)*scale;
+      const y = cab.type==='wall' ? Math.max(WY, floorY-54*scale-cH) : floorY-cH;
+      if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
+    }
+    for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
+      const acat = APPLIANCES[app.type]; if (!acat) continue;
+      const aW = app.width*scale, aH = acat.height*scale;
+      const x  = WX + (app.offset||0)*scale;
+      const y  = floorY - acat.elevBottom*scale - aH;
+      if (mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH) return app;
     }
     return null;
   }
@@ -1609,7 +1840,7 @@ async function setNewPassword() {
       const delta = mx - elevDrag.startMX;
       const raw   = elevDrag.startOffset + delta / elevDrag.scale;
       const newOffset = Math.max(0, Math.min(Math.round(raw / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
-      const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId);
+      const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
       if (cab) {
         cab.offset = newOffset;
         tooltip.style.display = 'block';
@@ -1622,8 +1853,9 @@ async function setNewPassword() {
         canvas.style.cursor = 'grab';
         if (elevHover !== cab.id) {
           elevHover = cab.id;
+          const lbl = CATALOG[cab.type]?.label || APPLIANCES[cab.type]?.label || cab.type;
           tooltip.style.display = 'block';
-          tooltip.textContent = `${CATALOG[cab.type].label} · ${cab.offset || 0}" from left — drag to move`;
+          tooltip.textContent = `${lbl} · ${cab.offset || 0}" from left — drag to move`;
         }
       } else {
         canvas.style.cursor = 'default';
