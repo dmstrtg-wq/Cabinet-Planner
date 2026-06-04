@@ -450,6 +450,11 @@ body {
           </select>
           <select id="cab-width" class="cp-select"><option value="">— Width —</option></select>
           <select id="cab-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
+            <input type="number" id="cab-wall-bottom" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in.</span>
+          </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
             <input type="number" id="cab-offset-input" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
@@ -966,6 +971,10 @@ function onTypeChange() {
       hs.appendChild(o);
     });
   }
+  // Show bottom-from-floor field for wall cabinets only
+  const wbr = document.getElementById('wall-bottom-row');
+  if (type === 'wall') { wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54'; }
+  else { wbr.style.display = 'none'; }
 }
 function addCabinet() {
   const r = activeRoom(); if (!r) return;
@@ -977,7 +986,8 @@ function addCabinet() {
   const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || cat.heights[0]);
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
-  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth: cat.depth, note, offset: cabOffset });
+  const wallBottom = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
+  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth: cat.depth, note, offset: cabOffset, wallBottom });
   document.getElementById('cab-note-input').value   = '';
   document.getElementById('cab-offset-input').value = '0';
   persist(); renderCabinetList(); renderCanvas();
@@ -1477,7 +1487,8 @@ function renderElevation() {
   wallCabs.filter(c=>c.type==='wall').forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const x=WX+(cab.offset||0)*scale;
-    const y=Math.max(WY, floorY-54*scale-cH);
+    const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
+    const y=Math.max(WY, floorY-bottomIn*scale-cH);
     ctx.fillStyle=styleInfo.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
     ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
     ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
@@ -1485,6 +1496,12 @@ function renderElevation() {
     ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
     if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
+    // Bottom-from-floor annotation
+    const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
+    if (bIn !== 54) {
+      ctx.font=`600 8px sans-serif`; ctx.fillStyle='#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
+    }
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
@@ -1803,7 +1820,8 @@ async function setNewPassword() {
     for (const cab of r.cabinets.filter(c => c.wall === wall)) {
       const cW = cab.width*scale, cH = cab.height*scale;
       const x = WX + (cab.offset||0)*scale;
-      const y = cab.type==='wall' ? Math.max(WY, floorY-54*scale-cH) : floorY-cH;
+      const bIn = cab.type==='wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+      const y = cab.type==='wall' ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
     for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
