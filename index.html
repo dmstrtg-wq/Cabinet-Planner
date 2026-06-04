@@ -241,6 +241,16 @@ body {
 .quote-totals { border-top: 2px solid var(--text); padding-top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .quote-line { display: flex; gap: 32px; font-size: 13px; }
 .quote-grand { font-size: 17px; font-weight: 800; margin-top: 4px; }
+/* Job cost rows in quote modal */
+.jc-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.jc-label { flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-family:inherit; }
+.jc-amount { width:110px; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12px; }
+.jc-label:focus, .jc-amount:focus { outline:none; border-color:var(--accent); }
+.jc-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:17px; line-height:1; padding:2px 6px; border-radius:4px; }
+.jc-del:hover { color:var(--danger); background:#fee2e2; }
+.qtp-row { display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid var(--border); }
+.qtp-row:last-child { border-bottom:none; font-size:15px; font-weight:800; padding-top:8px; }
+
 .hidden { display: none !important; }
 
 @media print {
@@ -555,11 +565,29 @@ body {
 </div>
 
 <div id="modal-quote" class="modal-overlay hidden">
-  <div class="modal" style="width:620px;max-width:100%">
-    <div id="quote-content"></div>
-    <div class="modal-footer">
+  <div class="modal" style="width:680px;max-width:100%;max-height:92vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+
+    <div style="padding:18px 24px 14px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <h3 style="margin:0;">💰 Quote Builder</h3>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:20px 24px 0;">
+
+      <!-- Additional Job Costs -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Additional Job Costs</div>
+        <div id="job-cost-rows"></div>
+        <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addJobCostRow()">＋ Add Line Item</button>
+      </div>
+
+      <!-- Live Totals Preview -->
+      <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:20px;border:1px solid var(--border);"></div>
+
+    </div>
+
+    <div class="modal-footer" style="flex-shrink:0;margin:0;border-top:1px solid var(--border);padding:14px 24px;">
       <button class="btn btn-secondary" onclick="closeModal('modal-quote')">Close</button>
-      <button class="btn btn-primary" onclick="window.print()">🖨 Print Quote</button>
+      <button class="btn btn-primary" onclick="printQuote()">🖨 Print / Save PDF</button>
     </div>
   </div>
 </div>
@@ -1138,6 +1166,11 @@ function openProject(projId, roomId) {
   const p = getProj(projId);
   state.activeRoomId = roomId || (p.rooms[0] && p.rooms[0].id);
   p.rooms.forEach(r => { if (!r.openings) r.openings = []; if (!r.appliances) r.appliances = []; });
+  if (!p.jobCosts) p.jobCosts = [
+    { label:'Labor',        amount:'' },
+    { label:'Demo / Removal', amount:'' },
+    { label:'Incidentals',  amount:'' },
+  ];
   persist(); renderProjectView();
 }
 function renderProjectView() {
@@ -1719,40 +1752,182 @@ function renderSummary(r) {
 // QUOTE MODAL
 // ════════════════════════════
 function openQuoteModal() {
-  const p = activeProj(), r = activeRoom();
-  if (!p || !r) { alert('Open a project first.'); return; }
-  const markup = getMarkup(), tax = getTax(); let subtotal = 0;
-  const rows = r.cabinets.map(c => {
-    const cat = CATALOG[c.type], unitPrice = cabinetPrice(c); subtotal += unitPrice;
-    return `<tr><td>${cat.label}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${c.note||'—'}</td>${pricingOn()?`<td style="text-align:right">${fmtMoney(unitPrice)}</td>`:''}</tr>`;
-  }).join('');
-  const taxAmt = subtotal*tax, total = subtotal+taxAmt;
-  document.getElementById('quote-content').innerHTML = `
-    <div class="quote-header">
-      <div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-          <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:16px;">🪵</div>
-          <div><h2 style="font-size:18px;font-weight:800;color:#1c1008;">My Cabinet Planner</h2><p style="font-size:10px;color:#78614f;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;">by Cabinet Daddy</p></div>
-        </div>
-        <p><strong>${escHtml(p.customer)}</strong> · ${p.type} · ${new Date().toLocaleDateString()}</p>
-        ${p.notes?`<p style="font-size:12px;color:var(--text-muted);margin-top:4px">${escHtml(p.notes)}</p>`:''}
-      </div>
-      <div style="text-align:right;font-size:12px;color:var(--text-muted)"><div>Style: ${p.style}</div><div>Room: ${r.name}</div><div>Markup: ${(markup*100).toFixed(0)}%</div></div>
-    </div>
-    <table class="quote-table">
-      <thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th>${pricingOn()?'<th style="text-align:right">Price</th>':''}</tr></thead>
-      <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">No cabinets added yet.</td></tr>'}</tbody>
-    </table>
-    ${pricingOn()?`<div class="quote-totals"><div class="quote-line"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>${tax>0?`<div class="quote-line"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}<div class="quote-line quote-grand"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div></div>`:''}
-    ${(r.appliances||[]).length ? `
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Appliances</div>
-        <table class="quote-table">
-          <thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th></tr></thead>
-          <tbody>${(r.appliances||[]).map(a=>{const ac=APPLIANCES[a.type];return`<tr><td>${ac.icon} ${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${a.note||'—'}</td></tr>`;}).join('')}</tbody>
-        </table>
-      </div>` : ''}`;
+  const p = activeProj();
+  if (!p) { alert('Open a project first.'); return; }
+  if (!p.jobCosts) p.jobCosts = [
+    { label:'Labor', amount:'' },
+    { label:'Demo / Removal', amount:'' },
+    { label:'Incidentals', amount:'' },
+  ];
+  renderJobCostRows();
+  refreshQuoteTotals();
   openModal('modal-quote');
+}
+
+function renderJobCostRows() {
+  const p = activeProj(); if (!p) return;
+  document.getElementById('job-cost-rows').innerHTML = (p.jobCosts||[]).map((jc, i) => `
+    <div class="jc-row">
+      <input class="jc-label" type="text" value="${escHtml(jc.label)}" placeholder="Description"
+        onchange="updateJobCost(${i},'label',this.value)">
+      <input class="jc-amount" type="number" value="${jc.amount||''}" placeholder="0.00" min="0" step="0.01"
+        onchange="updateJobCost(${i},'amount',this.value)">
+      <button class="jc-del" onclick="removeJobCostRow(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+function updateJobCost(i, field, val) {
+  const p = activeProj(); if (!p || !p.jobCosts[i]) return;
+  p.jobCosts[i][field] = field === 'amount' ? (parseFloat(val)||'') : val;
+  persist(); refreshQuoteTotals();
+}
+
+function addJobCostRow() {
+  const p = activeProj(); if (!p) return;
+  if (!p.jobCosts) p.jobCosts = [];
+  p.jobCosts.push({ label:'', amount:'' });
+  persist(); renderJobCostRows(); refreshQuoteTotals();
+}
+
+function removeJobCostRow(i) {
+  const p = activeProj(); if (!p) return;
+  p.jobCosts.splice(i, 1);
+  persist(); renderJobCostRows(); refreshQuoteTotals();
+}
+
+function refreshQuoteTotals() {
+  const p = activeProj(); if (!p) return;
+  const tax = getTax();
+  let cabSubtotal = 0;
+  p.rooms.forEach(r => r.cabinets.forEach(c => { cabSubtotal += cabinetPrice(c); }));
+  const jcTotal   = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
+  const beforeTax = cabSubtotal + jcTotal;
+  const taxAmt    = beforeTax * tax;
+  const total     = beforeTax + taxAmt;
+  const cabCount  = p.rooms.reduce((n,r) => n + r.cabinets.length, 0);
+  const el = document.getElementById('quote-totals-preview'); if (!el) return;
+  el.innerHTML = `
+    <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
+    ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
+    ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
+    <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>`;
+}
+
+function printQuote() {
+  const p = activeProj(); if (!p) return;
+  const today     = new Date().toLocaleDateString();
+  const validThru = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString();
+  const quoteNum  = 'CD-' + Date.now().toString(36).toUpperCase().slice(-6);
+  const tax       = getTax();
+  let cabSubtotal = 0;
+
+  let cabRows = '';
+  p.rooms.forEach(room => {
+    if (!room.cabinets.length) return;
+    cabRows += `<tr class="room-hdr"><td colspan="5">${escHtml(room.name)}</td></tr>`;
+    room.cabinets.forEach(c => {
+      const price = cabinetPrice(c); cabSubtotal += price;
+      cabRows += `<tr><td>${CATALOG[c.type].label}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${fmtMoney(price)}</td></tr>`;
+    });
+  });
+
+  let appRows = '';
+  p.rooms.forEach(room => {
+    (room.appliances||[]).forEach(a => {
+      const ac = APPLIANCES[a.type];
+      appRows += `<tr><td>${ac.icon} ${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td colspan="2">${escHtml(a.note||'—')}</td></tr>`;
+    });
+  });
+
+  const jcItems  = (p.jobCosts||[]).filter(jc => jc.label || jc.amount);
+  const jcTotal  = jcItems.reduce((s,jc) => s+(parseFloat(jc.amount)||0), 0);
+  const jcRows   = jcItems.map(jc => `<tr><td colspan="4">${escHtml(jc.label||'Additional Cost')}</td><td class="amt">${fmtMoney(parseFloat(jc.amount)||0)}</td></tr>`).join('');
+  const beforeTax = cabSubtotal + jcTotal;
+  const taxAmt    = beforeTax * tax;
+  const total     = beforeTax + taxAmt;
+  const styleName = STYLES.find(s=>s.code===p.style)?.name || p.style;
+
+  const win = window.open('', '_blank', 'width=920,height=750');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,'Helvetica Neue',sans-serif;color:#1a1a1a;padding:48px;max-width:860px;margin:0 auto;font-size:12px;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #b45309;}
+.co-name{font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-.5px;}
+.co-sub{font-size:11px;color:#78614f;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.co-info{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.6;}
+.q-title{font-size:22px;font-weight:800;color:#b45309;text-align:right;}
+.q-meta{font-size:11px;color:#6b7280;text-align:right;margin-top:6px;line-height:1.8;}
+.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#faf7f4;padding:14px 18px;border-radius:8px;border-left:4px solid #b45309;margin-bottom:22px;}
+.ci label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78614f;display:block;margin-bottom:2px;}
+.ci span{font-size:13px;font-weight:700;color:#1c1008;}
+.ci small{font-size:10px;color:#6b7280;display:block;margin-top:2px;}
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid #e7ddd5;}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px;}
+th{background:#2c1f14;color:#fff;text-align:left;padding:7px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+td{padding:7px 10px;border-bottom:1px solid #f0e8e0;vertical-align:top;}
+tr:nth-child(even) td{background:#faf9f7;}
+tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color:#6b4c2a;padding:4px 10px;}
+.amt{text-align:right;font-weight:600;white-space:nowrap;}
+.totals{margin-top:12px;border:1px solid #e7ddd5;border-radius:6px;overflow:hidden;}
+.tr{display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #f0e8e0;font-size:12px;}
+.tr:last-child{border-bottom:none;font-size:16px;font-weight:800;background:#f0fdf4;padding:10px 14px;}
+.tl{color:#6b7280;}.ta{font-weight:600;}
+.terms{margin-top:28px;padding:18px 20px;background:#faf7f4;border-radius:8px;border:1px solid #e7ddd5;page-break-inside:avoid;}
+.terms h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin-bottom:10px;}
+.terms p{font-size:10px;color:#6b7280;line-height:1.7;margin-bottom:5px;}
+.terms strong{color:#4b3728;}
+.sigs{margin-top:36px;page-break-inside:avoid;}
+.sr{display:flex;gap:60px;margin-top:28px;}
+.sb{flex:1;}
+.sl{border-bottom:1px solid #374151;height:36px;margin-bottom:5px;}
+.slb{font-size:10px;color:#6b7280;font-weight:600;}
+.foot{margin-top:24px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e7ddd5;padding-top:12px;}
+@media print{body{padding:24px;}@page{margin:.75in;size:letter;}}
+</style></head>
+<body onload="window.print()">
+<div class="hdr">
+  <div><div class="co-name">🪵 Cabinet Daddy</div><div class="co-sub">Professional Cabinet Design &amp; Installation</div><div class="co-info">mycabinetbuilder.com<br>Matrix Cabinets · Forevermark</div></div>
+  <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
+</div>
+<div class="cust-bar">
+  <div class="ci"><label>Customer</label><span>${escHtml(p.customer)}</span>${p.notes?`<small>${escHtml(p.notes)}</small>`:''}</div>
+  <div class="ci"><label>Project</label><span>${escHtml(p.type)}</span></div>
+  <div class="ci"><label>Door Style</label><span>${escHtml(p.style)}</span><small>${escHtml(styleName)}</small></div>
+  <div class="ci"><label>Rooms</label><span>${p.rooms.length}</span></div>
+</div>
+<div class="sec">Cabinet Line Items</div>
+<table><thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
+<tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
+${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th colspan="2">Notes</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
+${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
+<div class="totals" style="margin-top:16px;">
+  <div class="tr"><span class="tl">Cabinet Subtotal</span><span class="ta">${fmtMoney(cabSubtotal)}</span></div>
+  ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
+  ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
+  <div class="tr"><span>TOTAL</span><span class="ta" style="color:#16a34a;">${fmtMoney(total)}</span></div>
+</div>
+<div class="terms"><h4>Terms &amp; Conditions</h4>
+  <p><strong>Quote Validity:</strong> This quote is valid for 30 days from the date of issue. After this period, Cabinet Daddy reserves the right to adjust pricing based on current material and supply costs.</p>
+  <p><strong>Pricing:</strong> All cabinet pricing reflects current Forevermark/Matrix dealer pricing. Labor, demolition, and incidental costs are estimates based on a standard scope of work and are subject to adjustment based on actual site conditions encountered during the project.</p>
+  <p><strong>Change Orders:</strong> Cabinet Daddy reserves the right to adjust labor, demolition, and incidental costs throughout the duration of the project due to unforeseen conditions. Any modifications to the scope of work requested after acceptance of this quote will be documented via written Change Order and may result in additional charges.</p>
+  <p><strong>Material Availability:</strong> Cabinet Daddy is not responsible for delays due to manufacturer back-orders, shipping delays, or product discontinuation. Substitutions of comparable items may be made with prior customer notification.</p>
+  <p><strong>Payment Terms:</strong> A deposit of 50% of the total quoted amount is required to schedule and begin work. Remaining balance is due upon project completion prior to final sign-off.</p>
+  <p><strong>Acceptance:</strong> Signature below constitutes customer acceptance of this quote, the scope of work, and all terms herein. Final invoice may vary from this estimate based on actual scope and conditions encountered.</p>
+</div>
+<div class="sigs">
+  <div class="sr">
+    <div class="sb"><div class="sl"></div><div class="slb">Customer Signature</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name</div></div></div>
+    <div class="sb"><div class="sl"></div><div class="slb">Cabinet Daddy Representative</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name / Title</div></div></div>
+  </div>
+  <div class="sr" style="margin-top:20px;">
+    <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
+    <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
+  </div>
+</div>
+<div class="foot">Cabinet Daddy · mycabinetbuilder.com · Quote #${quoteNum} · Generated ${today}<br>Created with My Cabinet Planner · Pricing based on Forevermark/Matrix MSRP</div>
+</body></html>`);
+  win.document.close();
 }
 
 // ════════════════════════════
