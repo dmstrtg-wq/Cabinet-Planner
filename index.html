@@ -396,7 +396,8 @@ body {
             <span class="toggle-label">Show Pricing</span>
           </div>
           <div id="pricing-opts" class="hidden">
-            <div class="markup-row"><label>Markup %</label><input type="number" id="markup-pct" value="30" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
+            <div class="markup-row"><label>Additional Markup %</label><input type="number" id="markup-pct" value="0" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">Prices are Forevermark MSRP. Use markup for additional margin.</div>
             <div class="markup-row"><label>Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
           </div>
         </div>
@@ -672,6 +673,36 @@ const STYLES = [
   {tier:'Titanium', code:'AA', name:'Blaze Black Shaker',     swatch:'#1C1B1A'},
   {tier:'Titanium', code:'AH', name:'Homestead Oak Shaker',   swatch:'#B99050'},
 ];
+// ════════════════════════════
+// PRICE TABLE (Forevermark MSRP — markup already included)
+// ════════════════════════════
+const PRICE_TABLE = {
+  base: { 9:227, 12:255, 15:267, 18:284, 21:308, 24:339, 27:356, 30:422, 33:442, 36:457 },
+  sink: { 24:317, 27:328, 30:339, 33:347, 36:356, 42:431 },
+  drawerBase: { 12:449, 15:461, 18:469, 21:477, 24:498, 30:789, 36:799 },
+  lazysusan:  { 33:575, 36:609 },
+  cornerBase: { 36:439, 39:447, 42:454 },
+  vanity:     { 24:274, 30:305, 36:379, 48:683, 60:914 },
+  wall: {
+     9: { 12:null, 30:156,  36:162,  42:177  },
+    12: { 12:85,   30:148,  36:179,  42:205  },
+    15: { 12:89,   30:167,  36:202,  42:226  },
+    18: { 12:101,  30:186,  36:228,  42:246  },
+    21: { 12:125,  30:226,  36:269,  42:298  },
+    24: { 12:148,  15:157,  18:168,  24:217,  30:241, 36:280, 42:311 },
+    27: { 12:170,  30:262,  36:326,  42:356  },
+    30: { 12:151,  15:189,  18:207,  24:253,  30:263, 36:338, 42:396 },
+    33: { 12:167,  15:215,  18:234,  24:298,  30:281, 36:359, 42:421 },
+    36: { 12:175,  15:190,  18:249,  24:275,  30:299, 36:376, 42:437 },
+  },
+  tall: {
+    15: { 84:649,  90:688,  96:729  },
+    18: { 84:716,  90:749,  96:798  },
+    24: { 84:839,  90:882,  96:963  },
+    30: { 84:1014, 90:1055, 96:1158 },
+  },
+};
+
 const APPLIANCES = {
   refrigerator: { label:'Refrigerator',  widths:[30,33,36], height:70,   depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
   range:        { label:'Range / Stove', widths:[30,36],    height:36,   depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
@@ -777,8 +808,17 @@ function getMarkup() { return (parseFloat(document.getElementById('markup-pct').
 function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
 function pricingOn() { return document.getElementById('pricing-toggle').checked; }
 function cabinetPrice(cab) {
-  const cat = CATALOG[cab.type]; if (!cat) return 0;
-  return cat.basePrice(cab.width) * (1 + getMarkup());
+  const prices = PRICE_TABLE[cab.type];
+  let base = 0;
+  if (prices) {
+    if (cab.type === 'wall' || cab.type === 'tall') {
+      base = (prices[cab.width] && prices[cab.width][cab.height]) || 0;
+    } else {
+      base = prices[cab.width] || 0;
+    }
+  }
+  if (!base) { const cat = CATALOG[cab.type]; base = cat ? cat.basePrice(cab.width) : 0; }
+  return base * (1 + getMarkup());
 }
 
 // ════════════════════════════
