@@ -1598,13 +1598,12 @@ function renderCanvas() {
     const isActive = wall === state.activeWall;
     const isCorner = cab.type === 'cornerBase';
     const isLazySusan = cab.type === 'lazysusan';
-    // Lazy susan is a square corner piece — use width for both dimensions
-    const effD = isLazySusan ? cW : cD;
+    const effD = cD; // always use actual depth (24")
     let x,y,w,h;
-    if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=effD; }
-    else if (wall==='south') { x=RX+cabOff; y=RY+RH-effD; w=cW;  h=effD; }
-    else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=effD; h=cW; }
-    else                     { x=RX+RW-effD; y=RY+cabOff;  w=effD; h=cW; }
+    if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=cD; }
+    else if (wall==='south') { x=RX+cabOff; y=RY+RH-cD;   w=cW;  h=cD; }
+    else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=cD;  h=cW; }
+    else                     { x=RX+RW-cD;  y=RY+cabOff;   w=cD;  h=cW; }
 
     if (isCorner) {
       ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
@@ -1623,32 +1622,41 @@ function renderCanvas() {
       else { ctx.moveTo(x,y+cW*0.35); ctx.lineTo(x+cD*0.65,y+cW); }
       ctx.stroke(); ctx.setLineDash([]);
     } else if (isLazySusan) {
-      // Square footprint — no diagonal face
+      // L-shaped footprint: 33" along placed wall × 24" deep + 33" return on adjacent wall × 24" deep
       ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
-      ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
-      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.15)';
-      ctx.lineWidth = isActive ? 2 : 1; ctx.strokeRect(x, y, w, h);
-      // Quarter-circle arc indicating rotating shelf — from the room corner
-      const arcR = Math.min(w, h) * 0.85;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
       ctx.beginPath();
-      // Corner is where the two walls meet — arc sweeps into the room
-      if      (wall==='north') ctx.arc(x,   y,   arcR, 0,           Math.PI/2);   // NW corner
-      else if (wall==='south') ctx.arc(x+w, y+h, arcR, Math.PI,     Math.PI*1.5); // SE corner
-      else if (wall==='west')  ctx.arc(x,   y,   arcR, 0,           Math.PI/2);   // NW corner
-      else                     ctx.arc(x+w, y+h, arcR, Math.PI,     Math.PI*1.5); // SE corner
-      ctx.stroke(); ctx.setLineDash([]);
-      // Dashed line showing adjacent wall cutout (24" return)
-      ctx.strokeStyle = 'rgba(249,115,22,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
       if (wall==='north') {
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+effD); ctx.stroke(); // west wall notch
+        ctx.moveTo(x,    y);    ctx.lineTo(x+cW, y);
+        ctx.lineTo(x+cW, y+cD); ctx.lineTo(x+cD, y+cD);
+        ctx.lineTo(x+cD, y+cW); ctx.lineTo(x,    y+cW);
       } else if (wall==='south') {
-        ctx.beginPath(); ctx.moveTo(x+w, y+h); ctx.lineTo(x+w, y+h-effD); ctx.stroke();
+        const bY = y+cD;
+        ctx.moveTo(x,    bY);    ctx.lineTo(x+cW,  bY);
+        ctx.lineTo(x+cW, bY-cD); ctx.lineTo(x+cD,  bY-cD);
+        ctx.lineTo(x+cD, bY-cW); ctx.lineTo(x,     bY-cW);
       } else if (wall==='west') {
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+effD, y); ctx.stroke(); // north wall notch
+        ctx.moveTo(x,    y);    ctx.lineTo(x+cW, y);
+        ctx.lineTo(x+cW, y+cD); ctx.lineTo(x+cD, y+cD);
+        ctx.lineTo(x+cD, y+cW); ctx.lineTo(x,    y+cW);
       } else {
-        ctx.beginPath(); ctx.moveTo(x+w, y+h); ctx.lineTo(x+w-effD, y+h); ctx.stroke();
+        const rX = x+cD;
+        ctx.moveTo(rX,    y);    ctx.lineTo(rX-cW, y);
+        ctx.lineTo(rX-cW, y+cD); ctx.lineTo(rX-cD, y+cD);
+        ctx.lineTo(rX-cD, y+cW); ctx.lineTo(rX,    y+cW);
       }
+      ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = isActive ? 2 : 1.5; ctx.stroke();
+      // Rotating shelf: two concentric circles + cross lines centered in the corner 24"×24" square
+      const rCX = (wall==='east') ? x+cD - cD*0.5 : x + cD*0.5;
+      const rCY = y + cD*0.5;
+      const r1 = cD*0.38, r2 = cD*0.16;
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(rCX, rCY, r1, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(rCX, rCY, r2, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(rCX-r1, rCY); ctx.lineTo(rCX+r1, rCY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rCX, rCY-r1); ctx.lineTo(rCX, rCY+r1); ctx.stroke();
       ctx.setLineDash([]);
     } else {
       ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
@@ -1666,6 +1674,10 @@ function renderCanvas() {
       else if (wall==='south') ctx.fillText(`${cab.width}"`, x+cW*0.25, y+cD*0.65);
       else if (wall==='west')  ctx.fillText(`${cab.width}"`, x+cD*0.35, y+cW*0.25);
       else                     ctx.fillText(`${cab.width}"`, x+cD*0.65, y+cW*0.25);
+    } else if (isLazySusan) {
+      // Label in the middle of the L's long wing
+      if (wall==='east') ctx.fillText(`LS${cab.width}"`, x+cD - cW*0.65, y+cW*0.55);
+      else               ctx.fillText(`LS${cab.width}"`, x+cW*0.65, y+cW*0.55);
     } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
   }
 
