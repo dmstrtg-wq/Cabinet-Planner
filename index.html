@@ -593,6 +593,14 @@ body {
             <input type="number" id="cab-offset-input" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
+          <div id="glass-door-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
+            <input type="checkbox" id="cab-glass-doors" style="width:auto;accent-color:var(--accent);">
+            <label style="font-size:12px;color:var(--text);margin:0;font-weight:600;">🪟 Add Glass Doors</label>
+            <span style="font-size:10px;color:#94a3b8;">(+58% of cabinet price)</span>
+          </div>
+          <select id="cab-style-override" class="cp-select">
+            <option value="">— Door Style: Use Project Default —</option>
+          </select>
           <input type="text" id="cab-note-input" class="cp-input" placeholder="Notes (optional)">
           <button class="add-cab-btn" onclick="addCabinet()">＋ Add to Wall</button>
         </div>
@@ -1036,7 +1044,8 @@ function cabinetPrice(cab) {
     }
   }
   if (!base) { const cat = CATALOG[cab.type]; base = cat ? cat.basePrice(cab.width) : 0; }
-  return base * (1 + getMarkup());
+  const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
+  return (base + glassAddon) * (1 + getMarkup());
 }
 
 // ════════════════════════════
@@ -1252,11 +1261,14 @@ function onTypeChange() {
   // Show bottom-from-floor + depth selectors for wall cabinets
   const wbr = document.getElementById('wall-bottom-row');
   const ds  = document.getElementById('cab-depth-sel');
+  const gdr = document.getElementById('glass-door-row');
   if (type === 'wall') {
     wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
     ds.classList.remove('hidden');
+    gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
   } else {
     wbr.style.display = 'none'; ds.classList.add('hidden');
+    gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
   }
 }
 function addCabinet() {
@@ -1269,13 +1281,15 @@ function addCabinet() {
   const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || cat.heights[0]);
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
-  const wallBottom = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
-  const depthSel = document.getElementById('cab-depth-sel');
-  const depth = (type === 'wall' && !depthSel.classList.contains('hidden'))
-    ? parseInt(depthSel.value) : cat.depth;
-  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom });
-  document.getElementById('cab-note-input').value   = '';
-  document.getElementById('cab-offset-input').value = '0';
+  const wallBottom  = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
+  const depthSel    = document.getElementById('cab-depth-sel');
+  const depth       = (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value) : cat.depth;
+  const glassDoors    = type === 'wall' && document.getElementById('cab-glass-doors').checked;
+  const styleOverride = document.getElementById('cab-style-override').value || null;
+  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride });
+  document.getElementById('cab-note-input').value    = '';
+  document.getElementById('cab-offset-input').value  = '0';
+  document.getElementById('cab-style-override').value = '';
   persist(); renderCabinetList(); renderCanvas();
   if (state.viewMode === 'elevation') renderElevation();
 }
@@ -1351,6 +1365,7 @@ function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode =
 // ════════════════════════════
 function buildStylePanel() {
   const container = document.getElementById('style-container');
+  const overrideSel = document.getElementById('cab-style-override');
   let html = '', tier = '';
   STYLES.forEach(s => {
     if (s.tier !== tier) {
@@ -1362,6 +1377,12 @@ function buildStylePanel() {
     html += `<div class="style-opt" data-code="${s.code}" onclick="selectStyle('${s.code}')" title="${s.name}">
       <div class="style-swatch" style="background:${s.swatch};border-color:${bord}"></div>
       <div class="style-code">${s.code}</div></div>`;
+    // Also populate the per-cabinet style override dropdown
+    if (overrideSel) {
+      const o = document.createElement('option'); o.value = s.code;
+      o.textContent = `${s.tier}: ${s.code} — ${s.name}`;
+      overrideSel.appendChild(o);
+    }
   });
   if (tier) html += '</div>';
   container.innerHTML = html;
@@ -1474,7 +1495,7 @@ function renderCabinetList() {
       return `<div class="cab-item">
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
-          <div class="cab-name">${cat.label}</div>
+          <div class="cab-name">${cat.label}${c.glassDoors?' 🪟':''}</div>
           <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D</div>
           ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
           ${price}
@@ -1607,15 +1628,28 @@ function renderCanvas() {
       ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
       ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.15)';
       ctx.lineWidth = isActive ? 2 : 1; ctx.strokeRect(x, y, w, h);
-      // Quarter-circle arc indicating rotating shelf
-      const arcR = Math.min(w, h) * 0.82;
-      ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
+      // Quarter-circle arc indicating rotating shelf — from the room corner
+      const arcR = Math.min(w, h) * 0.85;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([4,2]);
       ctx.beginPath();
-      if      (wall==='north') ctx.arc(x,   y,   arcR, 0,          Math.PI/2);
-      else if (wall==='south') ctx.arc(x+w, y+h, arcR, Math.PI,    Math.PI*1.5);
-      else if (wall==='west')  ctx.arc(x,   y+h, arcR, -Math.PI/2, 0);
-      else                     ctx.arc(x+w, y,   arcR, Math.PI/2,  Math.PI);
+      // Corner is where the two walls meet — arc sweeps into the room
+      if      (wall==='north') ctx.arc(x,   y,   arcR, 0,           Math.PI/2);   // NW corner
+      else if (wall==='south') ctx.arc(x+w, y+h, arcR, Math.PI,     Math.PI*1.5); // SE corner
+      else if (wall==='west')  ctx.arc(x,   y,   arcR, 0,           Math.PI/2);   // NW corner
+      else                     ctx.arc(x+w, y+h, arcR, Math.PI,     Math.PI*1.5); // SE corner
       ctx.stroke(); ctx.setLineDash([]);
+      // Dashed line showing adjacent wall cutout (24" return)
+      ctx.strokeStyle = 'rgba(249,115,22,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+      if (wall==='north') {
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y+effD); ctx.stroke(); // west wall notch
+      } else if (wall==='south') {
+        ctx.beginPath(); ctx.moveTo(x+w, y+h); ctx.lineTo(x+w, y+h-effD); ctx.stroke();
+      } else if (wall==='west') {
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+effD, y); ctx.stroke(); // north wall notch
+      } else {
+        ctx.beginPath(); ctx.moveTo(x+w, y+h); ctx.lineTo(x+w-effD, y+h); ctx.stroke();
+      }
+      ctx.setLineDash([]);
     } else {
       ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
       ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
@@ -1789,15 +1823,20 @@ function renderElevation() {
   });
 
   const darkSwatches = ['#2B2926','#1B3A5C','#4B4F5C','#5B6069','#1C1B1A'];
-  const txtColor = darkSwatches.includes(styleInfo.swatch) ? '#fff' : '#334155';
+  function cabStyle(cab) {
+    const code = cab.styleOverride || p.style || 'AW';
+    return STYLES.find(s => s.code === code) || styleInfo;
+  }
 
   wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const isCorner=cab.type==='cornerBase';
+    const si=cabStyle(cab);
+    const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
     if (isCorner) {
       const cutW=cW*0.28;
-      ctx.fillStyle=styleInfo.swatch;
+      ctx.fillStyle=si.swatch;
       ctx.beginPath(); ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH); ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cH*0.12); ctx.closePath(); ctx.fill();
       ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.stroke();
       ctx.strokeStyle='#94A3B8'; ctx.beginPath(); ctx.moveTo(x,y+cH*0.12); ctx.lineTo(x+cutW,y); ctx.stroke();
@@ -1809,10 +1848,24 @@ function renderElevation() {
       ctx.fillStyle=txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW*0.6, y+cH*0.5);
     } else {
-      ctx.fillStyle=styleInfo.swatch; ctx.fillRect(x,y,cW,cH);
+      ctx.fillStyle=si.swatch; ctx.fillRect(x,y,cW,cH);
       ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,cW,cH);
-      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
-      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
+      if (cab.type === 'lazysusan') {
+        // Bifolding door — two panels meeting at center fold
+        const midX = x + cW/2;
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+        ctx.strokeRect(x+3, y+4, cW/2-4, cH-14); // left panel
+        ctx.strokeRect(midX+1, y+4, cW/2-4, cH-14); // right panel
+        ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
+        ctx.beginPath(); ctx.moveTo(midX, y+4); ctx.lineTo(midX, y+cH-10); ctx.stroke();
+        ctx.setLineDash([]);
+        // Bifolding knobs at center fold
+        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(midX, y+cH*0.55, 3, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
+        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
+      }
       ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
       ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
       ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1826,7 +1879,8 @@ function renderElevation() {
     const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
     const y=Math.max(WY, floorY-bottomIn*scale-cH);
     const x=eX(cab.offset||0, cab.width);
-    ctx.fillStyle=styleInfo.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
+    ctx.fillStyle=si.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
     ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
     ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
     ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
@@ -1844,7 +1898,8 @@ function renderElevation() {
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
-    ctx.fillStyle=styleInfo.swatch; ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
+    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
+    ctx.fillStyle=si.swatch; ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
     ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
     const mid=y+cH/2; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8;
     ctx.strokeRect(x+4,y+4,cW-8,cH/2-8); ctx.strokeRect(x+4,mid+4,cW-8,cH/2-8);
@@ -2107,7 +2162,9 @@ function printQuote() {
     cabRows += `<tr class="room-hdr"><td colspan="5">${escHtml(room.name)}</td></tr>`;
     room.cabinets.forEach(c => {
       const price = cabinetPrice(c); cabSubtotal += price;
-      cabRows += `<tr><td>${CATALOG[c.type].label}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${fmtMoney(price)}</td></tr>`;
+      const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
+      const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
+      cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${fmtMoney(price)}</td></tr>`;
     });
   });
 
