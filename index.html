@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Cabinet Planner — by Cabinet Daddy</title>
+<title>My Cabinet Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -375,8 +375,7 @@ body {
       </defs>
     </svg>
 
-    <div class="login-brand-name">Cabinet Daddy</div>
-    <div class="login-app-name">My Cabinet Planner</div>
+    <div class="login-brand-name">My Cabinet Planner</div>
     <div class="login-tagline">Professional Cabinet Design &amp; Installation</div>
     <div class="login-divider"></div>
     <div class="login-domain">mycabinetbuilder.com</div>
@@ -386,7 +385,7 @@ body {
   <div class="login-right">
     <div class="login-form-wrap">
       <div class="login-welcome">Welcome back</div>
-      <div class="login-sub">Sign in to your Cabinet Daddy account</div>
+      <div class="login-sub">Sign in to your account</div>
 
       <div class="login-field">
         <label>Email</label>
@@ -398,6 +397,9 @@ body {
       </div>
       <button class="login-btn" id="login-btn">Sign In →</button>
       <div class="login-error" id="login-error"></div>
+      <div style="text-align:center;margin-top:14px;">
+        <button onclick="handleForgotPassword()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">Forgot your password?</button>
+      </div>
     </div>
   </div>
 
@@ -412,7 +414,7 @@ body {
       <div style="width:36px;height:36px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🪵</div>
       <div>
         <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">by Cabinet Daddy</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">Cabinet Planner</div>
       </div>
     </div>
   </div>
@@ -436,7 +438,7 @@ body {
     <div style="text-align:center;max-width:420px;padding:24px;">
       <div style="width:80px;height:80px;border-radius:20px;margin:0 auto 20px;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 8px 32px rgba(107,76,42,0.25);">🪵</div>
       <h2 style="font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
-      <p style="font-size:13px;color:#78614f;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">by Cabinet Daddy</p>
+      <p style="font-size:13px;color:#78614f;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Professional Cabinet Planning</p>
       <p style="font-size:14px;color:#a07850;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
       <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:12px 28px;font-size:14px;border-radius:10px;">＋ Create Your First Project</button>
       <p style="font-size:11px;color:#b8a090;margin-top:16px;">Matrix Cabinets · Forevermark</p>
@@ -644,6 +646,7 @@ body {
   <div class="modal">
     <h3>New Project</h3>
     <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder="e.g. Smith Family"></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="np-company" placeholder="e.g. Cabinet Daddy"></div>
     <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder="123 Main St"></div>
     <div class="form-row">
@@ -672,6 +675,7 @@ body {
   <div class="modal">
     <h3>Edit Project</h3>
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="ep-company" placeholder="e.g. Cabinet Daddy"></div>
     <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder="123 Main St"></div>
     <div class="form-row">
@@ -827,6 +831,17 @@ async function handleSignIn() {
   currentUser = data.user;
   showApp();
   await loadProjects();
+}
+async function handleForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  const err   = document.getElementById('login-error');
+  if (!email) { err.style.color='#b45309'; err.textContent = 'Enter your email address above first.'; return; }
+  err.textContent = '';
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://mycabinetbuilder.com'
+  });
+  if (error) { err.textContent = error.message; }
+  else { err.style.color='#16a34a'; err.textContent = '✓ Reset link sent — check your email.'; }
 }
 async function handleSignOut() {
   await db.auth.signOut();
@@ -1073,7 +1088,7 @@ function setViewMode(m) {
 // PROJECT CRUD
 // ════════════════════════════
 function openNewProjectModal() {
-  ['np-customer','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['np-customer','np-company','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('np-ceiling').value = '96';
   document.getElementById('np-type').value = 'Kitchen';
   // Populate state dropdown if empty
@@ -1101,6 +1116,7 @@ function createProject() {
   };
   const proj = {
     id: newId(), customer,
+    company: document.getElementById('np-company').value.trim(),
     type:    document.getElementById('np-type').value,
     notes:   document.getElementById('np-notes').value.trim(),
     address: document.getElementById('np-address').value.trim(),
@@ -1116,6 +1132,7 @@ function createProject() {
 function openEditProjectModal() {
   const p = activeProj(); if (!p) return;
   document.getElementById('ep-customer').value = p.customer;
+  document.getElementById('ep-company').value  = p.company || '';
   document.getElementById('ep-type').value     = p.type;
   document.getElementById('ep-address').value  = p.address || '';
   document.getElementById('ep-city').value     = p.city    || '';
@@ -1130,6 +1147,7 @@ function openEditProjectModal() {
 function saveEditProject() {
   const p = activeProj(); if (!p) return;
   p.customer = document.getElementById('ep-customer').value.trim() || p.customer;
+  p.company  = document.getElementById('ep-company').value.trim();
   p.type     = document.getElementById('ep-type').value;
   p.address  = document.getElementById('ep-address').value.trim();
   p.city     = document.getElementById('ep-city').value.trim();
@@ -2239,7 +2257,7 @@ tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color
 </style></head>
 <body onload="window.print()">
 <div class="hdr">
-  <div><div class="co-name">🪵 Cabinet Daddy</div><div class="co-sub">Professional Cabinet Design &amp; Installation</div><div class="co-info">mycabinetbuilder.com<br>Matrix Cabinets · Forevermark</div></div>
+  <div><div class="co-name">🪵 ${escHtml(p.company || 'My Cabinet Planner')}</div><div class="co-sub">Professional Cabinet Design &amp; Installation</div><div class="co-info">mycabinetbuilder.com<br>Matrix Cabinets · Forevermark</div></div>
   <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
 </div>
 <div class="cust-bar">
@@ -2273,14 +2291,14 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
 <div class="sigs">
   <div class="sr">
     <div class="sb"><div class="sl"></div><div class="slb">Customer Signature</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name</div></div></div>
-    <div class="sb"><div class="sl"></div><div class="slb">Cabinet Daddy Representative</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name / Title</div></div></div>
+    <div class="sb"><div class="sl"></div><div class="slb">${escHtml(p.company || 'Company')} Representative</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name / Title</div></div></div>
   </div>
   <div class="sr" style="margin-top:20px;">
     <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
     <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
   </div>
 </div>
-<div class="foot">Cabinet Daddy · mycabinetbuilder.com · Quote #${quoteNum} · Generated ${today}<br>Created with My Cabinet Planner · Pricing based on Forevermark/Matrix MSRP</div>
+<div class="foot">${escHtml(p.company || 'My Cabinet Planner')} · mycabinetbuilder.com · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
 </body></html>`);
   win.document.close();
 }
