@@ -289,6 +289,43 @@ body {
 .quote-totals { border-top: 2px solid var(--text); padding-top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .quote-line { display: flex; gap: 32px; font-size: 13px; }
 .quote-grand { font-size: 17px; font-weight: 800; margin-top: 4px; }
+/* ── CALCULATOR ── */
+#calc-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(135deg,#475569,#1e293b);
+  color: white; border: none; font-size: 18px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+#calc-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+#calc-panel {
+  position: fixed; bottom: 80px; right: 24px;
+  width: 230px; background: #1e293b; border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35); z-index: 299;
+  overflow: hidden; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  transform-origin: bottom right;
+}
+#calc-panel.calc-hidden { transform: scale(0.85); opacity: 0; pointer-events: none; }
+#calc-display {
+  padding: 14px 14px 8px; text-align: right;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+#calc-expr { font-size: 11px; color: #64748b; min-height: 16px; word-break: break-all; }
+#calc-result { font-size: 26px; font-weight: 700; color: #f8fafc; margin-top: 2px; word-break: break-all; }
+.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: rgba(255,255,255,0.05); padding: 1px; }
+.calc-btn {
+  background: #273344; border: none; color: #e2e8f0;
+  font-size: 15px; font-weight: 600; padding: 14px 0;
+  cursor: pointer; transition: background 0.1s; text-align: center;
+}
+.calc-btn:hover { background: #334155; }
+.calc-btn.op  { color: #f59e0b; }
+.calc-btn.eq  { background: #b45309; color: white; }
+.calc-btn.eq:hover { background: #92400e; }
+.calc-btn.clr { color: #f87171; }
+
 /* Job cost rows in quote modal */
 .jc-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
 .jc-label { flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-family:inherit; }
@@ -542,6 +579,10 @@ body {
           </select>
           <select id="cab-width" class="cp-select"><option value="">— Width —</option></select>
           <select id="cab-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <select id="cab-depth-sel" class="cp-select hidden">
+            <option value="12">12" deep — Standard upper</option>
+            <option value="24">24" deep — Over fridge/appliance</option>
+          </select>
           <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
             <input type="number" id="cab-wall-bottom" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
@@ -566,8 +607,10 @@ body {
             <option value="microwave">📡 OTR Microwave</option>
             <option value="cooktop">🍳 Cooktop</option>
             <option value="hood">💨 Range Hood</option>
+            <option value="fridgePanel">📏 Fridge End Panel</option>
           </select>
           <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
+          <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
             <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
@@ -594,7 +637,12 @@ body {
     <h3>New Project</h3>
     <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder="e.g. Smith Family"></div>
     <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
-    <div class="form-group"><label>Notes / Address</label><textarea id="np-notes" rows="2" placeholder="Job address, contact info, notes…" style="resize:vertical"></textarea></div>
+    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder="City"></div>
+      <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
     <div class="section-divider">First Room Dimensions</div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" placeholder="120" min="0"></div>
@@ -617,7 +665,12 @@ body {
     <h3>Edit Project</h3>
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
     <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
-    <div class="form-group"><label>Notes / Address</label><textarea id="ep-notes" rows="2" style="resize:vertical"></textarea></div>
+    <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input type="text" id="ep-city" placeholder="City"></div>
+      <div class="form-group"><label>State</label><select id="ep-state"><option value="">— State —</option></select></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="ep-notes" rows="2" style="resize:vertical"></textarea></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-edit-project')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEditProject()">Save Changes</button>
@@ -656,6 +709,13 @@ body {
       <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addJobCostRow()">＋ Add Line Item</button>
     </div>
 
+    <!-- Trim & Materials -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Trim &amp; Materials</div>
+      <div id="trim-item-rows"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addTrimRow()">＋ Add Trim / Molding</button>
+    </div>
+
     <!-- Live Totals Preview -->
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Quote Summary</div>
     <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;"></div>
@@ -689,6 +749,35 @@ body {
     <div class="modal-footer" style="border-top:none;padding-top:8px;">
       <button class="btn btn-primary" style="width:100%;padding:11px;font-size:14px;" onclick="setNewPassword()">Set Password &amp; Continue →</button>
     </div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<button id="calc-btn" onclick="toggleCalc()" title="Calculator">🧮</button>
+<div id="calc-panel" class="calc-hidden">
+  <div id="calc-display">
+    <div id="calc-expr"></div>
+    <div id="calc-result">0</div>
+  </div>
+  <div class="calc-grid">
+    <button class="calc-btn clr" onclick="calcInput('C')" style="grid-column:span 2">C</button>
+    <button class="calc-btn op"  onclick="calcInput('%')">%</button>
+    <button class="calc-btn op"  onclick="calcInput('/')">÷</button>
+    <button class="calc-btn"     onclick="calcInput('7')">7</button>
+    <button class="calc-btn"     onclick="calcInput('8')">8</button>
+    <button class="calc-btn"     onclick="calcInput('9')">9</button>
+    <button class="calc-btn op"  onclick="calcInput('*')">×</button>
+    <button class="calc-btn"     onclick="calcInput('4')">4</button>
+    <button class="calc-btn"     onclick="calcInput('5')">5</button>
+    <button class="calc-btn"     onclick="calcInput('6')">6</button>
+    <button class="calc-btn op"  onclick="calcInput('-')">−</button>
+    <button class="calc-btn"     onclick="calcInput('1')">1</button>
+    <button class="calc-btn"     onclick="calcInput('2')">2</button>
+    <button class="calc-btn"     onclick="calcInput('3')">3</button>
+    <button class="calc-btn op"  onclick="calcInput('+')">+</button>
+    <button class="calc-btn"     onclick="calcInput('0')" style="grid-column:span 2">0</button>
+    <button class="calc-btn"     onclick="calcInput('.')">.</button>
+    <button class="calc-btn eq"  onclick="calcInput('=')">=</button>
   </div>
 </div>
 
@@ -753,7 +842,7 @@ const CATALOG = {
   vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
   drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
   cornerBase: { label:'Corner Base', widths:[36,39,42],                     heights:[34.5],     depth:24, color:'#F59E0B', abbr:'CB', basePrice: w => w*6  },
-  lazysusan:  { label:'Lazy Susan',  widths:[33,36],                        heights:[34.5],     depth:24, color:'#F97316', abbr:'LS', basePrice: w => w*7  },
+  lazysusan:  { label:'Lazy Susan',  widths:[33],                           heights:[34.5],     depth:24, color:'#F97316', abbr:'LS', basePrice: w => w*7  },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -778,6 +867,29 @@ const STYLES = [
   {tier:'Titanium', code:'AA', name:'Blaze Black Shaker',     swatch:'#1C1B1A'},
   {tier:'Titanium', code:'AH', name:'Homestead Oak Shaker',   swatch:'#B99050'},
 ];
+// ════════════════════════════
+// US STATE SALES TAX RATES (base state rate %)
+// ════════════════════════════
+const STATE_TAX = {
+  AL:4.0,AK:0.0,AZ:5.6,AR:6.5,CA:7.25,CO:2.9,CT:6.35,DE:0.0,FL:6.0,GA:4.0,
+  HI:4.0,ID:6.0,IL:6.25,IN:7.0,IA:6.0,KS:6.5,KY:6.0,LA:4.45,ME:5.5,MD:6.0,
+  MA:6.25,MI:6.0,MN:6.875,MS:7.0,MO:4.225,MT:0.0,NE:5.5,NV:6.85,NH:0.0,NJ:6.625,
+  NM:5.0,NY:4.0,NC:4.75,ND:5.0,OH:5.75,OK:4.5,OR:0.0,PA:6.0,RI:7.0,SC:6.0,
+  SD:4.5,TN:7.0,TX:6.25,UT:4.85,VT:6.0,VA:5.3,WA:6.5,WV:6.0,WI:5.0,WY:4.0,DC:6.0
+};
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['FL','Florida'],['GA','Georgia'],
+  ['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],
+  ['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],
+  ['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],
+  ['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],
+  ['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],
+  ['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],
+  ['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],
+  ['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['DC','Washington DC']
+];
+
 // ════════════════════════════
 // PRICE TABLE (Forevermark MSRP — markup already included)
 // ════════════════════════════
@@ -809,7 +921,8 @@ const PRICE_TABLE = {
 };
 
 const APPLIANCES = {
-  refrigerator: { label:'Refrigerator',  widths:[30,33,36], height:70,   depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
+  refrigerator: { label:'Refrigerator',  widths:[30,33,36], heights:[66,68,70,72], height:70, depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
+  fridgePanel:  { label:'Fridge End Panel', widths:[3,6],  heights:[84,96], height:84, depth:24, color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
   range:        { label:'Range / Stove', widths:[30,36],    height:36,   depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
   dishwasher:   { label:'Dishwasher',    widths:[24],       height:34.5, depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
   microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54 },
@@ -951,9 +1064,15 @@ function setViewMode(m) {
 // PROJECT CRUD
 // ════════════════════════════
 function openNewProjectModal() {
-  ['np-customer','np-notes','np-north','np-south','np-east','np-west'].forEach(id => document.getElementById(id).value = '');
+  ['np-customer','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('np-ceiling').value = '96';
   document.getElementById('np-type').value = 'Kitchen';
+  // Populate state dropdown if empty
+  const sel = document.getElementById('np-state');
+  if (sel.options.length <= 1) {
+    US_STATES.forEach(([code,name]) => { const o=document.createElement('option'); o.value=code; o.textContent=`${name} (${code})`; sel.appendChild(o); });
+  }
+  sel.value = '';
   openModal('modal-new-project');
   setTimeout(() => document.getElementById('np-customer').focus(), 50);
 }
@@ -973,8 +1092,11 @@ function createProject() {
   };
   const proj = {
     id: newId(), customer,
-    type: document.getElementById('np-type').value,
-    notes: document.getElementById('np-notes').value.trim(),
+    type:    document.getElementById('np-type').value,
+    notes:   document.getElementById('np-notes').value.trim(),
+    address: document.getElementById('np-address').value.trim(),
+    city:    document.getElementById('np-city').value.trim(),
+    state:   document.getElementById('np-state').value,
     style: 'AW', createdAt: Date.now(), rooms: [room]
   };
   state.projects.unshift(proj);
@@ -985,15 +1107,26 @@ function createProject() {
 function openEditProjectModal() {
   const p = activeProj(); if (!p) return;
   document.getElementById('ep-customer').value = p.customer;
-  document.getElementById('ep-type').value = p.type;
-  document.getElementById('ep-notes').value = p.notes || '';
+  document.getElementById('ep-type').value     = p.type;
+  document.getElementById('ep-address').value  = p.address || '';
+  document.getElementById('ep-city').value     = p.city    || '';
+  document.getElementById('ep-notes').value    = p.notes   || '';
+  const sel = document.getElementById('ep-state');
+  if (sel.options.length <= 1) {
+    US_STATES.forEach(([code,name]) => { const o=document.createElement('option'); o.value=code; o.textContent=`${name} (${code})`; sel.appendChild(o); });
+  }
+  sel.value = p.state || '';
   openModal('modal-edit-project');
 }
 function saveEditProject() {
   const p = activeProj(); if (!p) return;
   p.customer = document.getElementById('ep-customer').value.trim() || p.customer;
   p.type     = document.getElementById('ep-type').value;
+  p.address  = document.getElementById('ep-address').value.trim();
+  p.city     = document.getElementById('ep-city').value.trim();
+  p.state    = document.getElementById('ep-state').value;
   p.notes    = document.getElementById('ep-notes').value.trim();
+  if (p.state && STATE_TAX[p.state] != null) document.getElementById('tax-pct').value = STATE_TAX[p.state];
   persist(); closeModal('modal-edit-project'); renderProjectView();
 }
 function deleteProject(id, e) {
@@ -1116,10 +1249,15 @@ function onTypeChange() {
       hs.appendChild(o);
     });
   }
-  // Show bottom-from-floor field for wall cabinets only
+  // Show bottom-from-floor + depth selectors for wall cabinets
   const wbr = document.getElementById('wall-bottom-row');
-  if (type === 'wall') { wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54'; }
-  else { wbr.style.display = 'none'; }
+  const ds  = document.getElementById('cab-depth-sel');
+  if (type === 'wall') {
+    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
+    ds.classList.remove('hidden');
+  } else {
+    wbr.style.display = 'none'; ds.classList.add('hidden');
+  }
 }
 function addCabinet() {
   const r = activeRoom(); if (!r) return;
@@ -1132,7 +1270,10 @@ function addCabinet() {
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
   const wallBottom = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
-  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth: cat.depth, note, offset: cabOffset, wallBottom });
+  const depthSel = document.getElementById('cab-depth-sel');
+  const depth = (type === 'wall' && !depthSel.classList.contains('hidden'))
+    ? parseInt(depthSel.value) : cat.depth;
+  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom });
   document.getElementById('cab-note-input').value   = '';
   document.getElementById('cab-offset-input').value = '0';
   persist(); renderCabinetList(); renderCanvas();
@@ -1151,13 +1292,25 @@ function removeCabinet(id) {
 function onAppTypeChange() {
   const type = document.getElementById('app-type').value;
   const ws   = document.getElementById('app-width');
+  const hs   = document.getElementById('app-height-sel');
   ws.innerHTML = '<option value="">— Width —</option>';
+  hs.innerHTML  = '<option value="">— Height —</option>';
+  hs.classList.add('hidden');
   if (!type) return;
-  APPLIANCES[type].widths.forEach(w => {
+  const acat = APPLIANCES[type];
+  acat.widths.forEach(w => {
     const o = document.createElement('option'); o.value = w;
     o.textContent = `${w}" wide  (${(w/12).toFixed(1)}')`;
     ws.appendChild(o);
   });
+  if (acat.heights) {
+    hs.classList.remove('hidden');
+    acat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
+      hs.appendChild(o);
+    });
+  }
 }
 function addAppliance() {
   const r = activeRoom(); if (!r) return;
@@ -1167,8 +1320,11 @@ function addAppliance() {
   const acat  = APPLIANCES[type];
   const note  = document.getElementById('app-note').value.trim();
   const offset = parseInt(document.getElementById('app-offset').value) || 0;
+  const hs = document.getElementById('app-height-sel');
+  const appHeight = (acat.heights && !hs.classList.contains('hidden') && hs.value)
+    ? parseFloat(hs.value) : acat.height;
   if (!r.appliances) r.appliances = [];
-  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, note, offset });
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset });
   document.getElementById('app-note').value   = '';
   document.getElementById('app-offset').value = '0';
   persist(); renderCabinetList(); renderCanvas();
@@ -1243,6 +1399,11 @@ function openProject(projId, roomId) {
   const p = getProj(projId);
   state.activeRoomId = roomId || (p.rooms[0] && p.rooms[0].id);
   p.rooms.forEach(r => { if (!r.openings) r.openings = []; if (!r.appliances) r.appliances = []; });
+  // Auto-set state tax rate
+  if (p.state && STATE_TAX[p.state] != null) {
+    const taxEl = document.getElementById('tax-pct');
+    if (taxEl) taxEl.value = STATE_TAX[p.state];
+  }
   if (!p.jobCosts) p.jobCosts = [
     { label:'Labor',        amount:'' },
     { label:'Demo / Removal', amount:'' },
@@ -1696,7 +1857,7 @@ function renderElevation() {
   (r.appliances||[]).filter(a => a.wall === wall).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const aW   = app.width * scale;
-    const aH   = acat.height * scale;
+    const aH   = (app.height || acat.height) * scale;
     const x    = eX(app.offset||0, app.width);
     const botY = floorY - acat.elevBottom * scale; // bottom edge Y
     const y    = botY - aH;                        // top edge Y
@@ -1836,7 +1997,9 @@ function openQuoteModal() {
     { label:'Demo / Removal', amount:'' },
     { label:'Incidentals', amount:'' },
   ];
+  if (!p.trimItems) p.trimItems = [];
   renderJobCostRows();
+  renderTrimRows();
   refreshQuoteTotals();
   openModal('modal-quote');
 }
@@ -1872,13 +2035,52 @@ function removeJobCostRow(i) {
   persist(); renderJobCostRows(); refreshQuoteTotals();
 }
 
+// Trim & Materials rows
+const TRIM_PRESETS = [
+  'Crown Molding (96" piece)','Wall Filler 3"x30"','Wall Filler 3"x36"','Wall Filler 3"x42"',
+  'Base Filler 3"x34.5"','Base Filler 6"x34.5"','Toe Kick (96")','Light Rail Molding (96")',
+  'Scribe Molding (96")','Dishwasher Panel','Refrigerator End Panel 84"','Refrigerator End Panel 96"'
+];
+function renderTrimRows() {
+  const p = activeProj(); if (!p) return;
+  if (!p.trimItems) p.trimItems = [];
+  document.getElementById('trim-item-rows').innerHTML = p.trimItems.map((t,i) => `
+    <div class="jc-row">
+      <input class="jc-label" type="text" value="${escHtml(t.label)}" placeholder="Item description" list="trim-presets"
+        onchange="updateTrimItem(${i},'label',this.value)">
+      <input class="jc-amount" type="number" value="${t.qty||''}" placeholder="Qty" min="1" step="1" style="width:60px;"
+        onchange="updateTrimItem(${i},'qty',this.value)">
+      <input class="jc-amount" type="number" value="${t.unitPrice||''}" placeholder="$/ea" min="0" step="0.01"
+        onchange="updateTrimItem(${i},'unitPrice',this.value)">
+      <button class="jc-del" onclick="removeTrimRow(${i})">×</button>
+    </div>`).join('') +
+    `<datalist id="trim-presets">${TRIM_PRESETS.map(p=>`<option value="${p}">`).join('')}</datalist>`;
+}
+function updateTrimItem(i, field, val) {
+  const p = activeProj(); if (!p || !p.trimItems[i]) return;
+  p.trimItems[i][field] = (field === 'qty' || field === 'unitPrice') ? (parseFloat(val)||'') : val;
+  persist(); refreshQuoteTotals();
+}
+function addTrimRow() {
+  const p = activeProj(); if (!p) return;
+  if (!p.trimItems) p.trimItems = [];
+  p.trimItems.push({ label:'', qty:'', unitPrice:'' });
+  persist(); renderTrimRows(); refreshQuoteTotals();
+}
+function removeTrimRow(i) {
+  const p = activeProj(); if (!p) return;
+  p.trimItems.splice(i, 1);
+  persist(); renderTrimRows(); refreshQuoteTotals();
+}
+
 function refreshQuoteTotals() {
   const p = activeProj(); if (!p) return;
   const tax = getTax();
   let cabSubtotal = 0;
   p.rooms.forEach(r => r.cabinets.forEach(c => { cabSubtotal += cabinetPrice(c); }));
-  const jcTotal   = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
-  const beforeTax = cabSubtotal + jcTotal;
+  const jcTotal    = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
+  const trimTotal  = (p.trimItems||[]).reduce((s,t) => s + (parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
+  const beforeTax  = cabSubtotal + jcTotal + trimTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
   const cabCount  = p.rooms.reduce((n,r) => n + r.cabinets.length, 0);
@@ -1886,6 +2088,7 @@ function refreshQuoteTotals() {
   el.innerHTML = `
     <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
     ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
+    ${trimTotal>0?`<div class="qtp-row"><span>Trim &amp; Materials</span><span>${fmtMoney(trimTotal)}</span></div>`:''}
     ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
     <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>`;
 }
@@ -1916,10 +2119,13 @@ function printQuote() {
     });
   });
 
-  const jcItems  = (p.jobCosts||[]).filter(jc => jc.label || jc.amount);
-  const jcTotal  = jcItems.reduce((s,jc) => s+(parseFloat(jc.amount)||0), 0);
-  const jcRows   = jcItems.map(jc => `<tr><td colspan="4">${escHtml(jc.label||'Additional Cost')}</td><td class="amt">${fmtMoney(parseFloat(jc.amount)||0)}</td></tr>`).join('');
-  const beforeTax = cabSubtotal + jcTotal;
+  const jcItems   = (p.jobCosts||[]).filter(jc => jc.label || jc.amount);
+  const jcTotal   = jcItems.reduce((s,jc) => s+(parseFloat(jc.amount)||0), 0);
+  const jcRows    = jcItems.map(jc => `<tr><td colspan="4">${escHtml(jc.label||'Additional Cost')}</td><td class="amt">${fmtMoney(parseFloat(jc.amount)||0)}</td></tr>`).join('');
+  const trimItems = (p.trimItems||[]).filter(t => t.label || t.unitPrice);
+  const trimTotal = trimItems.reduce((s,t) => s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
+  const trimRows  = trimItems.map(t => `<tr><td colspan="2">${escHtml(t.label||'Trim Item')}</td><td>Qty: ${t.qty||1}</td><td>${fmtMoney(parseFloat(t.unitPrice)||0)} ea</td><td class="amt">${fmtMoney((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0))}</td></tr>`).join('');
+  const beforeTax = cabSubtotal + jcTotal + trimTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
   const styleName = STYLES.find(s=>s.code===p.style)?.name || p.style;
@@ -1968,8 +2174,8 @@ tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color
   <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
 </div>
 <div class="cust-bar">
-  <div class="ci"><label>Customer</label><span>${escHtml(p.customer)}</span>${p.notes?`<small>${escHtml(p.notes)}</small>`:''}</div>
-  <div class="ci"><label>Project</label><span>${escHtml(p.type)}</span></div>
+  <div class="ci"><label>Customer</label><span>${escHtml(p.customer)}</span>${p.address?`<small>${escHtml(p.address)}${p.city?', '+escHtml(p.city):''}${p.state?' '+escHtml(p.state):''}</small>`:''}</div>
+  <div class="ci"><label>Project</label><span>${escHtml(p.type)}</span>${p.notes?`<small>${escHtml(p.notes)}</small>`:''}</div>
   <div class="ci"><label>Door Style</label><span>${escHtml(p.style)}</span><small>${escHtml(styleName)}</small></div>
   <div class="ci"><label>Rooms</label><span>${p.rooms.length}</span></div>
 </div>
@@ -1978,19 +2184,22 @@ tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color
 <tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
 ${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th colspan="2">Notes</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
 ${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
+${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>${trimRows}</tbody></table>`:''}
 <div class="totals" style="margin-top:16px;">
   <div class="tr"><span class="tl">Cabinet Subtotal</span><span class="ta">${fmtMoney(cabSubtotal)}</span></div>
   ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
+  ${trimTotal>0?`<div class="tr"><span class="tl">Trim &amp; Materials</span><span class="ta">${fmtMoney(trimTotal)}</span></div>`:''}
   ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
   <div class="tr"><span>TOTAL</span><span class="ta" style="color:#16a34a;">${fmtMoney(total)}</span></div>
 </div>
 <div class="terms"><h4>Terms &amp; Conditions</h4>
-  <p><strong>Quote Validity:</strong> This quote is valid for 30 days from the date of issue. After this period, Cabinet Daddy reserves the right to adjust pricing based on current material and supply costs.</p>
-  <p><strong>Pricing:</strong> All cabinet pricing reflects current Forevermark/Matrix dealer pricing. Labor, demolition, and incidental costs are estimates based on a standard scope of work and are subject to adjustment based on actual site conditions encountered during the project.</p>
-  <p><strong>Change Orders:</strong> Cabinet Daddy reserves the right to adjust labor, demolition, and incidental costs throughout the duration of the project due to unforeseen conditions. Any modifications to the scope of work requested after acceptance of this quote will be documented via written Change Order and may result in additional charges.</p>
-  <p><strong>Material Availability:</strong> Cabinet Daddy is not responsible for delays due to manufacturer back-orders, shipping delays, or product discontinuation. Substitutions of comparable items may be made with prior customer notification.</p>
-  <p><strong>Payment Terms:</strong> A deposit of 50% of the total quoted amount is required to schedule and begin work. Remaining balance is due upon project completion prior to final sign-off.</p>
-  <p><strong>Acceptance:</strong> Signature below constitutes customer acceptance of this quote, the scope of work, and all terms herein. Final invoice may vary from this estimate based on actual scope and conditions encountered.</p>
+  <p>Please read your quote carefully and make sure it includes everything exactly as you want it, <strong>all sales are FINAL.</strong> Cabinets on this order are to fit the dimensions provided by the customer and reflect accurately on your final floor plan layout.</p>
+  <p>Flat packed, direct shipped cabinetry lead time is approximately 1–4 weeks from the time you place your order (or starting at the next business day if the order was placed on a weekend or holiday). Shipping delays are entirely out of our control and cannot be foreseen. We do not compensate monetarily for shipping delays. <strong>We strongly advise waiting until cabinets are received before demolishing your existing kitchen or work site.</strong></p>
+  <p>All cabinets and included hardware are covered by the manufacturer's warranty. Please see specification sheet for all details and materials. Cabinets include soft-close door hinges and under mounted soft-close drawer slides. Decorative handles and knobs or specialty hardware sold separately. Assembly resources are available upon request. Estimates for pre-assembly are available upon request; free shipping does not apply to fully assembled cabinets. Pre-assembly services add approximately 7–10 days to the average lead time.</p>
+  <p>Please be sure the delivery information you provide is accurate and confirm again with the dispatcher when scheduling delivery. Once shipped from the distribution center you will receive an email and/or phone call from freight with a 3-day window to choose a delivery date to the address you provided or pick-up date at your closest shipping facility if applicable. If the delivery can't be scheduled within 7 days of your order arriving at a local loading dock, storage fees may apply at the discretion of the freight company. Please be sure you are available on the delivery date you choose or contact us immediately to make other arrangements.</p>
+  <p>Be sure to compare the packing list with the shipment to ensure you've received the correct number of boxes and the correct products and to report any visible shipping damage <strong>at the time of delivery.</strong> Any damage should be noted on the bill of lading and reported to us immediately. In order to file a warranty claim for shipping damage we must have a reference number generated by the truck driver at the time of delivery. Without the reference number a claim for shipping damage cannot be submitted. Any concealed shipping damage must be reported within <strong>5 days</strong> of receiving your order. We will also need photos of shipping damage to file your claim.</p>
+  <p>If your purchase contains factory defects that occurred during production this must be reported within <strong>14 days</strong> of receiving your order. Any other defects or issues related to the product, functionality, hardware, finishes or materials fall under the manufacturer's limited warranty. Warranty replacement parts are typically shipped within 1–2 weeks; availability of warranty parts does not negate payment terms.</p>
+  <p>We accept all major credit cards, cash or check. <strong>$100 fee for returned checks.</strong> Your cabinet order must be paid in full to begin fulfillment. Please feel free to reach out with any questions or concerns. We appreciate your business!</p>
 </div>
 <div class="sigs">
   <div class="sr">
@@ -2147,7 +2356,7 @@ async function setNewPassword() {
     }
     for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
       const acat = APPLIANCES[app.type]; if (!acat) continue;
-      const aW = app.width*scale, aH = acat.height*scale;
+      const aW = app.width*scale, aH = (app.height||acat.height)*scale;
       const x  = eX(app.offset||0, app.width);
       const y  = floorY - acat.elevBottom*scale - aH;
       if (mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH) return app;
@@ -2237,6 +2446,44 @@ async function setNewPassword() {
     if (elevDrag) { elevDrag = null; setTimeout(() => { tooltip.style.display = 'none'; }, 1200); }
   });
 })();
+
+// ════════════════════════════
+// CALCULATOR
+// ════════════════════════════
+let calcOpen = false;
+let calcExpr  = '';
+let calcJustEvaled = false;
+function toggleCalc() {
+  calcOpen = !calcOpen;
+  document.getElementById('calc-panel').classList.toggle('calc-hidden', !calcOpen);
+}
+function calcInput(key) {
+  const exprEl   = document.getElementById('calc-expr');
+  const resultEl = document.getElementById('calc-result');
+  if (key === 'C') { calcExpr = ''; calcJustEvaled = false; resultEl.textContent = '0'; exprEl.textContent = ''; return; }
+  if (key === '=') {
+    try {
+      const expr = calcExpr.replace(/÷/g,'/').replace(/×/g,'*').replace(/%/g,'/100');
+      const result = Function('"use strict"; return (' + expr + ')')();
+      const rounded = parseFloat(result.toFixed(8));
+      exprEl.textContent = calcExpr + ' =';
+      resultEl.textContent = isFinite(rounded) ? rounded.toLocaleString() : 'Error';
+      calcExpr = String(rounded);
+      calcJustEvaled = true;
+    } catch(e) { resultEl.textContent = 'Error'; calcExpr = ''; }
+    return;
+  }
+  const isOp = ['+','-','*','/','%'].includes(key);
+  if (calcJustEvaled && !isOp) { calcExpr = ''; exprEl.textContent = ''; }
+  calcJustEvaled = false;
+  calcExpr += key;
+  exprEl.textContent = calcExpr;
+  try {
+    const expr = calcExpr.replace(/%/g,'/100');
+    const result = Function('"use strict"; return (' + expr + ')')();
+    if (isFinite(result)) resultEl.textContent = parseFloat(result.toFixed(8)).toLocaleString();
+  } catch(e) {}
+}
 
 // ════════════════════════════
 // BOOT
