@@ -376,7 +376,7 @@ body {
     </svg>
 
     <div class="login-brand-name">My Cabinet Planner</div>
-    <div class="login-tagline">Professional Cabinet Design &amp; Installation</div>
+    <div class="login-tagline">Designing Dreams, Built in Reality</div>
     <div class="login-divider"></div>
     <div class="login-domain">mycabinetbuilder.com</div>
   </div>
@@ -411,7 +411,15 @@ body {
 <aside id="sidebar">
   <div class="sidebar-brand">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <div style="width:36px;height:36px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🪵</div>
+      <svg width="36" height="36" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#sbg)"/>
+        <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+        <line x1="7" y1="20" x2="45" y2="20" stroke="rgba(200,168,130,0.3)" stroke-width="1"/>
+        <rect x="11" y="10" width="30" height="8" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+        <rect x="11" y="23" width="30" height="19" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+        <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+        <defs><linearGradient id="sbg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+      </svg>
       <div>
         <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">Cabinet Planner</div>
@@ -713,6 +721,12 @@ body {
 <div id="modal-quote" class="modal-overlay hidden">
   <div class="modal">
     <h3>💰 Quote Builder</h3>
+
+    <!-- Company Name -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
+      <input type="text" id="quote-company-input" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)">
+    </div>
 
     <!-- Additional Job Costs -->
     <div style="margin-bottom:18px;">
@@ -2083,10 +2097,16 @@ function openQuoteModal() {
     { label:'Incidentals', amount:'' },
   ];
   if (!p.trimItems) p.trimItems = [];
+  document.getElementById('quote-company-input').value = p.company || '';
   renderJobCostRows();
   renderTrimRows();
   refreshQuoteTotals();
   openModal('modal-quote');
+}
+
+function updateQuoteCompany(val) {
+  const p = activeProj(); if (!p) return;
+  p.company = val; persist();
 }
 
 function renderJobCostRows() {
@@ -2180,6 +2200,9 @@ function refreshQuoteTotals() {
 
 function printQuote() {
   const p = activeProj(); if (!p) return;
+  // Use whatever's in the company field at print time
+  const companyField = document.getElementById('quote-company-input');
+  if (companyField) p.company = companyField.value.trim();
   const today     = new Date().toLocaleDateString();
   const validThru = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString();
   const quoteNum  = 'CD-' + Date.now().toString(36).toUpperCase().slice(-6);
