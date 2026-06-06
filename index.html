@@ -3,909 +3,2719 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Cabinet Planner — The Cabinet Planning Tool Built for Pros</title>
-<meta name="description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for cabinet companies and kitchen designers.">
+<title>My Cabinet Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --accent:#b45309;--accent-dark:#92400e;--wood-dark:#2c1f14;
-  --text:#1c1008;--text-muted:#78614f;--bg:#faf7f4;--border:#e7ddd5;
-}
-body{font-family:'Inter',sans-serif;color:var(--text);background:#fff;overflow-x:hidden;}
-a{text-decoration:none;color:inherit;}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── NAV ── */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--border);
-  padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:64px;
-}
-.nav-logo{display:flex;align-items:center;gap:10px;}
-.nav-logo svg{border-radius:8px;}
-.nav-logo-text{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.3px;}
-.nav-links{display:flex;align-items:center;gap:28px;}
-.nav-links a{font-size:14px;font-weight:500;color:var(--text-muted);transition:color 0.12s;}
-.nav-links a:hover{color:var(--text);}
-.nav-cta{display:flex;gap:10px;align-items:center;}
-.btn-outline{padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;color:var(--text);transition:all 0.12s;background:white;}
-.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
-.btn-primary{padding:9px 20px;background:linear-gradient(135deg,#c8a882,#92400e);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.15s;}
-.btn-primary:hover{opacity:0.9;}
-
-/* ── HERO ── */
-.hero{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:100px 5% 60px;text-align:center;
-  background:linear-gradient(160deg,#faf7f4 0%,#fff 50%,#fef3c7 100%);
-  position:relative;overflow:hidden;
-}
-.hero::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 60% 40% at 50% 60%,rgba(180,83,9,0.06) 0%,transparent 70%);
-}
-.hero-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  background:rgba(180,83,9,0.08);border:1px solid rgba(180,83,9,0.2);
-  color:var(--accent);border-radius:20px;padding:5px 14px;
-  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
-  margin-bottom:24px;
-}
-.hero h1{
-  font-size:clamp(36px,6vw,68px);font-weight:900;
-  color:var(--text);letter-spacing:-2px;line-height:1.05;
-  max-width:820px;margin:0 auto 24px;
-}
-.hero h1 span{color:var(--accent);}
-.hero-sub{
-  font-size:clamp(16px,2vw,20px);color:var(--text-muted);
-  max-width:560px;margin:0 auto 40px;line-height:1.6;font-weight:400;
-}
-.hero-actions{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:16px;}
-.btn-hero{
-  padding:16px 32px;background:linear-gradient(135deg,#c8a882,#7a3510);
-  color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;
-  cursor:pointer;transition:all 0.15s;box-shadow:0 8px 32px rgba(107,76,42,0.3);
-  display:inline-flex;align-items:center;gap:8px;
-}
-.btn-hero:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(107,76,42,0.4);}
-.btn-hero-outline{
-  padding:15px 32px;background:white;color:var(--text);
-  border:2px solid var(--border);border-radius:12px;font-size:16px;font-weight:600;
-  cursor:pointer;transition:all 0.15s;
-}
-.btn-hero-outline:hover{border-color:var(--accent);color:var(--accent);}
-.hero-note{font-size:13px;color:#b8a090;}
-
-/* App preview mockup */
-.hero-preview{
-  margin-top:60px;width:100%;max-width:1040px;
-  background:white;border-radius:16px;
-  box-shadow:0 32px 80px rgba(107,76,42,0.18),0 0 0 1px rgba(107,76,42,0.08);
-  overflow:hidden;
-}
-.preview-bar{
-  background:var(--wood-dark);padding:10px 16px;
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-}
-.preview-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
-.preview-body{
-  display:flex;height:380px;
-}
-.preview-sidebar-mini{
-  width:150px;background:linear-gradient(180deg,#2c1f14,#1e1409);
-  padding:12px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;
-}
-.preview-canvas-wrap{
-  flex:1;background:#f1f5f9;position:relative;overflow:hidden;
-}
-#demo-canvas{width:100%;height:100%;display:block;}
-.preview-panel-mini{
-  width:170px;background:white;border-left:1px solid #e7ddd5;
-  padding:12px;flex-shrink:0;overflow:hidden;
-}
-.preview-view-btn{
-  padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;
-  color:rgba(255,255,255,0.4);cursor:default;
-}
-.preview-view-btn.active{background:white;color:#b45309;}
-@media(max-width:680px){
-  .preview-sidebar-mini,.preview-panel-mini{display:none;}
-  .preview-body{height:260px;}
+:root {
+  --sidebar-bg: #2c1f14;
+  --sidebar-width: 260px;
+  --accent: #b45309;
+  --accent-hover: #92400e;
+  --accent-light: #fef3c7;
+  --bg: #faf7f4;
+  --surface: #ffffff;
+  --border: #e7ddd5;
+  --text: #1c1008;
+  --text-muted: #78614f;
+  --danger: #ef4444;
+  --success: #16a34a;
+  --warning: #d97706;
+  --panel-width: 290px;
 }
 
-/* ── LOGOS / SOCIAL PROOF ── */
-.social-proof{padding:40px 5%;text-align:center;border-bottom:1px solid var(--border);}
-.social-proof p{font-size:13px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:24px;}
-.proof-logos{display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:wrap;}
-.proof-logo{font-size:14px;font-weight:700;color:#cbd5e1;}
+body {
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
 
-/* ── HOW IT WORKS ── */
-.section{padding:80px 5%;}
-.section-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:12px;}
-.section-title{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:16px;}
-.section-sub{font-size:16px;color:var(--text-muted);line-height:1.6;max-width:520px;}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:56px;}
-.step{text-align:center;}
-.step-num{
-  width:52px;height:52px;border-radius:14px;margin:0 auto 20px;
-  background:linear-gradient(135deg,#c8a882,#6b4c2a);
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;font-weight:900;color:white;
-  box-shadow:0 8px 24px rgba(107,76,42,0.25);
+/* ── LOGIN SCREEN ── */
+#login-screen {
+  position: fixed; inset: 0;
+  display: flex;
+  z-index: 1000;
 }
-.step h3{font-size:18px;font-weight:700;margin-bottom:8px;}
-.step p{font-size:14px;color:var(--text-muted);line-height:1.6;}
+.login-left {
+  width: 52%; min-width: 300px;
+  background: linear-gradient(145deg, #2c1f14 0%, #130b04 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px; position: relative; overflow: hidden;
+}
+/* Subtle wood grain lines */
+.login-left::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: repeating-linear-gradient(
+    -52deg, transparent, transparent 38px,
+    rgba(255,255,255,0.018) 38px, rgba(255,255,255,0.018) 39px
+  );
+}
+/* Warm glow at center */
+.login-left::after {
+  content: ''; position: absolute;
+  width: 420px; height: 420px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(180,83,9,0.18) 0%, transparent 70%);
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 0;
+}
+.login-left > * { position: relative; z-index: 1; }
+.login-logo-mark { margin-bottom: 24px; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5)); }
+.login-brand-name {
+  font-size: 34px; font-weight: 800; color: #fff;
+  letter-spacing: -0.5px; text-align: center; line-height: 1.1;
+}
+.login-app-name {
+  font-size: 11px; color: #c8a882; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  margin-top: 8px; text-align: center;
+}
+.login-tagline {
+  font-size: 13px; color: rgba(255,255,255,0.38);
+  margin-top: 14px; text-align: center; line-height: 1.65;
+  max-width: 260px;
+}
+.login-divider {
+  width: 40px; height: 2px;
+  background: linear-gradient(90deg, transparent, #c8a882, transparent);
+  margin: 20px auto 0;
+}
+.login-domain {
+  position: absolute; bottom: 20px;
+  font-size: 10px; color: rgba(255,255,255,0.2);
+  letter-spacing: 0.08em; text-transform: lowercase;
+}
+.login-right {
+  flex: 1;
+  background: #faf7f4;
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px 40px; overflow-y: auto;
+}
+.login-form-wrap { width: 100%; max-width: 360px; }
+.login-welcome { font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+.login-field { margin-bottom: 16px; }
+.login-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+.login-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.12s, box-shadow 0.12s; }
+.login-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,83,9,0.1); }
+.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
+.login-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.login-btn:active { transform: translateY(0); }
+.login-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.login-error { color: var(--danger); font-size: 12px; margin-top: 10px; text-align: center; min-height: 18px; }
+@media (max-width: 680px) {
+  #login-screen { flex-direction: column; }
+  .login-left { width: 100%; min-width: 0; flex: 0 0 auto; padding: 32px 24px 28px; }
+  .login-brand-name { font-size: 26px; }
+  .login-right { padding: 28px 20px; }
+}
 
-/* ── FEATURES ── */
-.features-section{background:var(--bg);padding:80px 5%;}
-.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:56px;}
-.feature-card{
-  background:white;border-radius:16px;padding:28px;
-  border:1px solid var(--border);transition:all 0.15s;
-}
-.feature-card:hover{border-color:#c8a882;box-shadow:0 8px 32px rgba(107,76,42,0.1);}
-.feature-icon{font-size:28px;margin-bottom:14px;}
-.feature-card h3{font-size:17px;font-weight:700;margin-bottom:8px;}
-.feature-card p{font-size:14px;color:var(--text-muted);line-height:1.6;}
+/* ── APP ROOT ── */
+#app-root { display: flex; width: 100%; height: 100vh; overflow: hidden; }
 
-/* ── PRICING ── */
-.pricing-section{padding:80px 5%;text-align:center;}
-.pricing-cards{display:flex;gap:24px;max-width:800px;margin:56px auto 0;justify-content:center;flex-wrap:wrap;}
-.pricing-card{
-  flex:1;min-width:300px;border-radius:20px;padding:36px;
-  border:2px solid var(--border);background:white;text-align:left;
+/* ── SIDEBAR ── */
+#sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, #2c1f14 0%, #1e1409 100%);
+  color: white; display: flex; flex-direction: column; flex-shrink: 0;
 }
-.pricing-card.featured{
-  border-color:var(--accent);
-  background:linear-gradient(160deg,#fffbf5,#fff);
-  box-shadow:0 20px 60px rgba(180,83,9,0.12);
+.sidebar-brand { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(200,168,130,0.06); }
+.sidebar-actions { padding: 10px; }
+#new-project-btn {
+  width: 100%; padding: 9px 12px;
+  background: linear-gradient(135deg,#c8a882,#92400e);
+  color: white; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s; box-shadow: 0 2px 8px rgba(107,76,42,0.25);
 }
-.pricing-badge{
-  display:inline-block;background:var(--accent);color:white;
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
-  padding:4px 10px;border-radius:20px;margin-bottom:16px;
-}
-.pricing-card h3{font-size:20px;font-weight:800;margin-bottom:4px;}
-.pricing-price{font-size:48px;font-weight:900;color:var(--text);letter-spacing:-2px;margin:16px 0 4px;}
-.pricing-price span{font-size:16px;font-weight:500;color:var(--text-muted);}
-.pricing-desc{font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.5;}
-.pricing-features{list-style:none;margin-bottom:28px;}
-.pricing-features li{font-size:14px;padding:7px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;}
-.pricing-features li:last-child{border-bottom:none;}
-.pricing-features li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0;}
-.btn-plan{
-  width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;
-  cursor:pointer;transition:all 0.15s;border:none;
-}
-.btn-plan.primary{background:linear-gradient(135deg,#c8a882,#92400e);color:white;box-shadow:0 4px 16px rgba(107,76,42,0.25);}
-.btn-plan.primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(107,76,42,0.35);}
-.btn-plan.secondary{background:var(--bg);color:var(--text);border:2px solid var(--border);}
-.btn-plan.secondary:hover{border-color:var(--accent);color:var(--accent);}
+#new-project-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); }
+.sidebar-label { padding: 6px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
+#project-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+#project-list::-webkit-scrollbar { width: 3px; }
+#project-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.project-item { padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; transition: background 0.12s; position: relative; }
+.project-item:hover { background: rgba(255,255,255,0.06); }
+.project-item.active { background: rgba(180,83,9,0.3); }
+.project-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 22px; }
+.project-item-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+.project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
+.project-item:hover .project-item-del { display: block; }
+.project-item-del:hover { color: #ef4444; background: rgba(239,68,68,0.15); }
+.empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
+.sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
+.sidebar-user { font-size: 10px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+.signout-btn { width: 100%; padding: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: rgba(255,255,255,0.4); font-size: 11px; cursor: pointer; transition: all 0.12s; }
+.signout-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+.sync-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; margin-right: 5px; vertical-align: middle; }
+.sync-dot.saving { background: #f59e0b; animation: pulse-dot 1s infinite; }
+.sync-dot.error { background: #ef4444; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-/* ── DEMO FORM ── */
-.demo-section{
-  padding:80px 5%;
-  background:linear-gradient(160deg,var(--wood-dark) 0%,#1a0f08 100%);
-  position:relative;overflow:hidden;
+/* ── MAIN ── */
+#main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+#project-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.project-header { padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.project-header-info { flex: 1; min-width: 0; }
+.project-header h2 { font-size: 17px; font-weight: 700; }
+.project-header-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.header-btns { display: flex; gap: 7px; flex-shrink: 0; }
+.btn { padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.12s; display: inline-flex; align-items: center; gap: 5px; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #15803d; }
+.view-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; flex-shrink: 0; }
+.view-toggle-btn { padding: 5px 12px; border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted); transition: all 0.12s; }
+.view-toggle-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(107,76,42,0.15); }
+.room-tabs-bar { display: flex; align-items: center; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
+.room-tab { padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-muted); border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.12s; }
+.room-tab:hover { color: var(--text); }
+.room-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.room-tab-del { display: none; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 0 0 0 4px; }
+.room-tab.active .room-tab-del { display: inline; }
+.room-tab-del:hover { color: var(--danger); }
+.add-room-btn { padding: 8px 10px; font-size: 12px; color: var(--text-muted); cursor: pointer; border: none; background: none; border-radius: 6px; white-space: nowrap; margin-left: 4px; }
+.add-room-btn:hover { background: var(--bg); color: var(--text); }
+.workspace { flex: 1; display: flex; overflow: hidden; }
+#canvas-area { flex: 1; display: flex; flex-direction: column; padding: 14px 16px; overflow: auto; background: var(--bg); min-width: 0; }
+#canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
+#canvas-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+.canvas-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; flex-shrink: 0; }
+.canvas-toolbar label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.canvas-toolbar select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: white; cursor: pointer; }
+#floor-plan-wrapper, #elevation-wrapper { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: inline-block; box-shadow: 0 1px 4px rgba(0,0,0,0.06); flex-shrink: 0; }
+.plan-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.elev-wall-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.elev-wall-tab { padding: 5px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
+.elev-wall-tab:hover { border-color: var(--accent); color: var(--accent); }
+.elev-wall-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+#summary-table { margin-top: 14px; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: inline-block; min-width: 300px; }
+#summary-table h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.summary-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.summary-row:last-child { border-bottom: none; }
+.summary-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+.summary-name { flex: 1; }
+.summary-price { color: var(--success); font-weight: 700; font-size: 11px; min-width: 60px; text-align: right; }
+.summary-count { font-weight: 700; color: var(--text-muted); min-width: 28px; text-align: right; }
+.summary-total-row { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--border); font-weight: 700; font-size: 13px; }
+#cabinet-panel { width: var(--panel-width); background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+#cabinet-panel::-webkit-scrollbar { width: 4px; }
+#cabinet-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+.cp-section { padding: 11px 13px; border-bottom: 1px solid var(--border); }
+.cp-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); margin-bottom: 8px; }
+.style-tier-label { font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 0 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+.style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 160px; overflow-y: auto; }
+.style-opt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 3px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.12s; background: white; }
+.style-opt:hover { border-color: var(--accent); }
+.style-opt.selected { border-color: var(--accent); background: #fef3c7; }
+.style-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.12); }
+.style-code { font-size: 9px; font-weight: 700; color: var(--text-muted); }
+.wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.wall-btn { padding: 7px 6px; border: 2px solid var(--border); border-radius: 7px; background: white; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.12s; text-align: center; }
+.wall-btn:hover { border-color: var(--accent); color: var(--accent); }
+.wall-btn.active { border-color: var(--accent); background: #fef3c7; color: var(--accent); }
+.opening-type-row { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
+.opening-type-btn { padding: 4px 9px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
+.opening-type-btn:hover { border-color: var(--accent); color: var(--accent); }
+.opening-type-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.opening-inputs { display: flex; gap: 5px; align-items: center; }
+.opening-inputs input { flex: 1; padding: 6px 7px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+.cp-select { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: white; margin-bottom: 6px; cursor: pointer; }
+.cp-select:focus { outline: none; border-color: var(--accent); }
+.cp-input { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: white; margin-bottom: 6px; font-family: inherit; }
+.cp-input:focus { outline: none; border-color: var(--accent); }
+.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(107,76,42,0.2); }
+.add-cab-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); }
+#cabinet-list { padding: 8px; }
+.cab-item { display: flex; align-items: flex-start; gap: 7px; padding: 8px 9px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px; background: white; transition: border-color 0.12s; }
+.cab-item:hover { border-color: #94a3b8; }
+.cab-color { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); margin-top: 2px; }
+.cab-info { flex: 1; min-width: 0; }
+.cab-name { font-size: 12px; font-weight: 600; }
+.cab-dim { font-size: 11px; color: var(--text-muted); }
+.cab-note { font-size: 10px; color: var(--text-muted); font-style: italic; margin-top: 1px; }
+.cab-price { font-size: 11px; color: var(--success); font-weight: 700; }
+.cab-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px 4px; border-radius: 4px; font-size: 15px; line-height: 1; flex-shrink: 0; }
+.cab-remove:hover { color: var(--danger); background: #fee2e2; }
+.opening-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #fde68a; border-radius: 7px; margin-bottom: 4px; background: #fffbeb; font-size: 11px; }
+.opening-item-icon { font-size: 13px; }
+.opening-item-info { flex: 1; font-weight: 600; color: #92400e; }
+.opening-item-dim { color: #a16207; }
+.opening-remove { background: none; border: none; color: #d97706; cursor: pointer; font-size: 14px; }
+.opening-remove:hover { color: var(--danger); }
+.no-cabs { padding: 14px 8px; text-align: center; font-size: 12px; color: var(--text-muted); }
+.cab-wall-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 6px 2px 3px; }
+.price-toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.toggle-switch { position: relative; width: 36px; height: 20px; cursor: pointer; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 20px; transition: 0.2s; }
+.toggle-slider:before { content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+.toggle-label { font-size: 12px; font-weight: 600; color: var(--text); }
+.markup-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.markup-row label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.markup-row input { flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px; }
+.modal { background: white; border-radius: 16px; padding: 24px; width: 480px; max-width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.18); }
+.modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; transition: border-color 0.12s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.section-divider { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); padding: 8px 0 10px; border-top: 1px solid var(--border); margin-top: 6px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+#modal-quote .modal { width: 660px; }
+.quote-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+.quote-header h2 { font-size: 20px; font-weight: 800; }
+.quote-header p { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+.quote-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+.quote-table th { text-align: left; padding: 7px 10px; background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.quote-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.quote-table tr:last-child td { border-bottom: none; }
+.quote-totals { border-top: 2px solid var(--text); padding-top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.quote-line { display: flex; gap: 32px; font-size: 13px; }
+.quote-grand { font-size: 17px; font-weight: 800; margin-top: 4px; }
+/* ── CALCULATOR ── */
+#calc-btn {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(135deg,#475569,#1e293b);
+  color: white; border: none; font-size: 18px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.demo-section::before{
-  content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(-52deg,transparent,transparent 38px,rgba(255,255,255,0.015) 38px,rgba(255,255,255,0.015) 39px);
+#calc-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+#calc-panel {
+  position: fixed; bottom: 80px; right: 24px;
+  width: 230px; background: #1e293b; border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35); z-index: 299;
+  overflow: hidden; transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  transform-origin: bottom right;
 }
-.demo-inner{max-width:600px;margin:0 auto;text-align:center;position:relative;z-index:1;}
-.demo-section .section-label{color:#c8a882;}
-.demo-section .section-title{color:white;}
-.demo-section .section-sub{color:rgba(255,255,255,0.5);margin:0 auto 40px;}
-.demo-form{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px;backdrop-filter:blur(8px);}
-.demo-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-.demo-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.5);margin-bottom:6px;}
-.demo-field input,.demo-field select{
-  width:100%;padding:11px 14px;border:1.5px solid rgba(255,255,255,0.15);
-  border-radius:10px;font-size:14px;font-family:inherit;background:rgba(255,255,255,0.08);
-  color:white;transition:border-color 0.12s;
+#calc-panel.calc-hidden { transform: scale(0.85); opacity: 0; pointer-events: none; }
+#calc-display {
+  padding: 14px 14px 8px; text-align: right;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.demo-field input::placeholder{color:rgba(255,255,255,0.3);}
-.demo-field input:focus,.demo-field select:focus{outline:none;border-color:#c8a882;}
-.demo-field select option{background:#2c1f14;color:white;}
-.demo-submit{
-  width:100%;padding:14px;background:linear-gradient(135deg,#c8a882,#92400e);
-  color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;
-  cursor:pointer;transition:all 0.15s;margin-top:8px;
-  box-shadow:0 4px 20px rgba(180,83,9,0.4);
+#calc-expr { font-size: 11px; color: #64748b; min-height: 16px; word-break: break-all; }
+#calc-result { font-size: 26px; font-weight: 700; color: #f8fafc; margin-top: 2px; word-break: break-all; }
+.calc-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: rgba(255,255,255,0.05); padding: 1px; }
+.calc-btn {
+  background: #273344; border: none; color: #e2e8f0;
+  font-size: 15px; font-weight: 600; padding: 14px 0;
+  cursor: pointer; transition: background 0.1s; text-align: center;
 }
-.demo-submit:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(180,83,9,0.5);}
-.demo-submit:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-#demo-success{display:none;text-align:center;padding:20px;}
-#demo-success h3{color:#c8a882;font-size:22px;margin-bottom:8px;}
-#demo-success p{color:rgba(255,255,255,0.6);font-size:14px;}
+.calc-btn:hover { background: #334155; }
+.calc-btn.op  { color: #f59e0b; }
+.calc-btn.eq  { background: #b45309; color: white; }
+.calc-btn.eq:hover { background: #92400e; }
+.calc-btn.clr { color: #f87171; }
 
-/* ── FOOTER ── */
-footer{
-  background:var(--wood-dark);padding:40px 5%;
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
-}
-.footer-brand{display:flex;align-items:center;gap:10px;}
-.footer-brand span{font-size:14px;font-weight:700;color:white;}
-.footer-links{display:flex;gap:24px;}
-.footer-links a{font-size:13px;color:rgba(255,255,255,0.35);transition:color 0.12s;}
-.footer-links a:hover{color:rgba(255,255,255,0.7);}
-.footer-copy{font-size:12px;color:rgba(255,255,255,0.2);}
+/* Job cost rows in quote modal */
+.jc-row { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.jc-label { flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12px; font-family:inherit; }
+.jc-amount { width:110px; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12px; }
+.jc-label:focus, .jc-amount:focus { outline:none; border-color:var(--accent); }
+.jc-del { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:17px; line-height:1; padding:2px 6px; border-radius:4px; }
+.jc-del:hover { color:var(--danger); background:#fee2e2; }
+.qtp-row { display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid var(--border); }
+.qtp-row:last-child { border-bottom:none; font-size:15px; font-weight:800; padding-top:8px; }
 
-/* ── RESPONSIVE ── */
-@media(max-width:768px){
-  .steps{grid-template-columns:1fr;}
-  .features-grid{grid-template-columns:1fr;}
-  .pricing-cards{flex-direction:column;}
-  .demo-row{grid-template-columns:1fr;}
-  nav .nav-links{display:none;}
-  .preview-content{grid-template-columns:1fr;}
-  .preview-sidebar,.preview-panel{display:none;}
-  .hero-actions{flex-direction:column;align-items:center;}
-  .btn-hero,.btn-hero-outline{width:100%;max-width:320px;text-align:center;justify-content:center;}
+.hidden { display: none !important; }
+
+@media print {
+  #sidebar, #cabinet-panel, .header-btns, .room-tabs-bar, .canvas-toolbar, .view-toggle, .elev-wall-tabs { display: none !important; }
+  body, #main, #project-view, .workspace, #canvas-area { overflow: visible !important; height: auto !important; }
+  #floor-plan-wrapper, #elevation-wrapper { border: none !important; box-shadow: none !important; }
+  .project-header { border-bottom: 2px solid #000; }
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">
-    <svg width="32" height="32" viewBox="0 0 52 52" fill="none">
-      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#lng)"/>
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="login-screen">
+
+  <!-- Left branding panel -->
+  <div class="login-left">
+    <!-- Cabinet door logo mark -->
+    <svg class="login-logo-mark" width="80" height="80" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#lgrad)" stroke="rgba(200,168,130,0.3)" stroke-width="1.5"/>
+      <!-- Cabinet door frame -->
       <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+      <!-- Horizontal rail (upper third) -->
       <line x1="7" y1="20" x2="45" y2="20" stroke="rgba(200,168,130,0.3)" stroke-width="1"/>
+      <!-- Upper panel inset -->
       <rect x="11" y="10" width="30" height="8" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+      <!-- Lower panel inset -->
       <rect x="11" y="23" width="30" height="19" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+      <!-- Door handle -->
       <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
-      <defs><linearGradient id="lng" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+      <rect x="22.5" y="32" width="7" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+      <defs>
+        <linearGradient id="lgrad" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#5a3820"/>
+          <stop offset="100%" stop-color="#1e1208"/>
+        </linearGradient>
+      </defs>
     </svg>
-    <span class="nav-logo-text">My Cabinet Planner</span>
-  </a>
-  <div class="nav-links">
-    <a href="#how-it-works">How It Works</a>
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#demo">Request Demo</a>
-  </div>
-  <div class="nav-cta">
-    <a href="/app" class="btn-outline">Sign In</a>
-    <a href="/app" class="btn-primary">Start Free Trial</a>
-  </div>
-</nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-badge">🪵 Built for Cabinet Professionals</div>
-  <h1>The Cabinet Planning Tool<br><span>Built for Pros</span></h1>
-  <p class="hero-sub">Design layouts, generate professional quotes, and close more jobs — faster than ever before. No design degree required.</p>
-  <div class="hero-actions">
-    <a href="/app" class="btn-hero">Start Your Free 14-Day Trial →</a>
-    <a href="#demo" class="btn-hero-outline">Request a Demo</a>
+    <div class="login-brand-name">My Cabinet Planner</div>
+    <div class="login-tagline">Designing Dreams, Built in Reality</div>
+    <div class="login-divider"></div>
+    <div class="login-domain">mycabinetbuilder.com</div>
   </div>
-  <p class="hero-note">No credit card required · Cancel anytime</p>
 
-  <!-- Animated demo preview -->
-  <div class="hero-preview">
-    <div class="preview-bar">
-      <div class="preview-dot" style="background:#ef4444;"></div>
-      <div class="preview-dot" style="background:#f59e0b;"></div>
-      <div class="preview-dot" style="background:#22c55e;"></div>
-      <span style="margin-left:10px;font-size:11px;color:rgba(255,255,255,0.4);flex:1;">My Cabinet Planner — Smith Family Kitchen</span>
-      <div style="display:flex;gap:4px;background:rgba(255,255,255,0.06);border-radius:6px;padding:3px;">
-        <div class="preview-view-btn active" id="pvb-floor">⬛ Floor Plan</div>
-        <div class="preview-view-btn" id="pvb-elev">🪟 Elevation</div>
+  <!-- Right form panel -->
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <div class="login-welcome">Welcome back</div>
+      <div class="login-sub">Sign in to your account</div>
+
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
       </div>
-      <div style="margin-left:8px;background:#16a34a;color:white;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:default;" id="pvb-quote">💰 Quote</div>
-    </div>
-    <div class="preview-body">
-      <!-- Fake sidebar -->
-      <div class="preview-sidebar-mini">
-        <div style="height:28px;background:rgba(200,168,130,0.15);border-radius:6px;margin-bottom:10px;display:flex;align-items:center;padding:0 8px;"><span style="font-size:9px;font-weight:700;color:rgba(200,168,130,0.5);">＋ New Project</span></div>
-        <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Projects</div>
-        <div style="background:rgba(180,83,9,0.35);border-radius:5px;padding:7px 8px;margin-bottom:3px;"><div style="height:7px;width:80%;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:3px;"></div><div style="height:5px;width:50%;background:rgba(255,255,255,0.2);border-radius:2px;"></div></div>
-        <div style="padding:7px 8px;margin-bottom:3px;"><div style="height:7px;width:70%;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:3px;"></div><div style="height:5px;width:45%;background:rgba(255,255,255,0.07);border-radius:2px;"></div></div>
-        <div style="padding:7px 8px;"><div style="height:7px;width:60%;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:3px;"></div><div style="height:5px;width:40%;background:rgba(255,255,255,0.07);border-radius:2px;"></div></div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <!-- Animated canvas -->
-      <div class="preview-canvas-wrap">
-        <canvas id="demo-canvas"></canvas>
-      </div>
-      <!-- Fake right panel -->
-      <div class="preview-panel-mini" id="pvp-add">
-        <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Add Cabinet</div>
-        <div style="height:24px;background:#f1f5f9;border-radius:5px;margin-bottom:5px;border:1px solid #e2e8f0;"></div>
-        <div style="height:24px;background:#f1f5f9;border-radius:5px;margin-bottom:10px;border:1px solid #e2e8f0;"></div>
-        <div style="height:1px;background:#e7ddd5;margin-bottom:10px;"></div>
-        <div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;" id="pvp-wall-label">North Wall</div>
-        <div id="pvp-cab-list"></div>
+      <button class="login-btn" id="login-btn">Sign In →</button>
+      <div class="login-error" id="login-error"></div>
+      <div style="text-align:center;margin-top:14px;">
+        <button onclick="handleForgotPassword()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">Forgot your password?</button>
       </div>
     </div>
   </div>
-</section>
 
-<!-- HOW IT WORKS -->
-<section class="section" id="how-it-works" style="background:var(--bg);">
-  <div style="text-align:center;max-width:600px;margin:0 auto;">
-    <div class="section-label">Simple Process</div>
-    <h2 class="section-title">From blank room to signed quote<br>in one sitting</h2>
-    <p class="section-sub">No CAD software. No training. Just the tools cabinet professionals actually need.</p>
-  </div>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">1</div>
-      <h3>Enter Room Dimensions</h3>
-      <p>Input wall measurements, ceiling height, and note doors, windows, and appliance locations. Takes under 2 minutes.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <h3>Build the Cabinet Layout</h3>
-      <p>Drag and drop cabinets from the full Forevermark catalog. See the floor plan and elevation update in real time.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <h3>Print a Professional Quote</h3>
-      <p>One click generates a fully itemized quote with your company branding, pricing, legal terms, and signature lines.</p>
-    </div>
-  </div>
-</section>
+</div>
 
-<!-- FEATURES -->
-<section class="section features-section" id="features">
-  <div style="max-width:600px;margin-bottom:0;">
-    <div class="section-label">What's Included</div>
-    <h2 class="section-title">Everything you need,<br>nothing you don't</h2>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">⬛</div>
-      <h3>Floor Plan + Elevation Views</h3>
-      <p>See your design from the top and from the front wall. Drag cabinets to reposition. Rulers on every axis so you always know exactly where things land.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">💰</div>
-      <h3>Your Products, Your Way</h3>
-      <p>Upload your own catalog and price list so every quote reflects your actual pricing. Add labor, demo, trim, and incidentals directly in the quote builder — no manual math required.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🖨</div>
-      <h3>Print-Ready Professional Quotes</h3>
-      <p>Branded with your company name, address, and logo. Includes itemized line items, totals, your legal terms, and dual signature lines — ready to hand a customer.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🏠</div>
-      <h3>Full Cabinet Catalog</h3>
-      <p>Base, wall, tall, sink, vanity, drawer base, lazy susan, corner base, appliances, fridge panels, fillers, crown molding, and more. Glass door and style overrides per cabinet.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🧮</div>
-      <h3>Built-in Calculator</h3>
-      <p>A floating calculator you can pop open while building a plan. No more switching tabs or reaching for your phone mid-design.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">☁️</div>
-      <h3>Cloud-Saved Projects</h3>
-      <p>Every project saves automatically to the cloud. Access your plans from any device, any browser. Your data is always safe and always there.</p>
-    </div>
-  </div>
-</section>
+<!-- ═══ APP ROOT ═══ -->
+<div id="app-root" class="hidden">
 
-<!-- PRICING -->
-<section class="pricing-section" id="pricing">
-  <div class="section-label">Simple Pricing</div>
-  <h2 class="section-title">Try it free, pay when you love it</h2>
-  <p class="section-sub" style="margin:12px auto 0;max-width:480px;color:var(--text-muted);">14 days free, no credit card required. After that, one flat monthly rate — no per-seat fees, no hidden charges.</p>
-  <div class="pricing-cards">
-    <div class="pricing-card">
-      <h3>Free Trial</h3>
-      <div class="pricing-price">$0<span> / 14 days</span></div>
-      <p class="pricing-desc">Full access to every feature. No credit card. No commitment.</p>
-      <ul class="pricing-features">
-        <li>Unlimited projects during trial</li>
-        <li>Floor plan + elevation views</li>
-        <li>Full Forevermark catalog</li>
-        <li>Quote generation</li>
-        <li>Company branding on quotes</li>
-      </ul>
-      <a href="/app" class="btn-plan secondary">Start Free Trial</a>
-    </div>
-    <div class="pricing-card featured">
-      <div class="pricing-badge">Most Popular</div>
-      <h3>Pro</h3>
-      <div class="pricing-price">$99<span> / month</span></div>
-      <p class="pricing-desc">Everything in the free trial, with no limits and full support.</p>
-      <ul class="pricing-features">
-        <li>Unlimited projects</li>
-        <li>Branded quotes with your logo</li>
-        <li>Full Forevermark catalog + pricing</li>
-        <li>State sales tax auto-fill</li>
-        <li>Team member access</li>
-        <li>Priority support</li>
-        <li>New features as they ship</li>
-      </ul>
-      <a href="#demo" class="btn-plan primary">Get Started →</a>
+<aside id="sidebar">
+  <div class="sidebar-brand">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <svg width="36" height="36" viewBox="0 0 52 52" fill="none" style="flex-shrink:0;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#sbg)"/>
+        <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+        <line x1="7" y1="20" x2="45" y2="20" stroke="rgba(200,168,130,0.3)" stroke-width="1"/>
+        <rect x="11" y="10" width="30" height="8" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+        <rect x="11" y="23" width="30" height="19" rx="2" fill="none" stroke="rgba(200,168,130,0.2)" stroke-width="1"/>
+        <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+        <defs><linearGradient id="sbg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+      </svg>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">Cabinet Planner</div>
+      </div>
     </div>
   </div>
-</section>
+  <div class="sidebar-actions">
+    <button id="new-project-btn">＋ New Project</button>
+  </div>
+  <div class="sidebar-label">My Projects</div>
+  <div id="project-list"></div>
+  <div class="sidebar-footer">
+    <div class="sidebar-user" id="user-email"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.3);" id="sync-label">Saved</span>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">⚙ Company</button>
+      <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
+    </div>
+  </div>
+</aside>
 
-<!-- DEMO REQUEST -->
-<section class="demo-section" id="demo">
-  <div class="demo-inner">
-    <div class="section-label">Request a Demo</div>
-    <h2 class="section-title" style="margin-bottom:12px;">See it in action<br>with your team</h2>
-    <p class="section-sub">We'll walk you through the tool live, answer your questions, and get you set up — usually in under 30 minutes.</p>
-    <div class="demo-form">
-      <div id="demo-form-content">
-        <div class="demo-row">
-          <div class="demo-field"><label>First Name</label><input type="text" id="df-first" placeholder="Jane"></div>
-          <div class="demo-field"><label>Last Name</label><input type="text" id="df-last" placeholder="Smith"></div>
+<main id="main">
+  <div id="welcome">
+    <div style="text-align:center;max-width:420px;padding:24px;">
+      <div style="width:80px;height:80px;border-radius:20px;margin:0 auto 20px;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 8px 32px rgba(107,76,42,0.25);">🪵</div>
+      <h2 style="font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
+      <p style="font-size:13px;color:#78614f;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Professional Cabinet Planning</p>
+      <p style="font-size:14px;color:#a07850;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
+      <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:12px 28px;font-size:14px;border-radius:10px;">＋ Create Your First Project</button>
+    </div>
+  </div>
+
+  <div id="project-view" class="hidden">
+    <div class="project-header">
+      <div class="project-header-info">
+        <h2 id="pv-name">—</h2>
+        <div class="project-header-meta" id="pv-meta"></div>
+      </div>
+      <div class="header-btns">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="vt-floor" onclick="setViewMode('floor')">⬛ Floor Plan</button>
+          <button class="view-toggle-btn" id="vt-elev" onclick="setViewMode('elevation')">🪟 Elevation</button>
         </div>
-        <div class="demo-row">
-          <div class="demo-field"><label>Company Name</label><input type="text" id="df-company" placeholder="Smith Cabinets"></div>
-          <div class="demo-field"><label>How many reps?</label>
-            <select id="df-size">
-              <option value="">— Select —</option>
-              <option>Just me</option>
-              <option>2-5 people</option>
-              <option>6-15 people</option>
-              <option>15+ people</option>
+        <button class="btn btn-success" onclick="openQuoteModal()">💰 Quote</button>
+        <button class="btn btn-secondary" onclick="window.print()">🖨 Print</button>
+        <button class="btn btn-secondary" onclick="openEditProjectModal()">✏️ Edit</button>
+      </div>
+    </div>
+
+    <div class="room-tabs-bar" id="room-tabs-bar">
+      <button class="add-room-btn" onclick="openAddRoomModal()">＋ Room</button>
+    </div>
+
+    <div class="workspace">
+      <div id="canvas-area">
+        <div id="view-floor">
+          <div class="canvas-toolbar">
+            <label>Scale:</label>
+            <select id="scale-sel" onchange="renderCanvas()">
+              <option value="3">Small</option>
+              <option value="4" selected>Medium</option>
+              <option value="5">Large</option>
+              <option value="6.5">X-Large</option>
+            </select>
+            <label style="margin-left:8px">Show:</label>
+            <select id="view-sel" onchange="renderCanvas()">
+              <option value="all">All Cabinets</option>
+              <option value="base">Base Only</option>
+              <option value="wall">Wall Only</option>
             </select>
           </div>
+          <div id="floor-plan-wrapper">
+            <div class="plan-title" id="plan-title">Floor Plan</div>
+            <canvas id="floor-plan"></canvas>
+          </div>
+          <div id="summary-table"></div>
         </div>
-        <div class="demo-field" style="margin-bottom:14px;"><label>Work Email</label><input type="email" id="df-email" placeholder="jane@smithcabinets.com"></div>
-        <div class="demo-field" style="margin-bottom:14px;"><label>Phone</label><input type="tel" id="df-phone" placeholder="(555) 555-5555"></div>
-        <div id="demo-error" style="color:#fca5a5;font-size:12px;margin-bottom:10px;min-height:16px;"></div>
-        <button class="demo-submit" id="demo-submit-btn" onclick="submitDemo()">Request My Demo →</button>
-        <p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px;">We'll reach out within 1 business day.</p>
+
+        <div id="view-elev" class="hidden">
+          <div class="canvas-toolbar">
+            <label>Scale:</label>
+            <select id="elev-scale-sel" onchange="renderElevation()">
+              <option value="3">Small</option>
+              <option value="4" selected>Medium</option>
+              <option value="5">Large</option>
+              <option value="6.5">X-Large</option>
+            </select>
+          </div>
+          <div class="elev-wall-tabs" id="elev-wall-tabs">
+            <button class="elev-wall-tab active" data-wall="north" onclick="selectElevWall('north')">↑ North</button>
+            <button class="elev-wall-tab" data-wall="east" onclick="selectElevWall('east')">→ East</button>
+            <button class="elev-wall-tab" data-wall="south" onclick="selectElevWall('south')">↓ South</button>
+            <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
+          </div>
+          <div id="elevation-wrapper">
+            <div class="plan-title" id="elev-title">Front Elevation — North Wall</div>
+            <canvas id="elevation-plan"></canvas>
+          </div>
+        </div>
       </div>
-      <div id="demo-success">
-        <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-        <h3>You're on the list!</h3>
-        <p>We'll be in touch within 1 business day to schedule your demo. In the meantime, feel free to start your free trial.</p>
-        <a href="/app" style="display:inline-block;margin-top:20px;padding:12px 24px;background:linear-gradient(135deg,#c8a882,#92400e);color:white;border-radius:8px;font-weight:700;font-size:14px;">Start Free Trial →</a>
+
+      <div id="cabinet-panel">
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Door Style</div>
+          <div id="style-container"></div>
+        </div>
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Pricing</div>
+          <div class="price-toggle-row">
+            <label class="toggle-switch"><input type="checkbox" id="pricing-toggle" onchange="onPricingToggle()"><span class="toggle-slider"></span></label>
+            <span class="toggle-label">Show Pricing</span>
+          </div>
+          <div id="pricing-opts" class="hidden">
+            <div class="markup-row"><label>Additional Markup %</label><input type="number" id="markup-pct" value="0" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
+            <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">Prices are Forevermark MSRP. Use markup for additional margin.</div>
+            <div class="markup-row"><label>Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
+          </div>
+        </div>
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Active Wall</div>
+          <div class="wall-grid">
+            <button class="wall-btn active" data-wall="north" onclick="selectWall('north')">↑ North</button>
+            <button class="wall-btn" data-wall="east" onclick="selectWall('east')">→ East</button>
+            <button class="wall-btn" data-wall="south" onclick="selectWall('south')">↓ South</button>
+            <button class="wall-btn" data-wall="west" onclick="selectWall('west')">← West</button>
+          </div>
+        </div>
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Wall Openings</div>
+          <div class="opening-type-row" id="opening-type-btns">
+            <button class="opening-type-btn active" data-otype="door" onclick="selectOpeningType('door')">🚪 Door</button>
+            <button class="opening-type-btn" data-otype="window" onclick="selectOpeningType('window')">🪟 Window</button>
+            <button class="opening-type-btn" data-otype="sink" onclick="selectOpeningType('sink-loc')">🚰 Sink</button>
+            <button class="opening-type-btn" data-otype="arch" onclick="selectOpeningType('arch')">🏛 Opening</button>
+          </div>
+          <div class="opening-inputs" style="margin-bottom:5px;">
+            <label style="font-size:11px;white-space:nowrap;">W:</label>
+            <input type="number" id="opening-width" placeholder='36"' min="6" style="width:52px;">
+            <label style="font-size:11px;white-space:nowrap;">H:</label>
+            <input type="number" id="opening-height" placeholder='80"' min="6" style="width:52px;">
+          </div>
+          <div class="opening-inputs" id="sill-height-row" style="margin-bottom:5px;display:none;">
+            <label style="font-size:11px;white-space:nowrap;">Sill ht:</label>
+            <input type="number" id="opening-sill" placeholder='36"' min="0" value="36" style="width:52px;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in. from floor</span>
+          </div>
+          <div class="opening-inputs" style="margin-bottom:4px;">
+            <label style="font-size:11px;white-space:nowrap;">From left:</label>
+            <input type="number" id="opening-offset" placeholder='0"' min="0" value="0" style="width:52px;">
+            <button class="btn btn-secondary" style="padding:5px 9px;font-size:11px;flex-shrink:0" onclick="addOpening()">＋ Add</button>
+          </div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Inches from left edge of wall</div>
+        </div>
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label" id="wall-add-label">Add Cabinet — North</div>
+          <select id="cab-type" class="cp-select" onchange="onTypeChange()">
+            <option value="">— Cabinet Type —</option>
+            <option value="base">Base Cabinet</option>
+            <option value="wall">Wall Cabinet</option>
+            <option value="tall">Tall / Pantry</option>
+            <option value="sink">Sink Base</option>
+            <option value="vanity">Vanity</option>
+            <option value="drawerBase">Drawer Base (3-drawer)</option>
+            <option value="cornerBase">Corner Base (Blind)</option>
+            <option value="lazysusan">Lazy Susan Corner</option>
+          </select>
+          <select id="cab-width" class="cp-select"><option value="">— Width —</option></select>
+          <select id="cab-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <select id="cab-depth-sel" class="cp-select hidden">
+            <option value="12">12" deep — Standard upper</option>
+            <option value="24">24" deep — Over fridge/appliance</option>
+          </select>
+          <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
+            <input type="number" id="cab-wall-bottom" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
+            <input type="number" id="cab-offset-input" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
+          </div>
+          <div id="glass-door-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
+            <input type="checkbox" id="cab-glass-doors" style="width:auto;accent-color:var(--accent);">
+            <label style="font-size:12px;color:var(--text);margin:0;font-weight:600;">🪟 Add Glass Doors</label>
+            <span style="font-size:10px;color:#94a3b8;">(+58% of cabinet price)</span>
+          </div>
+          <select id="cab-style-override" class="cp-select">
+            <option value="">— Door Style: Use Project Default —</option>
+          </select>
+          <input type="text" id="cab-note-input" class="cp-input" placeholder="Notes (optional)">
+          <button class="add-cab-btn" onclick="addCabinet()">＋ Add to Wall</button>
+        </div>
+        <!-- Add appliance -->
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Add Appliance</div>
+          <select id="app-type" class="cp-select" onchange="onAppTypeChange()">
+            <option value="">— Appliance Type —</option>
+            <option value="refrigerator">🧊 Refrigerator</option>
+            <option value="range">🔥 Range / Stove</option>
+            <option value="dishwasher">🫧 Dishwasher</option>
+            <option value="microwave">📡 OTR Microwave</option>
+            <option value="cooktop">🍳 Cooktop</option>
+            <option value="hood">💨 Range Hood</option>
+            <option value="fridgePanel">📏 Fridge End Panel</option>
+          </select>
+          <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
+          <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
+            <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
+          </div>
+          <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)">
+          <button class="add-cab-btn" onclick="addAppliance()" style="background:linear-gradient(135deg,#6b7280,#374151);box-shadow:0 2px 6px rgba(55,65,81,0.3);">＋ Add Appliance</button>
+        </div>
+
+        <div class="cp-section" style="flex-shrink:0;padding-bottom:5px;border-bottom:none;">
+          <div class="cp-label" id="wall-list-label">North Wall</div>
+        </div>
+        <div id="cabinet-list"></div>
       </div>
     </div>
   </div>
-</section>
+</main>
 
-<!-- FOOTER -->
-<footer>
-  <div class="footer-brand">
-    <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
-      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#flng)"/>
-      <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
-      <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
-      <defs><linearGradient id="flng" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
-    </svg>
-    <span>My Cabinet Planner</span>
+</div><!-- end app-root -->
+
+<!-- ═══ MODALS ═══ -->
+<div id="modal-new-project" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>New Project</h3>
+    <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder="e.g. Smith Family"></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="np-company" placeholder="e.g. Cabinet Daddy"></div>
+    <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
+    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder="City"></div>
+      <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
+    <div class="section-divider">First Room Dimensions</div>
+    <div class="form-row">
+      <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" placeholder="120" min="0"></div>
+      <div class="form-group"><label>South Wall (in)</label><input type="number" id="np-south" placeholder="120" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>East Wall (in)</label><input type="number" id="np-east" placeholder="96" min="0"></div>
+      <div class="form-group"><label>West Wall (in)</label><input type="number" id="np-west" placeholder="96" min="0"></div>
+    </div>
+    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="np-ceiling" value="96" min="84"><div class="form-hint">Typical: 96" (8 ft) or 108" (9 ft)</div></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-new-project')">Cancel</button>
+      <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+    </div>
   </div>
-  <div class="footer-links">
-    <a href="#how-it-works">How It Works</a>
-    <a href="#features">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="#demo">Request Demo</a>
-    <a href="/app">Sign In</a>
+</div>
+
+<div id="modal-edit-project" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Edit Project</h3>
+    <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="ep-company" placeholder="e.g. Cabinet Daddy"></div>
+    <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
+    <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input type="text" id="ep-city" placeholder="City"></div>
+      <div class="form-group"><label>State</label><select id="ep-state"><option value="">— State —</option></select></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="ep-notes" rows="2" style="resize:vertical"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-project')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditProject()">Save Changes</button>
+    </div>
   </div>
-  <div class="footer-copy">© 2025 My Cabinet Planner. All rights reserved.</div>
-</footer>
+</div>
+
+<div id="modal-add-room" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Add Room</h3>
+    <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder="e.g. Master Bath"></div>
+    <div class="form-row">
+      <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" placeholder="120"></div>
+      <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" placeholder="120"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>East Wall (in)</label><input type="number" id="ar-east" placeholder="96"></div>
+      <div class="form-group"><label>West Wall (in)</label><input type="number" id="ar-west" placeholder="96"></div>
+    </div>
+    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="ar-ceiling" value="96"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-room')">Cancel</button>
+      <button class="btn btn-primary" onclick="addRoom()">Add Room</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-quote" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>💰 Quote Builder</h3>
+
+    <!-- Company Name -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
+      <input type="text" id="quote-company-input" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)">
+    </div>
+
+    <!-- Additional Job Costs -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Additional Job Costs</div>
+      <div id="job-cost-rows"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addJobCostRow()">＋ Add Line Item</button>
+    </div>
+
+    <!-- Trim & Materials -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Trim &amp; Materials</div>
+      <div id="trim-item-rows"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addTrimRow()">＋ Add Trim / Molding</button>
+    </div>
+
+    <!-- Live Totals Preview -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Quote Summary</div>
+    <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;"></div>
+
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Click <strong>Print / Save PDF</strong> to generate the full formatted quote with line items, terms &amp; conditions, and signature lines.</p>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-quote')">Close</button>
+      <button class="btn btn-primary" onclick="printQuote()">🖨 Print / Save PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- COMPANY SETTINGS MODAL -->
+<div id="modal-company-settings" class="modal-overlay hidden">
+  <div class="modal" style="width:520px;max-width:100%;">
+    <h3>⚙ Company Settings</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;margin-top:-10px;">This info appears on every printed quote.</p>
+    <div class="form-row">
+      <div class="form-group"><label>Company Name</label><input type="text" id="cs-name" placeholder="e.g. Cabinet Daddy"></div>
+      <div class="form-group"><label>Tagline</label><input type="text" id="cs-tagline" placeholder="e.g. Designing Dreams, Built in Reality"></div>
+    </div>
+    <div class="form-group"><label>Address</label><input type="text" id="cs-address" placeholder="123 Main St"></div>
+    <div class="form-row">
+      <div class="form-group"><label>City</label><input type="text" id="cs-city" placeholder="City"></div>
+      <div class="form-group"><label>State</label><input type="text" id="cs-state" placeholder="FL"></div>
+      <div class="form-group"><label>Zip</label><input type="text" id="cs-zip" placeholder="33101"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input type="text" id="cs-phone" placeholder="(555) 555-5555"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com"></div>
+    </div>
+    <div class="form-group"><label>Website</label><input type="text" id="cs-website" placeholder="www.yourcompany.com"></div>
+    <div class="form-group"><label>Logo URL <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional — paste a link to your logo image)</span></label><input type="text" id="cs-logo" placeholder="https://..."></div>
+    <div id="cs-status" style="font-size:12px;min-height:18px;margin-top:4px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-company-settings')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompanySettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- SET PASSWORD MODAL (invite / recovery flow) -->
+<div id="modal-set-password" class="modal-overlay hidden">
+  <div class="modal" style="max-width:400px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:36px;margin-bottom:8px;">👋</div>
+      <h3 style="margin-bottom:6px;">Welcome! Set Your Password</h3>
+      <p style="font-size:13px;color:var(--text-muted);font-weight:400;">You're in. Choose a password so you can log in anytime.</p>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" id="sp-password" placeholder="At least 8 characters">
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" id="sp-confirm" placeholder="Repeat password">
+    </div>
+    <div class="login-error" id="sp-error"></div>
+    <div class="modal-footer" style="border-top:none;padding-top:8px;">
+      <button class="btn btn-primary" style="width:100%;padding:11px;font-size:14px;" onclick="setNewPassword()">Set Password &amp; Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<button id="calc-btn" onclick="toggleCalc()" title="Calculator">🧮</button>
+<div id="calc-panel" class="calc-hidden">
+  <div id="calc-display">
+    <div id="calc-expr"></div>
+    <div id="calc-result">0</div>
+  </div>
+  <div class="calc-grid">
+    <button class="calc-btn clr" onclick="calcInput('C')" style="grid-column:span 2">C</button>
+    <button class="calc-btn op"  onclick="calcInput('%')">%</button>
+    <button class="calc-btn op"  onclick="calcInput('/')">÷</button>
+    <button class="calc-btn"     onclick="calcInput('7')">7</button>
+    <button class="calc-btn"     onclick="calcInput('8')">8</button>
+    <button class="calc-btn"     onclick="calcInput('9')">9</button>
+    <button class="calc-btn op"  onclick="calcInput('*')">×</button>
+    <button class="calc-btn"     onclick="calcInput('4')">4</button>
+    <button class="calc-btn"     onclick="calcInput('5')">5</button>
+    <button class="calc-btn"     onclick="calcInput('6')">6</button>
+    <button class="calc-btn op"  onclick="calcInput('-')">−</button>
+    <button class="calc-btn"     onclick="calcInput('1')">1</button>
+    <button class="calc-btn"     onclick="calcInput('2')">2</button>
+    <button class="calc-btn"     onclick="calcInput('3')">3</button>
+    <button class="calc-btn op"  onclick="calcInput('+')">+</button>
+    <button class="calc-btn"     onclick="calcInput('0')" style="grid-column:span 2">0</button>
+    <button class="calc-btn"     onclick="calcInput('.')">.</button>
+    <button class="calc-btn eq"  onclick="calcInput('=')">=</button>
+  </div>
+</div>
+
+<!-- DRAG TOOLTIP -->
+<div id="drag-tooltip" style="display:none;position:fixed;z-index:400;background:#1e293b;color:#f8fafc;font-size:11px;font-weight:600;padding:5px 10px;border-radius:6px;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.25);bottom:80px;left:50%;transform:translateX(-50%);"></div>
 
 <script>
-// ══════════════════════════════════════════
-// DEMO CANVAS ANIMATION
-// ══════════════════════════════════════════
-(function() {
-  const canvas = document.getElementById('demo-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+// ════════════════════════════
+// SUPABASE
+// ════════════════════════════
+const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentUser = null;
 
-  // Cabinet data
-  const BASE = [
-    { w:36, col:'#3B82F6', lbl:'B36', ox:0   },
-    { w:30, col:'#3B82F6', lbl:'B30', ox:36  },
-    { w:30, col:'#06B6D4', lbl:'SB30',ox:66  },
-    { w:36, col:'#3B82F6', lbl:'B36', ox:96  },
-  ];
-  const WALL = [
-    { w:36, col:'#93C5FD', lbl:'W36', ox:0   },
-    { w:30, col:'#93C5FD', lbl:'W30', ox:36  },
-    { w:30, col:'#93C5FD', lbl:'W30', ox:66  },
-    { w:36, col:'#93C5FD', lbl:'W36', ox:96  },
-  ];
-  const QUOTE_LINES = [
-    { l:'Base Cabinet 36"W × 34.5"H', p:457 },
-    { l:'Base Cabinet 30"W × 34.5"H', p:422 },
-    { l:'Sink Base 30"W × 34.5"H',    p:339 },
-    { l:'Base Cabinet 36"W × 34.5"H', p:457 },
-    { l:'Wall Cabinet 36"W × 36"H',   p:376 },
-    { l:'Wall Cabinet 30"W × 36"H',   p:338 },
-    { l:'Wall Cabinet 30"W × 36"H',   p:338 },
-    { l:'Wall Cabinet 36"W × 36"H',   p:376 },
-    { l:'Labor & Installation',        p:950 },
-  ];
-  const Q_TOTAL = QUOTE_LINES.reduce((s,i)=>s+i.p,0);
-
-  const LOOP = 25000; // 25 second loop
-  const ROOM_W = 132, ROOM_H = 84, CEIL = 96; // inches
-
-  function easeOut(t){ return 1-Math.pow(1-t,3); }
-  function easeInOut(t){ return t<0.5?2*t*t:-1+(4-2*t)*t; }
-  function lerp(a,b,t){ return a+(b-a)*t; }
-
-  function resize(){
-    canvas.width  = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
-  }
-
-  // ── FLOOR PLAN ──
-  function drawFloorPlan(t_room, cabProgress) {
-    const W=canvas.width, H=canvas.height;
-    const SC = Math.min((W-80)/ROOM_W, (H-60)/ROOM_H);
-    const PAD = Math.floor((W - ROOM_W*SC)/2);
-    const PADY = Math.floor((H - ROOM_H*SC)/2) + 10;
-    const RX=PAD, RY=PADY, RW=ROOM_W*SC, RH=ROOM_H*SC;
-    const roomAlpha = easeOut(Math.min(1, t_room));
-
-    // Background
-    ctx.fillStyle='#F1F5F9'; ctx.fillRect(0,0,W,H);
-
-    // Grid
-    ctx.globalAlpha=roomAlpha*0.4; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.5;
-    const G=12*SC;
-    for(let x=RX;x<=RX+RW;x+=G){ctx.beginPath();ctx.moveTo(x,RY);ctx.lineTo(x,RY+RH);ctx.stroke();}
-    for(let y=RY;y<=RY+RH;y+=G){ctx.beginPath();ctx.moveTo(RX,y);ctx.lineTo(RX+RW,y);ctx.stroke();}
-
-    // Room
-    ctx.globalAlpha=roomAlpha;
-    ctx.fillStyle='white'; ctx.fillRect(RX,RY,RW,RH);
-    ctx.strokeStyle='#1E293B'; ctx.lineWidth=2.5; ctx.strokeRect(RX,RY,RW,RH);
-
-    // Compass + scale
-    ctx.fillStyle='#94A3B8'; ctx.font=`bold ${Math.max(9,SC*1.1)}px sans-serif`;
-    ctx.textAlign='left'; ctx.textBaseline='bottom';
-    ctx.fillText('↑ N', RX+4, RY-4);
-    ctx.globalAlpha=1;
-
-    // Dimensions
-    ctx.fillStyle='#64748B'; ctx.font=`600 ${Math.max(9,SC*1.0)}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(`${ROOM_W}" (${Math.floor(ROOM_W/12)}'${ROOM_W%12>0?ROOM_W%12+'"':''})`, RX+RW/2, RY-14);
-
-    if(cabProgress <= 0) return;
-
-    const allCabs = [...BASE,...WALL];
-    const cabDur = 1.0 / allCabs.length;
-
-    allCabs.forEach((cab,i)=>{
-      const start = i * cabDur;
-      const p = Math.max(0, Math.min(1,(cabProgress-start)/cabDur));
-      if(p<=0) return;
-
-      const isWall = cab.col==='#93C5FD';
-      const depth = isWall ? 12 : 24;
-      const x = RX + cab.ox*SC;
-      const w = cab.w*SC;
-      const h = depth*SC;
-      const y = RY;
-      const popScale = easeOut(Math.min(1,p*2));
-
-      ctx.save();
-      ctx.globalAlpha = isWall ? 0.5*easeOut(p) : 0.88*easeOut(p);
-      ctx.translate(x+w/2, y); ctx.scale(1,popScale); ctx.translate(-(x+w/2),-y);
-      ctx.fillStyle = cab.col; ctx.fillRect(x,y,w,h);
-      ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
-
-      if(p>0.5){
-        ctx.globalAlpha=Math.min(1,(p-0.5)*3)*(isWall?0.5:1);
-        const dark=['#3B82F6','#06B6D4'].includes(cab.col);
-        ctx.fillStyle=dark?'#fff':'#1e293b';
-        ctx.font=`bold ${Math.max(7,SC*0.9)}px sans-serif`;
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(cab.lbl, x+w/2, y+h/2);
-      }
-      ctx.restore();
-    });
-  }
-
-  // ── ELEVATION ──
-  function drawElevation(alpha) {
-    const W=canvas.width, H=canvas.height;
-    const SC = Math.min((W-80)/ROOM_W, (H-60)/CEIL);
-    const PAD = Math.floor((W - ROOM_W*SC)/2);
-    const PADY = Math.floor((H - CEIL*SC)/2);
-    const WX=PAD, WY=PADY, WW=ROOM_W*SC, WH=CEIL*SC;
-    const floorY=WY+WH;
-    const swatch='#E7DFD0';
-
-    ctx.globalAlpha=alpha;
-    ctx.fillStyle='#F0F4F8'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
-
-    // Grid
-    ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.5;
-    const G=12*SC;
-    for(let x=WX;x<=WX+WW;x+=G){ctx.beginPath();ctx.moveTo(x,WY);ctx.lineTo(x,WY+WH);ctx.stroke();}
-
-    // Counter line
-    const cY=floorY-36*SC;
-    ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.moveTo(WX,cY); ctx.lineTo(WX+WW,cY); ctx.stroke();
-    ctx.setLineDash([]); ctx.fillStyle='#94A3B8'; ctx.font='9px sans-serif';
-    ctx.textAlign='left'; ctx.fillText('Counter 36"',WX+4,cY-4);
-
-    // Base cabinets
-    BASE.forEach(cab=>{
-      const x=WX+cab.ox*SC, w=cab.w*SC, h=34.5*SC, y=floorY-h;
-      ctx.fillStyle=swatch; ctx.fillRect(x,y,w,h);
-      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
-      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+3,y+3,w-6,h-10);
-      ctx.fillStyle='#94A3B8'; ctx.beginPath();
-      ctx.roundRect(x+w/2-7,y+h-16,14,5,2); ctx.fill();
-      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-6,w,6);
-      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-3,w+2,3);
-    });
-
-    // Wall cabinets
-    WALL.forEach(cab=>{
-      const x=WX+cab.ox*SC, w=cab.w*SC, h=36*SC;
-      const y=Math.max(WY,floorY-54*SC-h);
-      ctx.fillStyle=swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
-      ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
-      ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,w-6,h-8);
-      ctx.fillStyle='#94A3B8'; ctx.beginPath();
-      ctx.roundRect(x+w/2-5,y+h-11,10,4,2); ctx.fill();
-    });
-
-    // Wall outline
-    ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(WX,WY,WW,WH);
-    ctx.fillStyle='#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
-    ctx.fillStyle='#CBD5E1'; ctx.fillRect(WX,floorY,WW,4);
-
-    // Label
-    ctx.fillStyle='#475569'; ctx.font=`600 ${Math.max(10,SC)}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('North Wall Elevation', WX+WW/2, WY-16);
-
-    ctx.globalAlpha=1;
-  }
-
-  // ── QUOTE CARD ──
-  function drawQuote(progress) {
-    const W=canvas.width, H=canvas.height;
-    const cardW=Math.min(W-32,480);
-    const cardH=Math.min(H-24,400);
-    const cardX=(W-cardW)/2;
-    const slideProgress=easeOut(Math.min(1,progress*1.5));
-    const cardY=H-(cardH*slideProgress)+16;
-
-    // Scrim
-    ctx.fillStyle=`rgba(15,23,42,${0.35*Math.min(1,progress*2)})`;
-    ctx.fillRect(0,0,W,H);
-
-    // Shadow
-    ctx.shadowBlur=40; ctx.shadowColor='rgba(0,0,0,0.25)';
-
-    // Card
-    ctx.fillStyle='white'; ctx.beginPath();
-    ctx.roundRect(cardX,cardY,cardW,cardH,14); ctx.fill();
-    ctx.shadowBlur=0;
-
-    // Header
-    ctx.fillStyle='#2c1f14'; ctx.beginPath();
-    ctx.roundRect(cardX,cardY,cardW,48,[14,14,0,0]); ctx.fill();
-    ctx.fillStyle='white'; ctx.font='bold 13px sans-serif';
-    ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillText('🪵  QUOTE — Smith Family Kitchen', cardX+14, cardY+24);
-    ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='10px sans-serif';
-    ctx.textAlign='right';
-    ctx.fillText('CD-XK4R2P · '+new Date().toLocaleDateString(), cardX+cardW-14, cardY+24);
-
-    // Items
-    const itemsToShow=Math.floor(QUOTE_LINES.length*Math.min(1,Math.max(0,(progress-0.15)*2.2)));
-    let iy=cardY+58;
-    const rowH=26;
-
-    QUOTE_LINES.slice(0,itemsToShow).forEach((item,i)=>{
-      if(i%2===0){ctx.fillStyle='#faf7f4';ctx.fillRect(cardX+8,iy-3,cardW-16,rowH-2);}
-      ctx.fillStyle='#1c1008'; ctx.font='12px sans-serif';
-      ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(item.l, cardX+16, iy+rowH/2-3);
-      ctx.fillStyle='#16a34a'; ctx.font='bold 12px sans-serif';
-      ctx.textAlign='right';
-      ctx.fillText('$'+item.p.toLocaleString(), cardX+cardW-14, iy+rowH/2-3);
-      iy+=rowH;
-    });
-
-    // Total
-    if(progress>0.75){
-      const ta=easeOut(Math.min(1,(progress-0.75)*4));
-      ctx.globalAlpha=ta;
-      iy+=4;
-      ctx.fillStyle='#e7ddd5'; ctx.fillRect(cardX+8,iy,cardW-16,2);
-      iy+=12;
-      ctx.fillStyle='#1c1008'; ctx.font='bold 15px sans-serif';
-      ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText('TOTAL', cardX+16, iy+10);
-      ctx.fillStyle='#16a34a'; ctx.font='bold 18px sans-serif';
-      ctx.textAlign='right';
-      ctx.fillText('$'+Q_TOTAL.toLocaleString(), cardX+cardW-14, iy+10);
-
-      // Stamp
-      if(progress>0.88){
-        const sa=easeOut(Math.min(1,(progress-0.88)*8));
-        ctx.globalAlpha=sa*0.85;
-        ctx.save();
-        ctx.translate(cardX+cardW-80, cardY+cardH-70);
-        ctx.rotate(-0.35);
-        ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
-        ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.strokeText('READY TO SEND', 0, 0);
-        ctx.fillStyle='#16a34a'; ctx.fillText('READY TO SEND', 0, 0);
-        ctx.restore();
-      }
-      ctx.globalAlpha=1;
-    }
-  }
-
-  // ── UPDATE UI CHROME ──
-  function updateChrome(phase) {
-    const fl=document.getElementById('pvb-floor');
-    const el=document.getElementById('pvb-elev');
-    const qt=document.getElementById('pvb-quote');
-    if(!fl) return;
-    if(phase==='floor'){
-      fl.classList.add('active'); el.classList.remove('active');
-      qt.style.opacity='1';
-    } else if(phase==='elev'){
-      el.classList.add('active'); fl.classList.remove('active');
-      qt.style.opacity='1';
-    } else {
-      el.classList.add('active'); fl.classList.remove('active');
-      qt.style.background='#b45309'; qt.style.opacity='1';
-    }
-
-    // Update fake panel cab list
-    const list=document.getElementById('pvp-cab-list');
-    if(!list) return;
-    const lbl=document.getElementById('pvp-wall-label');
-    if(phase==='floor'&&list){
-      if(lbl) lbl.textContent='North Wall';
-      list.innerHTML=BASE.slice(0,Math.min(BASE.length,4)).map((c,i)=>`
-        <div style="background:#f8fafc;border-radius:5px;padding:6px;margin-bottom:4px;border:1px solid #e2e8f0;display:flex;gap:5px;align-items:center;">
-          <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
-          <div><div style="font-size:9px;font-weight:600;color:#334155;">Base ${c.w}"W</div><div style="font-size:8px;color:#94a3b8;">34.5"H × 24"D</div></div>
-        </div>`).join('');
-    }
-  }
-
-  // ── MAIN ANIMATION LOOP ──
-  let startTime=null;
-
-  // Phase boundaries (ms)
-  const T={
-    ROOM_END:   1800,
-    CABS_END:  11000,
-    HOLD_END:  13000,
-    ELEV_END:  16000,
-    ELEV_HOLD: 18000,
-    QUOTE_END: 24000,
-  };
-
-  function animate(ts){
-    if(!startTime) startTime=ts;
-    const t=(ts-startTime)%LOOP;
-
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    if(t < T.ROOM_END){
-      // Draw room fading in
-      drawFloorPlan(t/T.ROOM_END, 0);
-      updateChrome('floor');
-
-    } else if(t < T.CABS_END){
-      // Add cabinets
-      const p=(t-T.ROOM_END)/(T.CABS_END-T.ROOM_END);
-      drawFloorPlan(1, p);
-      updateChrome('floor');
-
-    } else if(t < T.HOLD_END){
-      // Hold floor plan
-      drawFloorPlan(1, 1);
-      updateChrome('floor');
-
-    } else if(t < T.ELEV_END){
-      // Fade to elevation
-      const p=(t-T.HOLD_END)/(T.ELEV_END-T.HOLD_END);
-      if(p<0.4){
-        // Fade out floor plan
-        const fp=1-easeInOut(p/0.4);
-        ctx.globalAlpha=fp; drawFloorPlan(1,1); ctx.globalAlpha=1;
-      } else {
-        // Fade in elevation
-        const ep=easeInOut((p-0.4)/0.6);
-        drawElevation(ep);
-        updateChrome('elev');
-      }
-
-    } else if(t < T.ELEV_HOLD){
-      // Hold elevation
-      drawElevation(1);
-      updateChrome('elev');
-
-    } else if(t < T.QUOTE_END){
-      // Quote appears
-      const p=(t-T.ELEV_HOLD)/(T.QUOTE_END-T.ELEV_HOLD);
-      drawElevation(1);
-      drawQuote(p);
-      updateChrome('quote');
-
-    } else {
-      // Hold quote until loop
-      drawElevation(1);
-      drawQuote(1);
-      updateChrome('quote');
-    }
-
-    requestAnimationFrame(animate);
-  }
-
-  // Init
-  resize();
-  window.addEventListener('resize', ()=>{ resize(); });
-  requestAnimationFrame(animate);
-})();
-
-// Smooth scroll for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    const target = document.querySelector(a.getAttribute('href'));
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+// ════════════════════════════
+// AUTH
+// ════════════════════════════
+function showLogin() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app-root').classList.add('hidden');
+}
+function showApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app-root').classList.remove('hidden');
+  document.getElementById('user-email').textContent = currentUser.email;
+}
+async function handleSignIn() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (!email || !password) { err.textContent = 'Enter your email and password.'; return; }
+  err.textContent = '';
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { err.textContent = error.message; return; }
+  currentUser = data.user;
+  showApp();
+  await Promise.all([loadProjects(), loadCompanyProfile()]);
+}
+async function handleForgotPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  const err   = document.getElementById('login-error');
+  if (!email) { err.style.color='#b45309'; err.textContent = 'Enter your email address above first.'; return; }
+  err.textContent = '';
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://mycabinetbuilder.com'
   });
+  if (error) { err.textContent = error.message; }
+  else { err.style.color='#16a34a'; err.textContent = '✓ Reset link sent — check your email.'; }
+}
+async function handleSignOut() {
+  await db.auth.signOut();
+  currentUser = null;
+  state.projects = [];
+  state.activeProjectId = null;
+  state.activeRoomId = null;
+  localStorage.removeItem('cp_ui');
+  showLogin();
+  showWelcome();
+}
+
+// ════════════════════════════
+// CATALOG
+// ════════════════════════════
+const CATALOG = {
+  base:       { label:'Base',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[34.5],     depth:24, color:'#3B82F6', abbr:'B',  basePrice: w => w*4.2 },
+  wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[12,15,18,30,36,42], depth:12, color:'#93C5FD', abbr:'W',  basePrice: w => w*3.8 },
+  tall:       { label:'Tall/Pantry', widths:[15,18,24,30],                  heights:[84,90,96], depth:24, color:'#1D4ED8', abbr:'WP', basePrice: w => w*11  },
+  sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB', basePrice: w => w*4.8 },
+  vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
+  drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
+  cornerBase: { label:'Corner Base', widths:[36,39,42],                     heights:[34.5],     depth:24, color:'#F59E0B', abbr:'CB', basePrice: w => w*6  },
+  lazysusan:  { label:'Lazy Susan',  widths:[33],                           heights:[34.5],     depth:24, color:'#F97316', abbr:'LS', basePrice: w => w*7  },
+};
+const STYLES = [
+  {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
+  {tier:'Gold',     code:'AP', name:'Pepper Shaker',          swatch:'#2B2926'},
+  {tier:'Gold',     code:'PW', name:'Petit White',            swatch:'#FAF9F7'},
+  {tier:'Gold',     code:'PR', name:'Petit Brown',            swatch:'#8C6634'},
+  {tier:'Gold',     code:'PS', name:'Petit Sand',             swatch:'#D3C4A0'},
+  {tier:'Gold',     code:'PD', name:'Petit Blue',             swatch:'#1B3A5C'},
+  {tier:'Platinum', code:'AB', name:'Lait Grey Shaker',       swatch:'#B9BDC6'},
+  {tier:'Platinum', code:'AR', name:'Woodland Brown',         swatch:'#6A4B2A'},
+  {tier:'Platinum', code:'GW', name:'Gramercy White',         swatch:'#EFECE7'},
+  {tier:'Platinum', code:'TW', name:'Uptown White',           swatch:'#FEFEFE'},
+  {tier:'Platinum', code:'SL', name:'Signature Pearl',        swatch:'#ECE7DA'},
+  {tier:'Platinum', code:'TS', name:'Townsquare Grey',        swatch:'#697080'},
+  {tier:'Platinum', code:'AG', name:'Greystone Shaker',       swatch:'#4B4F5C'},
+  {tier:'Platinum', code:'AX', name:'Xterra Blue Shaker',     swatch:'#5C8DB9'},
+  {tier:'Platinum', code:'PH', name:'Petit Oak',              swatch:'#C9A96D'},
+  {tier:'Platinum', code:'AZ', name:'Champagne Shaker',       swatch:'#E7DFD0'},
+  {tier:'Titanium', code:'AN', name:'Nova Light Grey Shaker', swatch:'#C6C9CD'},
+  {tier:'Titanium', code:'TQ', name:'Townplace Crema',        swatch:'#EDDFC8'},
+  {tier:'Titanium', code:'TG', name:'Midtown Grey',           swatch:'#5B6069'},
+  {tier:'Titanium', code:'AA', name:'Blaze Black Shaker',     swatch:'#1C1B1A'},
+  {tier:'Titanium', code:'AH', name:'Homestead Oak Shaker',   swatch:'#B99050'},
+];
+// ════════════════════════════
+// US STATE SALES TAX RATES (base state rate %)
+// ════════════════════════════
+const STATE_TAX = {
+  AL:4.0,AK:0.0,AZ:5.6,AR:6.5,CA:7.25,CO:2.9,CT:6.35,DE:0.0,FL:6.0,GA:4.0,
+  HI:4.0,ID:6.0,IL:6.25,IN:7.0,IA:6.0,KS:6.5,KY:6.0,LA:4.45,ME:5.5,MD:6.0,
+  MA:6.25,MI:6.0,MN:6.875,MS:7.0,MO:4.225,MT:0.0,NE:5.5,NV:6.85,NH:0.0,NJ:6.625,
+  NM:5.0,NY:4.0,NC:4.75,ND:5.0,OH:5.75,OK:4.5,OR:0.0,PA:6.0,RI:7.0,SC:6.0,
+  SD:4.5,TN:7.0,TX:6.25,UT:4.85,VT:6.0,VA:5.3,WA:6.5,WV:6.0,WI:5.0,WY:4.0,DC:6.0
+};
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],
+  ['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['FL','Florida'],['GA','Georgia'],
+  ['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],
+  ['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],
+  ['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],
+  ['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],
+  ['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],
+  ['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],
+  ['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],
+  ['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['DC','Washington DC']
+];
+
+// ════════════════════════════
+// PRICE TABLE (Forevermark MSRP — markup already included)
+// ════════════════════════════
+const PRICE_TABLE = {
+  base: { 9:227, 12:255, 15:267, 18:284, 21:308, 24:339, 27:356, 30:422, 33:442, 36:457 },
+  sink: { 24:317, 27:328, 30:339, 33:347, 36:356, 42:431 },
+  drawerBase: { 12:449, 15:461, 18:469, 21:477, 24:498, 30:789, 36:799 },
+  lazysusan:  { 33:575, 36:609 },
+  cornerBase: { 36:439, 39:447, 42:454 },
+  vanity:     { 24:274, 30:305, 36:379, 48:683, 60:914 },
+  wall: {
+     9: { 12:null, 30:156,  36:162,  42:177  },
+    12: { 12:85,   30:148,  36:179,  42:205  },
+    15: { 12:89,   30:167,  36:202,  42:226  },
+    18: { 12:101,  30:186,  36:228,  42:246  },
+    21: { 12:125,  30:226,  36:269,  42:298  },
+    24: { 12:148,  15:157,  18:168,  24:217,  30:241, 36:280, 42:311 },
+    27: { 12:170,  30:262,  36:326,  42:356  },
+    30: { 12:151,  15:189,  18:207,  24:253,  30:263, 36:338, 42:396 },
+    33: { 12:167,  15:215,  18:234,  24:298,  30:281, 36:359, 42:421 },
+    36: { 12:175,  15:190,  18:249,  24:275,  30:299, 36:376, 42:437 },
+  },
+  tall: {
+    15: { 84:649,  90:688,  96:729  },
+    18: { 84:716,  90:749,  96:798  },
+    24: { 84:839,  90:882,  96:963  },
+    30: { 84:1014, 90:1055, 96:1158 },
+  },
+};
+
+const APPLIANCES = {
+  refrigerator: { label:'Refrigerator',  widths:[30,33,36], heights:[66,68,70,72], height:70, depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
+  fridgePanel:  { label:'Fridge End Panel', widths:[3,6],  heights:[84,96], height:84, depth:24, color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
+  range:        { label:'Range / Stove', widths:[30,36],    height:36,   depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
+  dishwasher:   { label:'Dishwasher',    widths:[24],       height:34.5, depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
+  microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54 },
+  cooktop:      { label:'Cooktop',       widths:[30,36],    height:4,    depth:21, color:'#1F2937', abbr:'CTP', icon:'🍳', wallMount:false, elevBottom:32 },
+  hood:         { label:'Range Hood',    widths:[30,36,42], height:18,   depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+};
+
+const OPENING_ICONS  = { door:'🚪', window:'🪟', 'sink-loc':'🚰', arch:'🏛' };
+const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'Opening' };
+
+// ════════════════════════════
+// STATE
+// ════════════════════════════
+let state = {
+  projects: [],
+  activeProjectId: null,
+  activeRoomId: null,
+  activeWall: 'north',
+  elevWall: 'north',
+  viewMode: 'floor',
+  activeOpeningType: 'door',
+};
+
+// ════════════════════════════
+// PERSISTENCE
+// ════════════════════════════
+let saveTimer = null;
+function setSyncStatus(status) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  if (!dot) return;
+  dot.className = 'sync-dot' + (status === 'saving' ? ' saving' : status === 'error' ? ' error' : '');
+  lbl.textContent = status === 'saving' ? 'Saving…' : status === 'error' ? 'Error saving' : 'Saved';
+}
+function persist() {
+  localStorage.setItem('cp_ui', JSON.stringify({
+    activeProjectId: state.activeProjectId,
+    activeRoomId: state.activeRoomId,
+    activeWall: state.activeWall,
+    elevWall: state.elevWall,
+    viewMode: state.viewMode,
+    activeOpeningType: state.activeOpeningType,
+  }));
+  clearTimeout(saveTimer);
+  setSyncStatus('saving');
+  saveTimer = setTimeout(syncActiveProject, 1000);
+}
+async function syncActiveProject() {
+  const p = activeProj();
+  if (!p || !currentUser) return;
+  const { error } = await db.from('projects').upsert({
+    id: p.id,
+    user_id: currentUser.id,
+    customer: p.customer,
+    type: p.type,
+    notes: p.notes || '',
+    style: p.style || 'AW',
+    data: { rooms: p.rooms },
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'id' });
+  setSyncStatus(error ? 'error' : 'saved');
+  if (error) console.error('Sync error:', error);
+}
+async function loadProjects() {
+  const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
+  if (error) { console.error(error); return; }
+  state.projects = data.map(row => ({
+    id: row.id,
+    customer: row.customer,
+    type: row.type,
+    notes: row.notes || '',
+    style: row.style || 'AW',
+    createdAt: new Date(row.created_at).getTime(),
+    rooms: (row.data && row.data.rooms) || []
+  }));
+  renderSidebar();
+  const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
+  if (ui.activeProjectId && getProj(ui.activeProjectId)) {
+    state.activeWall = ui.activeWall || 'north';
+    state.elevWall = ui.elevWall || 'north';
+    state.viewMode = ui.viewMode || 'floor';
+    state.activeOpeningType = ui.activeOpeningType || 'door';
+    openProject(ui.activeProjectId, ui.activeRoomId);
+  }
+  setSyncStatus('saved');
+}
+
+// ════════════════════════════
+// HELPERS
+// ════════════════════════════
+const uid      = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const newId    = () => crypto.randomUUID();
+const getProj  = id => state.projects.find(p => p.id === id);
+const getRoom  = (p, id) => p && p.rooms.find(r => r.id === id);
+const activeProj = () => getProj(state.activeProjectId);
+const activeRoom = () => getRoom(activeProj(), state.activeRoomId);
+const escHtml  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtIn    = i => i > 0 ? `${i}" (${Math.floor(i/12)}'-${i%12}")` : '0"';
+const fmtMoney = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+function getMarkup() { return (parseFloat(document.getElementById('markup-pct').value) || 0) / 100; }
+function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
+function pricingOn() { return document.getElementById('pricing-toggle').checked; }
+function cabinetPrice(cab) {
+  const prices = PRICE_TABLE[cab.type];
+  let base = 0;
+  if (prices) {
+    if (cab.type === 'wall' || cab.type === 'tall') {
+      base = (prices[cab.width] && prices[cab.width][cab.height]) || 0;
+    } else {
+      base = prices[cab.width] || 0;
+    }
+  }
+  if (!base) { const cat = CATALOG[cab.type]; base = cat ? cat.basePrice(cab.width) : 0; }
+  const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
+  return (base + glassAddon) * (1 + getMarkup());
+}
+
+// ════════════════════════════
+// MODAL
+// ════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
 });
 
-// Demo form submission
-async function submitDemo() {
-  const first   = document.getElementById('df-first').value.trim();
-  const last    = document.getElementById('df-last').value.trim();
-  const company = document.getElementById('df-company').value.trim();
-  const email   = document.getElementById('df-email').value.trim();
-  const phone   = document.getElementById('df-phone').value.trim();
-  const size    = document.getElementById('df-size').value;
-  const errEl   = document.getElementById('demo-error');
-  const btn     = document.getElementById('demo-submit-btn');
+// ════════════════════════════
+// VIEW MODE
+// ════════════════════════════
+function setViewMode(m) {
+  state.viewMode = m;
+  document.getElementById('view-floor').classList.toggle('hidden', m !== 'floor');
+  document.getElementById('view-elev').classList.toggle('hidden', m !== 'elevation');
+  document.getElementById('vt-floor').classList.toggle('active', m === 'floor');
+  document.getElementById('vt-elev').classList.toggle('active', m === 'elevation');
+  if (m === 'elevation') renderElevation(); else renderCanvas();
+}
 
-  errEl.textContent = '';
-  if (!first || !last || !email || !company) {
-    errEl.textContent = 'Please fill in your name, company, and email.';
+// ════════════════════════════
+// PROJECT CRUD
+// ════════════════════════════
+function openNewProjectModal() {
+  ['np-customer','np-company','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('np-ceiling').value = '96';
+  document.getElementById('np-type').value = 'Kitchen';
+  // Populate state dropdown if empty
+  const sel = document.getElementById('np-state');
+  if (sel.options.length <= 1) {
+    US_STATES.forEach(([code,name]) => { const o=document.createElement('option'); o.value=code; o.textContent=`${name} (${code})`; sel.appendChild(o); });
+  }
+  sel.value = '';
+  openModal('modal-new-project');
+  setTimeout(() => document.getElementById('np-customer').focus(), 50);
+}
+function createProject() {
+  const customer = document.getElementById('np-customer').value.trim();
+  if (!customer) { document.getElementById('np-customer').focus(); return; }
+  const room = {
+    id: uid(), name: document.getElementById('np-type').value,
+    walls: {
+      north: parseInt(document.getElementById('np-north').value) || 0,
+      south: parseInt(document.getElementById('np-south').value) || 0,
+      east:  parseInt(document.getElementById('np-east').value)  || 0,
+      west:  parseInt(document.getElementById('np-west').value)  || 0,
+    },
+    ceilingHeight: parseInt(document.getElementById('np-ceiling').value) || 96,
+    cabinets: [], openings: []
+  };
+  const proj = {
+    id: newId(), customer,
+    company: document.getElementById('np-company').value.trim(),
+    type:    document.getElementById('np-type').value,
+    notes:   document.getElementById('np-notes').value.trim(),
+    address: document.getElementById('np-address').value.trim(),
+    city:    document.getElementById('np-city').value.trim(),
+    state:   document.getElementById('np-state').value,
+    style: 'AW', createdAt: Date.now(), rooms: [room]
+  };
+  state.projects.unshift(proj);
+  persist();
+  closeModal('modal-new-project');
+  openProject(proj.id, room.id);
+}
+function openEditProjectModal() {
+  const p = activeProj(); if (!p) return;
+  document.getElementById('ep-customer').value = p.customer;
+  document.getElementById('ep-company').value  = p.company || '';
+  document.getElementById('ep-type').value     = p.type;
+  document.getElementById('ep-address').value  = p.address || '';
+  document.getElementById('ep-city').value     = p.city    || '';
+  document.getElementById('ep-notes').value    = p.notes   || '';
+  const sel = document.getElementById('ep-state');
+  if (sel.options.length <= 1) {
+    US_STATES.forEach(([code,name]) => { const o=document.createElement('option'); o.value=code; o.textContent=`${name} (${code})`; sel.appendChild(o); });
+  }
+  sel.value = p.state || '';
+  openModal('modal-edit-project');
+}
+function saveEditProject() {
+  const p = activeProj(); if (!p) return;
+  p.customer = document.getElementById('ep-customer').value.trim() || p.customer;
+  p.company  = document.getElementById('ep-company').value.trim();
+  p.type     = document.getElementById('ep-type').value;
+  p.address  = document.getElementById('ep-address').value.trim();
+  p.city     = document.getElementById('ep-city').value.trim();
+  p.state    = document.getElementById('ep-state').value;
+  p.notes    = document.getElementById('ep-notes').value.trim();
+  if (p.state && STATE_TAX[p.state] != null) document.getElementById('tax-pct').value = STATE_TAX[p.state];
+  persist(); closeModal('modal-edit-project'); renderProjectView();
+}
+function deleteProject(id, e) {
+  e.stopPropagation();
+  if (!confirm('Delete this project?')) return;
+  state.projects = state.projects.filter(p => p.id !== id);
+  db.from('projects').delete().eq('id', id); // fire and forget
+  if (state.activeProjectId === id) { state.activeProjectId = null; state.activeRoomId = null; showWelcome(); }
+  renderSidebar();
+}
+
+// ════════════════════════════
+// ROOM
+// ════════════════════════════
+function openAddRoomModal() {
+  ['ar-name','ar-north','ar-south','ar-east','ar-west'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ar-ceiling').value = '96';
+  openModal('modal-add-room');
+  setTimeout(() => document.getElementById('ar-name').focus(), 50);
+}
+function addRoom() {
+  const p = activeProj(); if (!p) return;
+  const room = {
+    id: uid(), name: document.getElementById('ar-name').value.trim() || 'Room',
+    walls: {
+      north: parseInt(document.getElementById('ar-north').value) || 0,
+      south: parseInt(document.getElementById('ar-south').value) || 0,
+      east:  parseInt(document.getElementById('ar-east').value)  || 0,
+      west:  parseInt(document.getElementById('ar-west').value)  || 0,
+    },
+    ceilingHeight: parseInt(document.getElementById('ar-ceiling').value) || 96,
+    cabinets: [], openings: []
+  };
+  p.rooms.push(room);
+  state.activeRoomId = room.id;
+  persist(); closeModal('modal-add-room');
+  renderRoomTabs(); renderCabinetList(); renderCanvas();
+}
+function deleteRoom(roomId) {
+  const p = activeProj();
+  if (!p || p.rooms.length <= 1) { alert('A project must have at least one room.'); return; }
+  if (!confirm('Delete this room and all its cabinets?')) return;
+  p.rooms = p.rooms.filter(r => r.id !== roomId);
+  state.activeRoomId = p.rooms[0].id;
+  persist(); renderRoomTabs(); renderCabinetList(); renderCanvas();
+}
+function switchRoom(roomId) {
+  state.activeRoomId = roomId; persist();
+  renderRoomTabs(); renderCabinetList(); renderCanvas();
+}
+
+// ════════════════════════════
+// WALL / OPENING SELECTION
+// ════════════════════════════
+function selectWall(wall) {
+  state.activeWall = wall;
+  document.querySelectorAll('.wall-btn').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
+  const labels = {north:'North',south:'South',east:'East',west:'West'};
+  document.getElementById('wall-list-label').textContent = labels[wall] + ' Wall';
+  document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + labels[wall];
+  renderCabinetList(); renderCanvas();
+}
+function selectElevWall(wall) {
+  state.elevWall = wall;
+  document.querySelectorAll('.elev-wall-tab').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
+  renderElevation();
+}
+function selectOpeningType(type) {
+  state.activeOpeningType = type;
+  document.querySelectorAll('.opening-type-btn').forEach(b => b.classList.toggle('active', b.dataset.otype === type));
+  document.getElementById('sill-height-row').style.display = type === 'window' ? 'flex' : 'none';
+}
+
+// ════════════════════════════
+// OPENINGS
+// ════════════════════════════
+function addOpening() {
+  const r = activeRoom(); if (!r) return;
+  const w = parseInt(document.getElementById('opening-width').value)  || 0;
+  const h = parseInt(document.getElementById('opening-height').value) || 0;
+  const offset = parseInt(document.getElementById('opening-offset').value) || 0;
+  if (!w || !h) { alert('Enter width and height for the opening.'); return; }
+  if (!r.openings) r.openings = [];
+  const sillHeight = parseInt(document.getElementById('opening-sill').value) || 36;
+  r.openings.push({ id: uid(), type: state.activeOpeningType, wall: state.activeWall, width: w, height: h, offset, sillHeight });
+  document.getElementById('opening-width').value  = '';
+  document.getElementById('opening-height').value = '';
+  document.getElementById('opening-offset').value = '0';
+  document.getElementById('opening-sill').value   = '36';
+  persist(); renderCabinetList(); renderCanvas(); renderElevation();
+}
+function removeOpening(id) {
+  const r = activeRoom(); if (!r || !r.openings) return;
+  r.openings = r.openings.filter(o => o.id !== id);
+  persist(); renderCabinetList(); renderCanvas(); renderElevation();
+}
+
+// ════════════════════════════
+// CABINET FORM
+// ════════════════════════════
+function onTypeChange() {
+  const type = document.getElementById('cab-type').value;
+  const ws = document.getElementById('cab-width');
+  const hs = document.getElementById('cab-height-sel');
+  ws.innerHTML = '<option value="">— Width —</option>';
+  hs.innerHTML = '<option value="">— Height —</option>';
+  hs.classList.add('hidden');
+  if (!type) return;
+  const cat = CATALOG[type];
+  cat.widths.forEach(w => {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = `${w}" wide  (${(w/12).toFixed(1)}')`;
+    ws.appendChild(o);
+  });
+  if (cat.heights.length > 1) {
+    hs.classList.remove('hidden');
+    cat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
+      hs.appendChild(o);
+    });
+  }
+  // Show bottom-from-floor + depth selectors for wall cabinets
+  const wbr = document.getElementById('wall-bottom-row');
+  const ds  = document.getElementById('cab-depth-sel');
+  const gdr = document.getElementById('glass-door-row');
+  if (type === 'wall') {
+    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
+    ds.classList.remove('hidden');
+    gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
+  } else {
+    wbr.style.display = 'none'; ds.classList.add('hidden');
+    gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
+  }
+}
+function addCabinet() {
+  const r = activeRoom(); if (!r) return;
+  const type  = document.getElementById('cab-type').value;
+  const width = parseFloat(document.getElementById('cab-width').value);
+  if (!type || !width) { alert('Select cabinet type and width.'); return; }
+  const cat = CATALOG[type];
+  const hs  = document.getElementById('cab-height-sel');
+  const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || cat.heights[0]);
+  const note   = document.getElementById('cab-note-input').value.trim();
+  const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
+  const wallBottom  = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
+  const depthSel    = document.getElementById('cab-depth-sel');
+  const depth       = (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value) : cat.depth;
+  const glassDoors    = type === 'wall' && document.getElementById('cab-glass-doors').checked;
+  const styleOverride = document.getElementById('cab-style-override').value || null;
+  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride });
+  document.getElementById('cab-note-input').value    = '';
+  document.getElementById('cab-offset-input').value  = '0';
+  document.getElementById('cab-style-override').value = '';
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+function removeCabinet(id) {
+  const r = activeRoom(); if (!r) return;
+  r.cabinets = r.cabinets.filter(c => c.id !== id);
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
+// ════════════════════════════
+// APPLIANCE FORM
+// ════════════════════════════
+function onAppTypeChange() {
+  const type = document.getElementById('app-type').value;
+  const ws   = document.getElementById('app-width');
+  const hs   = document.getElementById('app-height-sel');
+  ws.innerHTML = '<option value="">— Width —</option>';
+  hs.innerHTML  = '<option value="">— Height —</option>';
+  hs.classList.add('hidden');
+  if (!type) return;
+  const acat = APPLIANCES[type];
+  acat.widths.forEach(w => {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = `${w}" wide  (${(w/12).toFixed(1)}')`;
+    ws.appendChild(o);
+  });
+  if (acat.heights) {
+    hs.classList.remove('hidden');
+    acat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
+      hs.appendChild(o);
+    });
+  }
+}
+function addAppliance() {
+  const r = activeRoom(); if (!r) return;
+  const type  = document.getElementById('app-type').value;
+  const width = parseFloat(document.getElementById('app-width').value);
+  if (!type || !width) { alert('Select appliance type and width.'); return; }
+  const acat  = APPLIANCES[type];
+  const note  = document.getElementById('app-note').value.trim();
+  const offset = parseInt(document.getElementById('app-offset').value) || 0;
+  const hs = document.getElementById('app-height-sel');
+  const appHeight = (acat.heights && !hs.classList.contains('hidden') && hs.value)
+    ? parseFloat(hs.value) : acat.height;
+  if (!r.appliances) r.appliances = [];
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset });
+  document.getElementById('app-note').value   = '';
+  document.getElementById('app-offset').value = '0';
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+function removeAppliance(id) {
+  const r = activeRoom(); if (!r) return;
+  r.appliances = (r.appliances || []).filter(a => a.id !== id);
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
+// ════════════════════════════
+// PRICING
+// ════════════════════════════
+function onPricingToggle() {
+  document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
+  renderAll();
+}
+function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); }
+
+// ════════════════════════════
+// STYLE PANEL
+// ════════════════════════════
+function buildStylePanel() {
+  const container = document.getElementById('style-container');
+  const overrideSel = document.getElementById('cab-style-override');
+  let html = '', tier = '';
+  STYLES.forEach(s => {
+    if (s.tier !== tier) {
+      if (tier) html += '</div>';
+      html += `<div class="style-tier-label">${s.tier}</div><div class="style-grid">`;
+      tier = s.tier;
+    }
+    const bord = s.swatch === '#FEFEFE' || s.swatch === '#FAF9F7' ? '#ddd' : 'transparent';
+    html += `<div class="style-opt" data-code="${s.code}" onclick="selectStyle('${s.code}')" title="${s.name}">
+      <div class="style-swatch" style="background:${s.swatch};border-color:${bord}"></div>
+      <div class="style-code">${s.code}</div></div>`;
+    // Also populate the per-cabinet style override dropdown
+    if (overrideSel) {
+      const o = document.createElement('option'); o.value = s.code;
+      o.textContent = `${s.tier}: ${s.code} — ${s.name}`;
+      overrideSel.appendChild(o);
+    }
+  });
+  if (tier) html += '</div>';
+  container.innerHTML = html;
+}
+function selectStyle(code) {
+  const p = activeProj(); if (!p) return;
+  p.style = code; persist();
+  document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
+  renderCanvas(); if (state.viewMode === 'elevation') renderElevation();
+}
+function syncStylePanel() {
+  const p = activeProj(); const code = p ? (p.style || 'AW') : 'AW';
+  document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
+}
+
+// ════════════════════════════
+// RENDER: SIDEBAR
+// ════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('project-list');
+  if (!state.projects.length) { list.innerHTML = '<div class="empty-msg">No projects yet.<br>Click + New Project above.</div>'; return; }
+  list.innerHTML = state.projects.map(p => `
+    <div class="project-item ${p.id === state.activeProjectId ? 'active' : ''}" onclick="openProject('${p.id}')">
+      <div class="project-item-name">${escHtml(p.customer)}</div>
+      <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
+      <button class="project-item-del" onclick="deleteProject('${p.id}',event)" title="Delete">×</button>
+    </div>`).join('');
+}
+
+// ════════════════════════════
+// RENDER: PROJECT VIEW
+// ════════════════════════════
+function openProject(projId, roomId) {
+  state.activeProjectId = projId;
+  const p = getProj(projId);
+  state.activeRoomId = roomId || (p.rooms[0] && p.rooms[0].id);
+  p.rooms.forEach(r => { if (!r.openings) r.openings = []; if (!r.appliances) r.appliances = []; });
+  // Auto-set state tax rate
+  if (p.state && STATE_TAX[p.state] != null) {
+    const taxEl = document.getElementById('tax-pct');
+    if (taxEl) taxEl.value = STATE_TAX[p.state];
+  }
+  if (!p.jobCosts) p.jobCosts = [
+    { label:'Labor',        amount:'' },
+    { label:'Demo / Removal', amount:'' },
+    { label:'Incidentals',  amount:'' },
+  ];
+  persist(); renderProjectView();
+}
+function renderProjectView() {
+  const p = activeProj();
+  document.getElementById('welcome').classList.add('hidden');
+  document.getElementById('project-view').classList.remove('hidden');
+  document.getElementById('project-view').style.display = 'flex';
+  document.getElementById('pv-name').textContent = p.customer;
+  const si = STYLES.find(s => s.code === (p.style || 'AW'));
+  document.getElementById('pv-meta').textContent = `${p.type} · Style: ${si ? si.code + ' – ' + si.name : ''} · Created ${new Date(p.createdAt).toLocaleDateString()}`;
+  syncStylePanel(); renderSidebar(); renderRoomTabs();
+  selectWall(state.activeWall); setViewMode(state.viewMode || 'floor');
+}
+function showWelcome() {
+  document.getElementById('project-view').classList.add('hidden');
+  document.getElementById('welcome').classList.remove('hidden');
+}
+
+// ════════════════════════════
+// RENDER: ROOM TABS
+// ════════════════════════════
+function renderRoomTabs() {
+  const p = activeProj();
+  const bar = document.getElementById('room-tabs-bar');
+  bar.querySelectorAll('.room-tab').forEach(t => t.remove());
+  const addBtn = bar.querySelector('.add-room-btn');
+  p.rooms.forEach(r => {
+    const tab = document.createElement('button');
+    tab.className = 'room-tab' + (r.id === state.activeRoomId ? ' active' : '');
+    tab.innerHTML = escHtml(r.name) + (r.id === state.activeRoomId && p.rooms.length > 1
+      ? ` <span class="room-tab-del" onclick="deleteRoom('${r.id}');event.stopPropagation();">×</span>` : '');
+    tab.onclick = () => switchRoom(r.id);
+    bar.insertBefore(tab, addBtn);
+  });
+  document.getElementById('plan-title').textContent = `${p.customer} — ${activeRoom() ? activeRoom().name : ''} Floor Plan`;
+}
+
+// ════════════════════════════
+// RENDER: CABINET LIST
+// ════════════════════════════
+function renderCabinetList() {
+  const r = activeRoom();
+  const list = document.getElementById('cabinet-list');
+  if (!r) { list.innerHTML = ''; return; }
+  const wallCabs     = r.cabinets.filter(c => c.wall === state.activeWall);
+  const wallOpenings = (r.openings || []).filter(o => o.wall === state.activeWall);
+  let html = '';
+  if (wallOpenings.length) {
+    html += '<div class="cab-wall-header">Openings</div>';
+    html += wallOpenings.map(o => `
+      <div class="opening-item">
+        <span class="opening-item-icon">${OPENING_ICONS[o.type] || '⬜'}</span>
+        <div class="opening-item-info">${OPENING_LABELS[o.type] || o.type}</div>
+        <div class="opening-item-dim">${o.width}" × ${o.height}" @ ${o.offset || 0}" from left</div>
+        <button class="opening-remove" onclick="removeOpening('${o.id}')">×</button>
+      </div>`).join('');
+  }
+  if (wallCabs.length) {
+    html += '<div class="cab-wall-header">Cabinets</div>';
+    html += wallCabs.map(c => {
+      const cat   = CATALOG[c.type];
+      const price = pricingOn() ? `<div class="cab-price">${fmtMoney(cabinetPrice(c))}</div>` : '';
+      return `<div class="cab-item">
+        <div class="cab-color" style="background:${cat.color}"></div>
+        <div class="cab-info">
+          <div class="cab-name">${cat.label}${c.glassDoors?' 🪟':''}</div>
+          <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D</div>
+          ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
+          ${price}
+        </div>
+        <button class="cab-remove" onclick="removeCabinet('${c.id}')">×</button>
+      </div>`;
+    }).join('');
+  }
+  const wallApps = (r.appliances||[]).filter(a => a.wall === state.activeWall);
+  if (wallApps.length) {
+    html += '<div class="cab-wall-header">Appliances</div>';
+    html += wallApps.map(a => {
+      const acat = APPLIANCES[a.type];
+      return `<div class="cab-item">
+        <div class="cab-color" style="background:${acat.color}"></div>
+        <div class="cab-info">
+          <div class="cab-name">${acat.icon} ${acat.label}</div>
+          <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
+          ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
+        </div>
+        <button class="cab-remove" onclick="removeAppliance('${a.id}')">×</button>
+      </div>`;
+    }).join('');
+  }
+  if (!wallCabs.length && !wallOpenings.length && !wallApps.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
+  list.innerHTML = html;
+}
+
+// ════════════════════════════
+// RULER HELPER
+// ════════════════════════════
+function drawRuler(ctx, originX, originY, totalInches, scale, vertical, fromFloor) {
+  // vertical=true draws a Y-axis ruler; fromFloor=true reverses labels (0 at bottom)
+  const RULER_W = 22;
+  ctx.save();
+  ctx.fillStyle = '#f1f5f9';
+  if (!vertical) {
+    // X ruler — strip above the room edge
+    ctx.fillRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
+  } else {
+    // Y ruler — strip to the left of the room edge
+    ctx.fillRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
+    ctx.strokeRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
+  }
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 0.8;
+  ctx.fillStyle = '#475569'; ctx.font = '8px sans-serif';
+  for (let inch = 0; inch <= totalInches; inch += 6) {
+    const px = inch * scale;
+    const isFoot = inch % 12 === 0;
+    const tickLen = isFoot ? 10 : 5;
+    const label = fromFloor
+      ? `${Math.floor((totalInches - inch) / 12)}'`
+      : `${Math.floor(inch / 12)}'`;
+    if (!vertical) {
+      ctx.beginPath(); ctx.moveTo(originX + px, originY - tickLen); ctx.lineTo(originX + px, originY); ctx.stroke();
+      if (isFoot) { ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(label, originX + px, originY - RULER_W + 2); }
+    } else {
+      ctx.beginPath(); ctx.moveTo(originX - tickLen, originY + px); ctx.lineTo(originX, originY + px); ctx.stroke();
+      if (isFoot) { ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(label, originX - 12, originY + px); }
+    }
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════
+// RENDER: FLOOR PLAN
+// ════════════════════════════
+function renderCanvas() {
+  const canvas = document.getElementById('floor-plan');
+  const ctx = canvas.getContext('2d');
+  const r = activeRoom();
+  if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+  const scale    = parseFloat(document.getElementById('scale-sel').value) || 4;
+  const viewMode = document.getElementById('view-sel').value;
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const PAD = 68;
+  canvas.width  = Math.max(roomW * scale + PAD*2, 380);
+  canvas.height = Math.max(roomH * scale + PAD*2, 280);
+  const RX = PAD, RY = PAD, RW = roomW*scale, RH = roomH*scale;
+
+  ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  const GRID = 12*scale;
+  ctx.strokeStyle = '#E8EEF4'; ctx.lineWidth = 0.5;
+  for (let x = RX; x <= RX+RW+1; x += GRID) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
+  for (let y = RY; y <= RY+RH+1; y += GRID) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
+  ctx.fillStyle = '#FFF'; ctx.fillRect(RX,RY,RW,RH);
+
+  let cabs = r.cabinets;
+  if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type));
+  if (viewMode === 'wall') cabs = cabs.filter(c => c.type === 'wall');
+
+  function drawCabOnFloor(cab, wall) {
+    const cat = CATALOG[cab.type];
+    const cW = cab.width*scale, cD = cab.depth*scale;
+    const cabOff = (cab.offset||0)*scale;
+    const isActive = wall === state.activeWall;
+    const isCorner = cab.type === 'cornerBase';
+    const isLazySusan = cab.type === 'lazysusan';
+    const effD = cD; // always use actual depth (24")
+    let x,y,w,h;
+    if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=cD; }
+    else if (wall==='south') { x=RX+cabOff; y=RY+RH-cD;   w=cW;  h=cD; }
+    else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=cD;  h=cW; }
+    else                     { x=RX+RW-cD;  y=RY+cabOff;   w=cD;  h=cW; }
+
+    if (isCorner) {
+      ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      if (wall==='north') { ctx.moveTo(x,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cD*0.35); ctx.lineTo(x+cW*0.35,y+cD); ctx.lineTo(x,y+cD); }
+      else if (wall==='south') { ctx.moveTo(x,y+cD); ctx.lineTo(x+cW,y+cD); ctx.lineTo(x+cW,y+cD*0.65); ctx.lineTo(x+cW*0.35,y); ctx.lineTo(x,y); }
+      else if (wall==='west')  { ctx.moveTo(x,y); ctx.lineTo(x+cD,y); ctx.lineTo(x+cD,y+cW*0.35); ctx.lineTo(x+cD*0.35,y+cW); ctx.lineTo(x,y+cW); }
+      else { ctx.moveTo(x+cD,y); ctx.lineTo(x,y); ctx.lineTo(x,y+cW*0.35); ctx.lineTo(x+cD*0.65,y+cW); ctx.lineTo(x+cD,y+cW); }
+      ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.2)'; ctx.lineWidth = isActive ? 2.5 : 1.5; ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([3,2]);
+      ctx.beginPath();
+      if (wall==='north') { ctx.moveTo(x+cW,y+cD*0.35); ctx.lineTo(x+cW*0.35,y+cD); }
+      else if (wall==='south') { ctx.moveTo(x+cW,y+cD*0.65); ctx.lineTo(x+cW*0.35,y); }
+      else if (wall==='west')  { ctx.moveTo(x+cD,y+cW*0.35); ctx.lineTo(x+cD*0.35,y+cW); }
+      else { ctx.moveTo(x,y+cW*0.35); ctx.lineTo(x+cD*0.65,y+cW); }
+      ctx.stroke(); ctx.setLineDash([]);
+    } else if (isLazySusan) {
+      // L-shaped footprint: 33" along placed wall × 24" deep + 33" return on adjacent wall × 24" deep
+      ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      if (wall==='north') {
+        ctx.moveTo(x,    y);    ctx.lineTo(x+cW, y);
+        ctx.lineTo(x+cW, y+cD); ctx.lineTo(x+cD, y+cD);
+        ctx.lineTo(x+cD, y+cW); ctx.lineTo(x,    y+cW);
+      } else if (wall==='south') {
+        const bY = y+cD;
+        ctx.moveTo(x,    bY);    ctx.lineTo(x+cW,  bY);
+        ctx.lineTo(x+cW, bY-cD); ctx.lineTo(x+cD,  bY-cD);
+        ctx.lineTo(x+cD, bY-cW); ctx.lineTo(x,     bY-cW);
+      } else if (wall==='west') {
+        ctx.moveTo(x,    y);    ctx.lineTo(x+cW, y);
+        ctx.lineTo(x+cW, y+cD); ctx.lineTo(x+cD, y+cD);
+        ctx.lineTo(x+cD, y+cW); ctx.lineTo(x,    y+cW);
+      } else {
+        const rX = x+cD;
+        ctx.moveTo(rX,    y);    ctx.lineTo(rX-cW, y);
+        ctx.lineTo(rX-cW, y+cD); ctx.lineTo(rX-cD, y+cD);
+        ctx.lineTo(rX-cD, y+cW); ctx.lineTo(rX,    y+cW);
+      }
+      ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.25)';
+      ctx.lineWidth = isActive ? 2 : 1.5; ctx.stroke();
+      // Rotating shelf: two concentric circles + cross lines centered in the corner 24"×24" square
+      const rCX = (wall==='east') ? x+cD - cD*0.5 : x + cD*0.5;
+      const rCY = y + cD*0.5;
+      const r1 = cD*0.38, r2 = cD*0.16;
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(rCX, rCY, r1, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(rCX, rCY, r2, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([2,2]);
+      ctx.beginPath(); ctx.moveTo(rCX-r1, rCY); ctx.lineTo(rCX+r1, rCY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rCX, rCY-r1); ctx.lineTo(rCX, rCY+r1); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
+      ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.12)'; ctx.lineWidth = isActive ? 2 : 1; ctx.strokeRect(x,y,w,h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(x+2,y+h*0.45); ctx.lineTo(x+w-2,y+h*0.45); ctx.stroke();
+    }
+    const isDark = ['#3B82F6','#1D4ED8','#06B6D4','#A855F7','#F59E0B','#F97316'].includes(cat.color);
+    ctx.fillStyle = isDark ? '#fff' : '#1e293b';
+    const fs = Math.max(8, Math.min(scale*2.0, 11));
+    ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (isCorner) {
+      if      (wall==='north') ctx.fillText(`${cab.width}"`, x+cW*0.25, y+cD*0.35);
+      else if (wall==='south') ctx.fillText(`${cab.width}"`, x+cW*0.25, y+cD*0.65);
+      else if (wall==='west')  ctx.fillText(`${cab.width}"`, x+cD*0.35, y+cW*0.25);
+      else                     ctx.fillText(`${cab.width}"`, x+cD*0.65, y+cW*0.25);
+    } else if (isLazySusan) {
+      // Label in the middle of the L's long wing
+      if (wall==='east') ctx.fillText(`LS${cab.width}"`, x+cD - cW*0.65, y+cW*0.55);
+      else               ctx.fillText(`LS${cab.width}"`, x+cW*0.65, y+cW*0.55);
+    } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
+  }
+
+  function drawAppOnFloor(app, wall) {
+    const acat = APPLIANCES[app.type]; if (!acat) return;
+    const aW = app.width*scale, aD = acat.depth*scale, aOff = (app.offset||0)*scale;
+    let x,y,w,h;
+    if      (wall==='north') { x=RX+aOff; y=RY;       w=aW; h=aD; }
+    else if (wall==='south') { x=RX+aOff; y=RY+RH-aD; w=aW; h=aD; }
+    else if (wall==='west')  { x=RX;       y=RY+aOff;  w=aD; h=aW; }
+    else                     { x=RX+RW-aD; y=RY+aOff;  w=aD; h=aW; }
+    ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
+    ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
+    // Burner circles for range/cooktop
+    if (app.type==='range'||app.type==='cooktop') {
+      const r2=Math.min(w,h)*0.12;
+      [[0.28,0.3],[0.72,0.3],[0.28,0.7],[0.72,0.7]].forEach(([fx,fy])=>{
+        ctx.beginPath(); ctx.arc(x+w*fx,y+h*fy,r2,0,Math.PI*2);
+        ctx.fillStyle='#6B7280'; ctx.fill();
+        ctx.strokeStyle='#9CA3AF'; ctx.lineWidth=0.6; ctx.stroke();
+      });
+    }
+    // Door line for fridge
+    if (app.type==='refrigerator') {
+      ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=1; ctx.setLineDash([2,2]);
+      if (wall==='north'||wall==='south') { ctx.beginPath(); ctx.moveTo(x+w*0.5,y); ctx.lineTo(x+w*0.5,y+h); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.moveTo(x,y+h*0.5); ctx.lineTo(x+w,y+h*0.5); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.8,10))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, x+w/2, y+h/2);
+  }
+
+  ['north','south','east','west'].forEach(wall => {
+    cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    (r.appliances||[]).filter(a => a.wall===wall).forEach(app => drawAppOnFloor(app,wall));
+  });
+
+  (r.openings||[]).forEach(op => {
+    const wall = op.wall, oW = op.width*scale, opOffset = (op.offset||0)*scale;
+    let ox,oy,fw,fh;
+    if      (wall==='north') { ox=RX+opOffset; oy=RY;      fw=oW; fh=8; }
+    else if (wall==='south') { ox=RX+opOffset; oy=RY+RH-8; fw=oW; fh=8; }
+    else if (wall==='west')  { ox=RX;          oy=RY+opOffset; fw=8; fh=oW; }
+    else                     { ox=RX+RW-8;     oy=RY+opOffset; fw=8; fh=oW; }
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(ox,oy,fw,fh);
+    const opColors = { door:'#d97706', window:'#0284c7', 'sink-loc':'#0891b2', arch:'#7c3aed' };
+    ctx.strokeStyle = opColors[op.type]||'#d97706'; ctx.lineWidth = 2; ctx.setLineDash([3,3]);
+    ctx.strokeRect(ox,oy,fw,fh); ctx.setLineDash([]);
+    const icons = { door:'D', window:'W', 'sink-loc':'S', arch:'O' };
+    ctx.fillStyle = opColors[op.type]||'#d97706'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(icons[op.type]||'?', ox+fw/2, oy+fh/2);
+  });
+
+  ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
+  ctx.fillStyle = '#475569';
+  const df = Math.max(10, scale*2.3); ctx.font = `600 ${df}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (r.walls.north>0) ctx.fillText(fmtIn(r.walls.north), RX+RW/2, RY-22);
+  if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+26);
+  ctx.save(); ctx.translate(RX-28, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
+  ctx.save(); ctx.translate(RX+RW+28, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
+  // Rulers
+  drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
+  drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
+
+  ctx.fillStyle = '#94A3B8'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('↑ N', RX+4, RY-28);
+  const barPx = 24*scale, bx = RX+RW-barPx-8, by = RY+RH+40;
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+barPx,by); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx,by-4); ctx.lineTo(bx,by+4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx+barPx,by-4); ctx.lineTo(bx+barPx,by+4); ctx.stroke();
+  ctx.fillStyle = '#475569'; ctx.font = '500 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('24"', bx+barPx/2, by+5);
+  renderSummary(r);
+}
+
+// ════════════════════════════
+// RENDER: ELEVATION
+// ════════════════════════════
+function renderElevation() {
+  const canvas = document.getElementById('elevation-plan');
+  const ctx = canvas.getContext('2d');
+  const r = activeRoom();
+  if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+  const wall = state.elevWall;
+  const scale = parseFloat(document.getElementById('elev-scale-sel').value) || 4;
+  const wallLength = r.walls[wall] || 120;
+  const ceiling = r.ceilingHeight || 96;
+  const p = activeProj();
+  const styleInfo = STYLES.find(s => s.code === (p.style||'AW')) || STYLES[0];
+  const PAD = 60;
+  const canvasW = Math.max(wallLength*scale+PAD*2, 400);
+  const canvasH = Math.max(ceiling*scale+PAD*2, 320);
+  canvas.width = canvasW; canvas.height = canvasH;
+  const WX=PAD, WY=PAD, WW=wallLength*scale, WH=ceiling*scale;
+
+  ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
+  ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
+  ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
+  const gs = 12*scale;
+  for (let x=WX; x<=WX+WW; x+=gs) { ctx.beginPath(); ctx.moveTo(x,WY); ctx.lineTo(x,WY+WH); ctx.stroke(); }
+  for (let y=WY; y<=WY+WH; y+=gs) { ctx.beginPath(); ctx.moveTo(WX,y); ctx.lineTo(WX+WW,y); ctx.stroke(); }
+  ctx.fillStyle = '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
+  const counterY = WY+WH-36*scale;
+  ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(WX,counterY); ctx.lineTo(WX+WW,counterY); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Counter Height 36"', WX+4, counterY-4);
+
+  const wallCabs     = r.cabinets.filter(c => c.wall === wall);
+  const wallOpenings = (r.openings||[]).filter(o => o.wall === wall);
+  const floorY = WY+WH;
+  // South and west walls are mirrored in elevation (you face the opposite direction)
+  const flip = wall === 'south' || wall === 'west';
+  const eX = (offset, width) => flip
+    ? WX + WW - (offset + width) * scale
+    : WX + offset * scale;
+
+  wallOpenings.forEach(op => {
+    const ox = eX(op.offset||0, op.width), oW = op.width*scale, oH = op.height*scale;
+    if (op.type==='window') {
+      const sillY = floorY-(op.sillHeight||36)*scale-oH;
+      ctx.fillStyle='#BAE6FD'; ctx.fillRect(ox+2,sillY,oW-4,oH);
+      ctx.strokeStyle='#0369A1'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.strokeRect(ox+2,sillY,oW-4,oH);
+      ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(ox+2+oW/2,sillY); ctx.lineTo(ox+2+oW/2,sillY+oH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ox+2,sillY+oH/2); ctx.lineTo(ox+2+oW-4,sillY+oH/2); ctx.stroke();
+      ctx.fillStyle='#0369A1'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('W '+op.width+'"', ox+oW/2, sillY-4);
+    } else if (op.type==='door') {
+      ctx.fillStyle='#FEF9C3'; ctx.fillRect(ox,floorY-oH,oW,oH);
+      ctx.strokeStyle='#D97706'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.strokeRect(ox,floorY-oH,oW,oH);
+      ctx.strokeStyle='#F59E0B'; ctx.lineWidth=1.5;
+      ctx.beginPath();
+      if (flip) { ctx.arc(ox+oW,floorY,oW,Math.PI,Math.PI*1.5); }
+      else       { ctx.arc(ox,floorY,oW,Math.PI*1.5,Math.PI*2); }
+      ctx.stroke();
+      ctx.fillStyle='#D97706'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('D '+op.width+'"', ox+oW/2, floorY-oH-4);
+    } else if (op.type==='sink-loc') {
+      ctx.fillStyle='#E0F2FE'; ctx.fillRect(ox,counterY-12,oW,12);
+      ctx.strokeStyle='#0284C7'; ctx.lineWidth=1.5; ctx.setLineDash([]); ctx.strokeRect(ox,counterY-12,oW,12);
+      ctx.strokeStyle='#0284C7'; ctx.lineWidth=1; ctx.strokeRect(ox+4,counterY-10,oW-8,8);
+      ctx.fillStyle='#0284C7'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('S '+op.width+'"', ox+oW/2, counterY-14);
+    } else {
+      ctx.fillStyle='rgba(241,245,249,0.6)'; ctx.fillRect(ox,floorY-oH,oW,oH);
+      ctx.strokeStyle='#7C3AED'; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.strokeRect(ox,floorY-oH,oW,oH); ctx.setLineDash([]);
+      ctx.fillStyle='#7C3AED'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillText('O '+op.width+'"', ox+oW/2, floorY-oH-4);
+    }
+  });
+
+  const darkSwatches = ['#2B2926','#1B3A5C','#4B4F5C','#5B6069','#1C1B1A'];
+  function cabStyle(cab) {
+    const code = cab.styleOverride || p.style || 'AW';
+    return STYLES.find(s => s.code === code) || styleInfo;
+  }
+
+  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type)).forEach(cab => {
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const x=eX(cab.offset||0, cab.width), y=floorY-cH;
+    const isCorner=cab.type==='cornerBase';
+    const si=cabStyle(cab);
+    const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
+    if (isCorner) {
+      const cutW=cW*0.28;
+      ctx.fillStyle=si.swatch;
+      ctx.beginPath(); ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH); ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cH*0.12); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.strokeStyle='#94A3B8'; ctx.beginPath(); ctx.moveTo(x,y+cH*0.12); ctx.lineTo(x+cutW,y); ctx.stroke();
+      ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(x+cutW+3,y+5); ctx.lineTo(x+cW-4,y+5); ctx.lineTo(x+cW-4,y+cH-12); ctx.lineTo(x+4,y+cH-12); ctx.lineTo(x+4,y+cH*0.18); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.55-7,y+cH-18,14,5,2); ctx.fill();
+      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
+      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${cat.abbr}${cab.width}`, x+cW*0.6, y+cH*0.5);
+    } else {
+      ctx.fillStyle=si.swatch; ctx.fillRect(x,y,cW,cH);
+      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,cW,cH);
+      if (cab.type === 'lazysusan') {
+        // Bifolding door — two panels meeting at center fold
+        const midX = x + cW/2;
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+        ctx.strokeRect(x+3, y+4, cW/2-4, cH-14); // left panel
+        ctx.strokeRect(midX+1, y+4, cW/2-4, cH-14); // right panel
+        ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
+        ctx.beginPath(); ctx.moveTo(midX, y+4); ctx.lineTo(midX, y+cH-10); ctx.stroke();
+        ctx.setLineDash([]);
+        // Bifolding knobs at center fold
+        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(midX, y+cH*0.55, 3, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
+        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
+      }
+      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
+      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
+    }
+    if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
+  });
+
+  wallCabs.filter(c=>c.type==='wall').forEach(cab => {
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
+    const y=Math.max(WY, floorY-bottomIn*scale-cH);
+    const x=eX(cab.offset||0, cab.width);
+    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
+    ctx.fillStyle=si.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+    ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
+    ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
+    ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
+    ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
+    if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
+    // Bottom-from-floor annotation
+    const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
+    if (bIn !== 54) {
+      ctx.font=`600 8px sans-serif`; ctx.fillStyle='#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
+    }
+  });
+
+  wallCabs.filter(c=>c.type==='tall').forEach(cab => {
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const x=eX(cab.offset||0, cab.width), y=floorY-cH;
+    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
+    ctx.fillStyle=si.swatch; ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
+    ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
+    const mid=y+cH/2; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8;
+    ctx.strokeRect(x+4,y+4,cW-8,cH/2-8); ctx.strokeRect(x+4,mid+4,cW-8,cH/2-8);
+    ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
+    ctx.fillStyle=txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
+  });
+
+  // Appliances in elevation
+  (r.appliances||[]).filter(a => a.wall === wall).forEach(app => {
+    const acat = APPLIANCES[app.type]; if (!acat) return;
+    const aW   = app.width * scale;
+    const aH   = (app.height || acat.height) * scale;
+    const x    = eX(app.offset||0, app.width);
+    const botY = floorY - acat.elevBottom * scale; // bottom edge Y
+    const y    = botY - aH;                        // top edge Y
+
+    ctx.fillStyle = acat.color;
+    ctx.fillRect(x, y, aW, aH);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, aW, aH);
+
+    if (app.type === 'refrigerator') {
+      // Freezer / fridge split at 60% up from bottom
+      const splitY = botY - aH * 0.6;
+      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, splitY); ctx.lineTo(x+aW, splitY); ctx.stroke();
+      // Handle (vertical bar near right edge)
+      ctx.fillStyle = '#D1D5DB'; ctx.fillRect(x+aW*0.82, y+aH*0.15, aW*0.05, aH*0.3);
+      ctx.fillRect(x+aW*0.82, botY-aH*0.45, aW*0.05, aH*0.25);
+    } else if (app.type === 'range') {
+      // Oven door panel
+      ctx.strokeStyle = '#6B7280'; ctx.lineWidth = 1;
+      ctx.strokeRect(x+4, y+aH*0.25, aW-8, aH*0.65);
+      // Window in door
+      ctx.fillStyle = '#1F2937'; ctx.fillRect(x+8, y+aH*0.3, aW-16, aH*0.25);
+      // Knobs row at top
+      const knobY = y + aH*0.1;
+      [0.2,0.4,0.6,0.8].forEach(fx => {
+        ctx.beginPath(); ctx.arc(x+aW*fx, knobY, aW*0.04, 0, Math.PI*2);
+        ctx.fillStyle='#9CA3AF'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.5; ctx.stroke();
+      });
+    } else if (app.type === 'dishwasher') {
+      // Control panel strip at top
+      ctx.fillStyle = '#4B5563'; ctx.fillRect(x+2, y+2, aW-4, aH*0.15);
+      // Inner door panel
+      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 0.8;
+      ctx.strokeRect(x+5, y+aH*0.2, aW-10, aH*0.72);
+    } else if (app.type === 'microwave') {
+      // Vent grille lines on left
+      for (let i=1; i<=3; i++) {
+        ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
+        ctx.beginPath(); ctx.moveTo(x+2, y+aH*(i/4)); ctx.lineTo(x+aW*0.35, y+aH*(i/4)); ctx.stroke();
+      }
+      // Control panel on right
+      ctx.fillStyle='#374151'; ctx.fillRect(x+aW*0.6, y+2, aW*0.35, aH-4);
+    } else if (app.type === 'cooktop') {
+      // 4 burner circles across the thin rect
+      [0.15,0.38,0.62,0.85].forEach(fx => {
+        ctx.beginPath(); ctx.arc(x+aW*fx, y+aH/2, aH*0.35, 0, Math.PI*2);
+        ctx.fillStyle='#374151'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.6; ctx.stroke();
+      });
+    } else if (app.type === 'hood') {
+      // Tapered trapezoid shape (wider at bottom)
+      const taper = aW * 0.12;
+      ctx.fillStyle = acat.color;
+      ctx.beginPath();
+      ctx.moveTo(x,        y+aH);
+      ctx.lineTo(x+aW,     y+aH);
+      ctx.lineTo(x+aW-taper, y);
+      ctx.lineTo(x+taper,  y);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1; ctx.stroke();
+      // Vent slots
+      ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
+      [0.3,0.5,0.7].forEach(fy => {
+        ctx.beginPath(); ctx.moveTo(x+aW*0.2, y+aH*fy); ctx.lineTo(x+aW*0.8, y+aH*fy); ctx.stroke();
+      });
+    }
+
+    // Label
+    ctx.fillStyle='#F9FAFB'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, x+aW/2, y+aH/2);
+    if (app.note) {
+      ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
+      ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
+    }
+  });
+
+  // Rulers
+  drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
+  drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor, 0 at top = ceiling)
+
+  ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(WX,WY,WW,WH);
+  ctx.fillStyle='#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
+  ctx.fillStyle='#475569';
+  const df=Math.max(10,scale*2.2); ctx.font=`600 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-20);
+  ctx.save(); ctx.translate(WX-28,WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
+  const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
+  document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
+}
+
+// ════════════════════════════
+// RENDER: SUMMARY TABLE
+// ════════════════════════════
+function renderSummary(r) {
+  const el = document.getElementById('summary-table');
+  if (!r || !r.cabinets.length) { el.innerHTML = ''; return; }
+  const groups = {};
+  r.cabinets.forEach(c => {
+    const k = `${c.type}|${c.width}|${c.height}`;
+    if (!groups[k]) groups[k] = { type:c.type, width:c.width, height:c.height, count:0, totalPrice:0 };
+    groups[k].count++; groups[k].totalPrice += cabinetPrice(c);
+  });
+  const showPrice = pricingOn(); let subtotal = 0;
+  const rows = Object.values(groups).map(g => {
+    const cat = CATALOG[g.type]; subtotal += g.totalPrice;
+    return `<div class="summary-row">
+      <div class="summary-dot" style="background:${cat.color}"></div>
+      <div class="summary-name">${cat.label} — ${g.width}"W × ${g.height}"H</div>
+      ${showPrice ? `<div class="summary-price">${fmtMoney(g.totalPrice)}</div>` : ''}
+      <div class="summary-count">×${g.count}</div>
+    </div>`;
+  }).join('');
+  const tax = subtotal*getTax(), total = subtotal+tax;
+  const appRows = (r.appliances||[]).map(a => {
+    const acat = APPLIANCES[a.type];
+    return `<div class="summary-row">
+      <div class="summary-dot" style="background:${acat.color}"></div>
+      <div class="summary-name">${acat.icon} ${acat.label} — ${a.width}"W</div>
+      <div class="summary-count">×1</div>
+    </div>`;
+  }).join('');
+  const totalCount = r.cabinets.length + (r.appliances||[]).length;
+  el.innerHTML = `<h4>Summary (${totalCount} items)</h4>${rows}${appRows}
+    ${showPrice ? `<div class="summary-total-row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>` : ''}
+    ${showPrice && getTax()>0 ? `<div class="summary-total-row" style="font-size:12px;font-weight:600"><span>Tax (${(getTax()*100).toFixed(1)}%)</span><span>${fmtMoney(tax)}</span></div>` : ''}
+    ${showPrice ? `<div class="summary-total-row" style="font-size:15px"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div>` : ''}`;
+}
+
+// ════════════════════════════
+// QUOTE MODAL
+// ════════════════════════════
+function openQuoteModal() {
+  const p = activeProj();
+  if (!p) { alert('Open a project first.'); return; }
+  if (!p.jobCosts) p.jobCosts = [
+    { label:'Labor', amount:'' },
+    { label:'Demo / Removal', amount:'' },
+    { label:'Incidentals', amount:'' },
+  ];
+  if (!p.trimItems) p.trimItems = [];
+  document.getElementById('quote-company-input').value = p.company || '';
+  renderJobCostRows();
+  renderTrimRows();
+  refreshQuoteTotals();
+  openModal('modal-quote');
+}
+
+function updateQuoteCompany(val) {
+  const p = activeProj(); if (!p) return;
+  p.company = val; persist();
+}
+
+function renderJobCostRows() {
+  const p = activeProj(); if (!p) return;
+  document.getElementById('job-cost-rows').innerHTML = (p.jobCosts||[]).map((jc, i) => `
+    <div class="jc-row">
+      <input class="jc-label" type="text" value="${escHtml(jc.label)}" placeholder="Description"
+        onchange="updateJobCost(${i},'label',this.value)">
+      <input class="jc-amount" type="number" value="${jc.amount||''}" placeholder="0.00" min="0" step="0.01"
+        onchange="updateJobCost(${i},'amount',this.value)">
+      <button class="jc-del" onclick="removeJobCostRow(${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+function updateJobCost(i, field, val) {
+  const p = activeProj(); if (!p || !p.jobCosts[i]) return;
+  p.jobCosts[i][field] = field === 'amount' ? (parseFloat(val)||'') : val;
+  persist(); refreshQuoteTotals();
+}
+
+function addJobCostRow() {
+  const p = activeProj(); if (!p) return;
+  if (!p.jobCosts) p.jobCosts = [];
+  p.jobCosts.push({ label:'', amount:'' });
+  persist(); renderJobCostRows(); refreshQuoteTotals();
+}
+
+function removeJobCostRow(i) {
+  const p = activeProj(); if (!p) return;
+  p.jobCosts.splice(i, 1);
+  persist(); renderJobCostRows(); refreshQuoteTotals();
+}
+
+// Trim & Materials rows
+const TRIM_PRESETS = [
+  'Crown Molding (96" piece)','Wall Filler 3"x30"','Wall Filler 3"x36"','Wall Filler 3"x42"',
+  'Base Filler 3"x34.5"','Base Filler 6"x34.5"','Toe Kick (96")','Light Rail Molding (96")',
+  'Scribe Molding (96")','Dishwasher Panel','Refrigerator End Panel 84"','Refrigerator End Panel 96"'
+];
+function renderTrimRows() {
+  const p = activeProj(); if (!p) return;
+  if (!p.trimItems) p.trimItems = [];
+  document.getElementById('trim-item-rows').innerHTML = p.trimItems.map((t,i) => `
+    <div class="jc-row">
+      <input class="jc-label" type="text" value="${escHtml(t.label)}" placeholder="Item description" list="trim-presets"
+        onchange="updateTrimItem(${i},'label',this.value)">
+      <input class="jc-amount" type="number" value="${t.qty||''}" placeholder="Qty" min="1" step="1" style="width:60px;"
+        onchange="updateTrimItem(${i},'qty',this.value)">
+      <input class="jc-amount" type="number" value="${t.unitPrice||''}" placeholder="$/ea" min="0" step="0.01"
+        onchange="updateTrimItem(${i},'unitPrice',this.value)">
+      <button class="jc-del" onclick="removeTrimRow(${i})">×</button>
+    </div>`).join('') +
+    `<datalist id="trim-presets">${TRIM_PRESETS.map(p=>`<option value="${p}">`).join('')}</datalist>`;
+}
+function updateTrimItem(i, field, val) {
+  const p = activeProj(); if (!p || !p.trimItems[i]) return;
+  p.trimItems[i][field] = (field === 'qty' || field === 'unitPrice') ? (parseFloat(val)||'') : val;
+  persist(); refreshQuoteTotals();
+}
+function addTrimRow() {
+  const p = activeProj(); if (!p) return;
+  if (!p.trimItems) p.trimItems = [];
+  p.trimItems.push({ label:'', qty:'', unitPrice:'' });
+  persist(); renderTrimRows(); refreshQuoteTotals();
+}
+function removeTrimRow(i) {
+  const p = activeProj(); if (!p) return;
+  p.trimItems.splice(i, 1);
+  persist(); renderTrimRows(); refreshQuoteTotals();
+}
+
+function refreshQuoteTotals() {
+  const p = activeProj(); if (!p) return;
+  const tax = getTax();
+  let cabSubtotal = 0;
+  p.rooms.forEach(r => r.cabinets.forEach(c => { cabSubtotal += cabinetPrice(c); }));
+  const jcTotal    = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
+  const trimTotal  = (p.trimItems||[]).reduce((s,t) => s + (parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
+  const beforeTax  = cabSubtotal + jcTotal + trimTotal;
+  const taxAmt    = beforeTax * tax;
+  const total     = beforeTax + taxAmt;
+  const cabCount  = p.rooms.reduce((n,r) => n + r.cabinets.length, 0);
+  const el = document.getElementById('quote-totals-preview'); if (!el) return;
+  el.innerHTML = `
+    <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
+    ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
+    ${trimTotal>0?`<div class="qtp-row"><span>Trim &amp; Materials</span><span>${fmtMoney(trimTotal)}</span></div>`:''}
+    ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
+    <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>`;
+}
+
+function printQuote() {
+  const p = activeProj(); if (!p) return;
+  // Company name: quote modal field → project field → company profile → default
+  const companyField = document.getElementById('quote-company-input');
+  const companyName = (companyField?.value.trim()) || p.company || companyProfile.company_name || 'My Cabinet Planner';
+  const cp = companyProfile;
+  const today     = new Date().toLocaleDateString();
+  const validThru = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString();
+  const quoteNum  = 'CD-' + Date.now().toString(36).toUpperCase().slice(-6);
+  const tax       = getTax();
+  let cabSubtotal = 0;
+
+  let cabRows = '';
+  p.rooms.forEach(room => {
+    if (!room.cabinets.length) return;
+    cabRows += `<tr class="room-hdr"><td colspan="5">${escHtml(room.name)}</td></tr>`;
+    room.cabinets.forEach(c => {
+      const price = cabinetPrice(c); cabSubtotal += price;
+      const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
+      const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
+      cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${fmtMoney(price)}</td></tr>`;
+    });
+  });
+
+  let appRows = '';
+  p.rooms.forEach(room => {
+    (room.appliances||[]).forEach(a => {
+      const ac = APPLIANCES[a.type];
+      appRows += `<tr><td>${ac.icon} ${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td colspan="2">${escHtml(a.note||'—')}</td></tr>`;
+    });
+  });
+
+  const jcItems   = (p.jobCosts||[]).filter(jc => jc.label || jc.amount);
+  const jcTotal   = jcItems.reduce((s,jc) => s+(parseFloat(jc.amount)||0), 0);
+  const jcRows    = jcItems.map(jc => `<tr><td colspan="4">${escHtml(jc.label||'Additional Cost')}</td><td class="amt">${fmtMoney(parseFloat(jc.amount)||0)}</td></tr>`).join('');
+  const trimItems = (p.trimItems||[]).filter(t => t.label || t.unitPrice);
+  const trimTotal = trimItems.reduce((s,t) => s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
+  const trimRows  = trimItems.map(t => `<tr><td colspan="2">${escHtml(t.label||'Trim Item')}</td><td>Qty: ${t.qty||1}</td><td>${fmtMoney(parseFloat(t.unitPrice)||0)} ea</td><td class="amt">${fmtMoney((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0))}</td></tr>`).join('');
+  const beforeTax = cabSubtotal + jcTotal + trimTotal;
+  const taxAmt    = beforeTax * tax;
+  const total     = beforeTax + taxAmt;
+  const styleName = STYLES.find(s=>s.code===p.style)?.name || p.style;
+
+  const win = window.open('', '_blank', 'width=920,height=750');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,'Helvetica Neue',sans-serif;color:#1a1a1a;padding:48px;max-width:860px;margin:0 auto;font-size:12px;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #b45309;}
+.co-name{font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-.5px;}
+.co-sub{font-size:11px;color:#78614f;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.co-info{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.6;}
+.q-title{font-size:22px;font-weight:800;color:#b45309;text-align:right;}
+.q-meta{font-size:11px;color:#6b7280;text-align:right;margin-top:6px;line-height:1.8;}
+.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#faf7f4;padding:14px 18px;border-radius:8px;border-left:4px solid #b45309;margin-bottom:22px;}
+.ci label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78614f;display:block;margin-bottom:2px;}
+.ci span{font-size:13px;font-weight:700;color:#1c1008;}
+.ci small{font-size:10px;color:#6b7280;display:block;margin-top:2px;}
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid #e7ddd5;}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px;}
+th{background:#2c1f14;color:#fff;text-align:left;padding:7px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+td{padding:7px 10px;border-bottom:1px solid #f0e8e0;vertical-align:top;}
+tr:nth-child(even) td{background:#faf9f7;}
+tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color:#6b4c2a;padding:4px 10px;}
+.amt{text-align:right;font-weight:600;white-space:nowrap;}
+.totals{margin-top:12px;border:1px solid #e7ddd5;border-radius:6px;overflow:hidden;}
+.tr{display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #f0e8e0;font-size:12px;}
+.tr:last-child{border-bottom:none;font-size:16px;font-weight:800;background:#f0fdf4;padding:10px 14px;}
+.tl{color:#6b7280;}.ta{font-weight:600;}
+.terms{margin-top:28px;padding:18px 20px;background:#faf7f4;border-radius:8px;border:1px solid #e7ddd5;page-break-inside:avoid;}
+.terms h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin-bottom:10px;}
+.terms p{font-size:10px;color:#6b7280;line-height:1.7;margin-bottom:5px;}
+.terms strong{color:#4b3728;}
+.sigs{margin-top:36px;page-break-inside:avoid;}
+.sr{display:flex;gap:60px;margin-top:28px;}
+.sb{flex:1;}
+.sl{border-bottom:1px solid #374151;height:36px;margin-bottom:5px;}
+.slb{font-size:10px;color:#6b7280;font-weight:600;}
+.foot{margin-top:24px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e7ddd5;padding-top:12px;}
+@media print{body{padding:24px;}@page{margin:.75in;size:letter;}}
+</style></head>
+<body onload="window.print()">
+<div class="hdr">
+  <div>
+    ${cp.logo_url ? `<img src="${escHtml(cp.logo_url)}" style="height:48px;margin-bottom:8px;display:block;" alt="logo">` : ''}
+    <div class="co-name">${escHtml(companyName)}</div>
+    ${cp.tagline ? `<div class="co-sub">${escHtml(cp.tagline)}</div>` : '<div class="co-sub">Professional Cabinet Design &amp; Installation</div>'}
+    <div class="co-info">
+      ${cp.address ? escHtml(cp.address) + (cp.city ? ', '+escHtml(cp.city) : '') + (cp.state ? ' '+escHtml(cp.state) : '') + (cp.zip ? ' '+escHtml(cp.zip) : '') + '<br>' : ''}
+      ${cp.phone ? escHtml(cp.phone) + '<br>' : ''}
+      ${cp.email ? escHtml(cp.email) + '<br>' : ''}
+      ${cp.website ? escHtml(cp.website) : 'mycabinetbuilder.com'}
+    </div>
+  </div>
+  <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
+</div>
+<div class="cust-bar">
+  <div class="ci"><label>Customer</label><span>${escHtml(p.customer)}</span>${p.address?`<small>${escHtml(p.address)}${p.city?', '+escHtml(p.city):''}${p.state?' '+escHtml(p.state):''}</small>`:''}</div>
+  <div class="ci"><label>Project</label><span>${escHtml(p.type)}</span>${p.notes?`<small>${escHtml(p.notes)}</small>`:''}</div>
+  <div class="ci"><label>Door Style</label><span>${escHtml(p.style)}</span><small>${escHtml(styleName)}</small></div>
+  <div class="ci"><label>Rooms</label><span>${p.rooms.length}</span></div>
+</div>
+<div class="sec">Cabinet Line Items</div>
+<table><thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
+<tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
+${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th colspan="2">Notes</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
+${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
+${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>${trimRows}</tbody></table>`:''}
+<div class="totals" style="margin-top:16px;">
+  <div class="tr"><span class="tl">Cabinet Subtotal</span><span class="ta">${fmtMoney(cabSubtotal)}</span></div>
+  ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
+  ${trimTotal>0?`<div class="tr"><span class="tl">Trim &amp; Materials</span><span class="ta">${fmtMoney(trimTotal)}</span></div>`:''}
+  ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
+  <div class="tr"><span>TOTAL</span><span class="ta" style="color:#16a34a;">${fmtMoney(total)}</span></div>
+</div>
+<div class="terms"><h4>Terms &amp; Conditions</h4>
+  <p>Please read your quote carefully and make sure it includes everything exactly as you want it, <strong>all sales are FINAL.</strong> Cabinets on this order are to fit the dimensions provided by the customer and reflect accurately on your final floor plan layout.</p>
+  <p>Flat packed, direct shipped cabinetry lead time is approximately 1–4 weeks from the time you place your order (or starting at the next business day if the order was placed on a weekend or holiday). Shipping delays are entirely out of our control and cannot be foreseen. We do not compensate monetarily for shipping delays. <strong>We strongly advise waiting until cabinets are received before demolishing your existing kitchen or work site.</strong></p>
+  <p>All cabinets and included hardware are covered by the manufacturer's warranty. Please see specification sheet for all details and materials. Cabinets include soft-close door hinges and under mounted soft-close drawer slides. Decorative handles and knobs or specialty hardware sold separately. Assembly resources are available upon request. Estimates for pre-assembly are available upon request; free shipping does not apply to fully assembled cabinets. Pre-assembly services add approximately 7–10 days to the average lead time.</p>
+  <p>Please be sure the delivery information you provide is accurate and confirm again with the dispatcher when scheduling delivery. Once shipped from the distribution center you will receive an email and/or phone call from freight with a 3-day window to choose a delivery date to the address you provided or pick-up date at your closest shipping facility if applicable. If the delivery can't be scheduled within 7 days of your order arriving at a local loading dock, storage fees may apply at the discretion of the freight company. Please be sure you are available on the delivery date you choose or contact us immediately to make other arrangements.</p>
+  <p>Be sure to compare the packing list with the shipment to ensure you've received the correct number of boxes and the correct products and to report any visible shipping damage <strong>at the time of delivery.</strong> Any damage should be noted on the bill of lading and reported to us immediately. In order to file a warranty claim for shipping damage we must have a reference number generated by the truck driver at the time of delivery. Without the reference number a claim for shipping damage cannot be submitted. Any concealed shipping damage must be reported within <strong>5 days</strong> of receiving your order. We will also need photos of shipping damage to file your claim.</p>
+  <p>If your purchase contains factory defects that occurred during production this must be reported within <strong>14 days</strong> of receiving your order. Any other defects or issues related to the product, functionality, hardware, finishes or materials fall under the manufacturer's limited warranty. Warranty replacement parts are typically shipped within 1–2 weeks; availability of warranty parts does not negate payment terms.</p>
+  <p>We accept all major credit cards, cash or check. <strong>$100 fee for returned checks.</strong> Your cabinet order must be paid in full to begin fulfillment. Please feel free to reach out with any questions or concerns. We appreciate your business!</p>
+</div>
+<div class="sigs">
+  <div class="sr">
+    <div class="sb"><div class="sl"></div><div class="slb">Customer Signature</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name</div></div></div>
+    <div class="sb"><div class="sl"></div><div class="slb">${escHtml(companyName)} Representative</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name / Title</div></div></div>
+  </div>
+  <div class="sr" style="margin-top:20px;">
+    <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
+    <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
+  </div>
+</div>
+<div class="foot">${escHtml(companyName)} · ${escHtml(cp.website || 'mycabinetbuilder.com')} · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
+</body></html>`);
+  win.document.close();
+}
+
+// ════════════════════════════
+// DRAG ON FLOOR PLAN
+// ════════════════════════════
+(function(){
+  let drag = null, hoverCabId = null;
+  function getCanvasInfo() {
+    const r = activeRoom(); if (!r) return null;
+    const scale = parseFloat(document.getElementById('scale-sel').value)||4;
+    const roomW = Math.max(r.walls.north,r.walls.south,48);
+    const roomH = Math.max(r.walls.east,r.walls.west,48);
+    return { scale, RX:68, RY:68, RW:roomW*scale, RH:roomH*scale, r };
+  }
+  function hitTestCab(mx,my,info) {
+    const {scale,RX,RY,RW,RH,r} = info;
+    for (const cab of r.cabinets) {
+      const cW=cab.width*scale, cD=cab.depth*scale, off=(cab.offset||0)*scale;
+      let x,y,w,h;
+      if      (cab.wall==='north') { x=RX+off; y=RY;       w=cW; h=cD; }
+      else if (cab.wall==='south') { x=RX+off; y=RY+RH-cD; w=cW; h=cD; }
+      else if (cab.wall==='west')  { x=RX;      y=RY+off;  w=cD; h=cW; }
+      else                         { x=RX+RW-cD; y=RY+off; w=cD; h=cW; }
+      if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
+    }
+    for (const app of (r.appliances||[])) {
+      const acat=APPLIANCES[app.type]; if(!acat) continue;
+      const aW=app.width*scale, aD=acat.depth*scale, off=(app.offset||0)*scale;
+      let x,y,w,h;
+      if      (app.wall==='north') { x=RX+off; y=RY;       w=aW; h=aD; }
+      else if (app.wall==='south') { x=RX+off; y=RY+RH-aD; w=aW; h=aD; }
+      else if (app.wall==='west')  { x=RX;      y=RY+off;  w=aD; h=aW; }
+      else                         { x=RX+RW-aD; y=RY+off; w=aD; h=aW; }
+      if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
+    }
+    return null;
+  }
+  function snap(val) { return Math.round(val/3)*3; }
+  const canvas  = document.getElementById('floor-plan');
+  const tooltip = document.getElementById('drag-tooltip');
+  canvas.addEventListener('mousedown', e => {
+    const info = getCanvasInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    if (!hit) return; e.preventDefault();
+    drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south' };
+    canvas.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    const info = getCanvasInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    if (drag) {
+      const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
+      const newOffset = Math.max(0, snap(drag.startOffset + delta/drag.scale));
+      const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
+      if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+    } else {
+      const hit = hitTestCab(mx,my,info);
+      if (hit) {
+        canvas.style.cursor = 'grab';
+        if (hoverCabId!==hit.cab.id) {
+          hoverCabId=hit.cab.id;
+          const lbl = CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type;
+          tooltip.style.display='block'; tooltip.textContent=`${lbl} · ${hit.cab.offset||0}" from left — drag to move`;
+        }
+      } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
+    }
+  });
+  window.addEventListener('mouseup', () => { if(drag){drag=null;canvas.style.cursor='default';setTimeout(()=>{tooltip.style.display='none';},1200);} });
+  canvas.addEventListener('touchstart', e => {
+    const info=getCanvasInfo(); if(!info)return;
+    const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
+    const hit=hitTestCab(t.clientX-rect.left,t.clientY-rect.top,info); if(!hit)return; e.preventDefault();
+    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:info.scale,isNS:hit.wall==='north'||hit.wall==='south'};
+  },{passive:false});
+  window.addEventListener('touchmove', e => {
+    if(!drag)return; const info=getCanvasInfo(); if(!info)return;
+    const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
+    const delta=drag.isNS?(t.clientX-rect.left-drag.startMX):(t.clientY-rect.top-drag.startMY);
+    const newOffset=Math.max(0,snap(drag.startOffset+delta/drag.scale));
+    const cab=info.r.cabinets.find(c=>c.id===drag.cabId)||(info.r.appliances||[]).find(a=>a.id===drag.cabId);
+    if(cab){cab.offset=newOffset;tooltip.style.display='block';tooltip.textContent=`${newOffset}" from left`;persist();renderCanvas();renderCabinetList();}
+    e.preventDefault();
+  },{passive:false});
+  window.addEventListener('touchend',()=>{if(drag){drag=null;setTimeout(()=>{tooltip.style.display='none';},1200);}});
+})();
+
+// ════════════════════════════
+// COMPANY SETTINGS
+// ════════════════════════════
+let companyProfile = {};
+
+async function loadCompanyProfile() {
+  if (!currentUser) return;
+  const { data } = await db.from('company_profiles').select('*').eq('user_id', currentUser.id).single();
+  if (data) companyProfile = data;
+}
+
+async function openCompanySettings() {
+  await loadCompanyProfile();
+  const f = companyProfile;
+  document.getElementById('cs-name').value    = f.company_name || '';
+  document.getElementById('cs-tagline').value = f.tagline      || '';
+  document.getElementById('cs-address').value = f.address      || '';
+  document.getElementById('cs-city').value    = f.city         || '';
+  document.getElementById('cs-state').value   = f.state        || '';
+  document.getElementById('cs-zip').value     = f.zip          || '';
+  document.getElementById('cs-phone').value   = f.phone        || '';
+  document.getElementById('cs-email').value   = f.email        || '';
+  document.getElementById('cs-website').value = f.website      || '';
+  document.getElementById('cs-logo').value    = f.logo_url     || '';
+  document.getElementById('cs-status').textContent = '';
+  openModal('modal-company-settings');
+}
+
+async function saveCompanySettings() {
+  const profile = {
+    user_id:      currentUser.id,
+    company_name: document.getElementById('cs-name').value.trim(),
+    tagline:      document.getElementById('cs-tagline').value.trim(),
+    address:      document.getElementById('cs-address').value.trim(),
+    city:         document.getElementById('cs-city').value.trim(),
+    state:        document.getElementById('cs-state').value.trim(),
+    zip:          document.getElementById('cs-zip').value.trim(),
+    phone:        document.getElementById('cs-phone').value.trim(),
+    email:        document.getElementById('cs-email').value.trim(),
+    website:      document.getElementById('cs-website').value.trim(),
+    logo_url:     document.getElementById('cs-logo').value.trim(),
+    updated_at:   new Date().toISOString(),
+  };
+  const { error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' });
+  const st = document.getElementById('cs-status');
+  if (error) { st.style.color = 'var(--danger)'; st.textContent = 'Error saving: ' + error.message; return; }
+  companyProfile = profile;
+  st.style.color = 'var(--success)'; st.textContent = '✓ Saved!';
+  setTimeout(() => closeModal('modal-company-settings'), 800);
+}
+
+// ════════════════════════════
+// INVITE / RECOVERY FLOW
+// ════════════════════════════
+function getHashParam(key) {
+  const params = new URLSearchParams(window.location.hash.substring(1));
+  return params.get(key);
+}
+async function setNewPassword() {
+  const pw      = document.getElementById('sp-password').value;
+  const confirm = document.getElementById('sp-confirm').value;
+  const err     = document.getElementById('sp-error');
+  err.textContent = '';
+  if (pw.length < 8)  { err.textContent = 'Password must be at least 8 characters.'; return; }
+  if (pw !== confirm) { err.textContent = 'Passwords do not match.'; return; }
+  const btn = document.querySelector('#modal-set-password .btn-primary');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  const { error } = await db.auth.updateUser({ password: pw });
+  btn.disabled = false; btn.textContent = 'Set Password & Continue →';
+  if (error) { err.textContent = error.message; return; }
+  closeModal('modal-set-password');
+  history.replaceState(null, '', window.location.pathname);
+}
+
+// ════════════════════════════
+// DRAG ON ELEVATION
+// ════════════════════════════
+(function(){
+  let elevDrag = null, elevHover = null;
+
+  function getElevInfo() {
+    const r = activeRoom(); if (!r) return null;
+    const scale = parseFloat(document.getElementById('elev-scale-sel').value) || 4;
+    const wall = state.elevWall;
+    const wallLength = r.walls[wall] || 120;
+    const ceiling = r.ceilingHeight || 96;
+    const PAD = 60;
+    const WW = wallLength*scale;
+    return { scale, WX: PAD, WY: PAD, WW, WH: ceiling*scale, r, wall, ceiling, wallLength };
+  }
+
+  function hitTestElevCab(mx, my, info) {
+    const { scale, WX, WY, WH, WW, r, wall } = info;
+    const floorY = WY + WH;
+    const flip = wall === 'south' || wall === 'west';
+    const eX = (offset, width) => flip ? WX + WW - (offset + width)*scale : WX + offset*scale;
+    for (const cab of r.cabinets.filter(c => c.wall === wall)) {
+      const cW = cab.width*scale, cH = cab.height*scale;
+      const x = eX(cab.offset||0, cab.width);
+      const bIn = cab.type==='wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+      const y = cab.type==='wall' ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
+      if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
+    }
+    for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
+      const acat = APPLIANCES[app.type]; if (!acat) continue;
+      const aW = app.width*scale, aH = (app.height||acat.height)*scale;
+      const x  = eX(app.offset||0, app.width);
+      const y  = floorY - acat.elevBottom*scale - aH;
+      if (mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH) return app;
+    }
+    return null;
+  }
+
+  const canvas  = document.getElementById('elevation-plan');
+  const tooltip = document.getElementById('drag-tooltip');
+
+  canvas.addEventListener('mousedown', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const cab  = hitTestElevCab(e.clientX - rect.left, e.clientY - rect.top, info);
+    if (!cab) return;
+    e.preventDefault();
+    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
+    canvas.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
+    if (elevDrag) {
+      const delta = mx - elevDrag.startMX;
+      const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
+      const raw   = elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale;
+      const newOffset = Math.max(0, Math.min(Math.round(raw / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
+      const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
+      if (cab) {
+        cab.offset = newOffset;
+        tooltip.style.display = 'block';
+        tooltip.textContent = `${newOffset}" from left`;
+        persist(); renderElevation(); renderCanvas(); renderCabinetList();
+      }
+    } else {
+      const cab = hitTestElevCab(mx, my, info);
+      if (cab) {
+        canvas.style.cursor = 'grab';
+        if (elevHover !== cab.id) {
+          elevHover = cab.id;
+          const lbl = CATALOG[cab.type]?.label || APPLIANCES[cab.type]?.label || cab.type;
+          tooltip.style.display = 'block';
+          tooltip.textContent = `${lbl} · ${cab.offset || 0}" from left — drag to move`;
+        }
+      } else {
+        canvas.style.cursor = 'default';
+        if (elevHover) { elevHover = null; tooltip.style.display = 'none'; }
+      }
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (elevDrag) {
+      elevDrag = null;
+      canvas.style.cursor = 'default';
+      setTimeout(() => { tooltip.style.display = 'none'; }, 1200);
+    }
+  });
+
+  // Touch support
+  canvas.addEventListener('touchstart', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+    const cab  = hitTestElevCab(t.clientX - rect.left, t.clientY - rect.top, info);
+    if (!cab) return; e.preventDefault();
+    elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width };
+  }, { passive: false });
+
+  window.addEventListener('touchmove', e => {
+    if (!elevDrag || state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+    const delta = t.clientX - rect.left - elevDrag.startMX;
+    const newOffset = Math.max(0, Math.min(Math.round((elevDrag.startOffset + delta / elevDrag.scale) / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
+    const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId);
+    if (cab) { cab.offset = newOffset; tooltip.style.display = 'block'; tooltip.textContent = `${newOffset}" from left`; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', () => {
+    if (elevDrag) { elevDrag = null; setTimeout(() => { tooltip.style.display = 'none'; }, 1200); }
+  });
+})();
+
+// ════════════════════════════
+// CALCULATOR
+// ════════════════════════════
+let calcOpen = false;
+let calcExpr  = '';
+let calcJustEvaled = false;
+function toggleCalc() {
+  calcOpen = !calcOpen;
+  document.getElementById('calc-panel').classList.toggle('calc-hidden', !calcOpen);
+}
+function calcInput(key) {
+  const exprEl   = document.getElementById('calc-expr');
+  const resultEl = document.getElementById('calc-result');
+  if (key === 'C') { calcExpr = ''; calcJustEvaled = false; resultEl.textContent = '0'; exprEl.textContent = ''; return; }
+  if (key === '=') {
+    try {
+      const expr = calcExpr.replace(/÷/g,'/').replace(/×/g,'*').replace(/%/g,'/100');
+      const result = Function('"use strict"; return (' + expr + ')')();
+      const rounded = parseFloat(result.toFixed(8));
+      exprEl.textContent = calcExpr + ' =';
+      resultEl.textContent = isFinite(rounded) ? rounded.toLocaleString() : 'Error';
+      calcExpr = String(rounded);
+      calcJustEvaled = true;
+    } catch(e) { resultEl.textContent = 'Error'; calcExpr = ''; }
     return;
   }
-  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-
-  btn.disabled = true; btn.textContent = 'Sending...';
-
-  // Submit to a simple form endpoint — swap in your own (Formspree, Netlify Forms, etc.)
+  const isOp = ['+','-','*','/','%'].includes(key);
+  if (calcJustEvaled && !isOp) { calcExpr = ''; exprEl.textContent = ''; }
+  calcJustEvaled = false;
+  calcExpr += key;
+  exprEl.textContent = calcExpr;
   try {
-    const res = await fetch('https://formspree.io/f/YOUR_FORM_ID', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ first, last, company, email, phone, size })
-    });
-    if (res.ok) {
-      document.getElementById('demo-form-content').style.display = 'none';
-      document.getElementById('demo-success').style.display = 'block';
-    } else {
-      throw new Error();
-    }
-  } catch {
-    // Fallback: show success anyway and collect leads manually via email notification
-    document.getElementById('demo-form-content').style.display = 'none';
-    document.getElementById('demo-success').style.display = 'block';
-  }
-  btn.disabled = false; btn.textContent = 'Request My Demo →';
+    const expr = calcExpr.replace(/%/g,'/100');
+    const result = Function('"use strict"; return (' + expr + ')')();
+    if (isFinite(result)) resultEl.textContent = parseFloat(result.toFixed(8)).toLocaleString();
+  } catch(e) {}
 }
+
+// ════════════════════════════
+// BOOT
+// ════════════════════════════
+document.getElementById('new-project-btn').addEventListener('click', openNewProjectModal);
+document.getElementById('login-btn').addEventListener('click', handleSignIn);
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key==='Enter') handleSignIn(); });
+document.getElementById('login-email').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('login-password').focus(); });
+buildStylePanel();
+
+(async () => {
+  const urlType = getHashParam('type'); // 'invite' or 'recovery' if arriving via email link
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    showApp();
+    await Promise.all([loadProjects(), loadCompanyProfile()]);
+    if (urlType === 'invite' || urlType === 'recovery') {
+      openModal('modal-set-password');
+    }
+  } else {
+    showLogin();
+  }
+})();
+
+db.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') showLogin();
+});
+
 </script>
 </body>
 </html>
