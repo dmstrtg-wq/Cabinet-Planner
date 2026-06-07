@@ -465,6 +465,7 @@ body {
         <div class="view-toggle">
           <button class="view-toggle-btn active" id="vt-floor" onclick="setViewMode('floor')">⬛ Floor Plan</button>
           <button class="view-toggle-btn" id="vt-elev" onclick="setViewMode('elevation')">🪟 Elevation</button>
+          <button class="view-toggle-btn" id="vt-3d" onclick="setViewMode('3d')">🧊 3D View</button>
         </div>
         <button class="btn btn-success" onclick="openQuoteModal()">💰 Quote</button>
         <button class="btn btn-secondary" onclick="window.print()">🖨 Print</button>
@@ -520,6 +521,29 @@ body {
           <div id="elevation-wrapper">
             <div class="plan-title" id="elev-title">Front Elevation — North Wall</div>
             <canvas id="elevation-plan"></canvas>
+          </div>
+        </div>
+
+        <div id="view-3d" class="hidden">
+          <div class="canvas-toolbar">
+            <label>Scale:</label>
+            <select id="iso-scale-sel" onchange="renderIsometric()">
+              <option value="2.5">Small</option>
+              <option value="3.5" selected>Medium</option>
+              <option value="4.5">Large</option>
+              <option value="6">X-Large</option>
+            </select>
+            <label style="margin-left:8px">Angle:</label>
+            <select id="iso-angle-sel" onchange="renderIsometric()">
+              <option value="sw" selected>SW Corner</option>
+              <option value="se">SE Corner</option>
+              <option value="nw">NW Corner</option>
+              <option value="ne">NE Corner</option>
+            </select>
+          </div>
+          <div id="iso-wrapper" style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;display:inline-block;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+            <div class="plan-title">3D View</div>
+            <canvas id="iso-plan"></canvas>
           </div>
         </div>
       </div>
@@ -1268,9 +1292,13 @@ function setViewMode(m) {
   state.viewMode = m;
   document.getElementById('view-floor').classList.toggle('hidden', m !== 'floor');
   document.getElementById('view-elev').classList.toggle('hidden', m !== 'elevation');
+  document.getElementById('view-3d').classList.toggle('hidden', m !== '3d');
   document.getElementById('vt-floor').classList.toggle('active', m === 'floor');
   document.getElementById('vt-elev').classList.toggle('active', m === 'elevation');
-  if (m === 'elevation') renderElevation(); else renderCanvas();
+  document.getElementById('vt-3d').classList.toggle('active', m === '3d');
+  if (m === 'elevation') renderElevation();
+  else if (m === '3d') renderIsometric();
+  else renderCanvas();
 }
 
 // ════════════════════════════
@@ -1784,7 +1812,7 @@ function onPricingToggle() {
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
-function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); }
+function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); }
 
 // ════════════════════════════
 // STYLE PANEL
@@ -2222,6 +2250,231 @@ function renderCanvas() {
   ctx.fillStyle = '#475569'; ctx.font = '500 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillText('24"', bx+barPx/2, by+5);
   renderSummary(r);
+}
+
+
+// ════════════════════════════
+// RENDER: ISOMETRIC 3D VIEW
+// ════════════════════════════
+function renderIsometric() {
+  const canvas = document.getElementById('iso-plan');
+  const ctx    = canvas.getContext('2d');
+  const r      = activeRoom(); 
+  if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+
+  const scale   = parseFloat(document.getElementById('iso-scale-sel').value) || 3.5;
+  const angle   = document.getElementById('iso-angle-sel').value || 'sw';
+  const roomW   = Math.max(r.walls.north, r.walls.south, 48);
+  const roomD   = Math.max(r.walls.east,  r.walls.west,  48);
+  const ceiling = r.ceilingHeight || 96;
+
+  // Isometric projection constants
+  const ANG  = Math.PI / 6; // 30 degrees
+  const cosA = Math.cos(ANG), sinA = Math.sin(ANG);
+
+  // Flip axes based on view angle
+  const flipX = angle === 'ne' || angle === 'se';
+  const flipZ = angle === 'nw' || angle === 'ne';
+
+  // Project 3D point (x=right, y=up, z=depth) to 2D canvas
+  function proj(x3, y3, z3) {
+    const fx = flipX ? (roomW - x3) : x3;
+    const fz = flipZ ? (roomD - z3) : z3;
+    return {
+      x: (fx - fz) * cosA * scale,
+      y: -(fx + fz) * sinA * scale + y3 * scale
+    };
+  }
+
+  // Find canvas bounds
+  const corners = [
+    proj(0,0,0), proj(roomW,0,0), proj(0,0,roomD), proj(roomW,0,roomD),
+    proj(0,ceiling,0), proj(roomW,ceiling,0), proj(0,ceiling,roomD), proj(roomW,ceiling,roomD)
+  ];
+  const minX = Math.min(...corners.map(p=>p.x));
+  const minY = Math.min(...corners.map(p=>p.y));
+  const maxX = Math.max(...corners.map(p=>p.x));
+  const maxY = Math.max(...corners.map(p=>p.y));
+  const PAD  = 40;
+  const offX = -minX + PAD;
+  const offY = -minY + PAD;
+
+  canvas.width  = maxX - minX + PAD*2;
+  canvas.height = maxY - minY + PAD*2;
+
+  // Translate projected point to canvas coords
+  function pt(x3, y3, z3) {
+    const p = proj(x3, y3, z3);
+    return [p.x + offX, p.y + offY];
+  }
+
+  // Fill a polygon
+  function poly(points, fill, stroke, lw) {
+    ctx.beginPath();
+    ctx.moveTo(...points[0]);
+    points.slice(1).forEach(p => ctx.lineTo(...p));
+    ctx.closePath();
+    if (fill)  { ctx.fillStyle   = fill;  ctx.fill();   }
+    if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = lw||1; ctx.stroke(); }
+  }
+
+  // ── Background ──
+  ctx.fillStyle = '#F0F4F8';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ── Floor ──
+  const floorColor = '#E8EDF2';
+  poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,0,roomD),pt(0,0,roomD)], floorColor, '#CBD5E1', 1);
+  // Floor grid
+  ctx.strokeStyle = '#D1D9E0'; ctx.lineWidth = 0.5;
+  for (let x = 0; x <= roomW; x += 12) {
+    ctx.beginPath(); ctx.moveTo(...pt(x,0,0)); ctx.lineTo(...pt(x,0,roomD)); ctx.stroke();
+  }
+  for (let z = 0; z <= roomD; z += 12) {
+    ctx.beginPath(); ctx.moveTo(...pt(0,0,z)); ctx.lineTo(...pt(roomW,0,z)); ctx.stroke();
+  }
+
+  // ── Walls (back two based on view angle) ──
+  const wallH = ceiling;
+  const wallCol  = '#F8FAFC';
+  const wallEdge = '#94A3B8';
+  // Determine which two back walls to show
+  if (!flipX && !flipZ) { // SW view — show north and west walls
+    poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,wallH,0),pt(0,wallH,0)], wallCol, wallEdge, 1); // north
+    poly([pt(0,0,0),pt(0,0,roomD),pt(0,wallH,roomD),pt(0,wallH,0)], '#F0F4F8', wallEdge, 1); // west
+  } else if (flipX && !flipZ) { // SE — north + east
+    poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,wallH,0),pt(0,wallH,0)], wallCol, wallEdge, 1);
+    poly([pt(roomW,0,0),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(roomW,wallH,0)], '#F0F4F8', wallEdge, 1);
+  } else if (!flipX && flipZ) { // NW — south + west
+    poly([pt(0,0,roomD),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(0,wallH,roomD)], wallCol, wallEdge, 1);
+    poly([pt(0,0,0),pt(0,0,roomD),pt(0,wallH,roomD),pt(0,wallH,0)], '#F0F4F8', wallEdge, 1);
+  } else { // NE — south + east
+    poly([pt(0,0,roomD),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(0,wallH,roomD)], wallCol, wallEdge, 1);
+    poly([pt(roomW,0,0),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(roomW,wallH,0)], '#F0F4F8', wallEdge, 1);
+  }
+
+  // ── Wall tick lines (every 12") ──
+  ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 0.5;
+
+  // ── Draw a cabinet box in 3D ──
+  // x0,z0 = position on floor; w=width(x); d=depth(z); h=height(y); baseY=bottom elevation
+  function drawBox(x0, z0, w, d, h, baseY, topColor, frontColor, sideColor, edgeColor) {
+    const top  = baseY + h;
+    // Top face
+    poly([pt(x0,top,z0),pt(x0+w,top,z0),pt(x0+w,top,z0+d),pt(x0,top,z0+d)], topColor, edgeColor, 1);
+    // Front face (z0 side for SW, varies)
+    poly([pt(x0,baseY,z0),pt(x0+w,baseY,z0),pt(x0+w,top,z0),pt(x0,top,z0)], frontColor, edgeColor, 1);
+    // Side face
+    poly([pt(x0+w,baseY,z0),pt(x0+w,baseY,z0+d),pt(x0+w,top,z0+d),pt(x0+w,top,z0)], sideColor, edgeColor, 1);
+  }
+
+  // Lighten/darken a hex color
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1),16);
+    const r = Math.min(255,Math.max(0,((n>>16)&0xff)+amt));
+    const g = Math.min(255,Math.max(0,((n>>8)&0xff)+amt));
+    const b = Math.min(255,Math.max(0,(n&0xff)+amt));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  // Convert wall+offset to 3D x,z position and determine depth direction
+  function cabPos(wall, offset, width, depth) {
+    // Returns {x0, z0, w, d} in room 3D space
+    switch(wall) {
+      case 'north': return { x0: offset,        z0: 0,            w: width, d: depth };
+      case 'south': return { x0: offset,        z0: roomD-depth,  w: width, d: depth };
+      case 'west':  return { x0: 0,             z0: offset,       w: depth, d: width };
+      case 'east':  return { x0: roomW-depth,   z0: offset,       w: depth, d: width };
+    }
+  }
+
+  // ── Draw base/wall/tall cabinets ──
+  const wallCabDepth = 12;
+  r.cabinets.forEach(cab => {
+    const cat = CATALOG[cab.type]; if (!cat) return;
+    const off = cab.offset || 0;
+    const h   = cab.height || cat.heights?.[0] || 30;
+    const dep = cab.depth  || cat.depths?.[0]  || 24;
+    const baseY = cab.type === 'wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+    const pos = cabPos(cab.wall, off, cab.width, dep);
+
+    const baseCol  = cat.color || '#6B7280';
+    const topCol   = shade(baseCol,  30);
+    const frontCol = shade(baseCol, -10);
+    const sideCol  = shade(baseCol, -25);
+
+    drawBox(pos.x0, pos.z0, pos.w, pos.d, h, baseY, topCol, frontCol, sideCol, 'rgba(0,0,0,0.25)');
+
+    // Door lines on front face for base/wall cabs
+    if (cab.type !== 'cornerBase' && cab.type !== 'lazysusan') {
+      const gap = 2;
+      // front face: from pt(x0,baseY,z0) to pt(x0+w,top,z0) — draw door rect
+      const [dx0,dy0] = pt(pos.x0+gap, baseY+gap, pos.z0);
+      const [dx1,dy1] = pt(pos.x0+pos.w-gap, baseY+gap, pos.z0);
+      const [dx2,dy2] = pt(pos.x0+pos.w-gap, baseY+h-gap, pos.z0);
+      const [dx3,dy3] = pt(pos.x0+gap, baseY+h-gap, pos.z0);
+      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(dx0,dy0); ctx.lineTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.lineTo(dx3,dy3); ctx.closePath(); ctx.stroke();
+      // Glass tint for glass doors
+      if (cab.glassDoors) {
+        ctx.fillStyle='rgba(186,230,253,0.35)';
+        ctx.beginPath(); ctx.moveTo(dx0,dy0); ctx.lineTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.lineTo(dx3,dy3); ctx.closePath(); ctx.fill();
+      }
+    }
+
+    // Label on top face
+    const [lx,ly] = pt(pos.x0 + pos.w/2, baseY+h, pos.z0 + pos.d/2);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,11))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`${cab.width}"`, lx, ly);
+  });
+
+  // ── Draw appliances ──
+  (r.appliances||[]).forEach(app => {
+    const acat = APPLIANCES[app.type]; if (!acat) return;
+    const off  = app.offset || 0;
+    const h    = app.height || acat.height;
+    const dep  = acat.depth;
+    const baseY = app.customElevBottom != null ? app.customElevBottom : acat.elevBottom;
+    const pos  = cabPos(app.wall, off, app.width, dep);
+
+    const baseCol  = acat.color;
+    const topCol   = shade(baseCol, 30);
+    const frontCol = shade(baseCol, -10);
+    const sideCol  = shade(baseCol, -30);
+    drawBox(pos.x0, pos.z0, pos.w, pos.d, h, baseY, topCol, frontCol, sideCol, 'rgba(0,0,0,0.3)');
+
+    // Abbr label
+    const [lx,ly] = pt(pos.x0+pos.w/2, baseY+h, pos.z0+pos.d/2);
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,11))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, lx, ly);
+  });
+
+  // ── Draw islands ──
+  (r.islands||[]).forEach(isl => {
+    const h = 34.5; // standard counter height
+    const topCol   = '#F59E0B';
+    const frontCol = '#D97706';
+    const sideCol  = '#B45309';
+    drawBox(isl.x, isl.y, isl.width, isl.depth, h, 0, topCol, frontCol, sideCol, 'rgba(0,0,0,0.25)');
+    const [lx,ly] = pt(isl.x+isl.width/2, h, isl.y+isl.depth/2);
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font=`bold ${Math.max(8,Math.min(scale*1.8,12))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(isl.label||'Island', lx, ly);
+  });
+
+  // ── Ceiling edge outline ──
+  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(...pt(0,ceiling,0)); ctx.lineTo(...pt(roomW,ceiling,0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(...pt(0,ceiling,0)); ctx.lineTo(...pt(0,ceiling,roomD)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Dimension labels ──
+  ctx.fillStyle='#475569'; ctx.font=`600 ${Math.max(10,scale*2.2)}px sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const [wx,wy] = pt(roomW/2, 0, 0); ctx.fillText(fmtIn(roomW), wx, wy-14);
+  const [dx,dy] = pt(0, 0, roomD/2); ctx.fillText(fmtIn(roomD), dx-20, dy);
 }
 
 // ════════════════════════════
