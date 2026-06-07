@@ -1,0 +1,111 @@
+CHANGES TO MAKE IN app.html
+Open app.html in GitHub web editor (pencil icon), apply each change, then commit.
+
+══════════════════════════════════════
+CHANGE 1 — APPLIANCES constant (find "fridgePanel" line)
+══════════════════════════════════════
+FIND:
+  fridgePanel:  { label:'Fridge End Panel', widths:[3,6],  heights:[84,96], height:84, depth:24, color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
+
+REPLACE WITH:
+  fridgePanel:  { label:'Fridge End Panel', widths:[3,6],  heights:[84,90,96], height:84, depth:1, color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
+
+══════════════════════════════════════
+CHANGE 2 — APPLIANCES constant (find "microwave" line)
+══════════════════════════════════════
+FIND:
+  microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54 },
+
+REPLACE WITH:
+  microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54, elevBottomOptions:[48,54,60,66,72] },
+
+══════════════════════════════════════
+CHANGE 3 — APPLIANCES constant (find the hood line, add TWO new lines AFTER it, before the closing };)
+══════════════════════════════════════
+FIND:
+  hood:         { label:'Range Hood',    widths:[30,36,42], height:18,   depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+};
+
+REPLACE WITH:
+  hood:         { label:'Range Hood',    widths:[30,36,42], height:18,   depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+  beverageCooler: { label:'Under Counter Beverage Cooler', widths:[18,24,30,36], height:34.5, depth:24, color:'#0EA5E9', abbr:'BC', icon:'🍷', wallMount:false, elevBottom:0 },
+  floatingShelf:  { label:'Floating Shelf', widths:[24,30,36,42], height:2.5, depth:10, color:'#D97706', abbr:'FS', icon:'📚', wallMount:true, elevBottom:54, elevBottomOptions:[24,30,36,42,48,54,60,66,72,78,84] },
+};
+
+══════════════════════════════════════
+CHANGE 4 — HTML dropdown (find fridgePanel option, add 2 lines AFTER it)
+══════════════════════════════════════
+FIND:
+            <option value="fridgePanel">📏 Fridge End Panel</option>
+
+ADD AFTER:
+            <option value="beverageCooler">🍷 Under Counter Beverage Cooler</option>
+            <option value="floatingShelf">📚 Floating Shelf</option>
+
+══════════════════════════════════════
+CHANGE 5 — HTML form (find app-height-sel, add one line AFTER it)
+══════════════════════════════════════
+FIND:
+          <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+
+ADD AFTER:
+          <select id="app-elev-bottom-sel" class="cp-select hidden"><option value="">— Height from floor (bottom) —</option></select>
+
+══════════════════════════════════════
+CHANGE 6 — onAppTypeChange() function (find the closing } of the "if (acat.heights)" block, add after it)
+══════════════════════════════════════
+FIND (the end of the heights block):
+  if (acat.heights) {
+    hs.classList.remove('hidden');
+    acat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
+      hs.appendChild(o);
+    });
+  }
+}
+
+REPLACE WITH:
+  if (acat.heights) {
+    hs.classList.remove('hidden');
+    acat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
+      hs.appendChild(o);
+    });
+  }
+  const ebs = document.getElementById('app-elev-bottom-sel');
+  ebs.innerHTML = '<option value="">— Height from floor (bottom) —</option>';
+  ebs.classList.add('hidden');
+  if (acat.elevBottomOptions) {
+    ebs.classList.remove('hidden');
+    acat.elevBottomOptions.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" from floor`;
+      ebs.appendChild(o);
+    });
+    ebs.value = String(acat.elevBottom);
+  }
+}
+
+══════════════════════════════════════
+CHANGE 7 — addAppliance() function
+══════════════════════════════════════
+FIND:
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset });
+
+REPLACE WITH:
+  const ebs = document.getElementById('app-elev-bottom-sel');
+  const customElevBottom = (acat.elevBottomOptions && !ebs.classList.contains('hidden') && ebs.value)
+    ? parseFloat(ebs.value) : undefined;
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom });
+
+══════════════════════════════════════
+CHANGE 8 — renderElevation() (find botY line in the appliances section)
+══════════════════════════════════════
+FIND:
+    const botY = floorY - acat.elevBottom * scale;
+
+REPLACE WITH:
+    const elevBot = (app.customElevBottom !== undefined) ? app.customElevBottom : acat.elevBottom;
+    const botY = floorY - elevBot * scale;
