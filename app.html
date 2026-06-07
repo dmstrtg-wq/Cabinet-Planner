@@ -628,9 +628,12 @@ body {
             <option value="cooktop">🍳 Cooktop</option>
             <option value="hood">💨 Range Hood</option>
             <option value="fridgePanel">📏 Fridge End Panel</option>
+            <option value="beverageCooler">🧃 Beverage Cooler (UC)</option>
+            <option value="floatingShelf">📚 Floating Shelf</option>
           </select>
           <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
           <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <select id="app-elev-bottom-sel" class="cp-select hidden"><option value="">— Height from floor —</option></select>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
             <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
@@ -989,13 +992,15 @@ const PRICE_TABLE = {
 };
 
 const APPLIANCES = {
-  refrigerator: { label:'Refrigerator',  widths:[30,33,36], heights:[66,68,70,72], height:70, depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
-  fridgePanel:  { label:'Fridge End Panel', widths:[3,6],  heights:[84,96], height:84, depth:24, color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
-  range:        { label:'Range / Stove', widths:[30,36],    height:36,   depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
-  dishwasher:   { label:'Dishwasher',    widths:[24],       height:34.5, depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
-  microwave:    { label:'OTR Microwave', widths:[30,36],    height:16,   depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54 },
-  cooktop:      { label:'Cooktop',       widths:[30,36],    height:4,    depth:21, color:'#1F2937', abbr:'CTP', icon:'🍳', wallMount:false, elevBottom:32 },
-  hood:         { label:'Range Hood',    widths:[30,36,42], height:18,   depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+  refrigerator:    { label:'Refrigerator',              widths:[30,33,36],    heights:[66,68,70,72], height:70,   depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
+  fridgePanel:     { label:'Fridge End Panel',          widths:[3,6],         heights:[84,90,96],    height:84,   depth:1,  color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
+  range:           { label:'Range / Stove',             widths:[30,36],       height:36,             depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
+  dishwasher:      { label:'Dishwasher',                widths:[24],          height:34.5,           depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
+  microwave:       { label:'OTR Microwave',             widths:[30,36],       height:16,             depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54, elevBottomOptions:[48,54,60,66,72] },
+  cooktop:         { label:'Cooktop',                   widths:[30,36],       height:4,              depth:21, color:'#1F2937', abbr:'CTP', icon:'🍳', wallMount:false, elevBottom:32 },
+  hood:            { label:'Range Hood',                widths:[30,36,42],    height:18,             depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
+  beverageCooler:  { label:'Beverage Cooler (UC)',      widths:[18,24,30,36], height:34.5,           depth:24, color:'#60A5FA', abbr:'BEV', icon:'🧃', wallMount:false, elevBottom:0  },
+  floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42], height:2.5,            depth:12, color:'#D97706', abbr:'FSH', icon:'📚', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84] },
 };
 
 const OPENING_ICONS  = { door:'🚪', window:'🪟', 'sink-loc':'🚰', arch:'🏛' };
@@ -1370,9 +1375,12 @@ function onAppTypeChange() {
   const type = document.getElementById('app-type').value;
   const ws   = document.getElementById('app-width');
   const hs   = document.getElementById('app-height-sel');
+  const es   = document.getElementById('app-elev-bottom-sel');
   ws.innerHTML = '<option value="">— Width —</option>';
-  hs.innerHTML  = '<option value="">— Height —</option>';
+  hs.innerHTML = '<option value="">— Height —</option>';
+  es.innerHTML = '<option value="">— Height from floor —</option>';
   hs.classList.add('hidden');
+  es.classList.add('hidden');
   if (!type) return;
   const acat = APPLIANCES[type];
   acat.widths.forEach(w => {
@@ -1388,6 +1396,15 @@ function onAppTypeChange() {
       hs.appendChild(o);
     });
   }
+  if (acat.elevBottomOptions) {
+    es.classList.remove('hidden');
+    acat.elevBottomOptions.forEach(v => {
+      const o = document.createElement('option'); o.value = v;
+      o.textContent = `${v}" from floor`;
+      if (v === acat.elevBottom) o.selected = true;
+      es.appendChild(o);
+    });
+  }
 }
 function addAppliance() {
   const r = activeRoom(); if (!r) return;
@@ -1400,8 +1417,11 @@ function addAppliance() {
   const hs = document.getElementById('app-height-sel');
   const appHeight = (acat.heights && !hs.classList.contains('hidden') && hs.value)
     ? parseFloat(hs.value) : acat.height;
+  const es = document.getElementById('app-elev-bottom-sel');
+  const customElevBottom = (acat.elevBottomOptions && !es.classList.contains('hidden') && es.value)
+    ? parseFloat(es.value) : null;
   if (!r.appliances) r.appliances = [];
-  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset });
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom });
   document.getElementById('app-note').value   = '';
   document.getElementById('app-offset').value = '0';
   persist(); renderCabinetList(); renderCanvas();
@@ -1989,7 +2009,7 @@ function renderElevation() {
     const aW   = app.width * scale;
     const aH   = (app.height || acat.height) * scale;
     const x    = eX(app.offset||0, app.width);
-    const botY = floorY - acat.elevBottom * scale; // bottom edge Y
+    const botY = floorY - (app.customElevBottom != null ? app.customElevBottom : acat.elevBottom) * scale; // bottom edge Y
     const y    = botY - aH;                        // top edge Y
 
     ctx.fillStyle = acat.color;
@@ -2561,7 +2581,7 @@ async function setNewPassword() {
       const acat = APPLIANCES[app.type]; if (!acat) continue;
       const aW = app.width*scale, aH = (app.height||acat.height)*scale;
       const x  = eX(app.offset||0, app.width);
-      const y  = floorY - acat.elevBottom*scale - aH;
+      const y  = floorY - (app.customElevBottom != null ? app.customElevBottom : acat.elevBottom)*scale - aH;
       if (mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH) return app;
     }
     return null;
