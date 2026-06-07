@@ -642,6 +642,22 @@ body {
           <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)">
           <button class="add-cab-btn" onclick="addAppliance()" style="background:linear-gradient(135deg,#6b7280,#374151);box-shadow:0 2px 6px rgba(55,65,81,0.3);">＋ Add Appliance</button>
         </div>
+        <!-- Add Island -->
+        <div class="cp-section" style="flex-shrink:0">
+          <div class="cp-label">Add Island</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Width:</label>
+            <input type="number" id="island-width" class="cp-input" placeholder='36"' min="12" value="36" style="margin-bottom:0;flex:1;">
+            <span style="font-size:10px;color:#94a3b8;">in</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Depth:</label>
+            <input type="number" id="island-depth" class="cp-input" placeholder='24"' min="12" value="24" style="margin-bottom:0;flex:1;">
+            <span style="font-size:10px;color:#94a3b8;">in</span>
+          </div>
+          <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)">
+          <button class="add-cab-btn" onclick="addIsland()" style="background:linear-gradient(135deg,#92400e,#78350f);box-shadow:0 2px 6px rgba(120,53,15,0.3);">＋ Add Island</button>
+        </div>
 
         <div class="cp-section" style="flex-shrink:0;padding-bottom:5px;border-bottom:none;">
           <div class="cp-label" id="wall-list-label">North Wall</div>
@@ -1427,6 +1443,25 @@ function addAppliance() {
   persist(); renderCabinetList(); renderCanvas();
   if (state.viewMode === 'elevation') renderElevation();
 }
+function addIsland() {
+  const r = activeRoom(); if (!r) return;
+  const width = parseInt(document.getElementById('island-width').value) || 36;
+  const depth = parseInt(document.getElementById('island-depth').value) || 24;
+  const label = document.getElementById('island-label').value.trim();
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const x = Math.max(6, Math.round((roomW - width) / 2));
+  const y = Math.max(6, Math.round((roomH - depth) / 2));
+  if (!r.islands) r.islands = [];
+  r.islands.push({ id: uid(), width, depth, x, y, label });
+  document.getElementById('island-label').value = '';
+  persist(); renderCabinetList(); renderCanvas();
+}
+function removeIsland(id) {
+  const r = activeRoom(); if (!r) return;
+  r.islands = (r.islands || []).filter(i => i.id !== id);
+  persist(); renderCabinetList(); renderCanvas();
+}
 function removeAppliance(id) {
   const r = activeRoom(); if (!r) return;
   r.appliances = (r.appliances || []).filter(a => a.id !== id);
@@ -1603,7 +1638,19 @@ function renderCabinetList() {
       </div>`;
     }).join('');
   }
-  if (!wallCabs.length && !wallOpenings.length && !wallApps.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
+  const allIslands = (r.islands || []);
+  if (allIslands.length) {
+    html += '<div class="cab-wall-header">Islands</div>';
+    html += allIslands.map(i => `<div class="cab-item">
+      <div class="cab-color" style="background:#92400e"></div>
+      <div class="cab-info">
+        <div class="cab-name">🏝️ ${i.label || 'Island'}</div>
+        <div class="cab-dim">${i.width}"W × ${i.depth}"D · pos ${i.x}", ${i.y}" from NW</div>
+      </div>
+      <button class="cab-remove" onclick="removeIsland('${i.id}')">×</button>
+    </div>`).join('');
+  }
+  if (!wallCabs.length && !wallOpenings.length && !wallApps.length && !allIslands.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
   list.innerHTML = html;
 }
 
@@ -1815,6 +1862,35 @@ function renderCanvas() {
     const icons = { door:'D', window:'W', 'sink-loc':'S', arch:'O' };
     ctx.fillStyle = opColors[op.type]||'#d97706'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(icons[op.type]||'?', ox+fw/2, oy+fh/2);
+  });
+
+  // Draw islands
+  (r.islands || []).forEach(isl => {
+    const ix = RX + isl.x * scale;
+    const iy = RY + isl.y * scale;
+    const iw = isl.width  * scale;
+    const ih = isl.depth  * scale;
+    // Shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+    ctx.fillStyle = '#D97706'; ctx.globalAlpha = 0.85;
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // Border
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.setLineDash([5,3]);
+    ctx.strokeRect(ix, iy, iw, ih); ctx.setLineDash([]);
+    // Counter edge lines (front and back)
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ix+3, iy+3); ctx.lineTo(ix+iw-3, iy+3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ix+3, iy+ih-3); ctx.lineTo(ix+iw-3, iy+ih-3); ctx.stroke();
+    // Label
+    ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(9, Math.min(scale*2,12))}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(isl.label || 'Island', ix+iw/2, iy+ih/2 - 6);
+    ctx.font = `${Math.max(8, Math.min(scale*1.6,10))}px sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 8);
   });
 
   ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
@@ -2421,6 +2497,10 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
       else                         { x=RX+RW-aD; y=RY+off; w=aD; h=aW; }
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }
+    for (const isl of (r.islands||[])) {
+      const ix=RX+isl.x*scale, iy=RY+isl.y*scale, iw=isl.width*scale, ih=isl.depth*scale;
+      if (mx>=ix&&mx<=ix+iw&&my>=iy&&my<=iy+ih) return {cab:isl,wall:'island',x:ix,y:iy,w:iw,h:ih,isIsland:true};
+    }
     return null;
   }
   function snap(val) { return Math.round(val/3)*3; }
@@ -2431,7 +2511,11 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     const rect = canvas.getBoundingClientRect();
     const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
     if (!hit) return; e.preventDefault();
-    drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south' };
+    if (hit.isIsland) {
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startX:hit.cab.x, startY:hit.cab.y, scale:info.scale, isIsland:true };
+    } else {
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south' };
+    }
     canvas.style.cursor = 'grabbing';
   });
   window.addEventListener('mousemove', e => {
@@ -2439,18 +2523,31 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX-rect.left, my = e.clientY-rect.top;
     if (drag) {
-      const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
-      const newOffset = Math.max(0, snap(drag.startOffset + delta/drag.scale));
-      const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
-      if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+      if (drag.isIsland) {
+        const isl = (info.r.islands||[]).find(i=>i.id===drag.cabId);
+        if (isl) {
+          const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);
+          const roomH = Math.max(info.r.walls.east,  info.r.walls.west,  48);
+          isl.x = Math.max(0, Math.min(roomW - isl.width,  Math.round(drag.startX + (mx-drag.startMX)/drag.scale)));
+          isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (my-drag.startMY)/drag.scale)));
+          tooltip.style.display='block'; tooltip.textContent=`Island · ${isl.x}" from left, ${isl.y}" from top`;
+          persist(); renderCanvas(); renderCabinetList();
+        }
+      } else {
+        const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
+        const newOffset = Math.max(0, snap(drag.startOffset + delta/drag.scale));
+        const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
+        if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+      }
     } else {
       const hit = hitTestCab(mx,my,info);
       if (hit) {
         canvas.style.cursor = 'grab';
         if (hoverCabId!==hit.cab.id) {
           hoverCabId=hit.cab.id;
-          const lbl = CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type;
-          tooltip.style.display='block'; tooltip.textContent=`${lbl} · ${hit.cab.offset||0}" from left — drag to move`;
+          const lbl = hit.isIsland ? (hit.cab.label || 'Island') : (CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type);
+          const pos = hit.isIsland ? `${hit.cab.x}", ${hit.cab.y}" from NW` : `${hit.cab.offset||0}" from left`;
+          tooltip.style.display='block'; tooltip.textContent=`${hit.isIsland?'🏝️ ':''}${lbl} · ${pos} — drag to move`;
         }
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
     }
