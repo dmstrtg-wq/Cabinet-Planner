@@ -671,6 +671,67 @@ body {
 </div><!-- end app-root -->
 
 <!-- ═══ MODALS ═══ -->
+<div id="modal-edit-cabinet" class="modal-overlay hidden">
+  <div class="modal" style="width:480px;">
+    <h3 id="edit-cab-title">Edit Cabinet</h3>
+    <input type="hidden" id="edit-cab-id">
+    <div class="form-group">
+      <label>Type</label>
+      <input type="text" id="edit-cab-type-label" class="cp-input" readonly style="background:#f1f5f9;color:#64748b;cursor:default;">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Width</label>
+        <select id="edit-cab-width" class="cp-select"></select>
+      </div>
+      <div class="form-group" id="edit-height-group">
+        <label>Height</label>
+        <select id="edit-cab-height" class="cp-select"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" id="edit-depth-group">
+        <label>Depth</label>
+        <select id="edit-cab-depth" class="cp-select">
+          <option value="12">12" — Standard upper</option>
+          <option value="24">24" — Over fridge/appliance</option>
+        </select>
+      </div>
+      <div class="form-group" id="edit-wallbottom-group">
+        <label>Bottom from floor (in)</label>
+        <input type="number" id="edit-cab-wallbottom" class="cp-input" value="54" min="0" style="margin-bottom:0;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>From left (in)</label>
+      <input type="number" id="edit-cab-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
+    </div>
+    <div class="form-group" id="edit-glass-group" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="edit-cab-glass" style="width:auto;accent-color:var(--accent);">
+        <label style="margin:0;font-weight:600;">🪟 Glass Doors</label>
+        <span style="font-size:10px;color:#94a3b8;">(+58%)</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Door Style Override</label>
+      <select id="edit-cab-style" class="cp-select">
+        <option value="">— Use Project Default —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="edit-cab-note" class="cp-input" placeholder="Optional notes">
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">🗑 Delete</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-cabinet')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div id="modal-new-project" class="modal-overlay hidden">
   <div class="modal">
     <h3>New Project</h3>
@@ -1462,6 +1523,103 @@ function removeIsland(id) {
   r.islands = (r.islands || []).filter(i => i.id !== id);
   persist(); renderCabinetList(); renderCanvas();
 }
+// ── Cabinet Edit Modal ──
+function openEditModal(cab) {
+  const cat = CATALOG[cab.type]; if (!cat) return;
+  document.getElementById('edit-cab-id').value         = cab.id;
+  document.getElementById('edit-cab-title').textContent = `Edit — ${cat.label}`;
+  document.getElementById('edit-cab-type-label').value  = cat.label;
+  document.getElementById('edit-cab-offset').value      = cab.offset || 0;
+  document.getElementById('edit-cab-note').value        = cab.note || '';
+  document.getElementById('edit-cab-glass').checked     = !!cab.glassDoors;
+
+  // Width options
+  const ws = document.getElementById('edit-cab-width');
+  ws.innerHTML = '';
+  cat.widths.forEach(w => {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = `${w}" wide`;
+    if (w === cab.width) o.selected = true;
+    ws.appendChild(o);
+  });
+
+  // Height options
+  const hg = document.getElementById('edit-height-group');
+  const hs = document.getElementById('edit-cab-height');
+  hs.innerHTML = '';
+  if (cat.heights) {
+    hg.style.display = '';
+    cat.heights.forEach(h => {
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = `${h}" tall`;
+      if (h === cab.height) o.selected = true;
+      hs.appendChild(o);
+    });
+  } else { hg.style.display = 'none'; }
+
+  // Depth (wall cabs only)
+  const dg = document.getElementById('edit-depth-group');
+  const ds = document.getElementById('edit-cab-depth');
+  if (cab.type === 'wall') {
+    dg.style.display = '';
+    ds.value = String(cab.depth || 12);
+  } else { dg.style.display = 'none'; }
+
+  // Wall bottom (wall cabs only)
+  const wbg = document.getElementById('edit-wallbottom-group');
+  if (cab.type === 'wall') {
+    wbg.style.display = '';
+    document.getElementById('edit-cab-wallbottom').value = cab.wallBottom != null ? cab.wallBottom : 54;
+  } else { wbg.style.display = 'none'; }
+
+  // Glass doors (wall cabs only)
+  document.getElementById('edit-glass-group').style.display = cab.type === 'wall' ? '' : 'none';
+
+  // Door style override
+  const ss = document.getElementById('edit-cab-style');
+  ss.innerHTML = '<option value="">— Use Project Default —</option>';
+  const proj = state.projects.find(p => p.id === state.activeProjectId);
+  if (proj?.styles) {
+    proj.styles.forEach(s => {
+      const o = document.createElement('option'); o.value = s.code;
+      o.textContent = s.name || s.code;
+      if (s.code === cab.styleOverride) o.selected = true;
+      ss.appendChild(o);
+    });
+  }
+
+  document.getElementById('modal-edit-cabinet').classList.remove('hidden');
+}
+
+function saveEditModal() {
+  const r = activeRoom(); if (!r) return;
+  const id  = document.getElementById('edit-cab-id').value;
+  const cab = r.cabinets.find(c => c.id === id); if (!cab) return;
+  cab.width         = parseFloat(document.getElementById('edit-cab-width').value)   || cab.width;
+  const hs = document.getElementById('edit-cab-height');
+  if (hs.options.length > 0 && hs.value) cab.height = parseFloat(hs.value);
+  if (cab.type === 'wall') {
+    cab.depth      = parseFloat(document.getElementById('edit-cab-depth').value) || 12;
+    cab.wallBottom = parseInt(document.getElementById('edit-cab-wallbottom').value) || 54;
+    cab.glassDoors = document.getElementById('edit-cab-glass').checked;
+  }
+  cab.offset        = parseInt(document.getElementById('edit-cab-offset').value)    || 0;
+  cab.note          = document.getElementById('edit-cab-note').value.trim();
+  cab.styleOverride = document.getElementById('edit-cab-style').value || null;
+  closeModal('modal-edit-cabinet');
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
+function deleteFromEditModal() {
+  const r = activeRoom(); if (!r) return;
+  const id = document.getElementById('edit-cab-id').value;
+  r.cabinets = r.cabinets.filter(c => c.id !== id);
+  closeModal('modal-edit-cabinet');
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
 function removeAppliance(id) {
   const r = activeRoom(); if (!r) return;
   r.appliances = (r.appliances || []).filter(a => a.id !== id);
@@ -2506,6 +2664,15 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
   function snap(val) { return Math.round(val/3)*3; }
   const canvas  = document.getElementById('floor-plan');
   const tooltip = document.getElementById('drag-tooltip');
+  canvas.addEventListener('dblclick', e => {
+    const info = getCanvasInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    if (!hit || hit.isIsland) return;
+    e.preventDefault();
+    openEditModal(hit.cab);
+  });
+
   canvas.addEventListener('mousedown', e => {
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
@@ -2547,7 +2714,8 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
           hoverCabId=hit.cab.id;
           const lbl = hit.isIsland ? (hit.cab.label || 'Island') : (CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type);
           const pos = hit.isIsland ? `${hit.cab.x}", ${hit.cab.y}" from NW` : `${hit.cab.offset||0}" from left`;
-          tooltip.style.display='block'; tooltip.textContent=`${hit.isIsland?'🏝️ ':''}${lbl} · ${pos} — drag to move`;
+          const hint = (!hit.isIsland && CATALOG[hit.cab.type]) ? ' · dbl-click to edit' : ' — drag to move';
+          tooltip.style.display='block'; tooltip.textContent=`${hit.isIsland?'🏝️ ':''}${lbl} · ${pos}${hint}`;
         }
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
     }
@@ -2686,6 +2854,16 @@ async function setNewPassword() {
 
   const canvas  = document.getElementById('elevation-plan');
   const tooltip = document.getElementById('drag-tooltip');
+
+  canvas.addEventListener('dblclick', e => {
+    if (state.viewMode !== 'elevation') return;
+    const info = getElevInfo(); if (!info) return;
+    const rect = canvas.getBoundingClientRect();
+    const hit  = hitTestElevCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    if (!hit || !CATALOG[hit.type]) return; // ignore appliances
+    e.preventDefault();
+    openEditModal(hit);
+  });
 
   canvas.addEventListener('mousedown', e => {
     if (state.viewMode !== 'elevation') return;
