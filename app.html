@@ -732,6 +732,68 @@ body {
     </div>
   </div>
 </div>
+<div id="modal-edit-island" class="modal-overlay hidden">
+  <div class="modal" style="width:400px;">
+    <h3>Edit Island</h3>
+    <input type="hidden" id="edit-isl-id">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Width (in)</label>
+        <input type="number" id="edit-isl-width" class="cp-input" min="12" style="margin-bottom:0;">
+      </div>
+      <div class="form-group">
+        <label>Depth (in)</label>
+        <input type="number" id="edit-isl-depth" class="cp-input" min="12" style="margin-bottom:0;">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Label</label>
+      <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island">
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">🗑 Delete</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-island')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditIslandModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-edit-appliance" class="modal-overlay hidden">
+  <div class="modal" style="width:420px;">
+    <h3 id="edit-app-title">Edit Appliance</h3>
+    <input type="hidden" id="edit-app-id">
+    <div class="form-group">
+      <label>Type</label>
+      <input type="text" id="edit-app-type-label" class="cp-input" readonly style="background:#f1f5f9;color:#64748b;cursor:default;">
+    </div>
+    <div class="form-group">
+      <label>Width</label>
+      <select id="edit-app-width" class="cp-select"></select>
+    </div>
+    <div class="form-group" id="edit-app-elevbottom-group" style="display:none;">
+      <label>Height from floor (in)</label>
+      <select id="edit-app-elevbottom" class="cp-select"></select>
+    </div>
+    <div class="form-group">
+      <label>From left (in)</label>
+      <input type="number" id="edit-app-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes">
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">🗑 Delete</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="closeModal('modal-edit-appliance')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditApplianceModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="modal-new-project" class="modal-overlay hidden">
   <div class="modal">
     <h3>New Project</h3>
@@ -1523,6 +1585,94 @@ function removeIsland(id) {
   r.islands = (r.islands || []).filter(i => i.id !== id);
   persist(); renderCabinetList(); renderCanvas();
 }
+// ── Island Edit Modal ──
+function openEditIslandModal(isl) {
+  document.getElementById('edit-isl-id').value    = isl.id;
+  document.getElementById('edit-isl-width').value = isl.width;
+  document.getElementById('edit-isl-depth').value = isl.depth;
+  document.getElementById('edit-isl-label').value = isl.label || '';
+  document.getElementById('modal-edit-island').classList.remove('hidden');
+}
+function saveEditIslandModal() {
+  const r = activeRoom(); if (!r) return;
+  const id  = document.getElementById('edit-isl-id').value;
+  const isl = (r.islands||[]).find(i => i.id === id); if (!isl) return;
+  const newW = parseInt(document.getElementById('edit-isl-width').value) || isl.width;
+  const newD = parseInt(document.getElementById('edit-isl-depth').value) || isl.depth;
+  // keep within room if resized
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  isl.width = newW; isl.depth = newD;
+  isl.x = Math.min(isl.x, roomW - newW);
+  isl.y = Math.min(isl.y, roomH - newD);
+  isl.label = document.getElementById('edit-isl-label').value.trim();
+  closeModal('modal-edit-island');
+  persist(); renderCabinetList(); renderCanvas();
+}
+function deleteFromEditIslandModal() {
+  const r = activeRoom(); if (!r) return;
+  const id = document.getElementById('edit-isl-id').value;
+  r.islands = (r.islands||[]).filter(i => i.id !== id);
+  closeModal('modal-edit-island');
+  persist(); renderCabinetList(); renderCanvas();
+}
+
+// ── Appliance Edit Modal ──
+function openEditApplianceModal(app) {
+  const acat = APPLIANCES[app.type]; if (!acat) return;
+  document.getElementById('edit-app-id').value         = app.id;
+  document.getElementById('edit-app-title').textContent = `Edit — ${acat.label}`;
+  document.getElementById('edit-app-type-label').value  = `${acat.icon} ${acat.label}`;
+  document.getElementById('edit-app-offset').value      = app.offset || 0;
+  document.getElementById('edit-app-note').value        = app.note || '';
+  // Width options
+  const ws = document.getElementById('edit-app-width');
+  ws.innerHTML = '';
+  acat.widths.forEach(w => {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = `${w}" wide`;
+    if (w === app.width) o.selected = true;
+    ws.appendChild(o);
+  });
+  // Height from floor (if applicable)
+  const eg = document.getElementById('edit-app-elevbottom-group');
+  const es = document.getElementById('edit-app-elevbottom');
+  es.innerHTML = '';
+  if (acat.elevBottomOptions) {
+    eg.style.display = '';
+    acat.elevBottomOptions.forEach(v => {
+      const o = document.createElement('option'); o.value = v;
+      o.textContent = `${v}" from floor`;
+      const cur = app.customElevBottom != null ? app.customElevBottom : acat.elevBottom;
+      if (v === cur) o.selected = true;
+      es.appendChild(o);
+    });
+  } else { eg.style.display = 'none'; }
+  document.getElementById('modal-edit-appliance').classList.remove('hidden');
+}
+function saveEditApplianceModal() {
+  const r = activeRoom(); if (!r) return;
+  const id  = document.getElementById('edit-app-id').value;
+  const app = (r.appliances||[]).find(a => a.id === id); if (!app) return;
+  const acat = APPLIANCES[app.type];
+  app.width  = parseFloat(document.getElementById('edit-app-width').value) || app.width;
+  app.offset = parseInt(document.getElementById('edit-app-offset').value) || 0;
+  app.note   = document.getElementById('edit-app-note').value.trim();
+  const es = document.getElementById('edit-app-elevbottom');
+  if (acat.elevBottomOptions && es.value) app.customElevBottom = parseFloat(es.value);
+  closeModal('modal-edit-appliance');
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+function deleteFromEditApplianceModal() {
+  const r = activeRoom(); if (!r) return;
+  const id = document.getElementById('edit-app-id').value;
+  r.appliances = (r.appliances||[]).filter(a => a.id !== id);
+  closeModal('modal-edit-appliance');
+  persist(); renderCabinetList(); renderCanvas();
+  if (state.viewMode === 'elevation') renderElevation();
+}
+
 // ── Cabinet Edit Modal ──
 function openEditModal(cab) {
   const cat = CATALOG[cab.type]; if (!cat) return;
@@ -2668,9 +2818,11 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
     const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
-    if (!hit || hit.isIsland) return;
+    if (!hit) return;
     e.preventDefault();
-    openEditModal(hit.cab);
+    if (hit.isIsland)                    openEditIslandModal(hit.cab);
+    else if (CATALOG[hit.cab.type])      openEditModal(hit.cab);
+    else if (APPLIANCES[hit.cab.type])   openEditApplianceModal(hit.cab);
   });
 
   canvas.addEventListener('mousedown', e => {
@@ -2714,7 +2866,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
           hoverCabId=hit.cab.id;
           const lbl = hit.isIsland ? (hit.cab.label || 'Island') : (CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type);
           const pos = hit.isIsland ? `${hit.cab.x}", ${hit.cab.y}" from NW` : `${hit.cab.offset||0}" from left`;
-          const hint = (!hit.isIsland && CATALOG[hit.cab.type]) ? ' · dbl-click to edit' : ' — drag to move';
+          const hint = hit.isIsland ? ' · dbl-click to edit' : (CATALOG[hit.cab.type] || APPLIANCES[hit.cab.type]) ? ' · dbl-click to edit' : ' — drag to move';
           tooltip.style.display='block'; tooltip.textContent=`${hit.isIsland?'🏝️ ':''}${lbl} · ${pos}${hint}`;
         }
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
@@ -2860,9 +3012,10 @@ async function setNewPassword() {
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
     const hit  = hitTestElevCab(e.clientX-rect.left, e.clientY-rect.top, info);
-    if (!hit || !CATALOG[hit.type]) return; // ignore appliances
+    if (!hit) return;
     e.preventDefault();
-    openEditModal(hit);
+    if (CATALOG[hit.type])    openEditModal(hit);
+    else if (APPLIANCES[hit.type]) openEditApplianceModal(hit);
   });
 
   canvas.addEventListener('mousedown', e => {
