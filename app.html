@@ -494,6 +494,8 @@ body {
               <option value="base">Base Only</option>
               <option value="wall">Wall Only</option>
             </select>
+            <button id="measure-btn" onclick="toggleMeasure()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📏 Measure</button>
+            <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">✕ Clear</button>
           </div>
           <div id="floor-plan-wrapper">
             <div class="plan-title" id="plan-title">Floor Plan</div>
@@ -1249,6 +1251,18 @@ async function loadProjects() {
 // ════════════════════════════
 // HELPERS
 // ════════════════════════════
+// roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+    r = Math.min(r, w/2, h/2);
+    this.moveTo(x+r,y); this.lineTo(x+w-r,y); this.arcTo(x+w,y,x+w,y+r,r);
+    this.lineTo(x+w,y+h-r); this.arcTo(x+w,y+h,x+w-r,y+h,r);
+    this.lineTo(x+r,y+h); this.arcTo(x,y+h,x,y+h-r,r);
+    this.lineTo(x,y+r); this.arcTo(x,y,x+r,y,r); this.closePath();
+    return this;
+  };
+}
+
 const uid      = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const newId    = () => crypto.randomUUID();
 const getProj  = id => state.projects.find(p => p.id === id);
@@ -2030,6 +2044,119 @@ function drawRuler(ctx, originX, originY, totalInches, scale, vertical, fromFloo
 }
 
 // ════════════════════════════
+// MEASURE TOOL
+// ════════════════════════════
+const measureState = { active: false, pending: null, lines: [], hoverPt: null };
+
+function toggleMeasure() {
+  measureState.active = !measureState.active;
+  measureState.pending = null;
+  measureState.hoverPt = null;
+  const btn = document.getElementById('measure-btn');
+  btn.style.background  = measureState.active ? '#1e40af' : 'white';
+  btn.style.color       = measureState.active ? '#fff'    : 'var(--text-muted)';
+  btn.style.borderColor = measureState.active ? '#1e40af' : 'var(--border)';
+  const canvas = document.getElementById('floor-plan');
+  canvas.style.cursor = measureState.active ? 'crosshair' : 'default';
+  renderCanvas();
+}
+
+function clearMeasurements() {
+  measureState.lines = [];
+  measureState.pending = null;
+  measureState.hoverPt = null;
+  document.getElementById('measure-clear-btn').style.display = 'none';
+  renderCanvas();
+}
+
+function canvasPtToRoom(clientX, clientY, canvas, RX, RY, scale) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = clientX - rect.left;
+  const my = clientY - rect.top;
+  return {
+    x: Math.round((mx - RX) / scale),
+    y: Math.round((my - RY) / scale)
+  };
+}
+
+function measureDist(p1, p2) {
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  return Math.round(Math.sqrt(dx*dx + dy*dy));
+}
+
+function fmtMeasure(inches) {
+  const ft = Math.floor(inches / 12);
+  const inn = inches % 12;
+  if (ft === 0) return `${inn}"`;
+  if (inn === 0) return `${ft}'`;
+  return `${ft}' ${inn}"`;
+}
+
+function drawMeasurements(ctx, RX, RY, scale) {
+  const allLines = [...measureState.lines];
+  // Add live rubber-band if pending + hover
+  if (measureState.pending && measureState.hoverPt) {
+    allLines.push({ p1: measureState.pending, p2: measureState.hoverPt, live: true });
+  }
+  allLines.forEach(line => {
+    const x1 = RX + line.p1.x * scale, y1 = RY + line.p1.y * scale;
+    const x2 = RX + line.p2.x * scale, y2 = RY + line.p2.y * scale;
+    const dist = measureDist(line.p1, line.p2);
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+
+    // Line
+    ctx.save();
+    ctx.strokeStyle = line.live ? '#3b82f6' : '#1e40af';
+    ctx.lineWidth   = line.live ? 1.5 : 2;
+    ctx.setLineDash(line.live ? [6,4] : []);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // End-point ticks
+    const ang = Math.atan2(y2-y1, x2-x1) + Math.PI/2;
+    [x1,x2].forEach((ex,i) => {
+      const ey = i===0 ? y1 : y2;
+      ctx.beginPath();
+      ctx.moveTo(ex + Math.cos(ang)*6, ey + Math.sin(ang)*6);
+      ctx.lineTo(ex - Math.cos(ang)*6, ey - Math.sin(ang)*6);
+      ctx.stroke();
+    });
+
+    // Distance label pill
+    const label = fmtMeasure(dist);
+    ctx.font = 'bold 11px sans-serif';
+    const tw = ctx.measureText(label).width;
+    const pw = tw + 14, ph = 20, pr = 6;
+    ctx.fillStyle = line.live ? '#3b82f6' : '#1e40af';
+    ctx.beginPath();
+    ctx.roundRect(mx-pw/2, my-ph/2, pw, ph, pr);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, mx, my);
+
+    // Start dot
+    ctx.fillStyle = line.live ? '#3b82f6' : '#1e40af';
+    ctx.beginPath(); ctx.arc(x1,y1,4,0,Math.PI*2); ctx.fill();
+    if (!line.live) { ctx.beginPath(); ctx.arc(x2,y2,4,0,Math.PI*2); ctx.fill(); }
+    ctx.restore();
+  });
+
+  // Pending start dot pulse
+  if (measureState.pending && !measureState.hoverPt) {
+    const px = RX + measureState.pending.x * scale;
+    const py = RY + measureState.pending.y * scale;
+    ctx.save();
+    ctx.fillStyle = '#3b82f6'; ctx.globalAlpha = 0.3;
+    ctx.beginPath(); ctx.arc(px,py,10,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#1e40af';
+    ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ════════════════════════════
 // ISLAND CLEARANCE HELPER
 // ════════════════════════════
 function calcIslandClearance(isl, r) {
@@ -2253,6 +2380,10 @@ function renderCanvas() {
     ctx.fillStyle = opColors[op.type]||'#d97706'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(icons[op.type]||'?', ox+fw/2, oy+fh/2);
   });
+
+  // Draw measurements overlay (before islands so islands render on top)
+  const { RX: mRX, RY: mRY } = { RX, RY };
+  drawMeasurements(ctx, RX, RY, scale);
 
   // Draw islands with clearance indicator
   (r.islands || []).forEach(isl => {
@@ -3147,6 +3278,34 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
   function snap(val) { return Math.round(val/3)*3; }
   const canvas  = document.getElementById('floor-plan');
   const tooltip = document.getElementById('drag-tooltip');
+  // Measure tool: click to set points
+  canvas.addEventListener('click', e => {
+    if (!measureState.active) return;
+    const info = getCanvasInfo(); if (!info) return;
+    const pt = canvasPtToRoom(e.clientX, e.clientY, canvas, info.RX, info.RY, info.scale);
+    // Clamp to room
+    pt.x = Math.max(0, Math.min(info.r.walls.north || 120, pt.x));
+    pt.y = Math.max(0, Math.min(info.r.walls.east  || 96,  pt.y));
+    if (!measureState.pending) {
+      measureState.pending = pt;
+    } else {
+      measureState.lines.push({ p1: measureState.pending, p2: pt });
+      measureState.pending = null;
+      measureState.hoverPt = null;
+      document.getElementById('measure-clear-btn').style.display = '';
+    }
+    renderCanvas();
+  });
+
+  // Measure tool: live rubber-band on mousemove
+  canvas.addEventListener('mousemove', e => {
+    if (!measureState.active || !measureState.pending) return;
+    const info = getCanvasInfo(); if (!info) return;
+    const pt = canvasPtToRoom(e.clientX, e.clientY, canvas, info.RX, info.RY, info.scale);
+    measureState.hoverPt = pt;
+    renderCanvas();
+  });
+
   canvas.addEventListener('dblclick', e => {
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
@@ -3159,6 +3318,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
   });
 
   canvas.addEventListener('mousedown', e => {
+    if (measureState.active) return; // measure mode takes over
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
     const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
