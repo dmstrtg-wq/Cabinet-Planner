@@ -2030,6 +2030,60 @@ function drawRuler(ctx, originX, originY, totalInches, scale, vertical, fromFloo
 }
 
 // ════════════════════════════
+// ISLAND CLEARANCE HELPER
+// ════════════════════════════
+function calcIslandClearance(isl, r) {
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const ix1 = isl.x, iy1 = isl.y;
+  const ix2 = isl.x + isl.width, iy2 = isl.y + isl.depth;
+
+  // Rect-to-rect axis-aligned clearance
+  function rectClear(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2) {
+    const dx = Math.max(0, Math.max(bx1-ax2, ax1-bx2));
+    const dy = Math.max(0, Math.max(by1-ay2, ay1-by2));
+    if (dx===0 && dy===0) return 0;
+    if (dx===0) return dy;
+    if (dy===0) return dx;
+    return Math.sqrt(dx*dx + dy*dy);
+  }
+
+  let minClear = Math.min(ix1, iy1, roomW-ix2, roomH-iy2); // wall distances
+
+  // Cabinet footprints
+  (r.cabinets||[]).forEach(cab => {
+    const cat = CATALOG[cab.type]; if (!cat) return;
+    const off = cab.offset||0, dep = cab.depth||24, w = cab.width;
+    let cx1,cy1,cx2,cy2;
+    if      (cab.wall==='north') { cx1=off; cy1=0;        cx2=off+w; cy2=dep; }
+    else if (cab.wall==='south') { cx1=off; cy1=roomH-dep; cx2=off+w; cy2=roomH; }
+    else if (cab.wall==='west')  { cx1=0;   cy1=off;       cx2=dep;   cy2=off+w; }
+    else                         { cx1=roomW-dep; cy1=off; cx2=roomW; cy2=off+w; }
+    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, cx1,cy1,cx2,cy2));
+  });
+
+  // Appliance footprints
+  (r.appliances||[]).forEach(app => {
+    const acat = APPLIANCES[app.type]; if (!acat || acat.wallMount) return;
+    const off = app.offset||0, dep = acat.depth, w = app.width;
+    let cx1,cy1,cx2,cy2;
+    if      (app.wall==='north') { cx1=off; cy1=0;        cx2=off+w; cy2=dep; }
+    else if (app.wall==='south') { cx1=off; cy1=roomH-dep; cx2=off+w; cy2=roomH; }
+    else if (app.wall==='west')  { cx1=0;   cy1=off;       cx2=dep;   cy2=off+w; }
+    else                         { cx1=roomW-dep; cy1=off; cx2=roomW; cy2=off+w; }
+    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, cx1,cy1,cx2,cy2));
+  });
+
+  // Other islands
+  (r.islands||[]).forEach(other => {
+    if (other.id === isl.id) return;
+    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, other.x,other.y,other.x+other.width,other.y+other.depth));
+  });
+
+  return Math.round(Math.max(0, minClear));
+}
+
+// ════════════════════════════
 // RENDER: FLOOR PLAN
 // ════════════════════════════
 function renderCanvas() {
@@ -2200,33 +2254,59 @@ function renderCanvas() {
     ctx.fillText(icons[op.type]||'?', ox+fw/2, oy+fh/2);
   });
 
-  // Draw islands
+  // Draw islands with clearance indicator
   (r.islands || []).forEach(isl => {
     const ix = RX + isl.x * scale;
     const iy = RY + isl.y * scale;
     const iw = isl.width  * scale;
     const ih = isl.depth  * scale;
-    // Shadow
+    const clearIn = calcIslandClearance(isl, r);
+    // Color based on clearance: <24"=red, 24-36"=yellow, >=36"=green
+    const clearOk    = clearIn >= 36;
+    const clearWarn  = clearIn >= 24 && clearIn < 36;
+    const borderCol  = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
+    const fillCol    = clearOk ? '#D97706' : clearWarn ? '#D97706' : '#D97706'; // keep amber fill
+    const glowCol    = clearOk ? 'rgba(22,163,74,0.2)' : clearWarn ? 'rgba(217,119,6,0.2)' : 'rgba(220,38,38,0.25)';
+
+    // Clearance glow ring
+    ctx.save();
+    ctx.strokeStyle = borderCol; ctx.lineWidth = 3; ctx.globalAlpha = 0.5;
+    ctx.setLineDash([4,3]);
+    ctx.strokeRect(ix-6, iy-6, iw+12, ih+12);
+    ctx.setLineDash([]); ctx.restore();
+
+    // Shadow + fill
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
-    ctx.fillStyle = '#D97706'; ctx.globalAlpha = 0.85;
+    ctx.fillStyle = fillCol; ctx.globalAlpha = 0.85;
     ctx.fillRect(ix, iy, iw, ih);
     ctx.restore();
     ctx.globalAlpha = 1;
-    // Border
-    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 2; ctx.setLineDash([5,3]);
-    ctx.strokeRect(ix, iy, iw, ih); ctx.setLineDash([]);
-    // Counter edge lines (front and back)
+
+    // Solid border in clearance color
+    ctx.strokeStyle = borderCol; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+    ctx.strokeRect(ix, iy, iw, ih);
+
+    // Counter edge lines
     ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(ix+3, iy+3); ctx.lineTo(ix+iw-3, iy+3); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(ix+3, iy+ih-3); ctx.lineTo(ix+iw-3, iy+ih-3); ctx.stroke();
+
     // Label
     ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(9, Math.min(scale*2,12))}px sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(isl.label || 'Island', ix+iw/2, iy+ih/2 - 6);
+    ctx.fillText(isl.label || 'Island', ix+iw/2, iy+ih/2 - 7);
     ctx.font = `${Math.max(8, Math.min(scale*1.6,10))}px sans-serif`;
     ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 8);
+    ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 6);
+
+    // Clearance badge — bottom center of island
+    const badgeTxt = clearOk ? `✓ ${clearIn}" clear` : `⚠ ${clearIn}" clear`;
+    const badgeCol = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
+    ctx.fillStyle = badgeCol;
+    ctx.font = `bold ${Math.max(8, Math.min(scale*1.5,10))}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(badgeTxt, ix+iw/2, iy+ih+5);
   });
 
   ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
@@ -3102,7 +3182,12 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
           const roomH = Math.max(info.r.walls.east,  info.r.walls.west,  48);
           isl.x = Math.max(0, Math.min(roomW - isl.width,  Math.round(drag.startX + (mx-drag.startMX)/drag.scale)));
           isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (my-drag.startMY)/drag.scale)));
-          tooltip.style.display='block'; tooltip.textContent=`Island · ${isl.x}" from left, ${isl.y}" from top`;
+          const clr = calcIslandClearance(isl, info.r);
+          const clrOk = clr >= 36, clrWarn = clr >= 24;
+          const clrTxt = clrOk ? `✓ ${clr}" clearance` : clrWarn ? `⚠ ${clr}" — tight` : `✗ ${clr}" — too close!`;
+          tooltip.style.display='block';
+          tooltip.style.background = clrOk ? '#16a34a' : clrWarn ? '#d97706' : '#dc2626';
+          tooltip.textContent = `${isl.label||'Island'} · ${clrTxt}`;
           persist(); renderCanvas(); renderCabinetList();
         }
       } else {
@@ -3125,7 +3210,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
     }
   });
-  window.addEventListener('mouseup', () => { if(drag){drag=null;canvas.style.cursor='default';setTimeout(()=>{tooltip.style.display='none';},1200);} });
+  window.addEventListener('mouseup', () => { if(drag){drag=null;canvas.style.cursor='default';tooltip.style.background='#1e293b';setTimeout(()=>{tooltip.style.display='none';},1200);} });
   canvas.addEventListener('touchstart', e => {
     const info=getCanvasInfo(); if(!info)return;
     const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
