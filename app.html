@@ -2008,36 +2008,55 @@ function renderCabinetList() {
 // RULER HELPER
 // ════════════════════════════
 function drawRuler(ctx, originX, originY, totalInches, scale, vertical, fromFloor) {
-  // vertical=true draws a Y-axis ruler; fromFloor=true reverses labels (0 at bottom)
-  const RULER_W = 22;
+  const RULER_W = 28;
   ctx.save();
-  ctx.fillStyle = '#f1f5f9';
+
+  // Background
+  ctx.fillStyle = '#f8fafc';
   if (!vertical) {
-    // X ruler — strip above the room edge
     ctx.fillRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
-    ctx.strokeRect(originX, originY - RULER_W, totalInches * scale, RULER_W);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(originX, originY - 1, totalInches * scale, 1);
   } else {
-    // Y ruler — strip to the left of the room edge
     ctx.fillRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 0.5;
-    ctx.strokeRect(originX - RULER_W, originY, RULER_W, totalInches * scale);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(originX - 1, originY, 1, totalInches * scale);
   }
-  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 0.8;
-  ctx.fillStyle = '#475569'; ctx.font = '8px sans-serif';
-  for (let inch = 0; inch <= totalInches; inch += 6) {
+
+  // Determine tick density based on scale
+  const minPixPerTick = 18;
+  const tickIntervals = [1, 2, 3, 6, 12, 24];
+  const tickStep = tickIntervals.find(t => t * scale >= minPixPerTick) || 24;
+
+  for (let inch = 0; inch <= totalInches; inch += tickStep) {
     const px = inch * scale;
-    const isFoot = inch % 12 === 0;
-    const tickLen = isFoot ? 10 : 5;
+    const isFoot   = inch % 12 === 0;
+    const isHalf   = inch % 6  === 0 && !isFoot;
+    const tickLen  = isFoot ? 14 : isHalf ? 8 : 5;
+    const showLabel = isFoot;
+    const ft  = Math.floor(inch / 12);
+    const inn = inch % 12;
     const label = fromFloor
-      ? `${Math.floor((totalInches - inch) / 12)}'`
-      : `${Math.floor(inch / 12)}'`;
+      ? (() => { const ri = totalInches - inch; const rft = Math.floor(ri/12); const rin = ri%12; return rin ? `${rft}'${rin}"` : `${rft}'`; })()
+      : (inn === 0 ? `${ft}'` : `${ft}'${inn}"`);
+
+    ctx.strokeStyle = isFoot ? '#64748b' : '#94a3b8';
+    ctx.lineWidth   = isFoot ? 1 : 0.6;
+
     if (!vertical) {
-      ctx.beginPath(); ctx.moveTo(originX + px, originY - tickLen); ctx.lineTo(originX + px, originY); ctx.stroke();
-      if (isFoot) { ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(label, originX + px, originY - RULER_W + 2); }
+      ctx.beginPath(); ctx.moveTo(originX+px, originY-tickLen); ctx.lineTo(originX+px, originY); ctx.stroke();
+      if (showLabel) {
+        ctx.fillStyle = '#334155'; ctx.font = `600 9px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(label, originX+px, originY-RULER_W+3);
+      }
     } else {
-      ctx.beginPath(); ctx.moveTo(originX - tickLen, originY + px); ctx.lineTo(originX, originY + px); ctx.stroke();
-      if (isFoot) { ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(label, originX - 12, originY + px); }
+      ctx.beginPath(); ctx.moveTo(originX-tickLen, originY+px); ctx.lineTo(originX, originY+px); ctx.stroke();
+      if (showLabel) {
+        ctx.fillStyle = '#334155'; ctx.font = `600 9px sans-serif`;
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(label, originX-4, originY+px);
+      }
     }
   }
   ctx.restore();
@@ -2071,8 +2090,11 @@ function clearMeasurements() {
 
 function canvasPtToRoom(clientX, clientY, canvas, RX, RY, scale) {
   const rect = canvas.getBoundingClientRect();
-  const mx = clientX - rect.left;
-  const my = clientY - rect.top;
+  // Account for CSS display size vs canvas internal resolution
+  const cssScaleX = canvas.width  / rect.width;
+  const cssScaleY = canvas.height / rect.height;
+  const mx = (clientX - rect.left) * cssScaleX;
+  const my = (clientY - rect.top)  * cssScaleY;
   return {
     x: Math.round((mx - RX) / scale),
     y: Math.round((my - RY) / scale)
@@ -2227,12 +2249,22 @@ function renderCanvas() {
   canvas.height = Math.max(roomH * scale + PAD*2, 280);
   const RX = PAD, RY = PAD, RW = roomW*scale, RH = roomH*scale;
 
-  ctx.fillStyle = '#F8FAFC'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  const GRID = 12*scale;
-  ctx.strokeStyle = '#E8EEF4'; ctx.lineWidth = 0.5;
-  for (let x = RX; x <= RX+RW+1; x += GRID) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
-  for (let y = RY; y <= RY+RH+1; y += GRID) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
-  ctx.fillStyle = '#FFF'; ctx.fillRect(RX,RY,RW,RH);
+  // Canvas background
+  ctx.fillStyle = '#F1F5F9'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Room fill first (white)
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(RX,RY,RW,RH);
+
+  // Grid — 12" major (foot), 6" minor lines inside room only
+  const GRID12 = 12*scale, GRID6 = 6*scale;
+  // Minor 6" grid
+  ctx.strokeStyle = '#F0F4F8'; ctx.lineWidth = 0.5;
+  for (let x = RX; x <= RX+RW; x += GRID6) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
+  for (let y = RY; y <= RY+RH; y += GRID6) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
+  // Major 12" (foot) grid
+  ctx.strokeStyle = '#DDE3EC'; ctx.lineWidth = 0.8;
+  for (let x = RX; x <= RX+RW; x += GRID12) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
+  for (let y = RY; y <= RY+RH; y += GRID12) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
 
   let cabs = r.cabinets;
   if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type));
@@ -2440,13 +2472,17 @@ function renderCanvas() {
     ctx.fillText(badgeTxt, ix+iw/2, iy+ih+5);
   });
 
+  // Room border — double line for a clean wall look
+  ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.strokeRect(RX-2,RY-2,RW+4,RH+4);
   ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
-  ctx.fillStyle = '#475569';
-  const df = Math.max(10, scale*2.3); ctx.font = `600 ${df}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (r.walls.north>0) ctx.fillText(fmtIn(r.walls.north), RX+RW/2, RY-22);
-  if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+26);
-  ctx.save(); ctx.translate(RX-28, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
-  ctx.save(); ctx.translate(RX+RW+28, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
+
+  // Wall dimension labels
+  ctx.fillStyle = '#1e293b';
+  const df = Math.max(10, scale*2.2); ctx.font = `700 ${df}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (r.walls.north>0) ctx.fillText(fmtIn(r.walls.north), RX+RW/2, RY-36);
+  if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+36);
+  ctx.save(); ctx.translate(RX-36, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
+  ctx.save(); ctx.translate(RX+RW+36, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
   // Rulers
   drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
   drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
@@ -3356,7 +3392,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
       }
-    } else {
+    } else if (!measureState.active) {
       const hit = hitTestCab(mx,my,info);
       if (hit) {
         canvas.style.cursor = 'grab';
