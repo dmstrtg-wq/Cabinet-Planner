@@ -2119,7 +2119,9 @@ function renderRoomTabs() {
     tab.onclick = () => switchRoom(r.id);
     bar.insertBefore(tab, addBtn);
   });
-  document.getElementById('plan-title').textContent = `${p.customer} — ${activeRoom() ? activeRoom().name : ''} Floor Plan`;
+  const _titleR = activeRoom();
+  const _shapeTag = (_titleR && getLShapeData(_titleR)) ? ' ⌐' : '';
+  document.getElementById('plan-title').textContent = `${p.customer} — ${_titleR ? _titleR.name : ''}${_shapeTag} Floor Plan`;
   renderWallButtons();
 }
 
@@ -2458,6 +2460,27 @@ function renderCanvas() {
   // Room fill (white, clipped to polygon)
   buildRoomPath(); ctx.fillStyle = '#FFFFFF'; ctx.fill();
 
+  // L-shape: hatch the cut corner so it's clearly "not room"
+  if (_ld) {
+    const _c = _ld.corner, _sw1 = _ld.step1, _sw2 = _ld.step2;
+    let _cx, _cy, _cw, _ch;
+    if      (_c==='NE') { _cx=RX+_sw1.x*scale;  _cy=RY;                    _cw=_sw2.length*scale; _ch=_sw2.y*scale;      }
+    else if (_c==='NW') { _cx=RX;                _cy=RY;                    _cw=_sw1.x*scale;      _ch=_sw2.y*scale;      }
+    else if (_c==='SE') { _cx=RX+_sw1.x*scale;  _cy=RY+_sw2.y*scale;       _cw=_sw2.length*scale; _ch=RH-_sw2.y*scale;   }
+    else                { _cx=RX;                _cy=RY+_sw2.y*scale;       _cw=_sw1.x*scale;      _ch=RH-_sw2.y*scale;   }
+    // Slightly darker background
+    ctx.fillStyle = '#D9E2EE'; ctx.fillRect(_cx, _cy, _cw, _ch);
+    // Diagonal hatch lines to mark as "not room"
+    ctx.save();
+    ctx.beginPath(); ctx.rect(_cx, _cy, _cw, _ch); ctx.clip();
+    ctx.strokeStyle = '#B8C8DC'; ctx.lineWidth = 1;
+    const _hStep = Math.max(14, scale*3);
+    for (let _i = -_ch; _i < _cw + _ch; _i += _hStep) {
+      ctx.beginPath(); ctx.moveTo(_cx + _i, _cy); ctx.lineTo(_cx + _i + _ch, _cy + _ch); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Grid clipped to room shape
   const GRID12 = 12*scale, GRID6 = 6*scale;
   ctx.save(); buildRoomPath(); ctx.clip();
@@ -2764,6 +2787,13 @@ function renderCanvas() {
   drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
   drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
 
+  ctx.fillStyle = '#94A3B8'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  // Shape tag if L-shape
+  if (_ld) {
+    ctx.fillStyle = '#3b82f6'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillRect(RX+20, RY-46, 50, 16);
+    ctx.fillStyle = '#fff'; ctx.fillText('⌐ L-Shape', RX+24, RY-38);
+  }
   ctx.fillStyle = '#94A3B8'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   ctx.fillText('↑ N', RX+4, RY-28);
   const barPx = 24*scale, bx = RX+RW-barPx-8, by = RY+RH+40;
