@@ -474,7 +474,7 @@ body {
     </div>
 
     <div class="room-tabs-bar" id="room-tabs-bar">
-      <button class="add-room-btn" onclick="openAddRoomModal()">＋ Room</button>
+      <button class="add-room-btn" onclick="openRoomTemplates()">＋ Room</button>
     </div>
 
     <div class="workspace">
@@ -497,6 +497,9 @@ body {
             <button id="measure-btn" onclick="toggleMeasure()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📏 Measure</button>
             <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">✕ Clear</button>
             <button onclick="openRoomShapeModal()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">⬡ Room Shape</button>
+            <button id="dims-btn" onclick="toggleDimensions()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📐 Dims</button>
+            <button id="tri-btn" onclick="toggleWorkTriangle()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">△ Triangle</button>
+            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
           </div>
           <div id="floor-plan-wrapper">
             <div class="plan-title" id="plan-title">Floor Plan</div>
@@ -865,6 +868,17 @@ body {
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-edit-project')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEditProject()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-room-templates" class="modal-overlay hidden">
+  <div class="modal" style="max-width:580px">
+    <h3 style="margin-bottom:4px">Choose a Room Layout</h3>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Select a template to pre-fill dimensions, or start from scratch</p>
+    <div id="template-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRoomTemplates()">Cancel</button>
     </div>
   </div>
 </div>
@@ -1239,6 +1253,9 @@ const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'
 // ════════════════════════════
 // STATE
 // ════════════════════════════
+let showDimensions = false;
+let showWorkTriangle = false;
+
 let state = {
   projects: [],
   activeProjectId: null,
@@ -2803,6 +2820,8 @@ function renderCanvas() {
   ctx.beginPath(); ctx.moveTo(bx+barPx,by-4); ctx.lineTo(bx+barPx,by+4); ctx.stroke();
   ctx.fillStyle = '#475569'; ctx.font = '500 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillText('24"', bx+barPx/2, by+5);
+  if (showDimensions) drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld);
+  if (showWorkTriangle) drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH);
   renderSummary(r);
 }
 
@@ -3577,6 +3596,426 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
 <div class="foot">${escHtml(companyName)} · ${escHtml(cp.website || 'mycabinetbuilder.com')} · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
 </body></html>`);
   win.document.close();
+}
+
+// ════════════════════════════
+// DIMENSION CALLOUTS
+// ════════════════════════════
+function toggleDimensions() {
+  showDimensions = !showDimensions;
+  const btn = document.getElementById('dims-btn');
+  if (showDimensions) { btn.style.background='#EFF6FF'; btn.style.color='#2563EB'; btn.style.borderColor='#2563EB'; }
+  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  renderCanvas();
+}
+
+function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
+  const walls = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.font = '600 9px sans-serif';
+  ctx.textBaseline = 'middle';
+
+  function drawDimLine(x1, y1, x2, y2, label, isH, aboveOrLeft) {
+    ctx.strokeStyle = '#1D4ED8'; ctx.fillStyle = '#1D4ED8';
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    if (isH) {
+      ctx.beginPath(); ctx.moveTo(x1,y1-5); ctx.lineTo(x1,y1+5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2,y2-5); ctx.lineTo(x2,y2+5); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(x1-5,y1); ctx.lineTo(x1+5,y1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2-5,y2); ctx.lineTo(x2+5,y2); ctx.stroke();
+    }
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const bw=ctx.measureText(label).width+8, bh=14;
+    let bx, by;
+    if (isH) { bx=mx-bw/2; by=aboveOrLeft ? my-bh-3 : my+3; }
+    else      { bx=aboveOrLeft ? mx-bw-3 : mx+3; by=my-bh/2; }
+    ctx.fillStyle='#DBEAFE'; ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle='#1D4ED8'; ctx.strokeRect(bx,by,bw,bh);
+    ctx.fillStyle='#1D4ED8'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(label, bx+bw/2, by+bh/2);
+  }
+
+  walls.forEach(wall => {
+    const cabs = r.cabinets.filter(c=>c.wall===wall).sort((a,b)=>(a.offset||0)-(b.offset||0));
+    if (!cabs.length) return;
+    let dimY, dimX, isH, baseX, baseY, aboveOrLeft;
+    if (wall==='north')      { dimY=RY-30;     isH=true;  baseX=RX; aboveOrLeft=true;  }
+    else if (wall==='south') { dimY=RY+RH+30;  isH=true;  baseX=RX; aboveOrLeft=false; }
+    else if (wall==='west')  { dimX=RX-30;     isH=false; baseY=RY; aboveOrLeft=true;  }
+    else if (wall==='east')  { dimX=RX+RW+30;  isH=false; baseY=RY; aboveOrLeft=false; }
+    else if (_ld) {
+      const sw=_ld[wall];
+      if (sw.isVertical) {
+        isH=false; baseY=RY+sw.startY*scale;
+        dimX = sw.depthRight ? RX+sw.x*scale+26 : RX+sw.x*scale-26;
+        aboveOrLeft = !sw.depthRight;
+      } else {
+        isH=true; baseX=RX+sw.startX*scale;
+        dimY = sw.depthDown ? RY+sw.y*scale+26 : RY+sw.y*scale-26;
+        aboveOrLeft = !sw.depthDown;
+      }
+    } else return;
+
+    cabs.forEach(cab => {
+      const off=(cab.offset||0)*scale, cW=cab.width*scale;
+      if (isH) {
+        drawDimLine(baseX+off, dimY, baseX+off+cW, dimY, cab.width+'"', true, aboveOrLeft);
+      } else {
+        drawDimLine(dimX, baseY+off, dimX, baseY+off+cW, cab.width+'"', false, aboveOrLeft);
+      }
+    });
+  });
+  ctx.restore();
+}
+
+// ════════════════════════════
+// WORK TRIANGLE
+// ════════════════════════════
+function toggleWorkTriangle() {
+  showWorkTriangle = !showWorkTriangle;
+  const btn = document.getElementById('tri-btn');
+  if (showWorkTriangle) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
+  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  renderCanvas();
+}
+
+function getItemCentroid(item, wall, scale, RX, RY, RW, RH, depthIn) {
+  const off=(item.offset||0)*scale, w=item.width*scale, d=depthIn*scale;
+  if (wall==='north')      return {x:RX+off+w/2, y:RY+d/2};
+  if (wall==='south')      return {x:RX+off+w/2, y:RY+RH-d/2};
+  if (wall==='west')       return {x:RX+d/2,     y:RY+off+w/2};
+  if (wall==='east')       return {x:RX+RW-d/2,  y:RY+off+w/2};
+  return null;
+}
+
+function drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH) {
+  let fridge=null, range=null, sink=null;
+  for (const a of (r.appliances||[])) {
+    const ac = APPLIANCES[a.type]; if (!ac) continue;
+    const c = getItemCentroid(a, a.wall, scale, RX, RY, RW, RH, ac.depth);
+    if (!c) continue;
+    if ((a.type==='refrigerator'||a.type==='beverageCooler') && !fridge) fridge={...c, icon:'🧊'};
+    if ((a.type==='range'||a.type==='cooktop') && !range) range={...c, icon:'🔥'};
+  }
+  for (const op of (r.openings||[])) {
+    if (op.type==='sink-loc' && !sink) {
+      const c = getItemCentroid(op, op.wall, scale, RX, RY, RW, RH, 2);
+      if (c) sink={...c, icon:'🚰'};
+    }
+  }
+  const pts = [fridge, range, sink].filter(Boolean);
+  if (pts.length < 2) {
+    // Show hint if toggle is on but appliances missing
+    ctx.save();
+    ctx.fillStyle='rgba(22,163,74,0.15)'; ctx.strokeStyle='#16A34A'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.strokeRect(RX+4, RY+4, 140, 22);
+    ctx.setLineDash([]);
+    ctx.fillStyle='#16A34A'; ctx.font='500 10px sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText('△ Add fridge, range & sink to see triangle', RX+10, RY+15);
+    ctx.restore();
+    return;
+  }
+  const pxPerIn = scale;
+  let perim = 0;
+  for (let i=0; i<pts.length; i++) {
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    perim += Math.hypot(b.x-a.x, b.y-a.y) / pxPerIn;
+  }
+  const perimFt = perim / 12;
+  let color;
+  if (perimFt>=13&&perimFt<=26) color='#16A34A';
+  else if (perimFt>=10&&perimFt<=30) color='#D97706';
+  else color='#DC2626';
+
+  ctx.save();
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([7,4]);
+  ctx.fillStyle=color+'28';
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+
+  // Draw leg length labels
+  for (let i=0; i<pts.length; i++) {
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    const legIn = Math.hypot(b.x-a.x, b.y-a.y)/pxPerIn;
+    const legFt = (legIn/12).toFixed(1);
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    const lbl=legFt+"'";
+    const bw=ctx.measureText(lbl).width+8, bh=14;
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(mx-bw/2,my-bh/2,bw,bh);
+    ctx.strokeStyle=color; ctx.lineWidth=1; ctx.strokeRect(mx-bw/2,my-bh/2,bw,bh);
+    ctx.fillStyle=color; ctx.font='600 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(lbl, mx, my);
+  }
+
+  // Draw vertex dots + icons
+  pts.forEach(pt => {
+    ctx.beginPath(); ctx.arc(pt.x,pt.y,8,0,Math.PI*2);
+    ctx.fillStyle=color+'CC'; ctx.fill();
+    ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pt.icon||'●', pt.x, pt.y);
+  });
+
+  // Total + grade badge at centroid
+  const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length;
+  const cy=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+  const grade=perimFt>=13&&perimFt<=26?'✓ Ideal':perimFt>=10&&perimFt<=30?'⚠ OK':'✗ Poor';
+  const tot=`${perimFt.toFixed(1)}ft · ${grade}`;
+  const bw2=ctx.measureText(tot).width+14, bh2=18;
+  ctx.fillStyle=color; ctx.beginPath(); ctx.roundRect ?
+    ctx.roundRect(cx-bw2/2,cy-bh2/2,bw2,bh2,4) : ctx.rect(cx-bw2/2,cy-bh2/2,bw2,bh2);
+  ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='600 10px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(tot, cx, cy);
+  ctx.restore();
+}
+
+// ════════════════════════════
+// ROOM TEMPLATES
+// ════════════════════════════
+const ROOM_TEMPLATES = [
+  { id:'galley',   icon:'🍳', name:'Galley',    desc:'Long narrow, 2 parallel walls',   north:144, south:144, east:72,  west:72,  ceiling:96, shape:'rect' },
+  { id:'lshape',   icon:'📐', name:'L-Shape',   desc:'Two walls, one corner cut out',   north:144, south:144, east:120, west:120, ceiling:96, shape:'L',    corner:'NE', cutW:72, cutD:60 },
+  { id:'ushape',   icon:'〓', name:'U-Shape',   desc:'Three walls of cabinets',         north:144, south:144, east:120, west:120, ceiling:96, shape:'rect' },
+  { id:'gshape',   icon:'↩', name:'G-Shape',   desc:'Three walls + short peninsula',   north:168, south:168, east:144, west:144, ceiling:96, shape:'rect' },
+  { id:'peninsula',icon:'🏝', name:'Peninsula', desc:'Open plan with peninsula arm',    north:180, south:180, east:132, west:132, ceiling:96, shape:'rect' },
+  { id:'blank',    icon:'⬜', name:'Custom',    desc:'Start fresh, enter dimensions',   north:0,   south:0,   east:0,   west:0,   ceiling:96, shape:'rect' },
+];
+
+function openRoomTemplates() {
+  const grid = document.getElementById('template-grid');
+  grid.innerHTML = ROOM_TEMPLATES.map(t => `
+    <div onclick="applyTemplate('${t.id}')"
+         style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:16px 10px;text-align:center;background:white;transition:border-color .15s,background .15s"
+         onmouseover="this.style.borderColor='#2563EB';this.style.background='#EFF6FF'"
+         onmouseout="this.style.borderColor='var(--border)';this.style.background='white'">
+      <div style="font-size:26px;margin-bottom:6px">${t.icon}</div>
+      <div style="font-weight:700;font-size:13px;color:var(--text);margin-bottom:3px">${t.name}</div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.4">${t.desc}</div>
+      ${t.north ? `<div style="margin-top:6px;font-size:10px;color:#64748b">${t.north}"×${t.east}"</div>` : ''}
+    </div>`).join('');
+  document.getElementById('modal-room-templates').classList.remove('hidden');
+  document.getElementById('modal-room-templates').style.display = 'flex';
+}
+function closeRoomTemplates() {
+  document.getElementById('modal-room-templates').classList.add('hidden');
+  document.getElementById('modal-room-templates').style.display = '';
+}
+function applyTemplate(tId) {
+  const t = ROOM_TEMPLATES.find(x=>x.id===tId); if (!t) return;
+  closeRoomTemplates();
+  ['ar-name','ar-north','ar-south','ar-east','ar-west'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('ar-ceiling').value = t.ceiling;
+  if (t.north) document.getElementById('ar-north').value = t.north;
+  if (t.south) document.getElementById('ar-south').value = t.south;
+  if (t.east)  document.getElementById('ar-east').value  = t.east;
+  if (t.west)  document.getElementById('ar-west').value  = t.west;
+  const isL = t.shape === 'L';
+  document.getElementById('ar-shape-rect').checked = !isL;
+  document.getElementById('ar-shape-L').checked    = isL;
+  if (isL) {
+    document.getElementById('ar-corner').value    = t.corner || 'NE';
+    document.getElementById('ar-cut-width').value = t.cutW || 60;
+    document.getElementById('ar-cut-depth').value = t.cutD || 60;
+    document.getElementById('ar-lcut-fields').style.display = '';
+  } else {
+    document.getElementById('ar-lcut-fields').style.display = 'none';
+  }
+  openModal('modal-add-room');
+  setTimeout(() => document.getElementById('ar-name').focus(), 50);
+}
+
+// ════════════════════════════
+// PDF EXPORT
+// ════════════════════════════
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = resolve; s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+async function exportPDF(btn) {
+  const p = activeProj();
+  if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Generating…'; btn.disabled = true;
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+  } catch(e) {
+    alert('Could not load PDF library. Check internet connection.');
+    btn.textContent = origText; btn.disabled = false; return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'letter' });
+  const PW=215.9, PH=279.4, MAR=16, CW=PW-MAR*2;
+  const cp = companyProfile;
+  const coName = p.company || cp.company_name || 'My Cabinet Planner';
+
+  function hdr(title, pg) {
+    doc.setFillColor(44,31,20); doc.rect(0,0,PW,9,'F');
+    doc.setFontSize(7); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');
+    doc.text(coName.toUpperCase(), MAR, 6);
+    doc.text(title, PW/2, 6, {align:'center'});
+    doc.text('Page '+pg, PW-MAR, 6, {align:'right'});
+    doc.setTextColor(30,30,30);
+  }
+  function ftr() {
+    doc.setFontSize(7); doc.setTextColor(150,150,150); doc.setFont('helvetica','normal');
+    doc.text(`${coName}  ·  Generated ${new Date().toLocaleDateString()}  ·  My Cabinet Planner`, PW/2, PH-5, {align:'center'});
+    doc.setTextColor(30,30,30);
+  }
+  function pxToMm(px) { return px * 0.264583; }
+  function fitImg(iw, ih, maxW, maxH) {
+    let w=pxToMm(iw), h=pxToMm(ih);
+    if (h>maxH){const r=maxH/h;h=maxH;w*=r;}
+    if (w>maxW){const r=maxW/w;w=maxW;h*=r;}
+    return {w,h};
+  }
+
+  let pg = 1;
+
+  // ── Page 1: Company header + floor plan ──────────────────────
+  hdr('Floor Plan', pg); ftr();
+  let y = 14;
+  doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+  doc.text(coName, MAR, y); y+=5;
+  if (cp.tagline) { doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(120,97,79); doc.text(cp.tagline.toUpperCase(), MAR, y); y+=4; }
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+  const coLine = [cp.address, cp.phone, cp.email, cp.website].filter(Boolean).join('  ·  ');
+  if (coLine) { doc.text(coLine, MAR, y); y+=4; }
+  doc.setDrawColor(180,83,9); doc.setLineWidth(0.6); doc.line(MAR,y,PW-MAR,y); y+=4;
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(30,30,30);
+  doc.text('CUSTOMER', MAR, y); doc.text('PROJECT', PW/2, y); y+=4;
+  doc.setFont('helvetica','normal');
+  doc.text(p.customer||'—', MAR, y); doc.text(`${p.type||'—'}  ·  Style: ${p.style||'—'}`, PW/2, y); y+=5;
+  doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(MAR,y,PW-MAR,y); y+=4;
+  const fpCv = document.getElementById('floor-plan');
+  if (fpCv && fpCv.width) {
+    const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-8);
+    doc.addImage(fpCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, y, w, h);
+  }
+
+  // ── Pages 2-N: Wall elevations ─────────────────────────────────
+  const r = activeRoom();
+  if (r) {
+    const savedWall  = state.elevWall;
+    const scaleSel   = document.getElementById('elev-scale-sel');
+    const savedScale = scaleSel.value;
+    scaleSel.value   = '4';
+
+    const ld = getLShapeData(r);
+    const allWalls = ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+    const wallLabel = {north:'North Wall',south:'South Wall',east:'East Wall',west:'West Wall',
+                       step1:'Inner Wall 1',step2:'Inner Wall 2'};
+
+    for (const wall of allWalls) {
+      let wallLen;
+      if (wall==='step1'&&ld) wallLen=ld.step1.length;
+      else if (wall==='step2'&&ld) wallLen=ld.step2.length;
+      else wallLen=r.walls[wall]||0;
+      if (!wallLen) continue;
+      if ((wall==='step1'||wall==='step2') &&
+          !r.cabinets.some(c=>c.wall===wall) &&
+          !(r.openings||[]).some(o=>o.wall===wall)) continue;
+
+      doc.addPage(); pg++;
+      const wl = wallLabel[wall]||wall;
+      hdr(`${r.name} — ${wl}`, pg); ftr();
+      let ey=14;
+      doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+      doc.text(`${wl}`, MAR, ey); ey+=4;
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+      const ft=Math.floor(wallLen/12), ins=wallLen%12;
+      const lenStr = ft>0 ? `${ft}'-${ins}"` : `${ins}"`;
+      doc.text(`Length: ${lenStr}  ·  Cabinets: ${r.cabinets.filter(c=>c.wall===wall).length}  ·  Ceiling: ${r.ceilingHeight||96}"`, MAR, ey); ey+=4;
+
+      state.elevWall = wall;
+      renderElevation();
+      await new Promise(res=>setTimeout(res,60));
+      const evCv = document.getElementById('elevation-plan');
+      if (evCv && evCv.width) {
+        const {w,h} = fitImg(evCv.width, evCv.height, CW, PH-ey-MAR-8);
+        doc.addImage(evCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, ey, w, h);
+      }
+    }
+    state.elevWall = savedWall;
+    scaleSel.value = savedScale;
+    renderElevation();
+  }
+
+  // ── Last page: Quote ─────────────────────────────────────────────
+  doc.addPage(); pg++;
+  hdr('Cabinet Quote', pg); ftr();
+  let qy=14;
+  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+  doc.text('QUOTE', MAR, qy); qy+=5;
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+  doc.text(`Customer: ${p.customer||'—'}   ·   Project: ${p.type||'—'}   ·   Style: ${p.style||'—'}   ·   Date: ${new Date().toLocaleDateString()}`, MAR, qy); qy+=5;
+
+  const tax=getTax(); let cabSub=0;
+  const rows=[];
+  p.rooms.forEach(room => {
+    if (!room.cabinets.length) return;
+    rows.push([{content:room.name,colSpan:4,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
+    room.cabinets.forEach(c => {
+      const pr=cabinetPrice(c); cabSub+=pr;
+      const cat=CATALOG[c.type];
+      rows.push([
+        (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
+        `${c.width}"W × ${c.height}"H × ${c.depth}"D`,
+        c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
+        {content:'$'+pr.toFixed(2),styles:{halign:'right',fontStyle:'bold'}}
+      ]);
+    });
+  });
+  const jcItems=(p.jobCosts||[]).filter(jc=>jc.label||jc.amount);
+  jcItems.forEach(jc=>{
+    const amt=parseFloat(jc.amount)||0;
+    rows.push([{content:jc.label||'Additional Cost',colSpan:3},{content:'$'+amt.toFixed(2),styles:{halign:'right'}}]);
+  });
+
+  doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
+    head:[['Cabinet','Dimensions','Wall','Price']],
+    body:rows,
+    styles:{fontSize:7.5,cellPadding:2},
+    headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+    theme:'grid',
+  });
+  qy=doc.lastAutoTable.finalY+6;
+
+  const jcTotal=jcItems.reduce((s,jc)=>s+(parseFloat(jc.amount)||0),0);
+  const trimTotal=(p.trimItems||[]).filter(t=>t.label||t.unitPrice).reduce((s,t)=>s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0),0);
+  const beforeTax=cabSub+jcTotal+trimTotal;
+  const taxAmt=beforeTax*tax;
+  const total=beforeTax+taxAmt;
+  const totLines=[
+    ['Cabinet Subtotal','$'+cabSub.toFixed(2)],
+    ...(jcTotal>0?[['Additional Costs','$'+jcTotal.toFixed(2)]]:[]),
+    ...(trimTotal>0?[['Trim & Materials','$'+trimTotal.toFixed(2)]]:[]),
+    ...(tax>0?[[`Tax (${(tax*100).toFixed(1)}%)`, '$'+taxAmt.toFixed(2)]]:[]),
+  ];
+  totLines.forEach(([lbl,amt])=>{
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+    doc.text(lbl, PW-MAR-60, qy);
+    doc.setFont('helvetica','bold'); doc.setTextColor(30,30,30);
+    doc.text(amt, PW-MAR, qy, {align:'right'}); qy+=5;
+  });
+  doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(22,163,74);
+  doc.text('TOTAL', PW-MAR-60, qy);
+  doc.text('$'+total.toFixed(2), PW-MAR, qy, {align:'right'});
+
+  const fname=(p.customer||'quote').replace(/[^a-z0-9]/gi,'_')+'_cabinet_plan.pdf';
+  doc.save(fname);
+  btn.textContent = origText; btn.disabled = false;
 }
 
 // ════════════════════════════
