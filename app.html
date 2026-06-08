@@ -496,6 +496,7 @@ body {
             </select>
             <button id="measure-btn" onclick="toggleMeasure()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📏 Measure</button>
             <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">✕ Clear</button>
+            <button onclick="openRoomShapeModal()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">⬡ Room Shape</button>
           </div>
           <div id="floor-plan-wrapper">
             <div class="plan-title" id="plan-title">Floor Plan</div>
@@ -881,9 +882,73 @@ body {
       <div class="form-group"><label>West Wall (in)</label><input type="number" id="ar-west" placeholder="96"></div>
     </div>
     <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="ar-ceiling" value="96"></div>
+    <div class="form-group">
+      <label>Room Shape</label>
+      <div style="display:flex;gap:14px;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
+          <input type="radio" name="ar-shape" id="ar-shape-rect" value="rect" checked onchange="toggleLCutFields('ar')"> Rectangle
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
+          <input type="radio" name="ar-shape" id="ar-shape-L" value="L" onchange="toggleLCutFields('ar')"> L-Shape
+        </label>
+      </div>
+    </div>
+    <div id="ar-lcut-fields" style="display:none;border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+      <div class="form-group">
+        <label>Cut Corner</label>
+        <select id="ar-corner" style="width:100%">
+          <option value="NE">Top-Right (NE)</option>
+          <option value="NW">Top-Left (NW)</option>
+          <option value="SE">Bottom-Right (SE)</option>
+          <option value="SW">Bottom-Left (SW)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Cut Width (in)</label><input type="number" id="ar-cut-width" value="48" min="12" placeholder="48"></div>
+        <div class="form-group"><label>Cut Depth (in)</label><input type="number" id="ar-cut-depth" value="48" min="12" placeholder="48"></div>
+      </div>
+      <p style="font-size:11px;color:#64748b;margin:0">Width &amp; Depth are the size of the corner removed.</p>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-add-room')">Cancel</button>
       <button class="btn btn-primary" onclick="addRoom()">Add Room</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-room-shape" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Room Shape</h3>
+    <div class="form-group">
+      <label>Shape</label>
+      <div style="display:flex;gap:14px;margin-top:6px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
+          <input type="radio" name="rs-shape" id="rs-shape-rect" value="rect" onchange="toggleLCutFields('rs')"> Rectangle
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
+          <input type="radio" name="rs-shape" id="rs-shape-L" value="L" onchange="toggleLCutFields('rs')"> L-Shape
+        </label>
+      </div>
+    </div>
+    <div id="rs-lcut-fields">
+      <div class="form-group">
+        <label>Cut Corner</label>
+        <select id="rs-corner" style="width:100%">
+          <option value="NE">Top-Right (NE)</option>
+          <option value="NW">Top-Left (NW)</option>
+          <option value="SE">Bottom-Right (SE)</option>
+          <option value="SW">Bottom-Left (SW)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Cut Width (in)</label><input type="number" id="rs-cut-width" min="12" placeholder="48"></div>
+        <div class="form-group"><label>Cut Depth (in)</label><input type="number" id="rs-cut-depth" min="12" placeholder="48"></div>
+      </div>
+      <p style="font-size:11px;color:#64748b;margin:0">Width &amp; Depth are the size of the corner removed.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-room-shape')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRoomShape()">Apply Shape</button>
     </div>
   </div>
 </div>
@@ -1407,8 +1472,10 @@ function openAddRoomModal() {
 }
 function addRoom() {
   const p = activeProj(); if (!p) return;
+  const arShape = document.querySelector('input[name="ar-shape"]:checked')?.value || 'rect';
   const room = {
     id: uid(), name: document.getElementById('ar-name').value.trim() || 'Room',
+    shape: arShape,
     walls: {
       north: parseInt(document.getElementById('ar-north').value) || 0,
       south: parseInt(document.getElementById('ar-south').value) || 0,
@@ -1418,10 +1485,20 @@ function addRoom() {
     ceilingHeight: parseInt(document.getElementById('ar-ceiling').value) || 96,
     cabinets: [], openings: []
   };
+  if (arShape === 'L') {
+    room.lCut = {
+      corner: document.getElementById('ar-corner').value,
+      width:  parseInt(document.getElementById('ar-cut-width').value)  || 48,
+      depth:  parseInt(document.getElementById('ar-cut-depth').value)  || 48,
+    };
+  }
   p.rooms.push(room);
   state.activeRoomId = room.id;
+  // Reset ar-shape radio to rect for next time
+  document.getElementById('ar-shape-rect').checked = true;
+  document.getElementById('ar-lcut-fields').style.display = 'none';
   persist(); closeModal('modal-add-room');
-  renderRoomTabs(); renderCabinetList(); renderCanvas();
+  renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
 }
 function deleteRoom(roomId) {
   const p = activeProj();
@@ -1433,7 +1510,111 @@ function deleteRoom(roomId) {
 }
 function switchRoom(roomId) {
   state.activeRoomId = roomId; persist();
-  renderRoomTabs(); renderCabinetList(); renderCanvas();
+  // Reset to north if active wall doesn't exist on new room
+  const nr = activeProj()?.rooms.find(r=>r.id===roomId);
+  if (nr && !getLShapeData(nr) && (state.activeWall==='step1'||state.activeWall==='step2')) {
+    state.activeWall = 'north';
+  }
+  renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
+}
+
+// ════════════════════════════
+// L-SHAPE ROOM HELPERS
+// ════════════════════════════
+function getLShapeData(r) {
+  if (!r || r.shape !== 'L' || !r.lCut) return null;
+  const { corner, width: cW, depth: cD } = r.lCut;
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const w = Math.max(12, Math.min(cW, roomW - 24));
+  const d = Math.max(12, Math.min(cD, roomH - 24));
+  switch(corner) {
+    case 'NE': return {
+      corner, cutW:w, cutD:d,
+      polygon: [[0,0],[roomW-w,0],[roomW-w,d],[roomW,d],[roomW,roomH],[0,roomH]],
+      step1: { wall:'step1', label:'→ Inner', isVertical:true,  x:roomW-w, startY:0,      length:d, depthRight:true,  depthDown:false },
+      step2: { wall:'step2', label:'↓ Inner', isVertical:false, y:d,       startX:roomW-w, length:w, depthRight:false, depthDown:true  },
+    };
+    case 'NW': return {
+      corner, cutW:w, cutD:d,
+      polygon: [[w,0],[roomW,0],[roomW,roomH],[0,roomH],[0,d],[w,d]],
+      step1: { wall:'step1', label:'← Inner', isVertical:true,  x:w,       startY:0, length:d, depthRight:false, depthDown:false },
+      step2: { wall:'step2', label:'↓ Inner', isVertical:false, y:d,       startX:0, length:w, depthRight:false, depthDown:true  },
+    };
+    case 'SE': return {
+      corner, cutW:w, cutD:d,
+      polygon: [[0,0],[roomW,0],[roomW,roomH-d],[roomW-w,roomH-d],[roomW-w,roomH],[0,roomH]],
+      step1: { wall:'step1', label:'→ Inner', isVertical:true,  x:roomW-w, startY:roomH-d, length:d, depthRight:true,  depthDown:false },
+      step2: { wall:'step2', label:'↑ Inner', isVertical:false, y:roomH-d, startX:roomW-w, length:w, depthRight:false, depthDown:false },
+    };
+    case 'SW': return {
+      corner, cutW:w, cutD:d,
+      polygon: [[0,0],[roomW,0],[roomW,roomH],[w,roomH],[w,roomH-d],[0,roomH-d]],
+      step1: { wall:'step1', label:'← Inner', isVertical:true,  x:w,       startY:roomH-d, length:d, depthRight:false, depthDown:false },
+      step2: { wall:'step2', label:'↑ Inner', isVertical:false, y:roomH-d, startX:0,       length:w, depthRight:false, depthDown:false },
+    };
+    default: return null;
+  }
+}
+
+function renderWallButtons() {
+  const r = activeRoom();
+  const container = document.getElementById('wall-grid');
+  if (!container) return;
+  const ld = r ? getLShapeData(r) : null;
+  const allWalls = [
+    {id:'north', label:'↑ North'},
+    {id:'east',  label:'→ East'},
+    {id:'south', label:'↓ South'},
+    {id:'west',  label:'← West'},
+  ];
+  if (ld) {
+    allWalls.push({id:'step1', label: ld.step1.label + ' Wall'});
+    allWalls.push({id:'step2', label: ld.step2.label + ' Wall'});
+  }
+  container.innerHTML = allWalls.map(w =>
+    `<button class="wall-btn${w.id===state.activeWall?' active':''}" data-wall="${w.id}" onclick="selectWall('${w.id}')">${w.label}</button>`
+  ).join('');
+}
+
+function toggleLCutFields(prefix) {
+  const isL = document.querySelector(`input[name="${prefix}-shape"]:checked`)?.value === 'L';
+  const fields = document.getElementById(`${prefix}-lcut-fields`);
+  if (fields) fields.style.display = isL ? '' : 'none';
+}
+
+function openRoomShapeModal() {
+  const r = activeRoom(); if (!r) return;
+  const isL = r.shape === 'L';
+  document.getElementById('rs-shape-rect').checked = !isL;
+  document.getElementById('rs-shape-L').checked = isL;
+  document.getElementById('rs-corner').value = r.lCut?.corner || 'NE';
+  const roomW = Math.max(r.walls.north, r.walls.south, 48);
+  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  document.getElementById('rs-cut-width').value = r.lCut?.width  || Math.round(roomW / 2);
+  document.getElementById('rs-cut-depth').value = r.lCut?.depth  || Math.round(roomH / 2);
+  document.getElementById('rs-lcut-fields').style.display = isL ? '' : 'none';
+  openModal('modal-room-shape');
+}
+
+function saveRoomShape() {
+  const r = activeRoom(); if (!r) return;
+  const isL = document.querySelector('input[name="rs-shape"]:checked')?.value === 'L';
+  r.shape = isL ? 'L' : 'rect';
+  if (isL) {
+    r.lCut = {
+      corner: document.getElementById('rs-corner').value,
+      width:  parseInt(document.getElementById('rs-cut-width').value)  || 48,
+      depth:  parseInt(document.getElementById('rs-cut-depth').value)  || 48,
+    };
+  } else {
+    delete r.lCut;
+  }
+  if (!isL && (state.activeWall === 'step1' || state.activeWall === 'step2')) {
+    state.activeWall = 'north';
+  }
+  persist(); closeModal('modal-room-shape');
+  renderWallButtons(); renderCabinetList(); renderCanvas();
 }
 
 // ════════════════════════════
@@ -1441,10 +1622,16 @@ function switchRoom(roomId) {
 // ════════════════════════════
 function selectWall(wall) {
   state.activeWall = wall;
+  const r = activeRoom();
+  const ld = r ? getLShapeData(r) : null;
+  const labels = {north:'North', south:'South', east:'East', west:'West',
+    step1: ld ? ld.step1.label + ' Wall' : 'Inner Wall 1',
+    step2: ld ? ld.step2.label + ' Wall' : 'Inner Wall 2',
+  };
+  const lbl = labels[wall] || wall;
   document.querySelectorAll('.wall-btn').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
-  const labels = {north:'North',south:'South',east:'East',west:'West'};
-  document.getElementById('wall-list-label').textContent = labels[wall] + ' Wall';
-  document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + labels[wall];
+  document.getElementById('wall-list-label').textContent = lbl;
+  document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + lbl;
   renderCabinetList(); renderCanvas();
 }
 function selectElevWall(wall) {
@@ -1933,6 +2120,7 @@ function renderRoomTabs() {
     bar.insertBefore(tab, addBtn);
   });
   document.getElementById('plan-title').textContent = `${p.customer} — ${activeRoom() ? activeRoom().name : ''} Floor Plan`;
+  renderWallButtons();
 }
 
 // ════════════════════════════
@@ -2252,11 +2440,27 @@ function renderCanvas() {
   // Canvas background
   ctx.fillStyle = '#F1F5F9'; ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  // Room fill first (white)
-  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(RX,RY,RW,RH);
+  // L-shape helper — build room polygon path
+  const _ld = getLShapeData(r);
+  function buildRoomPath() {
+    ctx.beginPath();
+    if (_ld) {
+      _ld.polygon.forEach(([px,py],i) => {
+        const cx = RX+px*scale, cy = RY+py*scale;
+        i===0 ? ctx.moveTo(cx,cy) : ctx.lineTo(cx,cy);
+      });
+    } else {
+      ctx.rect(RX,RY,RW,RH);
+    }
+    ctx.closePath();
+  }
 
-  // Grid — 12" major (foot), 6" minor lines inside room only
+  // Room fill (white, clipped to polygon)
+  buildRoomPath(); ctx.fillStyle = '#FFFFFF'; ctx.fill();
+
+  // Grid clipped to room shape
   const GRID12 = 12*scale, GRID6 = 6*scale;
+  ctx.save(); buildRoomPath(); ctx.clip();
   // Minor 6" grid
   ctx.strokeStyle = '#F0F4F8'; ctx.lineWidth = 0.5;
   for (let x = RX; x <= RX+RW; x += GRID6) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
@@ -2265,6 +2469,7 @@ function renderCanvas() {
   ctx.strokeStyle = '#DDE3EC'; ctx.lineWidth = 0.8;
   for (let x = RX; x <= RX+RW; x += GRID12) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
   for (let y = RY; y <= RY+RH; y += GRID12) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
+  ctx.restore();
 
   let cabs = r.cabinets;
   if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type));
@@ -2282,7 +2487,22 @@ function renderCanvas() {
     if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=cD; }
     else if (wall==='south') { x=RX+cabOff; y=RY+RH-cD;   w=cW;  h=cD; }
     else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=cD;  h=cW; }
-    else                     { x=RX+RW-cD;  y=RY+cabOff;   w=cD;  h=cW; }
+    else if (wall==='east')  { x=RX+RW-cD;  y=RY+cabOff;   w=cD;  h=cW; }
+    else if (wall==='step1'||wall==='step2') {
+      const _ldC = getLShapeData(r); if (!_ldC) return;
+      const _sw = _ldC[wall];
+      if (_sw.isVertical) {
+        const _wx = RX + _sw.x * scale;
+        x = _sw.depthRight ? _wx : _wx - cD;
+        y = RY + _sw.startY * scale + cabOff;
+        w = cD; h = cW;
+      } else {
+        const _wy = RY + _sw.y * scale;
+        x = RX + _sw.startX * scale + cabOff;
+        y = _sw.depthDown ? _wy : _wy - cD;
+        w = cW; h = cD;
+      }
+    } else { return; }
 
     if (isCorner) {
       ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
@@ -2367,7 +2587,22 @@ function renderCanvas() {
     if      (wall==='north') { x=RX+aOff; y=RY;       w=aW; h=aD; }
     else if (wall==='south') { x=RX+aOff; y=RY+RH-aD; w=aW; h=aD; }
     else if (wall==='west')  { x=RX;       y=RY+aOff;  w=aD; h=aW; }
-    else                     { x=RX+RW-aD; y=RY+aOff;  w=aD; h=aW; }
+    else if (wall==='east')  { x=RX+RW-aD; y=RY+aOff;  w=aD; h=aW; }
+    else if (wall==='step1'||wall==='step2') {
+      const _ldA = getLShapeData(r); if (!_ldA) return;
+      const _sw = _ldA[wall];
+      if (_sw.isVertical) {
+        const _wx = RX + _sw.x * scale;
+        x = _sw.depthRight ? _wx : _wx - aD;
+        y = RY + _sw.startY * scale + aOff;
+        w = aD; h = aW;
+      } else {
+        const _wy = RY + _sw.y * scale;
+        x = RX + _sw.startX * scale + aOff;
+        y = _sw.depthDown ? _wy : _wy - aD;
+        w = aW; h = aD;
+      }
+    } else { return; }
     ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
     ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
     // Burner circles for range/cooktop
@@ -2391,7 +2626,8 @@ function renderCanvas() {
     ctx.fillText(acat.abbr, x+w/2, y+h/2);
   }
 
-  ['north','south','east','west'].forEach(wall => {
+  const _wallList = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+  _wallList.forEach(wall => {
     cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
     cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
     (r.appliances||[]).filter(a => a.wall===wall).forEach(app => drawAppOnFloor(app,wall));
@@ -2473,16 +2709,57 @@ function renderCanvas() {
   });
 
   // Room border — double line for a clean wall look
-  ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.strokeRect(RX-2,RY-2,RW+4,RH+4);
-  ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
+  if (_ld) {
+    buildRoomPath(); ctx.strokeStyle = '#B0BCCE'; ctx.lineWidth = 5; ctx.stroke();
+    buildRoomPath(); ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.stroke();
+    // Draw inner wall corner indicator lines
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+    if (_ld.step1.isVertical) {
+      const _s1x = RX + _ld.step1.x * scale;
+      ctx.beginPath(); ctx.moveTo(_s1x, RY + _ld.step1.startY*scale); ctx.lineTo(_s1x, RY + (_ld.step1.startY+_ld.step1.length)*scale); ctx.stroke();
+    }
+    if (!_ld.step2.isVertical) {
+      const _s2y = RY + _ld.step2.y * scale;
+      ctx.beginPath(); ctx.moveTo(RX + _ld.step2.startX*scale, _s2y); ctx.lineTo(RX + (_ld.step2.startX+_ld.step2.length)*scale, _s2y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.strokeRect(RX-2,RY-2,RW+4,RH+4);
+    ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
+  }
 
   // Wall dimension labels
   ctx.fillStyle = '#1e293b';
   const df = Math.max(10, scale*2.2); ctx.font = `700 ${df}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (r.walls.north>0) ctx.fillText(fmtIn(r.walls.north), RX+RW/2, RY-36);
-  if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+36);
-  ctx.save(); ctx.translate(RX-36, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
-  ctx.save(); ctx.translate(RX+RW+36, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
+  if (_ld) {
+    // L-shape: show bounding box dims + cut dims
+    const _cW = _ld.cutW, _cD = _ld.cutD;
+    ctx.fillText(fmtIn(roomW), RX+RW/2, RY-36);
+    ctx.fillText(fmtIn(roomH), RX+RW/2, RY+RH+36);
+    ctx.save(); ctx.translate(RX-36, RY+RH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(roomH),0,0); ctx.restore();
+    ctx.save(); ctx.translate(RX+RW+36, RY+RH/2); ctx.rotate(Math.PI/2); ctx.fillText(fmtIn(roomW),0,0); ctx.restore();
+    // Cut dimension labels near inner walls
+    ctx.fillStyle = '#64748b';
+    ctx.font = `500 ${Math.max(9,scale*1.8)}px sans-serif`;
+    if (_ld.step1.isVertical) {
+      const _s1x = RX + _ld.step1.x * scale;
+      const _s1mid = RY + (_ld.step1.startY + _ld.step1.length/2) * scale;
+      ctx.save(); ctx.translate(_s1x + (_ld.step1.depthRight ? 14 : -14), _s1mid); ctx.rotate(-Math.PI/2);
+      ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(fmtIn(_ld.step1.length),0,0); ctx.restore();
+    }
+    if (!_ld.step2.isVertical) {
+      const _s2y = RY + _ld.step2.y * scale;
+      const _s2mid = RX + (_ld.step2.startX + _ld.step2.length/2) * scale;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(fmtIn(_ld.step2.length), _s2mid, _s2y + (_ld.step2.depthDown ? 14 : -14));
+    }
+    ctx.fillStyle = '#1e293b'; ctx.font = `700 ${df}px sans-serif`;
+  } else {
+    if (r.walls.north>0) ctx.fillText(fmtIn(r.walls.north), RX+RW/2, RY-36);
+    if (r.walls.south>0) ctx.fillText(fmtIn(r.walls.south), RX+RW/2, RY+RH+36);
+    ctx.save(); ctx.translate(RX-36, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
+    ctx.save(); ctx.translate(RX+RW+36, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
+  }
   // Rulers
   drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
   drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
@@ -3289,20 +3566,42 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     for (const cab of r.cabinets) {
       const cW=cab.width*scale, cD=cab.depth*scale, off=(cab.offset||0)*scale;
       let x,y,w,h;
-      if      (cab.wall==='north') { x=RX+off; y=RY;       w=cW; h=cD; }
-      else if (cab.wall==='south') { x=RX+off; y=RY+RH-cD; w=cW; h=cD; }
-      else if (cab.wall==='west')  { x=RX;      y=RY+off;  w=cD; h=cW; }
-      else                         { x=RX+RW-cD; y=RY+off; w=cD; h=cW; }
+      if      (cab.wall==='north') { x=RX+off; y=RY;        w=cW; h=cD; }
+      else if (cab.wall==='south') { x=RX+off; y=RY+RH-cD;  w=cW; h=cD; }
+      else if (cab.wall==='west')  { x=RX;      y=RY+off;   w=cD; h=cW; }
+      else if (cab.wall==='east')  { x=RX+RW-cD; y=RY+off;  w=cD; h=cW; }
+      else if (cab.wall==='step1'||cab.wall==='step2') {
+        const _ldH = getLShapeData(r); if (!_ldH) continue;
+        const _sw = _ldH[cab.wall];
+        if (_sw.isVertical) {
+          const _wx = RX+_sw.x*scale;
+          x=_sw.depthRight?_wx:_wx-cD; y=RY+_sw.startY*scale+off; w=cD; h=cW;
+        } else {
+          const _wy = RY+_sw.y*scale;
+          x=RX+_sw.startX*scale+off; y=_sw.depthDown?_wy:_wy-cD; w=cW; h=cD;
+        }
+      } else { continue; }
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
     }
     for (const app of (r.appliances||[])) {
       const acat=APPLIANCES[app.type]; if(!acat) continue;
       const aW=app.width*scale, aD=acat.depth*scale, off=(app.offset||0)*scale;
       let x,y,w,h;
-      if      (app.wall==='north') { x=RX+off; y=RY;       w=aW; h=aD; }
-      else if (app.wall==='south') { x=RX+off; y=RY+RH-aD; w=aW; h=aD; }
-      else if (app.wall==='west')  { x=RX;      y=RY+off;  w=aD; h=aW; }
-      else                         { x=RX+RW-aD; y=RY+off; w=aD; h=aW; }
+      if      (app.wall==='north') { x=RX+off; y=RY;        w=aW; h=aD; }
+      else if (app.wall==='south') { x=RX+off; y=RY+RH-aD;  w=aW; h=aD; }
+      else if (app.wall==='west')  { x=RX;      y=RY+off;   w=aD; h=aW; }
+      else if (app.wall==='east')  { x=RX+RW-aD; y=RY+off;  w=aD; h=aW; }
+      else if (app.wall==='step1'||app.wall==='step2') {
+        const _ldH2 = getLShapeData(r); if (!_ldH2) continue;
+        const _sw = _ldH2[app.wall];
+        if (_sw.isVertical) {
+          const _wx = RX+_sw.x*scale;
+          x=_sw.depthRight?_wx:_wx-aD; y=RY+_sw.startY*scale+off; w=aD; h=aW;
+        } else {
+          const _wy = RY+_sw.y*scale;
+          x=RX+_sw.startX*scale+off; y=_sw.depthDown?_wy:_wy-aD; w=aW; h=aD;
+        }
+      } else { continue; }
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }
     for (const isl of (r.islands||[])) {
@@ -3362,7 +3661,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     if (hit.isIsland) {
       drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startX:hit.cab.x, startY:hit.cab.y, scale:info.scale, isIsland:true };
     } else {
-      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south' };
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
     }
     canvas.style.cursor = 'grabbing';
   });
@@ -3411,7 +3710,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     const info=getCanvasInfo(); if(!info)return;
     const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
     const hit=hitTestCab(t.clientX-rect.left,t.clientY-rect.top,info); if(!hit)return; e.preventDefault();
-    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:info.scale,isNS:hit.wall==='north'||hit.wall==='south'};
+    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:info.scale,isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2'};
   },{passive:false});
   window.addEventListener('touchmove', e => {
     if(!drag)return; const info=getCanvasInfo(); if(!info)return;
