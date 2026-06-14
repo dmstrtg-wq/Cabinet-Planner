@@ -149,6 +149,27 @@ body {
 .project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
 .project-item:hover .project-item-del { display: block; }
 .project-item-del:hover { color: #ef4444; background: rgba(239,68,68,0.15); }
+.project-item { display: flex; align-items: center; gap: 8px; }
+.project-thumb { flex-shrink: 0; border-radius: 4px; background: rgba(255,255,255,0.04); }
+.project-item-text { flex: 1; min-width: 0; }
+.project-item-name { padding-right: 0; }
+
+/* Door style: collapsible picker */
+.style-current { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color 0.12s; }
+.style-current:hover { border-color: var(--accent); }
+.style-current-swatch { width: 26px; height: 26px; border-radius: 6px; border: 1px solid transparent; flex-shrink: 0; }
+.style-current-text { flex: 1; min-width: 0; }
+.style-current-code { font-size: 12px; font-weight: 700; color: var(--text); }
+.style-current-name { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.style-current-action { font-size: 11px; font-weight: 600; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+#style-container { margin-top: 8px; }
+
+/* Canvas toolbar grouping */
+.toolbar-divider { width: 1px; height: 22px; background: var(--border); margin: 0 10px; flex-shrink: 0; }
+.toolbar-btn { margin-left: 8px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; background: white; cursor: pointer; color: var(--text-muted); transition: border-color 0.12s, color 0.12s; }
+.toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+.toolbar-pricing { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+.toolbar-pricing .toggle-label { font-size: 12px; }
 .empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
 .sidebar-user { font-size: 10px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
@@ -188,7 +209,7 @@ body {
 .add-room-btn { padding: 8px 10px; font-size: 12px; color: var(--text-muted); cursor: pointer; border: none; background: none; border-radius: 6px; white-space: nowrap; margin-left: 4px; }
 .add-room-btn:hover { background: var(--bg); color: var(--text); }
 .workspace { flex: 1; display: flex; overflow: hidden; }
-#canvas-area { flex: 1; display: flex; flex-direction: column; padding: 14px 16px; overflow: auto; background: var(--bg); min-width: 0; }
+#canvas-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 14px 16px; overflow: auto; background: var(--bg); min-width: 0; }
 #canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
 #canvas-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 .canvas-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; flex-shrink: 0; }
@@ -494,11 +515,17 @@ body {
               <option value="base">Base Only</option>
               <option value="wall">Wall Only</option>
             </select>
-            <button id="measure-btn" onclick="toggleMeasure()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📏 Measure</button>
+            <div class="toolbar-pricing">
+              <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
+              <span class="toggle-label">💲 Pricing</span>
+            </div>
+            <div class="toolbar-divider"></div>
+            <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()" style="margin-left:0;">📏 Measure</button>
             <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">✕ Clear</button>
-            <button onclick="openRoomShapeModal()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">⬡ Room Shape</button>
-            <button id="dims-btn" onclick="toggleDimensions()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">📐 Dims</button>
-            <button id="tri-btn" onclick="toggleWorkTriangle()" style="margin-left:8px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:var(--text-muted);">△ Triangle</button>
+            <button id="dims-btn" class="toolbar-btn" onclick="toggleDimensions()">📐 Dims</button>
+            <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()">△ Triangle</button>
+            <div class="toolbar-divider"></div>
+            <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
             <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
           </div>
           <div id="floor-plan-wrapper">
@@ -557,7 +584,15 @@ body {
       <div id="cabinet-panel">
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Door Style</div>
-          <div id="style-container"></div>
+          <div class="style-current" id="style-current" onclick="toggleStylePicker()">
+            <div class="style-current-swatch" id="style-current-swatch"></div>
+            <div class="style-current-text">
+              <div class="style-current-code" id="style-current-code">AW</div>
+              <div class="style-current-name" id="style-current-name">Ice White Shaker</div>
+            </div>
+            <div class="style-current-action" id="style-current-action">Change ▾</div>
+          </div>
+          <div id="style-container" class="hidden"></div>
         </div>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Pricing</div>
@@ -2026,7 +2061,10 @@ function removeAppliance(id) {
 // ════════════════════════════
 // PRICING
 // ════════════════════════════
-function onPricingToggle() {
+function onPricingToggle(fromToolbar) {
+  const main = document.getElementById('pricing-toggle');
+  const tb = document.getElementById('pricing-toggle-2');
+  if (fromToolbar) { main.checked = tb.checked; } else if (tb) { tb.checked = main.checked; }
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
@@ -2063,23 +2101,69 @@ function selectStyle(code) {
   const p = activeProj(); if (!p) return;
   p.style = code; persist();
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
+  syncStyleCurrent(code);
+  document.getElementById('style-container').classList.add('hidden');
+  const action = document.getElementById('style-current-action');
+  if (action) action.textContent = 'Change ▾';
   renderCanvas(); if (state.viewMode === 'elevation') renderElevation();
 }
 function syncStylePanel() {
   const p = activeProj(); const code = p ? (p.style || 'AW') : 'AW';
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
+  syncStyleCurrent(code);
+}
+function syncStyleCurrent(code) {
+  const s = STYLES.find(x => x.code === code) || STYLES[0];
+  const sw = document.getElementById('style-current-swatch');
+  const cd = document.getElementById('style-current-code');
+  const nm = document.getElementById('style-current-name');
+  if (sw) { sw.style.background = s.swatch; sw.style.borderColor = (s.swatch === '#FEFEFE' || s.swatch === '#FAF9F7') ? '#ddd' : 'transparent'; }
+  if (cd) cd.textContent = s.code;
+  if (nm) nm.textContent = s.name;
+}
+function toggleStylePicker() {
+  const container = document.getElementById('style-container');
+  const open = container.classList.toggle('hidden') === false;
+  const action = document.getElementById('style-current-action');
+  if (action) action.textContent = open ? 'Close ▴' : 'Change ▾';
 }
 
 // ════════════════════════════
 // RENDER: SIDEBAR
 // ════════════════════════════
+function projectThumbSVG(p) {
+  const W = 32, H = 24, pad = 2;
+  const r = p.rooms && p.rooms[0];
+  if (!r) return `<svg class="project-thumb" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"></svg>`;
+  const roomW = Math.max(r.walls.north || 0, r.walls.south || 0, 48);
+  const roomH = Math.max(r.walls.east  || 0, r.walls.west  || 0, 48);
+  const scale = Math.min((W - pad * 2) / roomW, (H - pad * 2) / roomH);
+  const w = roomW * scale, h = roomH * scale;
+  const x = (W - w) / 2, y = (H - h) / 2;
+  let path;
+  if (r.shape === 'L') {
+    const cutW = Math.min(r.cutW || roomW / 2, roomW * 0.9) * scale;
+    const cutD = Math.min(r.cutD || roomH / 2, roomH * 0.9) * scale;
+    const corner = r.corner || 'NE';
+    if (corner === 'NE')      path = `M${x},${y} h${w-cutW} v${cutD} h${cutW} v${h-cutD} h${-w} Z`;
+    else if (corner === 'NW') path = `M${x+cutW},${y} h${w-cutW} v${h} h${-w} v${-(h-cutD)} h${cutW} Z`;
+    else if (corner === 'SE') path = `M${x},${y} h${w} v${h-cutD} h${-cutW} v${cutD} h${-(w-cutW)} Z`;
+    else                       path = `M${x},${y} h${w} v${h} h${-(w-cutW)} v${-cutD} h${-cutW} Z`;
+  } else {
+    path = `M${x},${y} h${w} v${h} h${-w} Z`;
+  }
+  return `<svg class="project-thumb" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><path d="${path}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/></svg>`;
+}
 function renderSidebar() {
   const list = document.getElementById('project-list');
   if (!state.projects.length) { list.innerHTML = '<div class="empty-msg">No projects yet.<br>Click + New Project above.</div>'; return; }
   list.innerHTML = state.projects.map(p => `
     <div class="project-item ${p.id === state.activeProjectId ? 'active' : ''}" onclick="openProject('${p.id}')">
-      <div class="project-item-name">${escHtml(p.customer)}</div>
-      <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
+      ${projectThumbSVG(p)}
+      <div class="project-item-text">
+        <div class="project-item-name">${escHtml(p.customer)}</div>
+        <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
+      </div>
       <button class="project-item-del" onclick="deleteProject('${p.id}',event)" title="Delete">×</button>
     </div>`).join('');
 }
