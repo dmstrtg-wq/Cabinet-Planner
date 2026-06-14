@@ -378,7 +378,7 @@ body {
     <div class="login-brand-name">My Cabinet Planner</div>
     <div class="login-tagline">Designing Dreams, Built in Reality</div>
     <div class="login-divider"></div>
-    <div class="login-domain">mycabinetbuilder.com</div>
+    <div class="login-domain">mycabinetplanner.com</div>
   </div>
 
   <!-- Right form panel -->
@@ -1130,7 +1130,7 @@ async function handleForgotPassword() {
   if (!email) { err.style.color='#b45309'; err.textContent = 'Enter your email address above first.'; return; }
   err.textContent = '';
   const { error } = await db.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://mycabinetbuilder.com'
+    redirectTo: 'https://mycabinetplanner.com'
   });
   if (error) { err.textContent = error.message; }
   else { err.style.color='#16a34a'; err.textContent = '✓ Reset link sent — check your email.'; }
@@ -3550,7 +3550,7 @@ tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color
       ${cp.address ? escHtml(cp.address) + (cp.city ? ', '+escHtml(cp.city) : '') + (cp.state ? ' '+escHtml(cp.state) : '') + (cp.zip ? ' '+escHtml(cp.zip) : '') + '<br>' : ''}
       ${cp.phone ? escHtml(cp.phone) + '<br>' : ''}
       ${cp.email ? escHtml(cp.email) + '<br>' : ''}
-      ${cp.website ? escHtml(cp.website) : 'mycabinetbuilder.com'}
+      ${cp.website ? escHtml(cp.website) : 'mycabinetplanner.com'}
     </div>
   </div>
   <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
@@ -3593,7 +3593,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
   </div>
 </div>
-<div class="foot">${escHtml(companyName)} · ${escHtml(cp.website || 'mycabinetbuilder.com')} · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
+<div class="foot">${escHtml(companyName)} · ${escHtml(cp.website || 'mycabinetplanner.com')} · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
 </body></html>`);
   win.document.close();
 }
