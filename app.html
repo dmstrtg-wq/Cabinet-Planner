@@ -1271,18 +1271,17 @@ const PRICE_TABLE = {
 };
 
 const APPLIANCES = {
-  refrigerator:    { label:'Refrigerator',              widths:[30,33,36],    heights:[66,68,70,72], height:70,   depth:30, color:'#6B7280', abbr:'REF', icon:'🧊', wallMount:false, elevBottom:0  },
-  fridgePanel:     { label:'Fridge End Panel',          widths:[3,6],         heights:[84,90,96],    height:84,   depth:1,  color:'#CBD5E1', abbr:'FEP', icon:'📏', wallMount:false, elevBottom:0  },
-  range:           { label:'Range / Stove',             widths:[30,36],       height:36,             depth:25, color:'#374151', abbr:'RNG', icon:'🔥', wallMount:false, elevBottom:0  },
-  dishwasher:      { label:'Dishwasher',                widths:[24],          height:34.5,           depth:24, color:'#6B7280', abbr:'DW',  icon:'🫧', wallMount:false, elevBottom:0  },
-  microwave:       { label:'OTR Microwave',             widths:[30,36],       height:16,             depth:17, color:'#4B5563', abbr:'MWV', icon:'📡', wallMount:true,  elevBottom:54, elevBottomOptions:[48,54,60,66,72] },
-  cooktop:         { label:'Cooktop',                   widths:[30,36],       height:4,              depth:21, color:'#1F2937', abbr:'CTP', icon:'🍳', wallMount:false, elevBottom:32 },
-  hood:            { label:'Range Hood',                widths:[30,36,42],    height:18,             depth:20, color:'#9CA3AF', abbr:'RH',  icon:'💨', wallMount:true,  elevBottom:60 },
-  beverageCooler:  { label:'Beverage Cooler (UC)',      widths:[18,24,30,36], height:34.5,           depth:24, color:'#60A5FA', abbr:'BEV', icon:'🧃', wallMount:false, elevBottom:0  },
-  floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42], height:2.5,            depth:12, color:'#D97706', abbr:'FSH', icon:'📚', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84] },
+  refrigerator:    { label:'Refrigerator',              widths:[30,33,36],    heights:[66,68,70,72], height:70,   depth:30, color:'#6B7280', abbr:'REF', wallMount:false, elevBottom:0  },
+  fridgePanel:     { label:'Fridge End Panel',          widths:[3,6],         heights:[84,90,96],    height:84,   depth:1,  color:'#CBD5E1', abbr:'FEP', wallMount:false, elevBottom:0  },
+  range:           { label:'Range / Stove',             widths:[30,36],       height:36,             depth:25, color:'#374151', abbr:'RNG', wallMount:false, elevBottom:0  },
+  dishwasher:      { label:'Dishwasher',                widths:[24],          height:34.5,           depth:24, color:'#6B7280', abbr:'DW',  wallMount:false, elevBottom:0  },
+  microwave:       { label:'OTR Microwave',             widths:[30,36],       height:16,             depth:17, color:'#4B5563', abbr:'MWV', wallMount:true,  elevBottom:54, elevBottomOptions:[48,54,60,66,72] },
+  cooktop:         { label:'Cooktop',                   widths:[30,36],       height:4,              depth:21, color:'#1F2937', abbr:'CTP', wallMount:false, elevBottom:32 },
+  hood:            { label:'Range Hood',                widths:[30,36,42],    height:18,             depth:20, color:'#9CA3AF', abbr:'RH',  wallMount:true,  elevBottom:60 },
+  beverageCooler:  { label:'Beverage Cooler (UC)',      widths:[18,24,30,36], height:34.5,           depth:24, color:'#60A5FA', abbr:'BEV', wallMount:false, elevBottom:0  },
+  floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42], height:2.5,            depth:12, color:'#D97706', abbr:'FSH', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84] },
 };
 
-const OPENING_ICONS  = { door:'🚪', window:'🪟', 'sink-loc':'🚰', arch:'🏛' };
 const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'Opening' };
 
 // ════════════════════════════
@@ -1903,7 +1902,7 @@ function openEditApplianceModal(app) {
   const acat = APPLIANCES[app.type]; if (!acat) return;
   document.getElementById('edit-app-id').value         = app.id;
   document.getElementById('edit-app-title').textContent = `Edit — ${acat.label}`;
-  document.getElementById('edit-app-type-label').value  = `${acat.icon} ${acat.label}`;
+  document.getElementById('edit-app-type-label').value  = acat.label;
   document.getElementById('edit-app-offset').value      = app.offset || 0;
   document.getElementById('edit-app-note').value        = app.note || '';
   // Width options
@@ -2240,7 +2239,6 @@ function renderCabinetList() {
     html += '<div class="cab-wall-header">Openings</div>';
     html += wallOpenings.map(o => `
       <div class="opening-item">
-        <span class="opening-item-icon">${OPENING_ICONS[o.type] || '⬜'}</span>
         <div class="opening-item-info">${OPENING_LABELS[o.type] || o.type}</div>
         <div class="opening-item-dim">${o.width}" × ${o.height}" @ ${o.offset || 0}" from left</div>
         <button class="opening-remove" onclick="removeOpening('${o.id}')">×</button>
@@ -2254,7 +2252,7 @@ function renderCabinetList() {
       return `<div class="cab-item">
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
-          <div class="cab-name">${cat.label}${c.glassDoors?' 🪟':''}</div>
+          <div class="cab-name">${cat.label}</div>
           <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D</div>
           ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
           ${price}
@@ -2271,7 +2269,7 @@ function renderCabinetList() {
       return `<div class="cab-item">
         <div class="cab-color" style="background:${acat.color}"></div>
         <div class="cab-info">
-          <div class="cab-name">${acat.icon} ${acat.label}</div>
+          <div class="cab-name">${acat.label}</div>
           <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
           ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
         </div>
@@ -2285,7 +2283,7 @@ function renderCabinetList() {
     html += allIslands.map(i => `<div class="cab-item">
       <div class="cab-color" style="background:#92400e"></div>
       <div class="cab-info">
-        <div class="cab-name">🏝️ ${i.label || 'Island'}</div>
+        <div class="cab-name">${i.label || 'Island'}</div>
         <div class="cab-dim">${i.width}"W × ${i.depth}"D · pos ${i.x}", ${i.y}" from NW</div>
       </div>
       <button class="cab-remove" onclick="removeIsland('${i.id}')">×</button>
@@ -3419,7 +3417,7 @@ function renderSummary(r) {
     const acat = APPLIANCES[a.type];
     return `<div class="summary-row">
       <div class="summary-dot" style="background:${acat.color}"></div>
-      <div class="summary-name">${acat.icon} ${acat.label} — ${a.width}"W</div>
+      <div class="summary-name">${acat.label} — ${a.width}"W</div>
       <div class="summary-count">×1</div>
     </div>`;
   }).join('');
@@ -3571,7 +3569,7 @@ function printQuote() {
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac = APPLIANCES[a.type];
-      appRows += `<tr><td>${ac.icon} ${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td colspan="2">${escHtml(a.note||'—')}</td></tr>`;
+      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td colspan="2">${escHtml(a.note||'—')}</td></tr>`;
     });
   });
 
@@ -3780,13 +3778,13 @@ function drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH) {
     const ac = APPLIANCES[a.type]; if (!ac) continue;
     const c = getItemCentroid(a, a.wall, scale, RX, RY, RW, RH, ac.depth);
     if (!c) continue;
-    if ((a.type==='refrigerator'||a.type==='beverageCooler') && !fridge) fridge={...c, icon:'🧊'};
-    if ((a.type==='range'||a.type==='cooktop') && !range) range={...c, icon:'🔥'};
+    if ((a.type==='refrigerator'||a.type==='beverageCooler') && !fridge) fridge={...c};
+    if ((a.type==='range'||a.type==='cooktop') && !range) range={...c};
   }
   for (const op of (r.openings||[])) {
     if (op.type==='sink-loc' && !sink) {
       const c = getItemCentroid(op, op.wall, scale, RX, RY, RW, RH, 2);
-      if (c) sink={...c, icon:'🚰'};
+      if (c) sink={...c};
     }
   }
   const pts = [fridge, range, sink].filter(Boolean);
@@ -4253,7 +4251,7 @@ async function exportPDF(btn) {
           const lbl = hit.isIsland ? (hit.cab.label || 'Island') : (CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type);
           const pos = hit.isIsland ? `${hit.cab.x}", ${hit.cab.y}" from NW` : `${hit.cab.offset||0}" from left`;
           const hint = hit.isIsland ? ' · dbl-click to edit' : (CATALOG[hit.cab.type] || APPLIANCES[hit.cab.type]) ? ' · dbl-click to edit' : ' — drag to move';
-          tooltip.style.display='block'; tooltip.textContent=`${hit.isIsland?'🏝️ ':''}${lbl} · ${pos}${hint}`;
+          tooltip.style.display='block'; tooltip.textContent=`${lbl} · ${pos}${hint}`;
         }
       } else { canvas.style.cursor='default'; if(hoverCabId){hoverCabId=null;tooltip.style.display='none';} }
     }
