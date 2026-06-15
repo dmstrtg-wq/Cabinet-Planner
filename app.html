@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -559,24 +561,12 @@ body {
 
         <div id="view-3d" class="hidden">
           <div class="canvas-toolbar">
-            <label>Scale:</label>
-            <select id="iso-scale-sel" onchange="renderIsometric()">
-              <option value="2.5">Small</option>
-              <option value="3.5" selected>Medium</option>
-              <option value="4.5">Large</option>
-              <option value="6">X-Large</option>
-            </select>
-            <label style="margin-left:8px">Angle:</label>
-            <select id="iso-angle-sel" onchange="renderIsometric()">
-              <option value="sw" selected>SW Corner</option>
-              <option value="se">SE Corner</option>
-              <option value="nw">NW Corner</option>
-              <option value="ne">NE Corner</option>
-            </select>
+            <span style="font-size:12px;color:var(--text-muted);">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan</span>
+            <button class="toolbar-btn" onclick="resetIso3DView()">Reset View</button>
           </div>
-          <div id="iso-wrapper" style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;display:inline-block;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-left:auto;margin-right:auto;">
+          <div id="iso-wrapper" style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-left:auto;margin-right:auto;width:100%;max-width:1000px;">
             <div class="plan-title">3D View</div>
-            <canvas id="iso-plan"></canvas>
+            <canvas id="iso-plan" style="width:100%;height:600px;display:block;border-radius:8px;"></canvas>
           </div>
         </div>
       </div>
