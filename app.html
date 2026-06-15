@@ -2899,227 +2899,358 @@ function renderCanvas() {
 
 
 // ════════════════════════════
-// RENDER: ISOMETRIC 3D VIEW
+// RENDER: 3D VIEW (Three.js / WebGL)
 // ════════════════════════════
-function renderIsometric() {
-  const canvas = document.getElementById('iso-plan');
-  const ctx    = canvas.getContext('2d');
-  const r      = activeRoom(); 
-  if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+let iso3D = null;
 
-  const scale   = parseFloat(document.getElementById('iso-scale-sel').value) || 3.5;
-  const angle   = document.getElementById('iso-angle-sel').value || 'sw';
+// Lighten/darken a hex color, returns a numeric color for THREE
+function shade3D(hex, amt) {
+  const n = parseInt(String(hex).replace('#',''), 16);
+  const r = Math.min(255, Math.max(0, ((n>>16)&0xff) + amt));
+  const g = Math.min(255, Math.max(0, ((n>>8)&0xff) + amt));
+  const b = Math.min(255, Math.max(0, (n&0xff) + amt));
+  return (r<<16) | (g<<8) | b;
+}
+
+// Free GPU resources for a subtree before discarding it
+function disposeObject3D(obj) {
+  obj.traverse(child => {
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) {
+      (Array.isArray(child.material) ? child.material : [child.material]).forEach(m => {
+        if (m.map) m.map.dispose();
+        m.dispose();
+      });
+    }
+  });
+}
+
+// Build a billboard text label (canvas texture sprite)
+function makeLabelSprite3D(text, opts={}) {
+  const c = document.createElement('canvas');
+  const ctx2 = c.getContext('2d');
+  const fontSize = opts.fontSize || 28;
+  ctx2.font = `700 ${fontSize}px Inter, sans-serif`;
+  const padX = 10, padY = 6;
+  const textW = Math.max(1, Math.ceil(ctx2.measureText(text).width));
+  c.width  = textW + padX*2;
+  c.height = fontSize + padY*2;
+  ctx2.font = `700 ${fontSize}px Inter, sans-serif`;
+  if (opts.bg !== 'transparent') {
+    ctx2.fillStyle = opts.bg || 'rgba(15,23,42,0.55)';
+    ctx2.fillRect(0,0,c.width,c.height);
+  }
+  ctx2.fillStyle = opts.color || '#fff';
+  ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+  ctx2.fillText(text, c.width/2, c.height/2 + 1);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: true, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  const px2in = opts.scale || 0.05;
+  sprite.scale.set(c.width*px2in, c.height*px2in, 1);
+  return sprite;
+}
+
+// Build a wall mesh (with door/window openings cut as holes) in its local
+// XY plane: shape-x runs along the wall (matches cabinet `offset`), shape-y
+// is vertical (0..ceiling). Caller positions/rotates the mesh into the room.
+function buildWall3D(wallName, lengthAxisSize, ceiling, openings, color) {
+  const shape = new THREE.Shape();
+  shape.moveTo(0,0);
+  shape.lineTo(lengthAxisSize,0);
+  shape.lineTo(lengthAxisSize,ceiling);
+  shape.lineTo(0,ceiling);
+  shape.lineTo(0,0);
+
+  openings.filter(o => o.wall===wallName && o.type!=='sink-loc').forEach(o => {
+    const w = Math.max(1, o.width || 24);
+    const h = Math.max(1, o.height || (o.type==='window' ? 36 : 80));
+    const sill = o.type==='window' ? (o.sillHeight!=null ? o.sillHeight : 36) : 0;
+    const x0 = Math.min(Math.max(0.5, o.offset||0), lengthAxisSize-0.5);
+    const x1 = Math.min(lengthAxisSize-0.5, x0+w);
+    const y0 = Math.min(Math.max(0.5, sill), ceiling-0.5);
+    const y1 = Math.min(ceiling-0.5, y0+h);
+    if (x1<=x0 || y1<=y0) return;
+    const hole = new THREE.Path();
+    hole.moveTo(x0,y0); hole.lineTo(x1,y0); hole.lineTo(x1,y1); hole.lineTo(x0,y1); hole.lineTo(x0,y0);
+    shape.holes.push(hole);
+  });
+
+  const geo = new THREE.ShapeGeometry(shape);
+  const mat = new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.95 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+// Floor reference grid (12" squares)
+function buildFloorGrid3D(roomW, roomD) {
+  const pts = [];
+  for (let x = 0; x <= roomW + 0.01; x += 12) { pts.push(x,0.15,0, x,0.15,roomD); }
+  for (let z = 0; z <= roomD + 0.01; z += 12) { pts.push(0,0.15,z, roomW,0.15,z); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  return new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xD7DEE6 }));
+}
+
+// One-time scene/camera/renderer/controls setup
+function initIso3D() {
+  const canvas = document.getElementById('iso-plan');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xeef2f6);
+
+  const camera = new THREE.PerspectiveCamera(40, 1, 1, 10000);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = false;
+  controls.maxPolarAngle = Math.PI/2 - 0.04; // don't dip below the floor
+  controls.minDistance = 30;
+  controls.maxDistance = 3000;
+  controls.target.set(0,0,0);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.bias = -0.0005;
+  scene.add(sun);
+  scene.add(sun.target);
+
+  const root = new THREE.Group();
+  scene.add(root);
+
+  iso3D = { renderer, scene, camera, controls, root, sun, initedCamera: false };
+
+  controls.addEventListener('change', () => renderer.render(scene, camera));
+
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => resizeIso3D()).observe(canvas);
+  }
+  window.addEventListener('resize', resizeIso3D);
+
+  return iso3D;
+}
+
+// Match renderer/camera to the canvas's current CSS size
+function resizeIso3D() {
+  if (!iso3D) return;
+  const canvas = document.getElementById('iso-plan');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  iso3D.renderer.setSize(w, h, false);
+  iso3D.camera.aspect = w/h;
+  iso3D.camera.updateProjectionMatrix();
+  iso3D.renderer.render(iso3D.scene, iso3D.camera);
+}
+
+// Position camera/sun for a good default view of the room
+function setIso3DCamera({roomW, roomD, ceiling}) {
+  const target = new THREE.Vector3(roomW/2, ceiling*0.3, roomD/2);
+  const dist = Math.max(roomW, roomD, ceiling) * 1.3 + 80;
+  iso3D.camera.position.set(target.x - dist*0.62, target.y + dist*0.55, target.z + dist*0.62);
+  iso3D.camera.near = Math.max(1, dist*0.01);
+  iso3D.camera.far  = dist*10;
+  iso3D.camera.updateProjectionMatrix();
+  iso3D.controls.target.copy(target);
+  iso3D.controls.update();
+
+  const sun = iso3D.sun;
+  sun.position.set(target.x + dist*0.5, target.y + dist*1.1, target.z - dist*0.4);
+  sun.target.position.copy(target);
+  sun.target.updateMatrixWorld();
+  const shadowSize = Math.max(roomW, roomD)*0.8 + 40;
+  sun.shadow.camera.left   = -shadowSize;
+  sun.shadow.camera.right  =  shadowSize;
+  sun.shadow.camera.top    =  shadowSize;
+  sun.shadow.camera.bottom = -shadowSize;
+  sun.shadow.camera.near = 1;
+  sun.shadow.camera.far  = dist*6;
+  sun.shadow.camera.updateProjectionMatrix();
+}
+
+// "Reset View" button handler
+function resetIso3DView() {
+  if (!iso3D || !iso3D._roomDims) return;
+  setIso3DCamera(iso3D._roomDims);
+  iso3D.renderer.render(iso3D.scene, iso3D.camera);
+}
+
+function renderIsometric() {
+  if (typeof THREE === 'undefined') return; // CDN not loaded yet
+  const canvas = document.getElementById('iso-plan');
+  if (!canvas) return;
+  if (!iso3D) initIso3D();
+  const { root } = iso3D;
+  const r = activeRoom();
+
+  // Clear previous scene contents
+  while (root.children.length) {
+    disposeObject3D(root.children[0]);
+    root.remove(root.children[0]);
+  }
+
+  if (!r) { resizeIso3D(); return; }
+
   const roomW   = Math.max(r.walls.north, r.walls.south, 48);
   const roomD   = Math.max(r.walls.east,  r.walls.west,  48);
   const ceiling = r.ceilingHeight || 96;
-
-  // Isometric projection constants
-  const ANG  = Math.PI / 6; // 30 degrees
-  const cosA = Math.cos(ANG), sinA = Math.sin(ANG);
-
-  // Flip axes based on view angle
-  const flipX = angle === 'ne' || angle === 'se';
-  const flipZ = angle === 'nw' || angle === 'ne';
-
-  // Project 3D point (x=right, y=up, z=depth) to 2D canvas
-  function proj(x3, y3, z3) {
-    const fx = flipX ? (roomW - x3) : x3;
-    const fz = flipZ ? (roomD - z3) : z3;
-    return {
-      x: (fx - fz) * cosA * scale,
-      y: -(fx + fz) * sinA * scale + y3 * scale
-    };
-  }
-
-  // Find canvas bounds
-  const corners = [
-    proj(0,0,0), proj(roomW,0,0), proj(0,0,roomD), proj(roomW,0,roomD),
-    proj(0,ceiling,0), proj(roomW,ceiling,0), proj(0,ceiling,roomD), proj(roomW,ceiling,roomD)
-  ];
-  const minX = Math.min(...corners.map(p=>p.x));
-  const minY = Math.min(...corners.map(p=>p.y));
-  const maxX = Math.max(...corners.map(p=>p.x));
-  const maxY = Math.max(...corners.map(p=>p.y));
-  const PAD  = 40;
-  const offX = -minX + PAD;
-  const offY = -minY + PAD;
-
-  canvas.width  = maxX - minX + PAD*2;
-  canvas.height = maxY - minY + PAD*2;
-
-  // Translate projected point to canvas coords
-  function pt(x3, y3, z3) {
-    const p = proj(x3, y3, z3);
-    return [p.x + offX, p.y + offY];
-  }
-
-  // Fill a polygon
-  function poly(points, fill, stroke, lw) {
-    ctx.beginPath();
-    ctx.moveTo(...points[0]);
-    points.slice(1).forEach(p => ctx.lineTo(...p));
-    ctx.closePath();
-    if (fill)  { ctx.fillStyle   = fill;  ctx.fill();   }
-    if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = lw||1; ctx.stroke(); }
-  }
-
-  // ── Background ──
-  ctx.fillStyle = '#F0F4F8';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const openings = r.openings || [];
 
   // ── Floor ──
-  const floorColor = '#E8EDF2';
-  poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,0,roomD),pt(0,0,roomD)], floorColor, '#CBD5E1', 1);
-  // Floor grid
-  ctx.strokeStyle = '#D1D9E0'; ctx.lineWidth = 0.5;
-  for (let x = 0; x <= roomW; x += 12) {
-    ctx.beginPath(); ctx.moveTo(...pt(x,0,0)); ctx.lineTo(...pt(x,0,roomD)); ctx.stroke();
-  }
-  for (let z = 0; z <= roomD; z += 12) {
-    ctx.beginPath(); ctx.moveTo(...pt(0,0,z)); ctx.lineTo(...pt(roomW,0,z)); ctx.stroke();
-  }
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(roomW, roomD),
+    new THREE.MeshStandardMaterial({ color: 0xE8EDF2, roughness: 0.95 })
+  );
+  floor.rotation.x = -Math.PI/2;
+  floor.position.set(roomW/2, 0, roomD/2);
+  floor.receiveShadow = true;
+  root.add(floor);
+  root.add(buildFloorGrid3D(roomW, roomD));
 
-  // ── Walls (back two based on view angle) ──
-  const wallH = ceiling;
-  const wallCol  = '#F8FAFC';
-  const wallEdge = '#94A3B8';
-  // Determine which two back walls to show
-  if (!flipX && !flipZ) { // SW view — show north and west walls
-    poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,wallH,0),pt(0,wallH,0)], wallCol, wallEdge, 1); // north
-    poly([pt(0,0,0),pt(0,0,roomD),pt(0,wallH,roomD),pt(0,wallH,0)], '#F0F4F8', wallEdge, 1); // west
-  } else if (flipX && !flipZ) { // SE — north + east
-    poly([pt(0,0,0),pt(roomW,0,0),pt(roomW,wallH,0),pt(0,wallH,0)], wallCol, wallEdge, 1);
-    poly([pt(roomW,0,0),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(roomW,wallH,0)], '#F0F4F8', wallEdge, 1);
-  } else if (!flipX && flipZ) { // NW — south + west
-    poly([pt(0,0,roomD),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(0,wallH,roomD)], wallCol, wallEdge, 1);
-    poly([pt(0,0,0),pt(0,0,roomD),pt(0,wallH,roomD),pt(0,wallH,0)], '#F0F4F8', wallEdge, 1);
-  } else { // NE — south + east
-    poly([pt(0,0,roomD),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(0,wallH,roomD)], wallCol, wallEdge, 1);
-    poly([pt(roomW,0,0),pt(roomW,0,roomD),pt(roomW,wallH,roomD),pt(roomW,wallH,0)], '#F0F4F8', wallEdge, 1);
-  }
+  // ── Walls (with door/window cutouts) ──
+  const north = buildWall3D('north', roomW, ceiling, openings, 0xF8FAFC);
+  north.position.set(0,0,0);
+  root.add(north);
 
-  // ── Wall tick lines (every 12") ──
-  ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 0.5;
+  const south = buildWall3D('south', roomW, ceiling, openings, 0xF1F5F9);
+  south.position.set(0,0,roomD);
+  root.add(south);
 
-  // ── Draw a cabinet box in 3D ──
-  // x0,z0 = position on floor; w=width(x); d=depth(z); h=height(y); baseY=bottom elevation
-  function drawBox(x0, z0, w, d, h, baseY, topColor, frontColor, sideColor, edgeColor) {
-    const top  = baseY + h;
-    // Top face
-    poly([pt(x0,top,z0),pt(x0+w,top,z0),pt(x0+w,top,z0+d),pt(x0,top,z0+d)], topColor, edgeColor, 1);
-    // Front face (z0 side for SW, varies)
-    poly([pt(x0,baseY,z0),pt(x0+w,baseY,z0),pt(x0+w,top,z0),pt(x0,top,z0)], frontColor, edgeColor, 1);
-    // Side face
-    poly([pt(x0+w,baseY,z0),pt(x0+w,baseY,z0+d),pt(x0+w,top,z0+d),pt(x0+w,top,z0)], sideColor, edgeColor, 1);
-  }
+  const west = buildWall3D('west', roomD, ceiling, openings, 0xF0F4F8);
+  west.rotation.y = -Math.PI/2;
+  west.position.set(0,0,0);
+  root.add(west);
 
-  // Lighten/darken a hex color
-  function shade(hex, amt) {
-    const n = parseInt(hex.slice(1),16);
-    const r = Math.min(255,Math.max(0,((n>>16)&0xff)+amt));
-    const g = Math.min(255,Math.max(0,((n>>8)&0xff)+amt));
-    const b = Math.min(255,Math.max(0,(n&0xff)+amt));
-    return `rgb(${r},${g},${b})`;
-  }
+  const east = buildWall3D('east', roomD, ceiling, openings, 0xEFF3F7);
+  east.rotation.y = -Math.PI/2;
+  east.position.set(roomW,0,0);
+  root.add(east);
 
-  // Convert wall+offset to 3D x,z position and determine depth direction
+  // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
   function cabPos(wall, offset, width, depth) {
-    // Returns {x0, z0, w, d} in room 3D space
     switch(wall) {
-      case 'north': return { x0: offset,        z0: 0,            w: width, d: depth };
-      case 'south': return { x0: offset,        z0: roomD-depth,  w: width, d: depth };
-      case 'west':  return { x0: 0,             z0: offset,       w: depth, d: width };
-      case 'east':  return { x0: roomW-depth,   z0: offset,       w: depth, d: width };
+      case 'north': return { x0: offset,      z0: 0,           w: width, d: depth };
+      case 'south': return { x0: offset,      z0: roomD-depth, w: width, d: depth };
+      case 'west':  return { x0: 0,           z0: offset,      w: depth, d: width };
+      case 'east':  return { x0: roomW-depth, z0: offset,      w: depth, d: width };
+      default:      return { x0: offset,      z0: 0,           w: width, d: depth };
     }
   }
 
-  // ── Draw base/wall/tall cabinets ──
-  const wallCabDepth = 12;
+  function addBox(x0, y0, z0, w, h, d, color, opts={}) {
+    if (w<=0 || h<=0 || d<=0) return null;
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: opts.roughness ?? 0.65,
+      metalness: opts.metalness ?? 0.05
+    });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    mesh.position.set(x0+w/2, y0+h/2, z0+d/2);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    root.add(mesh);
+    return mesh;
+  }
+
+  function addLabel(text, x, y, z, opts) {
+    if (!text) return;
+    const sprite = makeLabelSprite3D(text, opts);
+    sprite.position.set(x,y,z);
+    root.add(sprite);
+  }
+
+  // Inset door/drawer front panel overlay on the room-facing side of a cabinet
+  function addFrontPanel(pos, baseY, h, wall, color, glass) {
+    const inset = 1.5, thk = 0.5;
+    const hh = h - inset*2;
+    if (hh<=0) return;
+    let geoArgs, cx, cz;
+    const cy = baseY + h/2;
+    switch(wall) {
+      case 'north': {
+        const ww = pos.w - inset*2; if (ww<=0) return;
+        geoArgs = [ww,hh,thk]; cx = pos.x0+pos.w/2; cz = pos.z0+pos.d+thk/2; break;
+      }
+      case 'south': {
+        const ww = pos.w - inset*2; if (ww<=0) return;
+        geoArgs = [ww,hh,thk]; cx = pos.x0+pos.w/2; cz = pos.z0-thk/2; break;
+      }
+      case 'west': {
+        const dd = pos.d - inset*2; if (dd<=0) return;
+        geoArgs = [thk,hh,dd]; cx = pos.x0+pos.w+thk/2; cz = pos.z0+pos.d/2; break;
+      }
+      case 'east': {
+        const dd = pos.d - inset*2; if (dd<=0) return;
+        geoArgs = [thk,hh,dd]; cx = pos.x0-thk/2; cz = pos.z0+pos.d/2; break;
+      }
+      default: return;
+    }
+    const mat = new THREE.MeshStandardMaterial({
+      color: shade3D(color, glass ? 50 : -10),
+      roughness: glass ? 0.15 : 0.5,
+      metalness: glass ? 0.1 : 0.05,
+      transparent: !!glass,
+      opacity: glass ? 0.45 : 1
+    });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...geoArgs), mat);
+    mesh.position.set(cx, cy, cz);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    root.add(mesh);
+  }
+
+  // ── Cabinets ──
   r.cabinets.forEach(cab => {
     const cat = CATALOG[cab.type]; if (!cat) return;
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
-    const dep = cab.depth  || cat.depths?.[0]  || 24;
+    const dep = cab.depth  || cat.depth || 24;
     const baseY = cab.type === 'wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
     const pos = cabPos(cab.wall, off, cab.width, dep);
+    const baseCol = cat.color || '#6B7280';
 
-    const baseCol  = cat.color || '#6B7280';
-    const topCol   = shade(baseCol,  30);
-    const frontCol = shade(baseCol, -10);
-    const sideCol  = shade(baseCol, -25);
-
-    drawBox(pos.x0, pos.z0, pos.w, pos.d, h, baseY, topCol, frontCol, sideCol, 'rgba(0,0,0,0.25)');
-
-    // Door lines on front face for base/wall cabs
+    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
     if (cab.type !== 'cornerBase' && cab.type !== 'lazysusan') {
-      const gap = 2;
-      // front face: from pt(x0,baseY,z0) to pt(x0+w,top,z0) — draw door rect
-      const [dx0,dy0] = pt(pos.x0+gap, baseY+gap, pos.z0);
-      const [dx1,dy1] = pt(pos.x0+pos.w-gap, baseY+gap, pos.z0);
-      const [dx2,dy2] = pt(pos.x0+pos.w-gap, baseY+h-gap, pos.z0);
-      const [dx3,dy3] = pt(pos.x0+gap, baseY+h-gap, pos.z0);
-      ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(dx0,dy0); ctx.lineTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.lineTo(dx3,dy3); ctx.closePath(); ctx.stroke();
-      // Glass tint for glass doors
-      if (cab.glassDoors) {
-        ctx.fillStyle='rgba(186,230,253,0.35)';
-        ctx.beginPath(); ctx.moveTo(dx0,dy0); ctx.lineTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.lineTo(dx3,dy3); ctx.closePath(); ctx.fill();
-      }
+      addFrontPanel(pos, baseY, h, cab.wall, baseCol, cab.glassDoors);
     }
-
-    // Label on top face
-    const [lx,ly] = pt(pos.x0 + pos.w/2, baseY+h, pos.z0 + pos.d/2);
-    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,11))}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(`${cab.width}"`, lx, ly);
+    addLabel(`${cab.width}"`, pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 
-  // ── Draw appliances ──
+  // ── Appliances ──
   (r.appliances||[]).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const off  = app.offset || 0;
-    const h    = app.height || acat.height;
-    const dep  = acat.depth;
-    const baseY = app.customElevBottom != null ? app.customElevBottom : acat.elevBottom;
+    const h    = app.height || acat.height || 30;
+    const dep  = acat.depth || 24;
+    const baseY = app.customElevBottom != null ? app.customElevBottom : (acat.elevBottom || 0);
     const pos  = cabPos(app.wall, off, app.width, dep);
 
-    const baseCol  = acat.color;
-    const topCol   = shade(baseCol, 30);
-    const frontCol = shade(baseCol, -10);
-    const sideCol  = shade(baseCol, -30);
-    drawBox(pos.x0, pos.z0, pos.w, pos.d, h, baseY, topCol, frontCol, sideCol, 'rgba(0,0,0,0.3)');
-
-    // Abbr label
-    const [lx,ly] = pt(pos.x0+pos.w/2, baseY+h, pos.z0+pos.d/2);
-    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,11))}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(acat.abbr, lx, ly);
+    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, acat.color || '#9CA3AF', { metalness:0.3, roughness:0.4 });
+    addLabel(acat.abbr || '', pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 
-  // ── Draw islands ──
+  // ── Islands ──
   (r.islands||[]).forEach(isl => {
     const h = 34.5; // standard counter height
-    const topCol   = '#F59E0B';
-    const frontCol = '#D97706';
-    const sideCol  = '#B45309';
-    drawBox(isl.x, isl.y, isl.width, isl.depth, h, 0, topCol, frontCol, sideCol, 'rgba(0,0,0,0.25)');
-    const [lx,ly] = pt(isl.x+isl.width/2, h, isl.y+isl.depth/2);
-    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font=`bold ${Math.max(8,Math.min(scale*1.8,12))}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(isl.label||'Island', lx, ly);
+    addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, 0xF59E0B);
+    addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
 
-  // ── Ceiling edge outline ──
-  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([4,4]);
-  ctx.beginPath(); ctx.moveTo(...pt(0,ceiling,0)); ctx.lineTo(...pt(roomW,ceiling,0)); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(...pt(0,ceiling,0)); ctx.lineTo(...pt(0,ceiling,roomD)); ctx.stroke();
-  ctx.setLineDash([]);
+  // ── Room dimension labels ──
+  addLabel(fmtIn(roomW), roomW/2, 1, roomD+8, { fontSize:24, scale:0.05, bg:'transparent', color:'#475569' });
+  addLabel(fmtIn(roomD), -8, 1, roomD/2, { fontSize:24, scale:0.05, bg:'transparent', color:'#475569' });
 
-  // ── Dimension labels ──
-  ctx.fillStyle='#475569'; ctx.font=`600 ${Math.max(10,scale*2.2)}px sans-serif`;
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  const [wx,wy] = pt(roomW/2, 0, 0); ctx.fillText(fmtIn(roomW), wx, wy-14);
-  const [dx,dy] = pt(0, 0, roomD/2); ctx.fillText(fmtIn(roomD), dx-20, dy);
+  iso3D._roomDims = { roomW, roomD, ceiling };
+  if (!iso3D.initedCamera) {
+    setIso3DCamera(iso3D._roomDims);
+    iso3D.initedCamera = true;
+  }
+  resizeIso3D();
 }
 
 // ════════════════════════════
