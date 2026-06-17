@@ -1189,7 +1189,7 @@ const CATALOG = {
   filler3:     { label:'Filler 3"',             widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15  },
   filler6:     { label:'Filler 6"',             widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20  },
   fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
-  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[12,15,18,30,36,42], depth:12, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
+  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:24, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -1749,6 +1749,10 @@ function onTypeChange() {
     wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
     ds.classList.remove('hidden');
     gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
+  } else if (type === 'diagWall') {
+    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
+    ds.classList.add('hidden'); // depth is auto from width selection
+    gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
   } else {
     wbr.style.display = 'none'; ds.classList.add('hidden');
     gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
@@ -1764,12 +1768,12 @@ function addCabinet() {
   const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || cat.heights[0]);
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
-  const wallBottom  = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
   const depthSel    = document.getElementById('cab-depth-sel');
-  const depth       = type === 'diagWall' ? (width === 24 ? 12 : 15)
+  const depth       = type === 'diagWall' ? (width === 24 ? 24 : 15)
                     : (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value)
                     : cat.depth;
-  const glassDoors    = type === 'wall' && document.getElementById('cab-glass-doors').checked;
+  const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
+  const glassDoors    = (type === 'wall' || type === 'diagWall') && document.getElementById('cab-glass-doors').checked;
   const styleOverride = document.getElementById('cab-style-override').value || null;
   r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride });
   document.getElementById('cab-note-input').value    = '';
@@ -2592,8 +2596,8 @@ function renderCanvas() {
   ctx.restore();
 
   let cabs = r.cabinets;
-  if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type));
-  if (viewMode === 'wall') cabs = cabs.filter(c => c.type === 'wall');
+  if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type));
+  if (viewMode === 'wall') cabs = cabs.filter(c => ['wall','diagWall'].includes(c.type));
 
   function drawCabOnFloor(cab, wall) {
     const cat = CATALOG[cab.type];
@@ -2602,6 +2606,7 @@ function renderCanvas() {
     const isActive = wall === state.activeWall;
     const isCorner = cab.type === 'cornerBase';
     const isLazySusan = cab.type === 'lazysusan';
+    const isDiagWall = cab.type === 'diagWall';
     const effD = cD; // always use actual depth (24")
     let x,y,w,h;
     if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=cD; }
@@ -2677,6 +2682,24 @@ function renderCanvas() {
       ctx.beginPath(); ctx.moveTo(rCX-r1, rCY); ctx.lineTo(rCX+r1, rCY); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(rCX, rCY-r1); ctx.lineTo(rCX, rCY+r1); ctx.stroke();
       ctx.setLineDash([]);
+    } else if (isDiagWall) {
+      // Diagonal corner wall: triangle snapping into the adjacent corner
+      ctx.globalAlpha = 0.55; ctx.fillStyle = cat.color;
+      ctx.beginPath();
+      if      (wall==='north') { ctx.moveTo(x,y);    ctx.lineTo(x+cW,y);    ctx.lineTo(x,y+cD);    }
+      else if (wall==='south') { ctx.moveTo(x,y+cD); ctx.lineTo(x+cW,y+cD); ctx.lineTo(x,y);       }
+      else if (wall==='west')  { ctx.moveTo(x,y);    ctx.lineTo(x+cD,y);    ctx.lineTo(x,y+cW);    }
+      else                     { ctx.moveTo(x+cD,y); ctx.lineTo(x,y);       ctx.lineTo(x+cD,y+cW); }
+      ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.2)'; ctx.lineWidth = isActive ? 2.5 : 1.5; ctx.stroke();
+      // Dashed diagonal front face line
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.2; ctx.setLineDash([4,3]);
+      ctx.beginPath();
+      if      (wall==='north') { ctx.moveTo(x+cW,y);    ctx.lineTo(x,y+cD);    }
+      else if (wall==='south') { ctx.moveTo(x+cW,y+cD); ctx.lineTo(x,y);       }
+      else if (wall==='west')  { ctx.moveTo(x+cD,y);    ctx.lineTo(x,y+cW);    }
+      else                     { ctx.moveTo(x,y);        ctx.lineTo(x+cD,y+cW); }
+      ctx.stroke(); ctx.setLineDash([]);
     } else {
       ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
       ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
@@ -2697,6 +2720,12 @@ function renderCanvas() {
       // Label in the middle of the L's long wing
       if (wall==='east') ctx.fillText(`LS${cab.width}"`, x+cD - cW*0.65, y+cW*0.55);
       else               ctx.fillText(`LS${cab.width}"`, x+cW*0.65, y+cW*0.55);
+    } else if (isDiagWall) {
+      // Label near centroid of the triangle
+      if      (wall==='north') ctx.fillText(`DCW${cab.width}"`, x+cW*0.28, y+cD*0.28);
+      else if (wall==='south') ctx.fillText(`DCW${cab.width}"`, x+cW*0.28, y+cD*0.72);
+      else if (wall==='west')  ctx.fillText(`DCW${cab.width}"`, x+cD*0.28, y+cW*0.28);
+      else                     ctx.fillText(`DCW${cab.width}"`, x+cD*0.72, y+cW*0.28);
     } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
   }
 
@@ -3344,7 +3373,7 @@ function renderElevation() {
     return STYLES.find(s => s.code === code) || styleInfo;
   }
 
-  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan'].includes(c.type)).forEach(cab => {
+  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const isCorner=cab.type==='cornerBase';
@@ -3390,25 +3419,46 @@ function renderElevation() {
     if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
   });
 
-  wallCabs.filter(c=>c.type==='wall').forEach(cab => {
+  wallCabs.filter(c=>['wall','diagWall'].includes(c.type)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
     const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
     const y=Math.max(WY, floorY-bottomIn*scale-cH);
     const x=eX(cab.offset||0, cab.width);
     const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
-    ctx.fillStyle=si.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
-    ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-    ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
-    ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
-    ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
-    if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
-    // Bottom-from-floor annotation
+    if (cab.type === 'diagWall') {
+      // Diagonal corner wall cabinet: rectangle with diagonal cut in top-left corner
+      const cutW=cW*0.3, cutH=cH*0.15;
+      ctx.fillStyle=si.swatch;
+      ctx.beginPath();
+      ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH);
+      ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cutH); ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.stroke();
+      // Diagonal cut line
+      ctx.beginPath(); ctx.moveTo(x,y+cutH); ctx.lineTo(x+cutW,y); ctx.stroke();
+      // Door inset
+      ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8;
+      ctx.strokeRect(x+cutW+3, y+5, cW-cutW-7, cH-14);
+      // Knob
+      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.6-6,y+cH-12,12,4,2); ctx.fill();
+      ctx.fillStyle=txtColor; const fs2=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`DCW${cab.width}`, x+cW*0.6, y+cH/2);
+    } else {
+      ctx.fillStyle=si.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+      ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
+      ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
+      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
+      ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
+      if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
+    }
+    // Bottom-from-floor annotation (both types)
     const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
     if (bIn !== 54) {
       ctx.font=`600 8px sans-serif`; ctx.fillStyle='#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
     }
+    if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
