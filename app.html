@@ -2683,23 +2683,41 @@ function renderCanvas() {
       ctx.beginPath(); ctx.moveTo(rCX, rCY-r1); ctx.lineTo(rCX, rCY+r1); ctx.stroke();
       ctx.setLineDash([]);
     } else if (isDiagWall) {
-      // Diagonal corner wall: triangle snapping into the adjacent corner
+      // Diagonal corner wall: L-shape footprint (two wings) with a diagonal front face
+      // wallD = standard wall cabinet protrusion depth (12") for each wing
+      const wallD = Math.min(12 * scale, cW * 0.45, cD * 0.45);
       ctx.globalAlpha = 0.55; ctx.fillStyle = cat.color;
       ctx.beginPath();
-      if      (wall==='north') { ctx.moveTo(x,y);    ctx.lineTo(x+cW,y);    ctx.lineTo(x,y+cD);    }
-      else if (wall==='south') { ctx.moveTo(x,y+cD); ctx.lineTo(x+cW,y+cD); ctx.lineTo(x,y);       }
-      else if (wall==='west')  { ctx.moveTo(x,y);    ctx.lineTo(x+cD,y);    ctx.lineTo(x,y+cW);    }
-      else                     { ctx.moveTo(x+cD,y); ctx.lineTo(x,y);       ctx.lineTo(x+cD,y+cW); }
+      if (wall==='north') {
+        // NW corner: north wing (cW east, wallD south) + west return (wallD east, cD south)
+        ctx.moveTo(x, y);         ctx.lineTo(x+cW, y);
+        ctx.lineTo(x+cW, y+wallD); ctx.lineTo(x+wallD, y+cD);
+        ctx.lineTo(x, y+cD);
+      } else if (wall==='south') {
+        const bY = y+cD;
+        ctx.moveTo(x, bY);          ctx.lineTo(x+cW, bY);
+        ctx.lineTo(x+cW, bY-wallD); ctx.lineTo(x+wallD, y);
+        ctx.lineTo(x, y);
+      } else if (wall==='west') {
+        ctx.moveTo(x, y);         ctx.lineTo(x, y+cW);
+        ctx.lineTo(x+wallD, y+cW); ctx.lineTo(x+cD, y+wallD);
+        ctx.lineTo(x+cD, y);
+      } else {
+        const rX = x+cD;
+        ctx.moveTo(rX, y);          ctx.lineTo(rX, y+cW);
+        ctx.lineTo(rX-wallD, y+cW); ctx.lineTo(x, y+wallD);
+        ctx.lineTo(x, y);
+      }
       ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
       ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.2)'; ctx.lineWidth = isActive ? 2.5 : 1.5; ctx.stroke();
-      // Dashed diagonal front face line
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.2; ctx.setLineDash([4,3]);
+      // Solid diagonal front face line
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
       ctx.beginPath();
-      if      (wall==='north') { ctx.moveTo(x+cW,y);    ctx.lineTo(x,y+cD);    }
-      else if (wall==='south') { ctx.moveTo(x+cW,y+cD); ctx.lineTo(x,y);       }
-      else if (wall==='west')  { ctx.moveTo(x+cD,y);    ctx.lineTo(x,y+cW);    }
-      else                     { ctx.moveTo(x,y);        ctx.lineTo(x+cD,y+cW); }
-      ctx.stroke(); ctx.setLineDash([]);
+      if      (wall==='north') { ctx.moveTo(x+cW, y+wallD);    ctx.lineTo(x+wallD, y+cD);    }
+      else if (wall==='south') { const bY=y+cD; ctx.moveTo(x+cW, bY-wallD); ctx.lineTo(x+wallD, y); }
+      else if (wall==='west')  { ctx.moveTo(x+wallD, y+cW);    ctx.lineTo(x+cD, y+wallD);    }
+      else                     { const rX=x+cD; ctx.moveTo(rX-wallD, y+cW); ctx.lineTo(x, y+wallD); }
+      ctx.stroke();
     } else {
       ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
       ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
@@ -2721,11 +2739,12 @@ function renderCanvas() {
       if (wall==='east') ctx.fillText(`LS${cab.width}"`, x+cD - cW*0.65, y+cW*0.55);
       else               ctx.fillText(`LS${cab.width}"`, x+cW*0.65, y+cW*0.55);
     } else if (isDiagWall) {
-      // Label near centroid of the triangle
-      if      (wall==='north') ctx.fillText(`DCW${cab.width}"`, x+cW*0.28, y+cD*0.28);
-      else if (wall==='south') ctx.fillText(`DCW${cab.width}"`, x+cW*0.28, y+cD*0.72);
-      else if (wall==='west')  ctx.fillText(`DCW${cab.width}"`, x+cD*0.28, y+cW*0.28);
-      else                     ctx.fillText(`DCW${cab.width}"`, x+cD*0.72, y+cW*0.28);
+      // Label in the centre of the placed-wall wing
+      const wallD2 = Math.min(12*scale, cW*0.45, cD*0.45);
+      if      (wall==='north') ctx.fillText(`DCW${cab.width}"`, x+cW/2, y+wallD2/2);
+      else if (wall==='south') ctx.fillText(`DCW${cab.width}"`, x+cW/2, y+cD-wallD2/2);
+      else if (wall==='west')  ctx.fillText(`DCW${cab.width}"`, x+wallD2/2, y+cW/2);
+      else                     ctx.fillText(`DCW${cab.width}"`, x+cD-wallD2/2, y+cW/2);
     } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
   }
 
@@ -4293,7 +4312,13 @@ async function exportPDF(btn) {
   }
   function hitTestCab(mx,my,info) {
     const {scale,RX,RY,RW,RH,r} = info;
+    const vm = state.viewMode || 'base';
+    const wallTypes = ['wall','diagWall'];
+    const baseTypes = ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'];
     for (const cab of r.cabinets) {
+      // Skip types hidden in the current view mode to avoid cross-layer false hits
+      if (vm === 'wall' && !wallTypes.includes(cab.type)) continue;
+      if (vm === 'base' && !baseTypes.includes(cab.type)) continue;
       const cW=cab.width*scale, cD=cab.depth*scale, off=(cab.offset||0)*scale;
       let x,y,w,h;
       if      (cab.wall==='north') { x=RX+off; y=RY;        w=cW; h=cD; }
