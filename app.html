@@ -643,6 +643,10 @@ body {
             <option value="drawerBase">Drawer Base (3-drawer)</option>
             <option value="cornerBase">Corner Base (Blind)</option>
             <option value="lazysusan">Lazy Susan Corner</option>
+            <option value="diagWall">Diagonal Corner Wall</option>
+            <option value="fridgePanel">Fridge End Panel</option>
+            <option value="filler3">Filler 3"</option>
+            <option value="filler6">Filler 6"</option>
           </select>
           <select id="cab-width" class="cp-select"><option value="">— Width —</option></select>
           <select id="cab-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
@@ -682,7 +686,6 @@ body {
             <option value="microwave">📡 OTR Microwave</option>
             <option value="cooktop">🍳 Cooktop</option>
             <option value="hood">💨 Range Hood</option>
-            <option value="fridgePanel">📏 Fridge End Panel</option>
             <option value="beverageCooler">🧃 Beverage Cooler (UC)</option>
             <option value="floatingShelf">📚 Floating Shelf</option>
           </select>
@@ -1181,8 +1184,12 @@ const CATALOG = {
   sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB', basePrice: w => w*4.8 },
   vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
   drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
-  cornerBase: { label:'Corner Base', widths:[36,39,42],                     heights:[34.5],     depth:24, color:'#F59E0B', abbr:'CB', basePrice: w => w*6  },
-  lazysusan:  { label:'Lazy Susan',  widths:[33],                           heights:[34.5],     depth:24, color:'#F97316', abbr:'LS', basePrice: w => w*7  },
+  cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB',  basePrice: w => w*6  },
+  lazysusan:   { label:'Lazy Susan',            widths:[33],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
+  filler3:     { label:'Filler 3"',             widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15  },
+  filler6:     { label:'Filler 6"',             widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20  },
+  fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
+  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[12,15,18,30,36,42], depth:12, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -1262,7 +1269,6 @@ const PRICE_TABLE = {
 
 const APPLIANCES = {
   refrigerator:    { label:'Refrigerator',              widths:[30,33,36],    heights:[66,68,70,72], height:70,   depth:30, color:'#6B7280', abbr:'REF', wallMount:false, elevBottom:0  },
-  fridgePanel:     { label:'Fridge End Panel',          widths:[3,6],         heights:[84,90,96],    height:84,   depth:1,  color:'#CBD5E1', abbr:'FEP', wallMount:false, elevBottom:0  },
   range:           { label:'Range / Stove',             widths:[30,36],       height:36,             depth:25, color:'#374151', abbr:'RNG', wallMount:false, elevBottom:0  },
   dishwasher:      { label:'Dishwasher',                widths:[24],          height:34.5,           depth:24, color:'#6B7280', abbr:'DW',  wallMount:false, elevBottom:0  },
   microwave:       { label:'OTR Microwave',             widths:[30,36],       height:16,             depth:17, color:'#4B5563', abbr:'MWV', wallMount:true,  elevBottom:54, elevBottomOptions:[48,54,60,66,72] },
@@ -1760,7 +1766,9 @@ function addCabinet() {
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
   const wallBottom  = type === 'wall' ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
   const depthSel    = document.getElementById('cab-depth-sel');
-  const depth       = (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value) : cat.depth;
+  const depth       = type === 'diagWall' ? (width === 24 ? 12 : 15)
+                    : (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value)
+                    : cat.depth;
   const glassDoors    = type === 'wall' && document.getElementById('cab-glass-doors').checked;
   const styleOverride = document.getElementById('cab-style-override').value || null;
   r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride });
