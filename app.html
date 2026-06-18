@@ -3739,7 +3739,18 @@ function refreshQuoteTotals() {
     <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>`;
 }
 
+function checkCompanyProfile() {
+  if (companyProfile.company_name) return true;
+  return confirm(
+    '⚠️ Your company profile is not set up.\n\n' +
+    'The exported document will show "My Cabinet Planner" as the business name — ' +
+    'which looks unprofessional on a customer quote.\n\n' +
+    'Click OK to export anyway, or Cancel to go update your Company Settings first.'
+  );
+}
+
 function printQuote() {
+  if (!checkCompanyProfile()) return;
   const p = activeProj(); if (!p) return;
   // Company name: quote modal field → project field → company profile → default
   const companyField = document.getElementById('quote-company-input');
@@ -3873,7 +3884,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
     <div class="sb"><div style="border-bottom:1px solid #374151;width:180px;height:36px;margin-bottom:5px;"></div><div class="slb">Date</div></div>
   </div>
 </div>
-<div class="foot">${escHtml(companyName)} · ${escHtml(cp.website || 'mycabinetplanner.com')} · Quote #${quoteNum} · Generated ${today}<br>Pricing based on Forevermark/Matrix MSRP</div>
+<div class="foot">${escHtml(companyName)}${cp.website ? ' · '+escHtml(cp.website) : ''} · Quote #${quoteNum} · Generated ${today}</div>
 </body></html>`);
   win.document.close();
 }
@@ -4122,6 +4133,7 @@ function loadScript(src) {
 }
 
 async function exportPDF(btn) {
+  if (!checkCompanyProfile()) return;
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
   const origText = btn.textContent;
@@ -4139,6 +4151,18 @@ async function exportPDF(btn) {
   const PW=215.9, PH=279.4, MAR=16, CW=PW-MAR*2;
   const cp = companyProfile;
   const coName = p.company || cp.company_name || 'My Cabinet Planner';
+  const today = new Date().toLocaleDateString();
+  const validThru = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString();
+  const quoteNum = 'Q-' + Date.now().toString(36).toUpperCase().slice(-6);
+  let logoDataUrl = null;
+  if (cp.logo_url) {
+    logoDataUrl = await new Promise(res => {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = () => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img,0,0); res(c.toDataURL('image/png')); };
+      img.onerror = () => res(null);
+      img.src = cp.logo_url;
+    });
+  }
 
   function hdr(title, pg) {
     doc.setFillColor(44,31,20); doc.rect(0,0,PW,9,'F');
@@ -4150,7 +4174,7 @@ async function exportPDF(btn) {
   }
   function ftr() {
     doc.setFontSize(7); doc.setTextColor(150,150,150); doc.setFont('helvetica','normal');
-    doc.text(`${coName}  ·  Generated ${new Date().toLocaleDateString()}  ·  My Cabinet Planner`, PW/2, PH-5, {align:'center'});
+    doc.text(`${coName}  ·  Quote #${quoteNum}  ·  Generated ${today}`, PW/2, PH-5, {align:'center'});
     doc.setTextColor(30,30,30);
   }
   function pxToMm(px) { return px * 0.264583; }
@@ -4166,16 +4190,29 @@ async function exportPDF(btn) {
   // ── Page 1: Company header + floor plan ──────────────────────
   hdr('Floor Plan', pg); ftr();
   let y = 14;
-  doc.setFontSize(20); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
-  doc.text(coName, MAR, y); y+=5;
-  if (cp.tagline) { doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(120,97,79); doc.text(cp.tagline.toUpperCase(), MAR, y); y+=4; }
+  // Logo (left) if available
+  if (logoDataUrl) {
+    const lh=14, lw=Math.min(lh*4, 60);
+    doc.addImage(logoDataUrl,'PNG',MAR,y,lw,lh); y+=lh+3;
+  }
+  // Company name left, QUOTE label right
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+  doc.text(coName, MAR, y);
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(180,83,9);
+  doc.text('QUOTE', PW-MAR, y, {align:'right'}); y+=5;
+  // Tagline left, quote # right
+  if (cp.tagline) { doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(120,97,79); doc.text(cp.tagline.toUpperCase(), MAR, y); }
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+  doc.text(`#${quoteNum}`, PW-MAR, y, {align:'right'}); y+=4;
+  // Contact line left, dates right
   const coLine = [cp.address, cp.phone, cp.email, cp.website].filter(Boolean).join('  ·  ');
-  if (coLine) { doc.text(coLine, MAR, y); y+=4; }
+  if (coLine) doc.text(coLine, MAR, y);
+  doc.text(`Date: ${today}   Valid through: ${validThru}`, PW-MAR, y, {align:'right'}); y+=4;
   doc.setDrawColor(180,83,9); doc.setLineWidth(0.6); doc.line(MAR,y,PW-MAR,y); y+=4;
-  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(30,30,30);
+  // Customer / project bar
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
   doc.text('CUSTOMER', MAR, y); doc.text('PROJECT', PW/2, y); y+=4;
-  doc.setFont('helvetica','normal');
+  doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
   doc.text(p.customer||'—', MAR, y); doc.text(`${p.type||'—'}  ·  Style: ${p.style||'—'}`, PW/2, y); y+=5;
   doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(MAR,y,PW-MAR,y); y+=4;
   const fpCv = document.getElementById('floor-plan');
@@ -4236,20 +4273,24 @@ async function exportPDF(btn) {
   doc.addPage(); pg++;
   hdr('Cabinet Quote', pg); ftr();
   let qy=14;
-  doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
-  doc.text('QUOTE', MAR, qy); qy+=5;
+  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+  doc.text('QUOTE', MAR, qy);
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(180,83,9);
+  doc.text('#'+quoteNum, PW-MAR, qy, {align:'right'}); qy+=5;
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-  doc.text(`Customer: ${p.customer||'—'}   ·   Project: ${p.type||'—'}   ·   Style: ${p.style||'—'}   ·   Date: ${new Date().toLocaleDateString()}`, MAR, qy); qy+=5;
+  doc.text(`Customer: ${p.customer||'—'}   ·   Project: ${p.type||'—'}   ·   Style: ${p.style||'—'}   ·   Date: ${today}   ·   Valid: ${validThru}`, MAR, qy); qy+=5;
 
   const tax=getTax(); let cabSub=0;
-  const rows=[];
+
+  // Cabinet line items
+  const cabRows=[];
   p.rooms.forEach(room => {
     if (!room.cabinets.length) return;
-    rows.push([{content:room.name,colSpan:4,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
+    cabRows.push([{content:room.name,colSpan:4,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
     room.cabinets.forEach(c => {
       const pr=cabinetPrice(c); cabSub+=pr;
       const cat=CATALOG[c.type];
-      rows.push([
+      cabRows.push([
         (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
         `${c.width}"W × ${c.height}"H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
@@ -4257,41 +4298,115 @@ async function exportPDF(btn) {
       ]);
     });
   });
-  const jcItems=(p.jobCosts||[]).filter(jc=>jc.label||jc.amount);
-  jcItems.forEach(jc=>{
-    const amt=parseFloat(jc.amount)||0;
-    rows.push([{content:jc.label||'Additional Cost',colSpan:3},{content:'$'+amt.toFixed(2),styles:{halign:'right'}}]);
-  });
-
   doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
     head:[['Cabinet','Dimensions','Wall','Price']],
-    body:rows,
+    body:cabRows,
     styles:{fontSize:7.5,cellPadding:2},
     headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
     theme:'grid',
   });
-  qy=doc.lastAutoTable.finalY+6;
+  qy=doc.lastAutoTable.finalY+4;
 
+  // Appliances
+  const appRows=[];
+  p.rooms.forEach(room => {
+    (room.appliances||[]).forEach(a => {
+      const ac=APPLIANCES[a.type]||{};
+      appRows.push([ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—']);
+    });
+  });
+  if (appRows.length) {
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
+    doc.text('APPLIANCES', MAR, qy); qy+=3;
+    doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
+      head:[['Appliance','Width','Wall','Notes']],
+      body:appRows,
+      styles:{fontSize:7.5,cellPadding:2},
+      headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+      theme:'grid',
+    });
+    qy=doc.lastAutoTable.finalY+4;
+  }
+
+  // Job costs
+  const jcItems=(p.jobCosts||[]).filter(jc=>jc.label||jc.amount);
   const jcTotal=jcItems.reduce((s,jc)=>s+(parseFloat(jc.amount)||0),0);
-  const trimTotal=(p.trimItems||[]).filter(t=>t.label||t.unitPrice).reduce((s,t)=>s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0),0);
+  if (jcItems.length) {
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
+    doc.text('ADDITIONAL JOB COSTS', MAR, qy); qy+=3;
+    doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
+      head:[['Description','Amount']],
+      body:jcItems.map(jc=>[jc.label||'Additional Cost',{content:'$'+(parseFloat(jc.amount)||0).toFixed(2),styles:{halign:'right'}}]),
+      styles:{fontSize:7.5,cellPadding:2},
+      headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+      theme:'grid', columnStyles:{1:{cellWidth:35}},
+    });
+    qy=doc.lastAutoTable.finalY+4;
+  }
+
+  // Trim items
+  const trimItems=(p.trimItems||[]).filter(t=>t.label||t.unitPrice);
+  const trimTotal=trimItems.reduce((s,t)=>s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0),0);
+  if (trimItems.length) {
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
+    doc.text('TRIM & MATERIALS', MAR, qy); qy+=3;
+    doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
+      head:[['Item','Qty','Unit Price','Total']],
+      body:trimItems.map(t=>[t.label||'Trim Item',t.qty||1,'$'+(parseFloat(t.unitPrice)||0).toFixed(2),{content:'$'+((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0)).toFixed(2),styles:{halign:'right'}}]),
+      styles:{fontSize:7.5,cellPadding:2},
+      headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+      theme:'grid', columnStyles:{3:{cellWidth:35}},
+    });
+    qy=doc.lastAutoTable.finalY+4;
+  }
+
+  // Totals
   const beforeTax=cabSub+jcTotal+trimTotal;
   const taxAmt=beforeTax*tax;
   const total=beforeTax+taxAmt;
-  const totLines=[
-    ['Cabinet Subtotal','$'+cabSub.toFixed(2)],
-    ...(jcTotal>0?[['Additional Costs','$'+jcTotal.toFixed(2)]]:[]),
-    ...(trimTotal>0?[['Trim & Materials','$'+trimTotal.toFixed(2)]]:[]),
-    ...(tax>0?[[`Tax (${(tax*100).toFixed(1)}%)`, '$'+taxAmt.toFixed(2)]]:[]),
-  ];
-  totLines.forEach(([lbl,amt])=>{
+  const totX=PW-MAR-70;
+  doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(totX,qy,PW-MAR,qy); qy+=5;
+  [
+    ['Cabinet Subtotal', cabSub],
+    ...(jcTotal>0?[['Additional Costs',jcTotal]]:[]),
+    ...(trimTotal>0?[['Trim & Materials',trimTotal]]:[]),
+    ...(tax>0?[[`Tax (${(tax*100).toFixed(1)}%)`,taxAmt]]:[]),
+  ].forEach(([lbl,amt])=>{
     doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
-    doc.text(lbl, PW-MAR-60, qy);
+    doc.text(lbl, totX, qy);
     doc.setFont('helvetica','bold'); doc.setTextColor(30,30,30);
-    doc.text(amt, PW-MAR, qy, {align:'right'}); qy+=5;
+    doc.text('$'+amt.toFixed(2), PW-MAR, qy, {align:'right'}); qy+=5;
   });
+  doc.setDrawColor(22,163,74); doc.setLineWidth(0.5); doc.line(totX,qy,PW-MAR,qy); qy+=5;
   doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(22,163,74);
-  doc.text('TOTAL', PW-MAR-60, qy);
-  doc.text('$'+total.toFixed(2), PW-MAR, qy, {align:'right'});
+  doc.text('TOTAL', totX, qy);
+  doc.text('$'+total.toFixed(2), PW-MAR, qy, {align:'right'}); qy+=14;
+
+  // Signature lines (add new page if insufficient space)
+  if (qy > PH-75) { doc.addPage(); pg++; hdr('Authorization & Terms', pg); ftr(); qy=18; }
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(30,30,30);
+  doc.text('AUTHORIZATION', MAR, qy); qy+=6;
+  const sigY=qy;
+  doc.setDrawColor(55,65,81); doc.setLineWidth(0.4);
+  const col2=PW/2+4;
+  [[MAR,'Customer Signature'],[col2,`${coName} Representative`]].forEach(([x,lbl])=>{
+    doc.line(x,sigY+14,x+82,sigY+14); doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100); doc.text(lbl,x,sigY+18);
+    doc.line(x,sigY+30,x+82,sigY+30); doc.text('Print Name / Title',x,sigY+34);
+    doc.line(x,sigY+46,x+82,sigY+46); doc.text('Date',x,sigY+50);
+  });
+  qy=sigY+60;
+
+  // Terms & Conditions
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
+  doc.text('TERMS & CONDITIONS', MAR, qy); qy+=4;
+  doc.setFont('helvetica','normal'); doc.setTextColor(110,110,110); doc.setFontSize(7.5);
+  [
+    'All sales are FINAL. Cabinets are built to dimensions provided by the customer per the approved floor plan.',
+    'Lead time: approximately 1–4 weeks from order. Shipping delays are beyond our control; no monetary compensation is provided.',
+    'We strongly advise waiting until cabinets are received before demolishing your existing kitchen or work site.',
+    'Inspect shipment upon delivery. Report visible damage on the bill of lading. Concealed damage must be reported within 5 days. Factory defects within 14 days.',
+    'Payment in full is required before order fulfillment. $100 fee for returned checks. We appreciate your business!',
+  ].forEach(t => { const lines=doc.splitTextToSize(t,CW-6); doc.text(lines,MAR+3,qy); qy+=lines.length*3.8+2; });
 
   const fname=(p.customer||'quote').replace(/[^a-z0-9]/gi,'_')+'_cabinet_plan.pdf';
   doc.save(fname);
