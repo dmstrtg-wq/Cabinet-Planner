@@ -526,6 +526,7 @@ body {
         <button class="btn btn-success" onclick="openQuoteModal()">💰 Quote</button>
         <button class="btn btn-secondary" onclick="window.print()">🖨 Print</button>
         <button class="btn btn-secondary" onclick="openEditProjectModal()">✏️ Edit</button>
+        <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">💡 Tips</button>
       </div>
     </div>
 
@@ -562,7 +563,6 @@ body {
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
             <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
-            <button class="toolbar-btn" onclick="openModal('modal-faq')" style="margin-left:4px;font-weight:800;border-color:#94a3b8;">? Help</button>
           </div>
           <div id="floor-plan-wrapper">
             <div class="plan-title" id="plan-title">Floor Plan</div>
@@ -1124,7 +1124,7 @@ body {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h3 style="margin:0;">Help & FAQ</h3>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button onclick="startTour()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">↺ Replay Tour</button>
+        <button onclick="startTour()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">↺ Replay Tips Tour</button>
         <button onclick="closeModal('modal-faq')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
       </div>
     </div>
@@ -1175,7 +1175,7 @@ body {
 </div>
 
 <!-- TOUR ELEMENTS -->
-<div id="tour-backdrop" onclick="endTour()"></div>
+<div id="tour-backdrop"></div>
 <div id="tour-highlight"></div>
 <div id="tour-tooltip">
   <div class="tour-step-tag" id="tour-tag"></div>
@@ -4977,68 +4977,96 @@ db.auth.onAuthStateChange((event, session) => {
 // ════════════════════════════
 const TOUR_STEPS = [
   { tag:'Step 1 of 6', title:'Welcome to My Cabinet Planner!',
-    body:"Let's take a 30-second tour. You can skip anytime — the ? Help button brings it back whenever you need it.",
+    body:"Let's take a 30-second tour. You can skip anytime — the 💡 Tips button in the header brings it back whenever you need it.",
     target:null },
   { tag:'Step 2 of 6', title:'Add Cabinets Here',
     body:'Use this panel to add base cabinets, upper cabinets, appliances, and openings. Pick a type, set the dimensions, and click Add.',
     target:'#cabinet-panel', side:'left' },
   { tag:'Step 3 of 6', title:'Your Floor Plan',
-    body:'Cabinets appear here as colored boxes on the wall you selected. Double-click any cabinet to edit or delete it. Drag to reposition.',
+    body:'Cabinets appear here as colored boxes on their wall. Double-click any cabinet to edit or delete it. Drag to reposition.',
     target:'#floor-plan-wrapper', side:'top' },
   { tag:'Step 4 of 6', title:'Base vs. Upper Cabinets',
-    body:'The Show dropdown filters the floor plan. Switch to "Wall Only" when placing upper cabinets so they\'re easier to see and select.',
+    body:'The Show dropdown filters the floor plan. Switch to "Wall Only" when placing upper cabinets so they\'re easier to see and click.',
     target:'#view-sel', side:'bottom' },
   { tag:'Step 5 of 6', title:'Floor Plan · Elevation · 3D',
     body:'Switch between your floor plan, wall elevations (great for checking upper cabinet heights), and the 3D preview using these tabs.',
     target:'.view-toggle', side:'bottom' },
   { tag:'Step 6 of 6', title:'Export Your Quote',
-    body:'When the layout is ready, Export PDF produces a multi-page plan + quote to hand to your customer. Set up Company Settings first so your name is on it.',
+    body:'When the layout is ready, Export PDF produces a multi-page plan + quote PDF to hand to your customer. Set up Company Settings first so your name appears on it.',
     target:'#pdf-export-btn', side:'bottom', last:true },
 ];
 let _tourStep = 0;
 
 function maybeStartTour() {
-  if (!localStorage.getItem('mcp_tour_done')) setTimeout(startTour, 900);
+  if (!localStorage.getItem('mcp_tour_done')) setTimeout(startTour, 1200);
 }
 function startTour() {
-  closeModal('modal-faq');
+  try {
+    closeModal('modal-faq');
+  } catch(e) {}
   _tourStep = 0;
-  document.getElementById('tour-backdrop').style.display = 'block';
+  const bd = document.getElementById('tour-backdrop');
+  if (bd) bd.style.display = 'block';
   _showTourStep();
 }
 function _showTourStep() {
-  const step = TOUR_STEPS[_tourStep];
-  const tt = document.getElementById('tour-tooltip');
-  const hl = document.getElementById('tour-highlight');
-  document.getElementById('tour-tag').textContent   = step.tag;
-  document.getElementById('tour-title').textContent = step.title;
-  document.getElementById('tour-body').textContent  = step.body;
-  document.getElementById('tour-next-btn').textContent = step.last ? 'Done ✓' : 'Next →';
-  tt.style.display = 'block'; hl.style.display = 'none'; tt.style.transform = '';
-  if (!step.target) {
-    tt.style.top='50%'; tt.style.left='50%'; tt.style.transform='translate(-50%,-50%)';
-  } else {
-    const el = document.querySelector(step.target);
-    if (el) {
-      const r=el.getBoundingClientRect(), TW=300, TH=200, mg=14, side=step.side||'bottom';
-      hl.style.cssText=`display:block;top:${r.top-4}px;left:${r.left-4}px;width:${r.width+8}px;height:${r.height+8}px;`;
-      let top, left;
-      if      (side==='bottom') { top=r.bottom+mg; left=Math.min(Math.max(r.left+r.width/2-TW/2,mg),innerWidth-TW-mg); }
-      else if (side==='top')    { top=r.top-TH-mg; left=Math.min(Math.max(r.left+r.width/2-TW/2,mg),innerWidth-TW-mg); }
-      else if (side==='left')   { left=r.right+mg; top=Math.min(Math.max(r.top+r.height/2-TH/2,mg),innerHeight-TH-mg); }
-      else                      { left=r.left-TW-mg; top=Math.min(Math.max(r.top+r.height/2-TH/2,mg),innerHeight-TH-mg); }
-      top=Math.max(mg,Math.min(top,innerHeight-TH-mg));
-      tt.style.top=top+'px'; tt.style.left=left+'px';
+  try {
+    const step = TOUR_STEPS[_tourStep];
+    const tt = document.getElementById('tour-tooltip');
+    const hl = document.getElementById('tour-highlight');
+    if (!tt) return;
+    document.getElementById('tour-tag').textContent   = step.tag   || '';
+    document.getElementById('tour-title').textContent = step.title || '';
+    document.getElementById('tour-body').textContent  = step.body  || '';
+    document.getElementById('tour-next-btn').textContent = step.last ? 'Done ✓' : 'Next →';
+    tt.style.display = 'block';
+    hl.style.display = 'none';
+    tt.style.transform = '';
+    if (!step.target) {
+      // Centered
+      tt.style.top = '50%'; tt.style.left = '50%'; tt.style.transform = 'translate(-50%,-50%)';
+      return;
     }
-  }
+    const el = document.querySelector(step.target);
+    if (!el) {
+      // Element not found — fall back to centered
+      tt.style.top = '50%'; tt.style.left = '50%'; tt.style.transform = 'translate(-50%,-50%)';
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    const TW = 300, TH = 210, mg = 16, side = step.side || 'bottom';
+    // Highlight ring
+    hl.style.cssText = `display:block;top:${r.top-4}px;left:${r.left-4}px;width:${r.width+8}px;height:${r.height+8}px;`;
+    // Position tooltip
+    let top, left;
+    if (side === 'bottom') {
+      top  = r.bottom + mg;
+      left = Math.min(Math.max(r.left + r.width/2 - TW/2, mg), innerWidth - TW - mg);
+    } else if (side === 'top') {
+      top  = r.top - TH - mg;
+      left = Math.min(Math.max(r.left + r.width/2 - TW/2, mg), innerWidth - TW - mg);
+    } else if (side === 'left') {
+      left = r.right + mg;
+      top  = Math.min(Math.max(r.top + r.height/2 - TH/2, mg), innerHeight - TH - mg);
+    } else {
+      left = r.left - TW - mg;
+      top  = Math.min(Math.max(r.top + r.height/2 - TH/2, mg), innerHeight - TH - mg);
+    }
+    top = Math.max(mg, Math.min(top, innerHeight - TH - mg));
+    tt.style.top = top + 'px'; tt.style.left = left + 'px';
+  } catch(e) { console.warn('Tour step error:', e); }
 }
 function tourNext() {
-  if (_tourStep>=TOUR_STEPS.length-1) { endTour(); return; }
-  _tourStep++; _showTourStep();
+  if (_tourStep >= TOUR_STEPS.length - 1) { endTour(); return; }
+  _tourStep++;
+  _showTourStep();
 }
 function endTour() {
-  localStorage.setItem('mcp_tour_done','1');
-  ['tour-backdrop','tour-tooltip','tour-highlight'].forEach(id=>document.getElementById(id).style.display='none');
+  localStorage.setItem('mcp_tour_done', '1');
+  ['tour-backdrop','tour-tooltip','tour-highlight'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 // ════════════════════════════
