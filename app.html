@@ -672,7 +672,7 @@ body {
           <select id="cab-style-override" class="cp-select">
             <option value="">— Door Style: Use Project Default —</option>
           </select>
-          <input type="text" id="cab-note-input" class="cp-input" placeholder="Notes (optional)">
+          <input type="text" id="cab-note-input" class="cp-input" placeholder="Notes (optional)" autocomplete="off">
           <button class="add-cab-btn" onclick="addCabinet()">＋ Add to Wall</button>
         </div>
         <!-- Add appliance -->
@@ -697,7 +697,7 @@ body {
             <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
-          <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)">
+          <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)" autocomplete="off">
           <button class="add-cab-btn" onclick="addAppliance()" style="background:linear-gradient(135deg,#6b7280,#374151);box-shadow:0 2px 6px rgba(55,65,81,0.3);">＋ Add Appliance</button>
         </div>
         <!-- Add Island -->
@@ -713,7 +713,7 @@ body {
             <input type="number" id="island-depth" class="cp-input" placeholder='24"' min="12" value="24" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;">in</span>
           </div>
-          <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)">
+          <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)" autocomplete="off">
           <button class="add-cab-btn" onclick="addIsland()" style="background:linear-gradient(135deg,#92400e,#78350f);box-shadow:0 2px 6px rgba(120,53,15,0.3);">＋ Add Island</button>
         </div>
 
@@ -735,7 +735,7 @@ body {
     <input type="hidden" id="edit-cab-id">
     <div class="form-group">
       <label>Type</label>
-      <input type="text" id="edit-cab-type-label" class="cp-input" readonly style="background:#f1f5f9;color:#64748b;cursor:default;">
+      <input type="text" id="edit-cab-type-label" class="cp-input" readonly autocomplete="off" style="background:#f1f5f9;color:#64748b;cursor:default;">
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -779,7 +779,7 @@ body {
     </div>
     <div class="form-group">
       <label>Notes</label>
-      <input type="text" id="edit-cab-note" class="cp-input" placeholder="Optional notes">
+      <input type="text" id="edit-cab-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">🗑 Delete</button>
@@ -806,7 +806,7 @@ body {
     </div>
     <div class="form-group">
       <label>Label</label>
-      <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island">
+      <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">🗑 Delete</button>
@@ -840,7 +840,7 @@ body {
     </div>
     <div class="form-group">
       <label>Notes</label>
-      <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes">
+      <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">🗑 Delete</button>
@@ -1002,7 +1002,7 @@ body {
     <!-- Company Name -->
     <div style="margin-bottom:18px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
-      <input type="text" id="quote-company-input" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)">
+      <input type="text" id="quote-company-input" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
     </div>
 
     <!-- Additional Job Costs -->
