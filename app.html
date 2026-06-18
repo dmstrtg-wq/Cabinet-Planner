@@ -151,6 +151,13 @@ body {
 .project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
 .project-item:hover .project-item-del { display: block; }
 .project-item-del:hover { color: #ef4444; background: rgba(239,68,68,0.15); }
+.project-item-menu-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 18px; line-height: 1; display: none; letter-spacing: 1px; }
+.project-item:hover .project-item-menu-btn { display: block; }
+.project-item-menu-btn:hover { color: #fff; background: rgba(255,255,255,0.12); }
+.project-ctx-menu { position: fixed; background: #1e1e2e; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 9999; min-width: 130px; overflow: hidden; }
+.project-ctx-menu button { display: block; width: 100%; padding: 9px 14px; background: none; border: none; color: #e2e8f0; font-size: 13px; text-align: left; cursor: pointer; }
+.project-ctx-menu button:hover { background: rgba(255,255,255,0.08); }
+.project-ctx-menu .ctx-delete:hover { color: #ef4444; }
 .project-item { display: flex; align-items: center; gap: 8px; }
 .project-thumb { flex-shrink: 0; border-radius: 4px; background: rgba(255,255,255,0.04); }
 .project-item-text { flex: 1; min-width: 0; }
@@ -1681,6 +1688,45 @@ function deleteProject(id, e) {
   if (state.activeProjectId === id) { state.activeProjectId = null; state.activeRoomId = null; showWelcome(); }
   renderSidebar();
 }
+let _ctxMenu = null;
+function closeProjectMenu() {
+  if (_ctxMenu) { _ctxMenu.remove(); _ctxMenu = null; }
+  document.removeEventListener('click', closeProjectMenu);
+}
+function showProjectMenu(id, e) {
+  e.stopPropagation();
+  closeProjectMenu();
+  const btn = e.currentTarget;
+  const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.className = 'project-ctx-menu';
+  menu.innerHTML = `
+    <button onclick="renameProject('${id}')">✏️ Rename</button>
+    <button class="ctx-delete" onclick="deleteProject('${id}',_fakeEvent())">🗑 Delete</button>`;
+  menu.style.top = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+  document.body.appendChild(menu);
+  _ctxMenu = menu;
+  // Adjust if off-screen right
+  const mr = menu.getBoundingClientRect();
+  if (mr.right > window.innerWidth - 8) menu.style.left = (window.innerWidth - mr.width - 8) + 'px';
+  setTimeout(() => document.addEventListener('click', closeProjectMenu), 0);
+}
+function _fakeEvent() { return { stopPropagation: () => {} }; }
+function renameProject(id) {
+  closeProjectMenu();
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  const newName = prompt('Rename project:', p.customer);
+  if (newName === null) return; // cancelled
+  const trimmed = newName.trim();
+  if (!trimmed) { alert('Project name cannot be empty.'); return; }
+  p.customer = trimmed;
+  persist();
+  renderSidebar();
+  // If this is the active project, update the header
+  if (state.activeProjectId === id) renderProjectView();
+}
 
 // ════════════════════════════
 // ROOM
@@ -2339,7 +2385,7 @@ function renderSidebar() {
         <div class="project-item-name">${escHtml(p.customer)}</div>
         <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
       </div>
-      <button class="project-item-del" onclick="deleteProject('${p.id}',event)" title="Delete">×</button>
+      <button class="project-item-menu-btn" onclick="showProjectMenu('${p.id}',event)" title="Options">⋯</button>
     </div>`).join('');
 }
 
