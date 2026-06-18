@@ -368,6 +368,18 @@ body {
   .project-header { border-bottom: 2px solid #000; }
 }
 
+/* ── Company settings tabs ── */
+.cs-tab { background:none;border:none;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px; }
+.cs-tab:hover { color:var(--accent); }
+.cs-tab.active { color:var(--accent);border-bottom-color:var(--accent); }
+.cs-price-row { display:contents; }
+.cs-price-label { font-size:12px;font-weight:600;color:#4b3728;align-self:center; }
+.cs-price-input { display:flex;align-items:center;gap:6px; }
+.cs-price-input span { font-size:12px;color:var(--text-muted); }
+.cs-style-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+.cs-style-row input { flex:1; }
+.cs-style-swatch { width:28px;height:28px;border-radius:6px;border:1px solid var(--border);cursor:pointer;flex-shrink:0; }
+
 /* ── Tour overlay ── */
 #tour-overlay {
   position:fixed;top:0;left:0;width:100%;height:100%;
@@ -1075,26 +1087,53 @@ body {
 
 <!-- COMPANY SETTINGS MODAL -->
 <div id="modal-company-settings" class="modal-overlay hidden">
-  <div class="modal" style="width:520px;max-width:100%;">
+  <div class="modal" style="width:600px;max-width:100%;max-height:90vh;overflow-y:auto;">
     <h3>⚙ Company Settings</h3>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;margin-top:-10px;">This info appears on every printed quote.</p>
-    <div class="form-row">
-      <div class="form-group"><label>Company Name</label><input type="text" id="cs-name" placeholder="e.g. Cabinet Daddy"></div>
-      <div class="form-group"><label>Tagline</label><input type="text" id="cs-tagline" placeholder="e.g. Designing Dreams, Built in Reality"></div>
+
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;margin-top:-4px;">
+      <button class="cs-tab active" onclick="switchCsTab('info',this)">Company Info</button>
+      <button class="cs-tab" onclick="switchCsTab('pricing',this)">Cabinet Pricing</button>
+      <button class="cs-tab" onclick="switchCsTab('styles',this)">Door Styles</button>
     </div>
-    <div class="form-group"><label>Address</label><input type="text" id="cs-address" placeholder="123 Main St"></div>
-    <div class="form-row">
-      <div class="form-group"><label>City</label><input type="text" id="cs-city" placeholder="City"></div>
-      <div class="form-group"><label>State</label><input type="text" id="cs-state" placeholder="FL"></div>
-      <div class="form-group"><label>Zip</label><input type="text" id="cs-zip" placeholder="33101"></div>
+
+    <!-- Tab: Company Info -->
+    <div id="cs-tab-info">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">This info appears on every printed quote and PDF export.</p>
+      <div class="form-row">
+        <div class="form-group"><label>Company Name *</label><input type="text" id="cs-name" placeholder="e.g. Cabinet Daddy" autocomplete="off"></div>
+        <div class="form-group"><label>Tagline</label><input type="text" id="cs-tagline" placeholder="e.g. Designing Dreams, Built in Reality" autocomplete="off"></div>
+      </div>
+      <div class="form-group"><label>Address</label><input type="text" id="cs-address" placeholder="123 Main St" autocomplete="off"></div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input type="text" id="cs-city" placeholder="City" autocomplete="off"></div>
+        <div class="form-group"><label>State</label><input type="text" id="cs-state" placeholder="FL" autocomplete="off"></div>
+        <div class="form-group"><label>Zip</label><input type="text" id="cs-zip" placeholder="33101" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Phone</label><input type="text" id="cs-phone" placeholder="(555) 555-5555" autocomplete="off"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com" autocomplete="off"></div>
+      </div>
+      <div class="form-group"><label>Website</label><input type="text" id="cs-website" placeholder="www.yourcompany.com" autocomplete="off"></div>
+      <div class="form-group"><label>Logo URL <span style="font-weight:400;color:#94a3b8;">(paste a link to your logo image)</span></label><input type="text" id="cs-logo" placeholder="https://..." autocomplete="off"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group"><label>Phone</label><input type="text" id="cs-phone" placeholder="(555) 555-5555"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com"></div>
+
+    <!-- Tab: Cabinet Pricing -->
+    <div id="cs-tab-pricing" class="hidden">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">Set your price per inch of cabinet width for each type. Used to calculate quote totals. Leave blank to use the system default.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;" id="cs-pricing-grid">
+        <!-- populated by JS -->
+      </div>
     </div>
-    <div class="form-group"><label>Website</label><input type="text" id="cs-website" placeholder="www.yourcompany.com"></div>
-    <div class="form-group"><label>Logo URL <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional — paste a link to your logo image)</span></label><input type="text" id="cs-logo" placeholder="https://..."></div>
-    <div id="cs-status" style="font-size:12px;min-height:18px;margin-top:4px;"></div>
+
+    <!-- Tab: Door Styles -->
+    <div id="cs-tab-styles" class="hidden">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">Add your available door styles. These appear in the project and cabinet style dropdowns. If empty, a set of generic defaults is used.</p>
+      <div id="cs-styles-list" style="margin-bottom:12px;"></div>
+      <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="addCsStyle()">＋ Add Style</button>
+    </div>
+
+    <div id="cs-status" style="font-size:12px;min-height:18px;margin-top:14px;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-company-settings')">Cancel</button>
       <button class="btn btn-primary" onclick="saveCompanySettings()">Save Settings</button>
@@ -1263,6 +1302,7 @@ async function handleSignIn() {
   showApp();
   await Promise.all([loadProjects(), loadCompanyProfile()]);
   maybeStartTour();
+  if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
 }
 async function handleForgotPassword() {
   const email = document.getElementById('login-email').value.trim();
@@ -1326,6 +1366,19 @@ const STYLES = [
   {tier:'Titanium', code:'AA', name:'Blaze Black Shaker',     swatch:'#1C1B1A'},
   {tier:'Titanium', code:'AH', name:'Homestead Oak Shaker',   swatch:'#B99050'},
 ];
+// Returns company-specific styles if set, otherwise generic defaults
+const DEFAULT_STYLES = [
+  {code:'WS', name:'White Shaker',   swatch:'#F5F4F0'},
+  {code:'GS', name:'Grey Shaker',    swatch:'#9CA3AF'},
+  {code:'ES', name:'Espresso',       swatch:'#3B2314'},
+  {code:'NW', name:'Natural Wood',   swatch:'#C9A96D'},
+];
+function getStyles() {
+  const cs = companyProfile.custom_styles;
+  if (cs && Array.isArray(cs) && cs.length > 0) return cs;
+  return DEFAULT_STYLES;
+}
+
 // ════════════════════════════
 // US STATE SALES TAX RATES (base state rate %)
 // ════════════════════════════
@@ -1500,15 +1553,24 @@ function getMarkup() { return (parseFloat(document.getElementById('markup-pct').
 function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
 function pricingOn() { return document.getElementById('pricing-toggle').checked; }
 function cabinetPrice(cab) {
-  const prices = PRICE_TABLE[cab.type];
   let base = 0;
-  if (prices) {
-    if (cab.type === 'wall' || cab.type === 'tall') {
-      base = (prices[cab.width] && prices[cab.width][cab.height]) || 0;
-    } else {
-      base = prices[cab.width] || 0;
+  // 1. Company price override ($/inch × width)
+  const overrides = companyProfile.price_overrides;
+  if (overrides && overrides[cab.type] != null) {
+    base = parseFloat(overrides[cab.type]) * cab.width;
+  }
+  // 2. Fall back to hardcoded PRICE_TABLE (Forevermark/Matrix SKU prices)
+  if (!base) {
+    const prices = PRICE_TABLE[cab.type];
+    if (prices) {
+      if (cab.type === 'wall' || cab.type === 'tall') {
+        base = (prices[cab.width] && prices[cab.width][cab.height]) || 0;
+      } else {
+        base = prices[cab.width] || 0;
+      }
     }
   }
+  // 3. Fall back to CATALOG formula
   if (!base) { const cat = CATALOG[cab.type]; base = cat ? cat.basePrice(cab.width) : 0; }
   const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
   return (base + glassAddon) * (1 + getMarkup());
@@ -2190,7 +2252,7 @@ function buildStylePanel() {
   const container = document.getElementById('style-container');
   const overrideSel = document.getElementById('cab-style-override');
   let html = '', tier = '';
-  STYLES.forEach(s => {
+  getStyles().forEach(s => {
     if (s.tier !== tier) {
       if (tier) html += '</div>';
       html += `<div class="style-tier-label">${s.tier}</div><div class="style-grid">`;
@@ -2226,7 +2288,7 @@ function syncStylePanel() {
   syncStyleCurrent(code);
 }
 function syncStyleCurrent(code) {
-  const s = STYLES.find(x => x.code === code) || STYLES[0];
+  const s = getStyles().find(x => x.code === code) || getStyles()[0];
   const sw = document.getElementById('style-current-swatch');
   const cd = document.getElementById('style-current-code');
   const nm = document.getElementById('style-current-name');
@@ -2307,7 +2369,7 @@ function renderProjectView() {
   document.getElementById('project-view').classList.remove('hidden');
   document.getElementById('project-view').style.display = 'flex';
   document.getElementById('pv-name').textContent = p.customer;
-  const si = STYLES.find(s => s.code === (p.style || 'AW'));
+  const si = getStyles().find(s => s.code === (p.style || getStyles()[0]?.code));
   document.getElementById('pv-meta').textContent = `${p.type} · Style: ${si ? si.code + ' – ' + si.name : ''} · Created ${new Date(p.createdAt).toLocaleDateString()}`;
   syncStylePanel(); renderSidebar(); renderRoomTabs();
   selectWall(state.activeWall); setViewMode(state.viewMode || 'floor');
@@ -3434,7 +3496,7 @@ function renderElevation() {
   const wallLength = r.walls[wall] || 120;
   const ceiling = r.ceilingHeight || 96;
   const p = activeProj();
-  const styleInfo = STYLES.find(s => s.code === (p.style||'AW')) || STYLES[0];
+  const styleInfo = getStyles().find(s => s.code === (p.style||getStyles()[0]?.code)) || getStyles()[0];
   const PAD = 60;
   const canvasW = Math.max(wallLength*scale+PAD*2, 400);
   const canvasH = Math.max(ceiling*scale+PAD*2, 320);
@@ -3501,7 +3563,7 @@ function renderElevation() {
   const darkSwatches = ['#2B2926','#1B3A5C','#4B4F5C','#5B6069','#1C1B1A'];
   function cabStyle(cab) {
     const code = cab.styleOverride || p.style || 'AW';
-    return STYLES.find(s => s.code === code) || styleInfo;
+    return getStyles().find(s => s.code === code) || styleInfo;
   }
 
   wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type)).forEach(cab => {
@@ -3903,7 +3965,7 @@ function printQuote() {
   const beforeTax = cabSubtotal + jcTotal + trimTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
-  const styleName = STYLES.find(s=>s.code===p.style)?.name || p.style;
+  const styleName = getStyles().find(s=>s.code===p.style)?.name || p.style;
 
   const win = window.open('', '_blank', 'width=920,height=750');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
@@ -4717,7 +4779,20 @@ async function loadCompanyProfile() {
   if (data) companyProfile = data;
 }
 
-async function openCompanySettings() {
+const CS_PRICING_TYPES = [
+  { key:'base',       label:'Base Cabinet'         },
+  { key:'wall',       label:'Wall Cabinet'          },
+  { key:'drawerBase', label:'Drawer Base'           },
+  { key:'sink',       label:'Sink Base'             },
+  { key:'cornerBase', label:'Corner Base'           },
+  { key:'lazysusan',  label:'Lazy Susan'            },
+  { key:'vanity',     label:'Vanity'                },
+  { key:'tall',       label:'Tall / Pantry'         },
+  { key:'diagWall',   label:'Diagonal Corner Wall'  },
+  { key:'fridgePanel',label:'Fridge End Panel'      },
+];
+
+async function openCompanySettings(startTab) {
   await loadCompanyProfile();
   const f = companyProfile;
   document.getElementById('cs-name').value    = f.company_name || '';
@@ -4731,30 +4806,97 @@ async function openCompanySettings() {
   document.getElementById('cs-website').value = f.website      || '';
   document.getElementById('cs-logo').value    = f.logo_url     || '';
   document.getElementById('cs-status').textContent = '';
+
+  // Build pricing grid
+  const overrides = f.price_overrides || {};
+  const grid = document.getElementById('cs-pricing-grid');
+  grid.innerHTML = CS_PRICING_TYPES.map(t => `
+    <div class="cs-price-label">${t.label}</div>
+    <div class="cs-price-input">
+      <span>$/in</span>
+      <input type="number" id="csp-${t.key}" class="cp-input" style="margin:0;width:90px;"
+        placeholder="e.g. 4.50" step="0.01" min="0"
+        value="${overrides[t.key] != null ? overrides[t.key] : ''}" autocomplete="off">
+    </div>
+  `).join('');
+
+  // Build styles list
+  _renderCsStyles(f.custom_styles || []);
+
+  // Switch to requested tab or default
+  switchCsTab(startTab || 'info', document.querySelector('.cs-tab'));
   openModal('modal-company-settings');
 }
 
+function switchCsTab(tab, btn) {
+  ['info','pricing','styles'].forEach(t => {
+    document.getElementById('cs-tab-'+t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.cs-tab').forEach(b => b.classList.remove('active'));
+  // Find the button by its onclick text
+  document.querySelectorAll('.cs-tab').forEach(b => {
+    if (b.getAttribute('onclick').includes("'"+tab+"'")) b.classList.add('active');
+  });
+}
+
+let _csStyles = [];
+function _renderCsStyles(styles) {
+  _csStyles = styles.map(s => ({...s}));
+  const el = document.getElementById('cs-styles-list');
+  if (!_csStyles.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">No custom styles yet — generic defaults are used. Add your own below.</p>';
+    return;
+  }
+  el.innerHTML = _csStyles.map((s,i) => `
+    <div class="cs-style-row">
+      <input type="color" class="cs-style-swatch" value="${s.swatch||'#F5F4F0'}" oninput="_csStyles[${i}].swatch=this.value" title="Pick color">
+      <input type="text" class="cp-input" style="margin:0;" value="${s.name||''}" placeholder="Style name"
+        oninput="_csStyles[${i}].name=this.value" autocomplete="off">
+      <input type="text" class="cp-input" style="margin:0;width:70px;" value="${s.code||''}" placeholder="Code"
+        oninput="_csStyles[${i}].code=this.value.toUpperCase()" autocomplete="off">
+      <button onclick="_csStyles.splice(${i},1);_renderCsStyles(_csStyles);"
+        style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>
+    </div>
+  `).join('');
+}
+function addCsStyle() {
+  _csStyles.push({ code:'', name:'', swatch:'#F5F4F0' });
+  _renderCsStyles(_csStyles);
+}
+
 async function saveCompanySettings() {
+  // Collect price overrides — only include types where a value was entered
+  const price_overrides = {};
+  CS_PRICING_TYPES.forEach(t => {
+    const val = document.getElementById('csp-'+t.key)?.value.trim();
+    if (val !== '' && !isNaN(parseFloat(val))) price_overrides[t.key] = parseFloat(val);
+  });
+
+  // Collect styles — filter out incomplete entries
+  const custom_styles = _csStyles.filter(s => s.name.trim());
+
   const profile = {
-    user_id:      currentUser.id,
-    company_name: document.getElementById('cs-name').value.trim(),
-    tagline:      document.getElementById('cs-tagline').value.trim(),
-    address:      document.getElementById('cs-address').value.trim(),
-    city:         document.getElementById('cs-city').value.trim(),
-    state:        document.getElementById('cs-state').value.trim(),
-    zip:          document.getElementById('cs-zip').value.trim(),
-    phone:        document.getElementById('cs-phone').value.trim(),
-    email:        document.getElementById('cs-email').value.trim(),
-    website:      document.getElementById('cs-website').value.trim(),
-    logo_url:     document.getElementById('cs-logo').value.trim(),
-    updated_at:   new Date().toISOString(),
+    user_id:        currentUser.id,
+    company_name:   document.getElementById('cs-name').value.trim(),
+    tagline:        document.getElementById('cs-tagline').value.trim(),
+    address:        document.getElementById('cs-address').value.trim(),
+    city:           document.getElementById('cs-city').value.trim(),
+    state:          document.getElementById('cs-state').value.trim(),
+    zip:            document.getElementById('cs-zip').value.trim(),
+    phone:          document.getElementById('cs-phone').value.trim(),
+    email:          document.getElementById('cs-email').value.trim(),
+    website:        document.getElementById('cs-website').value.trim(),
+    logo_url:       document.getElementById('cs-logo').value.trim(),
+    price_overrides: Object.keys(price_overrides).length ? price_overrides : null,
+    custom_styles:   custom_styles.length ? custom_styles : null,
+    updated_at:     new Date().toISOString(),
   };
   const { error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' });
   const st = document.getElementById('cs-status');
   if (error) { st.style.color = 'var(--danger)'; st.textContent = 'Error saving: ' + error.message; return; }
-  companyProfile = profile;
+  companyProfile = { ...companyProfile, ...profile };
   st.style.color = 'var(--success)'; st.textContent = '✓ Saved!';
-  setTimeout(() => closeModal('modal-company-settings'), 800);
+  setTimeout(() => closeModal('modal-company-settings'), 900);
 }
 
 // ════════════════════════════
@@ -4968,6 +5110,7 @@ buildStylePanel();
     showApp();
     await Promise.all([loadProjects(), loadCompanyProfile()]);
     maybeStartTour();
+    if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
     if (urlType === 'invite' || urlType === 'recovery') {
       openModal('modal-set-password');
     }
