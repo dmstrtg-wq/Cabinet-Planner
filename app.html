@@ -942,12 +942,12 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 <div id="modal-new-project" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="New Project">
   <div class="modal">
     <h3>New Project</h3>
-    <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder="e.g. Smith Family"></div>
-    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="np-company" placeholder="e.g. Cabinet Daddy"></div>
+    <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder=""></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="np-company" placeholder=""></div>
     <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
-    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder="123 Main St"></div>
+    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
     <div class="form-row">
-      <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder="City"></div>
+      <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder=""></div>
       <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
     </div>
     <div class="form-group"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
@@ -972,11 +972,11 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
   <div class="modal">
     <h3>Edit Project</h3>
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
-    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="ep-company" placeholder="e.g. Cabinet Daddy"></div>
+    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="ep-company" placeholder=""></div>
     <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
-    <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder="123 Main St"></div>
+    <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder=""></div>
     <div class="form-row">
-      <div class="form-group"><label>City</label><input type="text" id="ep-city" placeholder="City"></div>
+      <div class="form-group"><label>City</label><input type="text" id="ep-city" placeholder=""></div>
       <div class="form-group"><label>State</label><select id="ep-state"><option value="">— State —</option></select></div>
     </div>
     <div class="form-group"><label>Notes</label><textarea id="ep-notes" rows="2" style="resize:vertical"></textarea></div>
@@ -1001,7 +1001,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 <div id="modal-add-room" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Add Room">
   <div class="modal">
     <h3>Add Room</h3>
-    <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder="e.g. Master Bath"></div>
+    <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder=""></div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" placeholder="120"></div>
       <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" placeholder="120"></div>
@@ -1104,7 +1104,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
     <!-- Company Name -->
     <div style="margin-bottom:18px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
-      <input type="text" id="quote-company-input" aria-label="Company name on quote" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
+      <input type="text" id="quote-company-input" aria-label="Company name on quote" class="cp-input" placeholder="" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
     </div>
 
     <!-- Additional Job Costs -->
@@ -1150,7 +1150,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
     <div id="cs-tab-info">
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">This info appears on every printed quote and PDF export.</p>
       <div class="form-row">
-        <div class="form-group"><label>Company Name *</label><input type="text" id="cs-name" placeholder="e.g. Cabinet Daddy" autocomplete="off"></div>
+        <div class="form-group"><label>Company Name *</label><input type="text" id="cs-name" placeholder="" autocomplete="off"></div>
         <div class="form-group"><label>Tagline</label><input type="text" id="cs-tagline" placeholder="e.g. Designing Dreams, Built in Reality" autocomplete="off"></div>
       </div>
       <div class="form-group"><label>Address</label><input type="text" id="cs-address" placeholder="123 Main St" autocomplete="off"></div>
