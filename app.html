@@ -499,6 +499,12 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 <!-- ═══ APP ROOT ═══ -->
 <div id="app-root" class="hidden">
 
+<!-- Demo mode banner — only shown when ?demo=1 -->
+<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#b45309;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
+  Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
+  <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;opacity:0.7;line-height:1;">&#x2715;</button>
+</div>
+
 <aside id="sidebar">
   <div class="sidebar-brand">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
@@ -1076,6 +1082,21 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
   </div>
 </div>
 
+<div id="modal-upgrade" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Upgrade to Pro">
+  <div class="modal" style="width:480px;text-align:center;padding:40px 36px;">
+    <div style="width:56px;height:56px;background:#fef3c7;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    </div>
+    <h3 id="upgrade-modal-title" style="font-size:20px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;">This is a Pro feature</h3>
+    <p id="upgrade-modal-body" style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:28px;">You're in demo mode. Pricing and quote export are available on a Pro subscription — sign up to unlock them and save your designs.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <a href="/#pricing" target="_blank" style="display:block;padding:13px 24px;background:#b45309;color:white;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#92400e'" onmouseout="this.style.background='#b45309'">View Pricing &amp; Subscribe &rarr;</a>
+      <button onclick="closeModal('modal-upgrade')" style="padding:11px 24px;background:var(--bg);border:1px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-muted);">Continue in Demo</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:18px;opacity:0.7;">Already subscribed? <a href="/app" style="color:var(--accent);font-weight:600;">Sign in here</a></p>
+  </div>
+</div>
+
 <div id="modal-quote" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Quote Builder">
   <div class="modal">
     <h3>Quote Builder</h3>
@@ -1313,6 +1334,17 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
 // ════════════════════════════
+// DEMO MODE
+// ════════════════════════════
+const IS_DEMO = new URLSearchParams(location.search).get('demo') === '1';
+function demoGate(action) {
+  // Returns true if allowed, false + shows upgrade modal if blocked
+  if (!IS_DEMO) return true;
+  openModal('modal-upgrade');
+  return false;
+}
+
+// ════════════════════════════
 // AUTH
 // ════════════════════════════
 function showLogin() {
@@ -1322,7 +1354,8 @@ function showLogin() {
 function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-root').classList.remove('hidden');
-  document.getElementById('user-email').textContent = currentUser.email;
+  document.getElementById('user-email').textContent = currentUser ? currentUser.email : 'demo@mycabinetplanner.com';
+  if (IS_DEMO) document.getElementById('demo-banner').style.display = 'block';
 }
 async function handleSignIn() {
   const email = document.getElementById('login-email').value.trim();
@@ -1524,7 +1557,13 @@ function persist() {
 }
 async function syncActiveProject() {
   const p = activeProj();
-  if (!p || !currentUser) return;
+  if (!p) return;
+  // Demo mode: persist to localStorage only
+  if (IS_DEMO || !currentUser) {
+    localStorage.setItem('cp_demo_projects', JSON.stringify(state.projects));
+    setSyncStatus('saved');
+    return;
+  }
   const { error } = await db.from('projects').upsert({
     id: p.id,
     user_id: currentUser.id,
@@ -1537,6 +1576,20 @@ async function syncActiveProject() {
   }, { onConflict: 'id' });
   setSyncStatus(error ? 'error' : 'saved');
   if (error) console.error('Sync error:', error);
+}
+function loadProjectsFromLocal() {
+  const saved = localStorage.getItem('cp_demo_projects');
+  state.projects = saved ? JSON.parse(saved) : [];
+  renderSidebar();
+  const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
+  if (ui.activeProjectId && getProj(ui.activeProjectId)) {
+    state.activeWall = ui.activeWall || 'north';
+    state.elevWall = ui.elevWall || 'north';
+    state.viewMode = ui.viewMode || 'floor';
+    state.activeOpeningType = ui.activeOpeningType || 'door';
+    openProject(ui.activeProjectId, ui.activeRoomId);
+  }
+  setSyncStatus('saved');
 }
 async function loadProjects() {
   const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
@@ -3880,6 +3933,7 @@ function renderSummary(r) {
 // QUOTE MODAL
 // ════════════════════════════
 function openQuoteModal() {
+  if (!demoGate('quote')) return;
   const p = activeProj();
   if (!p) { alert('Open a project first.'); return; }
   if (!p.jobCosts) p.jobCosts = [
@@ -4000,6 +4054,7 @@ function checkCompanyProfile() {
 }
 
 function printQuote() {
+  if (!demoGate('quote')) return;
   if (!checkCompanyProfile()) return;
   const p = activeProj(); if (!p) return;
   // Company name: quote modal field → project field → company profile → default
@@ -4383,6 +4438,7 @@ function loadScript(src) {
 }
 
 async function exportPDF(btn) {
+  if (!demoGate('export')) return;
   if (!checkCompanyProfile()) return;
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
@@ -5142,6 +5198,14 @@ document.getElementById('login-email').addEventListener('keydown', e => { if (e.
 buildStylePanel();
 
 (async () => {
+  // Demo mode: skip login, boot straight into the app with a local-only session
+  if (IS_DEMO) {
+    currentUser = null;
+    showApp();
+    loadProjectsFromLocal();
+    return;
+  }
+
   const urlType = getHashParam('type'); // 'invite' or 'recovery' if arriving via email link
   const { data: { session } } = await db.auth.getSession();
   if (session) {
