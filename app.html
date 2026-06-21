@@ -197,6 +197,11 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .toolbar-btn { margin-left: 8px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; background: white; cursor: pointer; color: var(--text-muted); transition: border-color 0.12s, color 0.12s; }
 .toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
 .toolbar-pricing { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+/* Demo mode: hide all pricing & export UI */
+body.demo-mode .toolbar-pricing,
+body.demo-mode #pdf-export-btn,
+body.demo-mode .btn-success,
+body.demo-mode .cp-section:has(#pricing-toggle) { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
 .empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
@@ -1355,7 +1360,10 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-root').classList.remove('hidden');
   document.getElementById('user-email').textContent = currentUser ? currentUser.email : 'demo@mycabinetplanner.com';
-  if (IS_DEMO) document.getElementById('demo-banner').style.display = 'block';
+  if (IS_DEMO) {
+    document.getElementById('demo-banner').style.display = 'block';
+    document.body.classList.add('demo-mode');
+  }
 }
 async function handleSignIn() {
   const email = document.getElementById('login-email').value.trim();
