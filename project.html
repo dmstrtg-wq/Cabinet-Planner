@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project — My Cabinet Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --accent: #b45309; --accent-hover: #92400e;
+    --text: #1e1409; --muted: #6b7280; --border: #e5e7eb;
+    --surface: #fff; --bg: #faf9f7; --hover: #f9fafb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(180deg, #2c1f14 0%, #1e1409 100%);
+    padding: 0 5%; height: 58px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .hdr-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .hdr-brand span { color: #fff; font-size: 15px; font-weight: 700; }
+  .hdr-actions { display: flex; gap: 8px; align-items: center; }
+  .hdr-btn {
+    padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+    transition: all 0.12s;
+  }
+  .btn-ghost  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+  .btn-ghost:hover  { background: rgba(255,255,255,0.14); color: #fff; }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { background: var(--accent-hover); }
+  .btn-outline { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--hover); }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 960px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  /* ── BREADCRUMB ── */
+  .breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--accent); }
+
+  /* ── PROJECT HERO ── */
+  .proj-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+  .proj-hero-left { flex: 1; min-width: 0; }
+  .proj-title { font-size: 26px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .proj-sub { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+  .proj-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── STATUS PILL ── */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px; cursor: pointer; border: none;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    transition: opacity 0.12s; position: relative;
+  }
+  .status-pill:hover { opacity: 0.85; }
+  .status-pill::before { content:''; width:8px; height:8px; border-radius:50%; background:currentColor; opacity:0.75; }
+  .s-Lead       { background:#dbeafe; color:#1d4ed8; }
+  .s-Quoted     { background:#fef9c3; color:#a16207; }
+  .s-Ordered    { background:#ffedd5; color:#c2410c; }
+  .s-Installing { background:#f3e8ff; color:#7e22ce; }
+  .s-Complete   { background:#dcfce7; color:#15803d; }
+
+  /* ── STATUS DROPDOWN ── */
+  #status-menu {
+    position:absolute; top:calc(100% + 4px); left:0; z-index:500;
+    background:#fff; border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.12); padding:5px; min-width:160px; display:none;
+  }
+  #status-menu.open { display:block; }
+  .sm-opt {
+    display:flex; align-items:center; gap:8px; padding:9px 12px; border-radius:7px;
+    cursor:pointer; font-size:13px; font-weight:600; border:none; background:none; width:100%; text-align:left;
+  }
+  .sm-opt:hover { background:var(--hover); }
+  .sm-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .d-Lead { background:#3b82f6; } .d-Quoted { background:#eab308; }
+  .d-Ordered { background:#f97316; } .d-Installing { background:#a855f7; }
+  .d-Complete { background:#22c55e; }
+
+  /* ── TWO-COLUMN GRID ── */
+  .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+  @media (max-width: 780px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ── CARD ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .card-body { padding: 16px 18px; }
+
+  /* ── INFO ROWS ── */
+  .info-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: var(--muted); }
+  .info-value { font-weight: 600; text-align: right; }
+
+  /* ── ROOM CARDS ── */
+  .room-list { display: flex; flex-direction: column; gap: 8px; }
+  .room-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .room-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .room-meta { font-size: 12px; color: var(--muted); }
+  .room-counts { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .room-count-chip { background: #f1f5f9; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 600; color: #475569; }
+
+  /* ── QUOTE TABLE ── */
+  .qt { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .qt th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; background: #f9fafb; border-bottom: 1px solid var(--border); }
+  .qt td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .qt tr:last-child td { border-bottom: none; }
+
+  /* ── ACTIVITY LOG ── */
+  .al-add { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .al-add textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; resize: none; height: 72px; outline: none; }
+  .al-add textarea:focus { border-color: var(--accent); }
+  .al-submit { align-self: flex-end; padding: 7px 18px; background: var(--accent); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .al-submit:hover { background: var(--accent-hover); }
+  .al-feed { display: flex; flex-direction: column; gap: 0; }
+  .al-entry { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .al-entry:last-child { border-bottom: none; }
+  .al-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#c8a882,#6b4c2a); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .al-avatar.status-change { background: linear-gradient(135deg,#93c5fd,#3b82f6); }
+  .al-body { flex: 1; }
+  .al-meta { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .al-text { font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+  .al-text.is-status { color: var(--muted); font-style: italic; }
+  .al-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 24px 0; }
+
+  /* ── LOADING / GATE ── */
+  #loading { text-align:center; padding:80px 24px; color:var(--muted); font-size:15px; }
+  #error-state { display:none; text-align:center; padding:80px 24px; }
+  #error-state h2 { font-size:20px; font-weight:700; margin-bottom:10px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 20px 14px 60px; }
+    .proj-title { font-size: 20px; }
+    .hdr-brand span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="hdr-brand">
+    <svg width="30" height="30" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#hg)"/>
+      <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+      <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+      <defs><linearGradient id="hg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+    </svg>
+    <span>My Cabinet Planner</span>
+  </a>
+  <div class="hdr-actions">
+    <a href="/profile" class="hdr-btn btn-ghost">← All Projects</a>
+    <button class="hdr-btn btn-ghost" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</header>
+
+<div id="loading">Loading project…</div>
+<div id="error-state">
+  <h2>Project not found</h2>
+  <p style="color:var(--muted);margin-bottom:20px;">This project doesn't exist or you don't have access to it.</p>
+  <a href="/profile" class="hdr-btn btn-accent">← Back to Profile</a>
+</div>
+
+<div class="page" id="project-page" style="display:none;">
+
+  <div class="breadcrumb">
+    <a href="/profile">My Profile</a>
+    <span>›</span>
+    <span id="bc-name">Project</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="proj-hero">
+    <div class="proj-hero-left">
+      <h1 class="proj-title" id="proj-title">—</h1>
+      <div class="proj-sub" id="proj-sub"></div>
+      <div style="position:relative;display:inline-block;">
+        <button class="status-pill" id="status-pill" onclick="toggleStatusMenu()">—</button>
+        <div id="status-menu">
+          <button class="sm-opt" onclick="setStatus('Lead')"><span class="sm-dot d-Lead"></span>Lead</button>
+          <button class="sm-opt" onclick="setStatus('Quoted')"><span class="sm-dot d-Quoted"></span>Quoted</button>
+          <button class="sm-opt" onclick="setStatus('Ordered')"><span class="sm-dot d-Ordered"></span>Ordered</button>
+          <button class="sm-opt" onclick="setStatus('Installing')"><span class="sm-dot d-Installing"></span>Installing</button>
+          <button class="sm-opt" onclick="setStatus('Complete')"><span class="sm-dot d-Complete"></span>Complete</button>
+        </div>
+      </div>
+    </div>
+    <div class="proj-hero-actions">
+      <a id="open-in-planner" href="#" class="hdr-btn btn-accent">Open in Planner →</a>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <!-- LEFT: activity log + rooms + quote -->
+    <div>
+
+      <!-- Activity Log -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Activity Log</div>
+        </div>
+        <div class="card-body">
+          <div class="al-add">
+            <textarea id="note-input" placeholder="Add a note — what's happening with this job?"></textarea>
+            <button class="al-submit" onclick="addNote()">Add Note</button>
+          </div>
+          <div class="al-feed" id="al-feed"></div>
+        </div>
+      </div>
+
+      <!-- Rooms & Cabinets -->
+      <div class="card">
+        <div class="card-head"><div class="card-title">Rooms</div></div>
+        <div class="card-body">
+          <div class="room-list" id="room-list"></div>
+        </div>
+      </div>
+
+      <!-- Cabinet Summary -->
+      <div class="card">
+        <div class="card-head"><div class="card-title">Cabinet Summary</div></div>
+        <div style="overflow-x:auto;">
+          <table class="qt">
+            <thead><tr><th>Item</th><th>Room</th><th>Qty</th></tr></thead>
+            <tbody id="cab-summary"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: project info -->
+    <div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">Project Info</div></div>
+        <div class="card-body" id="info-body"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CATALOG_LABELS = {
+  base:'Base Cabinet', wall:'Wall Cabinet', tall:'Tall/Pantry', sink:'Sink Base',
+  drawerBase:'Drawer Base', cornerBase:'Corner Base', lazysusan:'Lazy Susan',
+  vanity:'Vanity', diagWall:'Diagonal Corner Wall', fridgePanel:'Fridge End Panel',
+  filler3:'3" Filler', filler6:'6" Filler'
+};
+const APPLIANCE_LABELS = {
+  refrigerator:'Refrigerator', dishwasher:'Dishwasher', range:'Range', microwave:'Microwave',
+  washer:'Washer', dryer:'Dryer'
+};
+
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+let projId, projData, currentUser;
+
+async function handleSignOut() {
+  await db.auth.signOut();
+  location.href = '/app';
+}
+
+function toggleStatusMenu() {
+  const m = document.getElementById('status-menu');
+  m.classList.toggle('open');
+  if (m.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', function close(e) {
+      if (!m.contains(e.target) && !document.getElementById('status-pill').contains(e.target)) {
+        m.classList.remove('open');
+        document.removeEventListener('click', close);
+      }
+    }), 0);
+  }
+}
+
+async function setStatus(status) {
+  document.getElementById('status-menu').classList.remove('open');
+  const prev = projData.data?.status || 'Lead';
+  if (!projData.data) projData.data = {};
+  if (!projData.data.activityLog) projData.data.activityLog = [];
+  projData.data.activityLog.unshift({
+    id: uid(), type: 'status',
+    text: `Status changed from ${prev} to ${status}`,
+    createdAt: new Date().toISOString(),
+    user: currentUser?.email || 'You'
+  });
+  projData.data.status = status;
+  renderStatusPill();
+  renderFeed();
+  await saveProject();
+}
+
+async function addNote() {
+  const input = document.getElementById('note-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!projData.data) projData.data = {};
+  if (!projData.data.activityLog) projData.data.activityLog = [];
+  projData.data.activityLog.unshift({
+    id: uid(), type: 'note',
+    text,
+    createdAt: new Date().toISOString(),
+    user: currentUser?.email || 'You'
+  });
+  input.value = '';
+  renderFeed();
+  await saveProject();
+}
+
+async function saveProject() {
+  const { error } = await db.from('projects').update({
+    data: projData.data,
+    updated_at: new Date().toISOString()
+  }).eq('id', projId);
+  if (error) console.error('Save error:', error);
+}
+
+function renderStatusPill() {
+  const status = projData.data?.status || 'Lead';
+  const pill = document.getElementById('status-pill');
+  pill.textContent = status;
+  pill.className = 'status-pill s-' + status.replace(/\s/g,'');
+  // Re-append the dropdown (textContent clears it) — use data attribute instead
+  pill.setAttribute('data-status', status);
+  // Pill text via CSS pseudo + span trick to preserve the ::before dot
+  pill.innerHTML = status;
+}
+
+function renderFeed() {
+  const log = projData.data?.activityLog || [];
+  const feed = document.getElementById('al-feed');
+  if (!log.length) {
+    feed.innerHTML = '<div class="al-empty">No activity yet — add a note above to get started.</div>';
+    return;
+  }
+  feed.innerHTML = log.map(e => {
+    const d = new Date(e.createdAt);
+    const ds = d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const ts = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    const initials = (e.user||'You').split('@')[0].slice(0,2).toUpperCase();
+    const isStatus = e.type === 'status';
+    return `
+      <div class="al-entry">
+        <div class="al-avatar ${isStatus ? 'status-change' : ''}">${isStatus ? '⟳' : initials}</div>
+        <div class="al-body">
+          <div class="al-meta">${esc(e.user||'You')} · ${ds} at ${ts}</div>
+          <div class="al-text ${isStatus ? 'is-status' : ''}">${esc(e.text)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderRooms() {
+  const rooms = projData.data?.rooms || [];
+  const el = document.getElementById('room-list');
+  if (!rooms.length) { el.innerHTML = '<p style="color:var(--muted);font-size:13px;">No rooms added yet.</p>'; return; }
+  el.innerHTML = rooms.map(r => {
+    const cabs   = (r.cabinets   || []).length;
+    const apps   = (r.appliances || []).length;
+    const isls   = (r.islands    || []).length;
+    const opens  = (r.openings   || []).length;
+    const chips = [
+      cabs   ? `${cabs} cabinet${cabs!==1?'s':''}` : null,
+      apps   ? `${apps} appliance${apps!==1?'s':''}` : null,
+      isls   ? `${isls} island${isls!==1?'s':''}` : null,
+      opens  ? `${opens} opening${opens!==1?'s':''}` : null,
+    ].filter(Boolean);
+    const dims = r.walls ? (() => {
+      const w = Math.max(r.walls.north||0, r.walls.south||0);
+      const d = Math.max(r.walls.east||0, r.walls.west||0);
+      return w && d ? `${w}" × ${d}"` : '';
+    })() : '';
+    return `
+      <div class="room-card">
+        <div style="display:flex;justify-content:space-between;align-items:start;">
+          <div class="room-name">${esc(r.name||'Room')}</div>
+          ${dims ? `<span style="font-size:11px;color:var(--muted);">${esc(dims)}</span>` : ''}
+        </div>
+        <div class="room-counts">${chips.map(c => `<span class="room-count-chip">${esc(c)}</span>`).join('')||'<span class="room-count-chip">Empty</span>'}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderCabSummary() {
+  const rooms = projData.data?.rooms || [];
+  const tbody = document.getElementById('cab-summary');
+  const rows = [];
+  rooms.forEach(r => {
+    const rName = r.name || 'Room';
+    const allItems = [...(r.cabinets||[]), ...(r.appliances||[]), ...(r.islands||[])];
+    // Group by type within room
+    const groups = {};
+    allItems.forEach(item => {
+      const label = CATALOG_LABELS[item.type] || APPLIANCE_LABELS[item.type] || item.type;
+      const key = rName + '|' + label;
+      groups[key] = (groups[key] || { label, room: rName, count: 0 });
+      groups[key].count++;
+    });
+    rows.push(...Object.values(groups));
+  });
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No cabinets added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${esc(r.label)}</td>
+      <td style="color:var(--muted);">${esc(r.room)}</td>
+      <td><strong>${r.count}</strong></td>
+    </tr>`).join('');
+}
+
+function renderInfo() {
+  const p = projData;
+  const created  = new Date(p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const updated  = new Date(p.updated_at||p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const fields = [
+    { label:'Customer',      value: p.customer },
+    { label:'Company',       value: p.company },
+    { label:'Project Type',  value: p.type },
+    { label:'Address',       value: p.address },
+    { label:'City / State',  value: [p.city, p.state].filter(Boolean).join(', ') },
+    { label:'Notes',         value: p.notes },
+    { label:'Door Style',    value: p.style },
+    { label:'Created',       value: created },
+    { label:'Last Updated',  value: updated },
+  ].filter(f => f.value);
+  document.getElementById('info-body').innerHTML = fields.map(f => `
+    <div class="info-row">
+      <span class="info-label">${esc(f.label)}</span>
+      <span class="info-value">${esc(f.value)}</span>
+    </div>`).join('');
+}
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { location.href = '/app'; return; }
+  currentUser = session.user;
+
+  projId = new URLSearchParams(location.search).get('id');
+  if (!projId) { showError(); return; }
+
+  const { data, error } = await db.from('projects').select('*').eq('id', projId).single();
+  if (error || !data || data.user_id !== currentUser.id) { showError(); return; }
+  projData = data;
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('project-page').style.display = 'block';
+
+  // Titles
+  document.title = `${data.customer} — My Cabinet Planner`;
+  document.getElementById('proj-title').textContent = data.customer;
+  document.getElementById('bc-name').textContent = data.customer;
+  const subParts = [data.company, data.type, data.city ? `${data.city}${data.state ? ', '+data.state : ''}` : ''].filter(Boolean);
+  document.getElementById('proj-sub').textContent = subParts.join(' · ');
+
+  // Open in Planner link
+  document.getElementById('open-in-planner').href = `/app?project=${projId}`;
+
+  // Render all sections
+  renderStatusPill();
+  renderFeed();
+  renderRooms();
+  renderCabSummary();
+  renderInfo();
+}
+
+function showError() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('error-state').style.display = 'block';
+}
+
+init();
+</script>
+</body>
+</html>

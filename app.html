@@ -1756,6 +1756,7 @@ async function handleSignIn() {
   currentUser = data.user;
   showApp();
   await Promise.all([loadProjects(), loadCompanyProfile()]);
+  openProjectFromUrl();
   maybeStartTour();
   if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
 }
@@ -5747,6 +5748,16 @@ function getHashParam(key) {
   const params = new URLSearchParams(window.location.hash.substring(1));
   return params.get(key);
 }
+
+// Open a specific project if ?project=ID is in the URL (deep-link from profile/project pages)
+function openProjectFromUrl() {
+  const projId = new URLSearchParams(location.search).get('project');
+  if (projId && getProj(projId)) {
+    openProject(projId);
+    // Clean the URL so refreshing doesn't re-trigger
+    history.replaceState({}, '', '/app');
+  }
+}
 async function setNewPassword() {
   const pw      = document.getElementById('sp-password').value;
   const confirm = document.getElementById('sp-confirm').value;
@@ -6069,6 +6080,7 @@ document.addEventListener('keydown', e => {
     currentUser = session.user;
     showApp();
     await Promise.all([loadProjects(), loadCompanyProfile()]);
+    openProjectFromUrl();
     maybeStartTour();
     if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
     if (urlType === 'invite' || urlType === 'recovery') {

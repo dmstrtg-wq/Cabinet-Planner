@@ -372,7 +372,7 @@ async function init() {
           <td>${statusBadge(status)}</td>
           <td>${rooms}</td>
           <td style="color:var(--muted);">${created}</td>
-          <td><a href="/app" class="proj-link">Open →</a></td>
+          <td><a href="/project.html?id=${p.id}" class="proj-link">Open →</a></td>
         </tr>`;
     }).join('');
   }
