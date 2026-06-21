@@ -191,6 +191,10 @@ body {
 
 /* ── MAIN ── */
 #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+#app-footer { flex-shrink: 0; padding: 8px 20px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+#app-footer a { color: var(--text-muted); text-decoration: none; }
+#app-footer a:hover { color: var(--accent); text-decoration: underline; }
+.footer-sep { opacity: 0.4; }
 #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 #project-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .project-header { padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
@@ -786,6 +790,16 @@ body {
   </div>
 </main>
 
+<footer id="app-footer">
+  <span>© 2025 My Cabinet Planner</span>
+  <span class="footer-sep">·</span>
+  <a href="#" id="footer-privacy" target="_blank" rel="noopener">Privacy Policy</a>
+  <span class="footer-sep">·</span>
+  <a href="#" id="footer-terms" target="_blank" rel="noopener">Terms of Service</a>
+  <span class="footer-sep">·</span>
+  <a href="#" onclick="openModal('modal-contact');return false;">Contact Us</a>
+</footer>
+
 </div><!-- end app-root -->
 
 <!-- ═══ MODALS ═══ -->
@@ -1172,6 +1186,44 @@ body {
 </div>
 
 <!-- FAQ MODAL -->
+<!-- Contact Us Modal -->
+<div id="modal-contact" class="modal-overlay hidden">
+  <div class="modal" style="max-width:480px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h3 style="margin:0;">Contact Us</h3>
+      <button onclick="closeModal('modal-contact')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+    </div>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:18px;">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input type="text" id="contact-name" class="cp-input" placeholder="Jane Smith" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="contact-email" class="cp-input" placeholder="you@example.com" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Subject</label>
+      <select id="contact-subject" class="cp-input">
+        <option value="">— Select a topic —</option>
+        <option value="bug">Bug / Something's not working</option>
+        <option value="feature">Feature request</option>
+        <option value="billing">Billing / Account</option>
+        <option value="feedback">General feedback</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Message</label>
+      <textarea id="contact-message" class="cp-input" rows="4" placeholder="Tell us what's on your mind…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-contact')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitContact()">Send Message</button>
+    </div>
+  </div>
+</div>
+
 <div id="modal-faq" class="modal-overlay hidden">
   <div class="modal" style="max-width:560px;max-height:82vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -5224,6 +5276,26 @@ function tourNext() {
 function endTour() {
   localStorage.setItem('mcp_tour_done', '1');
   document.getElementById('tour-overlay').classList.remove('active');
+}
+
+// ════════════════════════════
+// ════════════════════════════
+// CONTACT
+// ════════════════════════════
+async function submitContact() {
+  const name    = document.getElementById('contact-name').value.trim();
+  const email   = document.getElementById('contact-email').value.trim();
+  const subject = document.getElementById('contact-subject').value;
+  const message = document.getElementById('contact-message').value.trim();
+  if (!name || !email || !subject || !message) { alert('Please fill in all fields.'); return; }
+  // Send via mailto as a fallback until a backend form is wired up
+  const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
+  const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
+  window.location.href = `mailto:dmstrtg@gmail.com?subject=${subjectLine}&body=${body}`;
+  closeModal('modal-contact');
+  // Clear fields
+  ['contact-name','contact-email','contact-message'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('contact-subject').value = '';
 }
 
 // ════════════════════════════
