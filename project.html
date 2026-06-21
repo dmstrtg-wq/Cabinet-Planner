@@ -5,14 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Project — My Cabinet Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
 <style>
   :root {
     --accent: #b45309; --accent-hover: #92400e;
-    --text: #1e1409; --muted: #6b7280; --border: #e5e7eb;
-    --surface: #fff; --bg: #faf9f7; --hover: #f9fafb;
+    --text: #0f0805; --muted: #78614f; --border: #e7ddd5;
+    --surface: #fff; --bg: #faf7f4; --hover: #f5f0eb;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+  body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--bg); }
 
   /* ── HEADER ── */
   header {
@@ -21,7 +24,7 @@
     position: sticky; top: 0; z-index: 100;
   }
   .hdr-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .hdr-brand span { color: #fff; font-size: 15px; font-weight: 700; }
+  .hdr-brand span { color: #fff; font-size: 12px; font-weight: 700; font-family: 'Unbounded', sans-serif; }
   .hdr-actions { display: flex; gap: 8px; align-items: center; }
   .hdr-btn {
     padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
@@ -46,7 +49,7 @@
   /* ── PROJECT HERO ── */
   .proj-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
   .proj-hero-left { flex: 1; min-width: 0; }
-  .proj-title { font-size: 26px; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 4px; }
+  .proj-title { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 4px; }
   .proj-sub { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
   .proj-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
