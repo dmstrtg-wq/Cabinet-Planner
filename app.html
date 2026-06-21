@@ -266,15 +266,22 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .add-room-btn { padding: 8px 10px; font-size: 12px; color: var(--text-muted); cursor: pointer; border: none; background: none; border-radius: 6px; white-space: nowrap; margin-left: 4px; }
 .add-room-btn:hover { background: var(--bg); color: var(--text); }
 .workspace { flex: 1; display: flex; overflow: hidden; }
-#canvas-area { flex: 1; display: flex; flex-direction: column; padding: 14px 16px; overflow: auto; background: var(--bg); min-width: 0; }
-#canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
-#canvas-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+#canvas-area { flex: 1; display: flex; flex-direction: column; padding: 14px 16px; overflow: hidden; background: var(--bg); min-width: 0; }
 .canvas-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; flex-shrink: 0; }
 .canvas-toolbar label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
 .canvas-toolbar select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: white; cursor: pointer; }
-#floor-plan-wrapper, #elevation-wrapper { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: inline-block; box-shadow: 0 1px 4px rgba(0,0,0,0.06); flex-shrink: 0; margin-left: auto; margin-right: auto; }
+/* Zoom/Pan viewport */
+#view-floor, #view-elev { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#floor-plan-wrapper, #elevation-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; border-radius: 12px; border: 1px solid var(--border); background: #F1F5F9; overflow: hidden; position: relative; }
+.fp-viewport { flex: 1; overflow: hidden; position: relative; cursor: grab; user-select: none; }
+.fp-viewport.panning { cursor: grabbing; }
+.fp-zoom-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+.vp-controls { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.vp-btn { padding: 4px 9px; border: 1px solid var(--border); border-radius: 5px; background: white; font-size: 13px; font-weight: 700; cursor: pointer; line-height: 1; color: var(--text); transition: background 0.1s; }
+.vp-btn:hover { background: var(--bg); }
+.vp-pct { font-size: 12px; font-weight: 600; color: var(--text-muted); min-width: 38px; text-align: center; }
 .plan-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
-.elev-wall-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.elev-wall-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .elev-wall-tab { padding: 5px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
 .elev-wall-tab:hover { border-color: var(--accent); color: var(--accent); }
 .elev-wall-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
@@ -584,14 +591,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
       <div id="canvas-area">
         <div id="view-floor">
           <div class="canvas-toolbar">
-            <label>Scale:</label>
-            <select id="scale-sel" onchange="renderCanvas()">
-              <option value="3">Small</option>
-              <option value="4" selected>Medium</option>
-              <option value="5">Large</option>
-              <option value="6.5">X-Large</option>
-            </select>
-            <label style="margin-left:8px">Show:</label>
+            <label>Show:</label>
             <select id="view-sel" onchange="renderCanvas()">
               <option value="all">All Cabinets</option>
               <option value="base">Base Only</option>
@@ -609,33 +609,46 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
             <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
+            <div class="vp-controls">
+              <button class="vp-btn" onclick="fitView('floor')" title="Fit to view (F)">⊡ Fit</button>
+              <button class="vp-btn" onclick="stepZoom('floor',-1)" title="Zoom out">−</button>
+              <span class="vp-pct" id="fp-zoom-pct">100%</span>
+              <button class="vp-btn" onclick="stepZoom('floor',1)" title="Zoom in">+</button>
+            </div>
           </div>
           <div id="floor-plan-wrapper">
-            <div class="plan-title" id="plan-title">Floor Plan</div>
-            <canvas id="floor-plan" role="img" aria-label="Kitchen floor plan — graphical view. Use the cabinet list on the right to manage cabinets."></canvas>
+            <div class="plan-title" id="plan-title" style="position:absolute;top:10px;left:14px;z-index:2;pointer-events:none;">Floor Plan</div>
+            <div class="fp-viewport" id="fp-viewport">
+              <div class="fp-zoom-layer" id="fp-zoom-layer">
+                <canvas id="floor-plan" role="img" aria-label="Kitchen floor plan — graphical view. Use the cabinet list on the right to manage cabinets."></canvas>
+              </div>
+            </div>
           </div>
           <div id="summary-table"></div>
         </div>
 
         <div id="view-elev" class="hidden">
           <div class="canvas-toolbar">
-            <label>Scale:</label>
-            <select id="elev-scale-sel" onchange="renderElevation()">
-              <option value="3">Small</option>
-              <option value="4" selected>Medium</option>
-              <option value="5">Large</option>
-              <option value="6.5">X-Large</option>
-            </select>
-          </div>
-          <div class="elev-wall-tabs" id="elev-wall-tabs">
-            <button class="elev-wall-tab active" data-wall="north" onclick="selectElevWall('north')">↑ North</button>
-            <button class="elev-wall-tab" data-wall="east" onclick="selectElevWall('east')">→ East</button>
-            <button class="elev-wall-tab" data-wall="south" onclick="selectElevWall('south')">↓ South</button>
-            <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
+            <div class="elev-wall-tabs" id="elev-wall-tabs" style="margin-bottom:0;">
+              <button class="elev-wall-tab active" data-wall="north" onclick="selectElevWall('north')">↑ North</button>
+              <button class="elev-wall-tab" data-wall="east" onclick="selectElevWall('east')">→ East</button>
+              <button class="elev-wall-tab" data-wall="south" onclick="selectElevWall('south')">↓ South</button>
+              <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
+            </div>
+            <div class="vp-controls">
+              <button class="vp-btn" onclick="fitView('elev')" title="Fit to view (F)">⊡ Fit</button>
+              <button class="vp-btn" onclick="stepZoom('elev',-1)" title="Zoom out">−</button>
+              <span class="vp-pct" id="elev-zoom-pct">100%</span>
+              <button class="vp-btn" onclick="stepZoom('elev',1)" title="Zoom in">+</button>
+            </div>
           </div>
           <div id="elevation-wrapper">
-            <div class="plan-title" id="elev-title">Front Elevation — North Wall</div>
-            <canvas id="elevation-plan" role="img" aria-label="Wall elevation view — graphical representation of wall cabinets."></canvas>
+            <div class="plan-title" id="elev-title" style="position:absolute;top:10px;left:14px;z-index:2;pointer-events:none;">Front Elevation — North Wall</div>
+            <div class="fp-viewport" id="elev-viewport">
+              <div class="fp-zoom-layer" id="elev-zoom-layer">
+                <canvas id="elevation-plan" role="img" aria-label="Wall elevation view — graphical representation of wall cabinets."></canvas>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1337,6 +1350,122 @@ const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
+
+// ════════════════════════════
+// CANVAS ZOOM / PAN
+// ════════════════════════════
+const CANVAS_SCALE = 6;  // px/inch — fixed internal floor plan resolution
+const ELEV_SCALE   = 5;  // px/inch — fixed internal elevation resolution
+const vpState = {
+  floor: { zoom: 1, panX: 0, panY: 0 },
+  elev:  { zoom: 1, panX: 0, panY: 0 },
+};
+const ZOOM_STEPS = [0.08,0.1,0.15,0.2,0.25,0.33,0.5,0.67,0.75,1,1.25,1.5,2,2.5,3,4];
+
+function applyVpTransform(view) {
+  const layerId = view === 'floor' ? 'fp-zoom-layer' : 'elev-zoom-layer';
+  const pctId   = view === 'floor' ? 'fp-zoom-pct'   : 'elev-zoom-pct';
+  const st = vpState[view];
+  const el = document.getElementById(layerId);
+  if (el) el.style.transform = `translate(${st.panX}px,${st.panY}px) scale(${st.zoom})`;
+  const pct = document.getElementById(pctId);
+  if (pct) pct.textContent = Math.round(st.zoom * 100) + '%';
+}
+
+function fitView(view) {
+  const canvasId = view === 'floor' ? 'floor-plan' : 'elevation-plan';
+  const vpId     = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
+  const canvas   = document.getElementById(canvasId);
+  const vp       = document.getElementById(vpId);
+  if (!canvas || !vp || !canvas.width || !canvas.height) return;
+  const vpW = vp.clientWidth, vpH = vp.clientHeight;
+  const zoom = Math.min(vpW / canvas.width, vpH / canvas.height) * 0.94;
+  vpState[view].zoom = Math.max(0.08, Math.min(4, zoom));
+  vpState[view].panX = Math.round((vpW - canvas.width  * vpState[view].zoom) / 2);
+  vpState[view].panY = Math.round((vpH - canvas.height * vpState[view].zoom) / 2);
+  applyVpTransform(view);
+}
+
+function stepZoom(view, dir) {
+  const cur = vpState[view].zoom;
+  let idx = ZOOM_STEPS.findIndex(s => s >= cur - 0.001);
+  if (idx < 0) idx = ZOOM_STEPS.length - 1;
+  if (dir > 0 && ZOOM_STEPS[idx] <= cur + 0.001) idx = Math.min(idx + 1, ZOOM_STEPS.length - 1);
+  else if (dir < 0) idx = Math.max(idx - 1, 0);
+  const vpId = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
+  const vp = document.getElementById(vpId);
+  const vpCx = vp ? vp.clientWidth  / 2 : 0;
+  const vpCy = vp ? vp.clientHeight / 2 : 0;
+  const st = vpState[view];
+  const newZoom = ZOOM_STEPS[idx];
+  st.panX = vpCx - (vpCx - st.panX) * (newZoom / st.zoom);
+  st.panY = vpCy - (vpCy - st.panY) * (newZoom / st.zoom);
+  st.zoom = newZoom;
+  applyVpTransform(view);
+}
+
+function _initVpEvents(view) {
+  const vpId     = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
+  const vp       = document.getElementById(vpId);
+  if (!vp) return;
+  let panStart = null;
+
+  // Wheel to zoom, centered on cursor
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = vp.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const st = vpState[view];
+    const newZoom = Math.max(0.08, Math.min(4, st.zoom * factor));
+    st.panX = mx - (mx - st.panX) * (newZoom / st.zoom);
+    st.panY = my - (my - st.panY) * (newZoom / st.zoom);
+    st.zoom = newZoom;
+    applyVpTransform(view);
+  }, { passive: false });
+
+  // Drag on empty space to pan
+  vp.addEventListener('mousedown', e => {
+    // Only pan on middle-button OR when no cabinet is hit (handled after canvas mousedown)
+    if (e.button === 1) { e.preventDefault(); panStart = { x: e.clientX, y: e.clientY, px: vpState[view].panX, py: vpState[view].panY }; vp.classList.add('panning'); }
+  });
+  vp.addEventListener('mousemove', e => {
+    if (!panStart) return;
+    vpState[view].panX = panStart.px + (e.clientX - panStart.x);
+    vpState[view].panY = panStart.py + (e.clientY - panStart.y);
+    applyVpTransform(view);
+  });
+  vp.addEventListener('mouseup', () => { panStart = null; vp.classList.remove('panning'); });
+  vp.addEventListener('mouseleave', () => { panStart = null; vp.classList.remove('panning'); });
+
+  // Touch: pinch to zoom
+  let touches = {};
+  let lastDist = null;
+  vp.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+      lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      const rect = vp.getBoundingClientRect();
+      touches.cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      touches.cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+    }
+  }, { passive: true });
+  vp.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && lastDist) {
+      e.preventDefault();
+      const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      const factor = dist / lastDist;
+      const st = vpState[view];
+      const newZoom = Math.max(0.08, Math.min(4, st.zoom * factor));
+      st.panX = touches.cx - (touches.cx - st.panX) * (newZoom / st.zoom);
+      st.panY = touches.cy - (touches.cy - st.panY) * (newZoom / st.zoom);
+      st.zoom = newZoom;
+      lastDist = dist;
+      applyVpTransform(view);
+    }
+  }, { passive: false });
+  vp.addEventListener('touchend', () => { lastDist = null; });
+}
 
 // ════════════════════════════
 // DEMO MODE
@@ -2498,6 +2627,9 @@ function openProject(projId, roomId) {
     { label:'Demo / Removal', amount:'' },
     { label:'Incidentals',  amount:'' },
   ];
+  // Reset zoom/pan so auto-fit fires on the new project's rooms
+  vpState.floor = { zoom: 1, panX: 0, panY: 0 };
+  vpState.elev  = { zoom: 1, panX: 0, panY: 0 };
   persist(); renderProjectView();
 }
 function renderProjectView() {
@@ -2842,7 +2974,7 @@ function renderCanvas() {
   const ctx = canvas.getContext('2d');
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
-  const scale    = parseFloat(document.getElementById('scale-sel').value) || 4;
+  const scale    = CANVAS_SCALE;
   const viewMode = document.getElementById('view-sel').value;
   const roomW = Math.max(r.walls.north, r.walls.south, 48);
   const roomH = Math.max(r.walls.east,  r.walls.west,  48);
@@ -3262,6 +3394,12 @@ function renderCanvas() {
   if (showDimensions) drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld);
   if (showWorkTriangle) drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH);
   renderSummary(r);
+  // Auto-fit only on first render of a project (zoom resets to 1 signal)
+  if (vpState.floor.zoom === 1 && vpState.floor.panX === 0 && vpState.floor.panY === 0) {
+    requestAnimationFrame(() => fitView('floor'));
+  } else {
+    applyVpTransform('floor');
+  }
 }
 
 
@@ -3629,7 +3767,7 @@ function renderElevation() {
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
   const wall = state.elevWall;
-  const scale = parseFloat(document.getElementById('elev-scale-sel').value) || 4;
+  const scale = ELEV_SCALE;
   const wallLength = r.walls[wall] || 120;
   const ceiling = r.ceilingHeight || 96;
   const p = activeProj();
@@ -3897,6 +4035,11 @@ function renderElevation() {
   ctx.save(); ctx.translate(WX-28,WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
   document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
+  if (vpState.elev.zoom === 1 && vpState.elev.panX === 0 && vpState.elev.panY === 0) {
+    requestAnimationFrame(() => fitView('elev'));
+  } else {
+    applyVpTransform('elev');
+  }
 }
 
 // ════════════════════════════
@@ -4539,9 +4682,7 @@ async function exportPDF(btn) {
   const r = activeRoom();
   if (r) {
     const savedWall  = state.elevWall;
-    const scaleSel   = document.getElementById('elev-scale-sel');
-    const savedScale = scaleSel.value;
-    scaleSel.value   = '4';
+    // scale is now fixed (ELEV_SCALE), no need to temporarily override
 
     const ld = getLShapeData(r);
     const allWalls = ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
@@ -4579,7 +4720,6 @@ async function exportPDF(btn) {
       }
     }
     state.elevWall = savedWall;
-    scaleSel.value = savedScale;
     renderElevation();
   }
 
@@ -4734,7 +4874,7 @@ async function exportPDF(btn) {
   let drag = null, hoverCabId = null;
   function getCanvasInfo() {
     const r = activeRoom(); if (!r) return null;
-    const scale = parseFloat(document.getElementById('scale-sel').value)||4;
+    const scale = CANVAS_SCALE;
     const roomW = Math.max(r.walls.north,r.walls.south,48);
     const roomH = Math.max(r.walls.east,r.walls.west,48);
     return { scale, RX:68, RY:68, RW:roomW*scale, RH:roomH*scale, r };
@@ -4841,11 +4981,35 @@ async function exportPDF(btn) {
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
     const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
-    if (!hit) return; e.preventDefault();
+    if (!hit) {
+      // No cabinet hit — start viewport pan
+      const vp = document.getElementById('fp-viewport');
+      if (vp && e.button === 0) {
+        const st = vpState.floor;
+        const panStart = { x: e.clientX, y: e.clientY, px: st.panX, py: st.panY };
+        vp.classList.add('panning');
+        function onMove(ev) {
+          st.panX = panStart.px + (ev.clientX - panStart.x);
+          st.panY = panStart.py + (ev.clientY - panStart.y);
+          applyVpTransform('floor');
+        }
+        function onUp() {
+          vp.classList.remove('panning');
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+        }
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      }
+      return;
+    }
+    e.preventDefault();
+    // Scale is in internal px/inch; need to divide visual delta by cssZoom to get internal delta
+    const effectiveScale = info.scale * vpState.floor.zoom;
     if (hit.isIsland) {
-      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startX:hit.cab.x, startY:hit.cab.y, scale:info.scale, isIsland:true };
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startX:hit.cab.x, startY:hit.cab.y, scale:effectiveScale, isIsland:true };
     } else {
-      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:info.scale, isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:effectiveScale, isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
     }
     canvas.style.cursor = 'grabbing';
   });
@@ -4891,10 +5055,12 @@ async function exportPDF(btn) {
   });
   window.addEventListener('mouseup', () => { if(drag){drag=null;canvas.style.cursor='default';tooltip.style.background='#1e293b';setTimeout(()=>{tooltip.style.display='none';},1200);} });
   canvas.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return; // let the viewport pinch-zoom handler take 2-finger
     const info=getCanvasInfo(); if(!info)return;
     const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
     const hit=hitTestCab(t.clientX-rect.left,t.clientY-rect.top,info); if(!hit)return; e.preventDefault();
-    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:info.scale,isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2'};
+    const effectiveScale = info.scale * vpState.floor.zoom;
+    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:effectiveScale,isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2'};
   },{passive:false});
   window.addEventListener('touchmove', e => {
     if(!drag)return; const info=getCanvasInfo(); if(!info)return;
@@ -5070,7 +5236,7 @@ async function setNewPassword() {
 
   function getElevInfo() {
     const r = activeRoom(); if (!r) return null;
-    const scale = parseFloat(document.getElementById('elev-scale-sel').value) || 4;
+    const scale = ELEV_SCALE;
     const wall = state.elevWall;
     const wallLength = r.walls[wall] || 120;
     const ceiling = r.ceilingHeight || 96;
@@ -5122,7 +5288,8 @@ async function setNewPassword() {
     const cab  = hitTestElevCab(e.clientX - rect.left, e.clientY - rect.top, info);
     if (!cab) return;
     e.preventDefault();
-    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
+    const effectiveElevScale = info.scale * vpState.elev.zoom;
+    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: effectiveElevScale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
     canvas.style.cursor = 'grabbing';
   });
 
@@ -5176,7 +5343,7 @@ async function setNewPassword() {
     const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
     const cab  = hitTestElevCab(t.clientX - rect.left, t.clientY - rect.top, info);
     if (!cab) return; e.preventDefault();
-    elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale, wallLength: info.wallLength, cabWidth: cab.width };
+    elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale * vpState.elev.zoom, wallLength: info.wallLength, cabWidth: cab.width };
   }, { passive: false });
 
   window.addEventListener('touchmove', e => {
@@ -5204,6 +5371,17 @@ document.getElementById('login-btn').addEventListener('click', handleSignIn);
 document.getElementById('login-password').addEventListener('keydown', e => { if (e.key==='Enter') handleSignIn(); });
 document.getElementById('login-email').addEventListener('keydown', e => { if (e.key==='Enter') document.getElementById('login-password').focus(); });
 buildStylePanel();
+_initVpEvents('floor');
+_initVpEvents('elev');
+
+// F key = fit to view on active canvas
+document.addEventListener('keydown', e => {
+  if (e.key === 'f' || e.key === 'F') {
+    if (document.activeElement && ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) return;
+    const view = state.viewMode === 'elevation' ? 'elev' : 'floor';
+    fitView(view);
+  }
+});
 
 (async () => {
   // Demo mode: skip login, boot straight into the app with a local-only session
