@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accessibility Statement — My Cabinet Planner</title>
+<style>
+  :root { --accent: #b45309; --text: #1e1409; --muted: #6b7280; --border: #e5e7eb; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; color: var(--text); background: #faf9f7; line-height: 1.7; }
+  header { background: #2c1f14; padding: 16px 5%; display: flex; align-items: center; gap: 12px; }
+  header a { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  header span { color: #fff; font-size: 16px; font-weight: 700; }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 24px 80px; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: var(--text); }
+  .updated { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+  h2 { font-size: 17px; font-weight: 700; margin: 32px 0 10px; color: var(--text); }
+  p { margin-bottom: 14px; font-size: 15px; color: #374151; }
+  ul { margin: 0 0 14px 20px; }
+  ul li { font-size: 15px; color: #374151; margin-bottom: 6px; }
+  a { color: var(--accent); }
+  .contact-box { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-top: 32px; }
+  .contact-box p { margin: 0; }
+  footer { text-align: center; padding: 24px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/">
+    <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#hg)"/>
+      <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+      <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+      <defs><linearGradient id="hg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+    </svg>
+    <span>My Cabinet Planner</span>
+  </a>
+</header>
+
+<main>
+  <h1>Accessibility Statement</h1>
+  <p class="updated">Last updated: June 2025</p>
+
+  <p>My Cabinet Planner is committed to ensuring digital accessibility for people with disabilities. We are continually working to improve the user experience for everyone and to apply relevant accessibility standards.</p>
+
+  <h2>Our Conformance Status</h2>
+  <p>We are actively working toward conformance with the <strong>Web Content Accessibility Guidelines (WCAG) 2.1 Level AA</strong>. The following measures have been implemented:</p>
+  <ul>
+    <li>Visible keyboard focus indicators on all interactive elements</li>
+    <li>Skip navigation link to bypass repeated content</li>
+    <li>ARIA labels on all icon-only buttons</li>
+    <li>ARIA dialog roles and attributes on all modal windows</li>
+    <li>Properly associated form labels on all input fields</li>
+    <li>Sufficient color contrast on primary text and interface elements</li>
+    <li>Semantic HTML landmarks (main, aside, footer, nav)</li>
+  </ul>
+
+  <h2>Known Limitations</h2>
+  <p>My Cabinet Planner is a complex graphical design tool. The following areas have known accessibility limitations that we are working to address:</p>
+  <ul>
+    <li><strong>Floor Plan canvas:</strong> The interactive drag-and-drop floor plan is rendered on an HTML canvas element. Canvas content is not natively accessible to screen readers. Cabinet data is available in text form via the cabinet list panel on the right side of the screen.</li>
+    <li><strong>Elevation view:</strong> The wall elevation canvas is a graphical representation and is not screen-reader accessible. Cabinet placement information is available in text form via the cabinet list.</li>
+    <li><strong>3D View:</strong> The 3D model is rendered using WebGL and is not screen-reader accessible. It is provided as an optional visual aid only.</li>
+  </ul>
+  <p>We recognize that these limitations may present barriers. If you need assistance accessing any feature of My Cabinet Planner, please contact us and we will do our best to accommodate your needs.</p>
+
+  <h2>Feedback & Contact</h2>
+  <p>We welcome your feedback on the accessibility of My Cabinet Planner. If you experience any accessibility barriers or have suggestions for improvement, please contact us:</p>
+
+  <div class="contact-box">
+    <p>📧 Email: <a href="mailto:dmstrtg@gmail.com">dmstrtg@gmail.com</a><br>
+    We aim to respond to accessibility feedback within 2 business days.</p>
+  </div>
+
+  <h2>Formal Complaints</h2>
+  <p>If you are not satisfied with our response to your accessibility feedback, you may contact the <a href="https://www.ada.gov/" target="_blank" rel="noopener">U.S. Department of Justice ADA Information Line</a> at 1-800-514-0301.</p>
+</main>
+
+<footer>
+  <a href="/">Home</a> &nbsp;·&nbsp;
+  <a href="/app">Sign In</a> &nbsp;·&nbsp;
+  © 2025 My Cabinet Planner
+</footer>
+
+</body>
+</html>

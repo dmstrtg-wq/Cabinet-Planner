@@ -39,6 +39,24 @@ body {
   overflow: hidden;
 }
 
+/* ── ACCESSIBILITY ── */
+.skip-nav {
+  position: fixed; top: -100px; left: 12px; z-index: 99999;
+  background: var(--accent); color: #fff; padding: 8px 16px;
+  border-radius: 0 0 6px 6px; font-size: 13px; font-weight: 700;
+  text-decoration: none; transition: top 0.15s;
+}
+.skip-nav:focus { top: 0; }
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── LOGIN SCREEN ── */
 #login-screen {
   position: fixed; inset: 0;
@@ -435,6 +453,8 @@ body {
 </head>
 <body>
 
+<a href="#main" class="skip-nav">Skip to main content</a>
+
 <!-- ═══ LOGIN SCREEN ═══ -->
 <div id="login-screen">
 
@@ -475,11 +495,11 @@ body {
       <div class="login-sub">Sign in to your account</div>
 
       <div class="login-field">
-        <label>Email</label>
+        <label for="login-email">Email</label>
         <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="login-field">
-        <label>Password</label>
+        <label for="login-password">Password</label>
         <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
       </div>
       <button class="login-btn" id="login-btn">Sign In →</button>
@@ -597,7 +617,7 @@ body {
           </div>
           <div id="floor-plan-wrapper">
             <div class="plan-title" id="plan-title">Floor Plan</div>
-            <canvas id="floor-plan"></canvas>
+            <canvas id="floor-plan" role="img" aria-label="Kitchen floor plan — graphical view. Use the cabinet list on the right to manage cabinets."></canvas>
           </div>
           <div id="summary-table"></div>
         </div>
@@ -620,7 +640,7 @@ body {
           </div>
           <div id="elevation-wrapper">
             <div class="plan-title" id="elev-title">Front Elevation — North Wall</div>
-            <canvas id="elevation-plan"></canvas>
+            <canvas id="elevation-plan" role="img" aria-label="Wall elevation view — graphical representation of wall cabinets."></canvas>
           </div>
         </div>
 
@@ -631,7 +651,7 @@ body {
           </div>
           <div id="iso-wrapper" style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-left:auto;margin-right:auto;width:100%;max-width:1000px;">
             <div class="plan-title">3D View</div>
-            <canvas id="iso-plan" style="width:100%;height:600px;display:block;border-radius:8px;"></canvas>
+            <canvas id="iso-plan" role="img" aria-label="3D view of the kitchen — interactive graphical model." style="width:100%;height:600px;display:block;border-radius:8px;"></canvas>
           </div>
         </div>
       </div>
@@ -656,9 +676,9 @@ body {
             <span class="toggle-label">Show Pricing</span>
           </div>
           <div id="pricing-opts" class="hidden">
-            <div class="markup-row"><label>Additional Markup %</label><input type="number" id="markup-pct" value="0" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
+            <div class="markup-row"><label for="markup-pct">Additional Markup %</label><input type="number" id="markup-pct" value="0" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
             <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">Prices are Forevermark MSRP. Use markup for additional margin.</div>
-            <div class="markup-row"><label>Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
+            <div class="markup-row"><label for="tax-pct">Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
           </div>
         </div>
         <div class="cp-section" style="flex-shrink:0">
@@ -801,10 +821,12 @@ body {
   <a href="#" id="footer-terms" target="_blank" rel="noopener">Terms of Service</a>
   <span class="footer-sep">·</span>
   <a href="#" onclick="openModal('modal-contact');return false;">Contact Us</a>
+  <span class="footer-sep">·</span>
+  <a href="/accessibility" target="_blank" rel="noopener">Accessibility</a>
 </footer>
 
 <!-- ═══ MODALS ═══ -->
-<div id="modal-edit-cabinet" class="modal-overlay hidden">
+<div id="modal-edit-cabinet" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Edit Cabinet">
   <div class="modal" style="width:480px;">
     <h3 id="edit-cab-title">Edit Cabinet</h3>
     <input type="hidden" id="edit-cab-id">
@@ -865,7 +887,7 @@ body {
     </div>
   </div>
 </div>
-<div id="modal-edit-island" class="modal-overlay hidden">
+<div id="modal-edit-island" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Edit Island">
   <div class="modal" style="width:400px;">
     <h3>Edit Island</h3>
     <input type="hidden" id="edit-isl-id">
@@ -893,7 +915,7 @@ body {
   </div>
 </div>
 
-<div id="modal-edit-appliance" class="modal-overlay hidden">
+<div id="modal-edit-appliance" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Edit Appliance">
   <div class="modal" style="width:420px;">
     <h3 id="edit-app-title">Edit Appliance</h3>
     <input type="hidden" id="edit-app-id">
@@ -927,7 +949,7 @@ body {
   </div>
 </div>
 
-<div id="modal-new-project" class="modal-overlay hidden">
+<div id="modal-new-project" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="New Project">
   <div class="modal">
     <h3>New Project</h3>
     <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder="e.g. Smith Family"></div>
@@ -956,7 +978,7 @@ body {
   </div>
 </div>
 
-<div id="modal-edit-project" class="modal-overlay hidden">
+<div id="modal-edit-project" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Edit Project">
   <div class="modal">
     <h3>Edit Project</h3>
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
@@ -975,7 +997,7 @@ body {
   </div>
 </div>
 
-<div id="modal-room-templates" class="modal-overlay hidden">
+<div id="modal-room-templates" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Room Templates">
   <div class="modal" style="max-width:580px">
     <h3 style="margin-bottom:4px">Choose a Room Layout</h3>
     <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px">Select a template to pre-fill dimensions, or start from scratch</p>
@@ -986,7 +1008,7 @@ body {
   </div>
 </div>
 
-<div id="modal-add-room" class="modal-overlay hidden">
+<div id="modal-add-room" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Add Room">
   <div class="modal">
     <h3>Add Room</h3>
     <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder="e.g. Master Bath"></div>
@@ -1033,7 +1055,7 @@ body {
   </div>
 </div>
 
-<div id="modal-room-shape" class="modal-overlay hidden">
+<div id="modal-room-shape" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Room Shape">
   <div class="modal">
     <h3>Room Shape</h3>
     <div class="form-group">
@@ -1070,14 +1092,14 @@ body {
   </div>
 </div>
 
-<div id="modal-quote" class="modal-overlay hidden">
+<div id="modal-quote" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Quote Builder">
   <div class="modal">
     <h3>Quote Builder</h3>
 
     <!-- Company Name -->
     <div style="margin-bottom:18px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
-      <input type="text" id="quote-company-input" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
+      <input type="text" id="quote-company-input" aria-label="Company name on quote" class="cp-input" placeholder="e.g. Cabinet Daddy" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
     </div>
 
     <!-- Additional Job Costs -->
@@ -1108,7 +1130,7 @@ body {
 </div>
 
 <!-- COMPANY SETTINGS MODAL -->
-<div id="modal-company-settings" class="modal-overlay hidden">
+<div id="modal-company-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Company Settings">
   <div class="modal" style="width:600px;max-width:100%;max-height:90vh;overflow-y:auto;">
     <h3>⚙ Company Settings</h3>
 
@@ -1134,7 +1156,7 @@ body {
       </div>
       <div class="form-row">
         <div class="form-group"><label>Phone</label><input type="text" id="cs-phone" placeholder="(555) 555-5555" autocomplete="off"></div>
-        <div class="form-group"><label>Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com" autocomplete="off"></div>
+        <div class="form-group"><label for="login-email">Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com" autocomplete="off"></div>
       </div>
       <div class="form-group"><label>Website</label><input type="text" id="cs-website" placeholder="www.yourcompany.com" autocomplete="off"></div>
       <div class="form-group"><label>Logo URL <span style="font-weight:400;color:#94a3b8;">(paste a link to your logo image)</span></label><input type="text" id="cs-logo" placeholder="https://..." autocomplete="off"></div>
@@ -1164,7 +1186,7 @@ body {
 </div>
 
 <!-- SET PASSWORD MODAL (invite / recovery flow) -->
-<div id="modal-set-password" class="modal-overlay hidden">
+<div id="modal-set-password" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Set Password">
   <div class="modal" style="max-width:400px;">
     <div style="text-align:center;margin-bottom:20px;">
       <div style="font-size:36px;margin-bottom:8px;">👋</div>
@@ -1188,23 +1210,23 @@ body {
 
 <!-- FAQ MODAL -->
 <!-- Contact Us Modal -->
-<div id="modal-contact" class="modal-overlay hidden">
+<div id="modal-contact" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Contact Us">
   <div class="modal" style="max-width:480px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
       <h3 style="margin:0;">Contact Us</h3>
-      <button onclick="closeModal('modal-contact')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+      <button onclick="closeModal('modal-contact')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
     </div>
     <p style="color:var(--text-muted);font-size:13px;margin-bottom:18px;">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
     <div class="form-group">
-      <label>Your Name</label>
+      <label for="contact-name">Your Name</label>
       <input type="text" id="contact-name" class="cp-input" placeholder="Jane Smith" autocomplete="off">
     </div>
     <div class="form-group">
-      <label>Email Address</label>
+      <label for="contact-email">Email Address</label>
       <input type="email" id="contact-email" class="cp-input" placeholder="you@example.com" autocomplete="off">
     </div>
     <div class="form-group">
-      <label>Subject</label>
+      <label for="contact-subject">Subject</label>
       <select id="contact-subject" class="cp-input">
         <option value="">— Select a topic —</option>
         <option value="bug">Bug / Something's not working</option>
@@ -1215,7 +1237,7 @@ body {
       </select>
     </div>
     <div class="form-group">
-      <label>Message</label>
+      <label for="contact-message">Message</label>
       <textarea id="contact-message" class="cp-input" rows="4" placeholder="Tell us what's on your mind…" style="resize:vertical;"></textarea>
     </div>
     <div class="modal-footer">
@@ -1225,13 +1247,13 @@ body {
   </div>
 </div>
 
-<div id="modal-faq" class="modal-overlay hidden">
+<div id="modal-faq" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Help and FAQ">
   <div class="modal" style="max-width:560px;max-height:82vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h3 style="margin:0;">Help & FAQ</h3>
       <div style="display:flex;gap:10px;align-items:center;">
         <button onclick="startTour()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">↺ Replay Tips Tour</button>
-        <button onclick="closeModal('modal-faq')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+        <button onclick="closeModal('modal-faq')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
       </div>
     </div>
     <div class="faq-section">
@@ -2438,7 +2460,7 @@ function renderSidebar() {
         <div class="project-item-name">${escHtml(p.customer)}</div>
         <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
       </div>
-      <button class="project-item-menu-btn" onclick="showProjectMenu('${p.id}',event)" title="Options">⋯</button>
+      <button class="project-item-menu-btn" onclick="showProjectMenu('${p.id}',event)" title="Options" aria-label="Project options">⋯</button>
     </div>`).join('');
 }
 
@@ -2516,7 +2538,7 @@ function renderCabinetList() {
       <div class="opening-item">
         <div class="opening-item-info">${OPENING_LABELS[o.type] || o.type}</div>
         <div class="opening-item-dim">${o.width}" × ${o.height}" @ ${o.offset || 0}" from left</div>
-        <button class="opening-remove" onclick="removeOpening('${o.id}')">×</button>
+        <button class="opening-remove" onclick="removeOpening('${o.id}')" aria-label="Remove opening">×</button>
       </div>`).join('');
   }
   if (wallCabs.length) {
@@ -2532,7 +2554,7 @@ function renderCabinetList() {
           ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
           ${price}
         </div>
-        <button class="cab-remove" onclick="removeCabinet('${c.id}')">×</button>
+        <button class="cab-remove" onclick="removeCabinet('${c.id}')" aria-label="Remove cabinet">×</button>
       </div>`;
     }).join('');
   }
@@ -2548,7 +2570,7 @@ function renderCabinetList() {
           <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
           ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
         </div>
-        <button class="cab-remove" onclick="removeAppliance('${a.id}')">×</button>
+        <button class="cab-remove" onclick="removeAppliance('${a.id}')" aria-label="Remove appliance">×</button>
       </div>`;
     }).join('');
   }
@@ -2561,7 +2583,7 @@ function renderCabinetList() {
         <div class="cab-name">${i.label || 'Island'}</div>
         <div class="cab-dim">${i.width}"W × ${i.depth}"D · pos ${i.x}", ${i.y}" from NW</div>
       </div>
-      <button class="cab-remove" onclick="removeIsland('${i.id}')">×</button>
+      <button class="cab-remove" onclick="removeIsland('${i.id}')" aria-label="Remove island">×</button>
     </div>`).join('');
   }
   if (!wallCabs.length && !wallOpenings.length && !wallApps.length && !allIslands.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
