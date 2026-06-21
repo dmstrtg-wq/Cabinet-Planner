@@ -5009,7 +5009,8 @@ async function exportPDF(btn) {
   canvas.addEventListener('dblclick', e => {
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
-    const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    const z = vpState.floor.zoom;
+    const hit  = hitTestCab((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, info);
     if (!hit) return;
     e.preventDefault();
     if (hit.isIsland)                    openEditIslandModal(hit.cab);
@@ -5021,7 +5022,8 @@ async function exportPDF(btn) {
     if (measureState.active) return; // measure mode takes over
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
-    const hit  = hitTestCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    const z = vpState.floor.zoom;
+    const hit  = hitTestCab((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, info);
     if (!hit) {
       // No cabinet hit — start viewport pan
       const vp = document.getElementById('fp-viewport');
@@ -5057,7 +5059,10 @@ async function exportPDF(btn) {
   window.addEventListener('mousemove', e => {
     const info = getCanvasInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
+    const z = vpState.floor.zoom;
+    // mx/my in screen px (for drag delta); hx/hy in canvas px (for hit testing)
     const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const hx = mx/z, hy = my/z;
     if (drag) {
       if (drag.isIsland) {
         const isl = (info.r.islands||[]).find(i=>i.id===drag.cabId);
@@ -5081,7 +5086,7 @@ async function exportPDF(btn) {
         if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
       }
     } else if (!measureState.active) {
-      const hit = hitTestCab(mx,my,info);
+      const hit = hitTestCab(hx,hy,info);
       if (hit) {
         canvas.style.cursor = 'grab';
         if (hoverCabId!==hit.cab.id) {
@@ -5099,7 +5104,8 @@ async function exportPDF(btn) {
     if (e.touches.length !== 1) return; // let the viewport pinch-zoom handler take 2-finger
     const info=getCanvasInfo(); if(!info)return;
     const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
-    const hit=hitTestCab(t.clientX-rect.left,t.clientY-rect.top,info); if(!hit)return; e.preventDefault();
+    const z=vpState.floor.zoom;
+    const hit=hitTestCab((t.clientX-rect.left)/z,(t.clientY-rect.top)/z,info); if(!hit)return; e.preventDefault();
     const effectiveScale = info.scale * vpState.floor.zoom;
     drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:effectiveScale,isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2'};
   },{passive:false});
@@ -5315,7 +5321,8 @@ async function setNewPassword() {
     if (state.viewMode !== 'elevation') return;
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
-    const hit  = hitTestElevCab(e.clientX-rect.left, e.clientY-rect.top, info);
+    const ze = vpState.elev.zoom;
+    const hit  = hitTestElevCab((e.clientX-rect.left)/ze, (e.clientY-rect.top)/ze, info);
     if (!hit) return;
     e.preventDefault();
     if (CATALOG[hit.type])    openEditModal(hit);
@@ -5326,7 +5333,8 @@ async function setNewPassword() {
     if (state.viewMode !== 'elevation') return;
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
-    const cab  = hitTestElevCab(e.clientX - rect.left, e.clientY - rect.top, info);
+    const ze = vpState.elev.zoom;
+    const cab  = hitTestElevCab((e.clientX - rect.left)/ze, (e.clientY - rect.top)/ze, info);
     if (!cab) return;
     e.preventDefault();
     const effectiveElevScale = info.scale * vpState.elev.zoom;
@@ -5338,7 +5346,10 @@ async function setNewPassword() {
     if (state.viewMode !== 'elevation') return;
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
+    const ze = vpState.elev.zoom;
+    // mx in screen px for drag delta; hx in canvas px for hit testing
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const hx = mx/ze, hy = my/ze;
 
     if (elevDrag) {
       const delta = mx - elevDrag.startMX;
@@ -5353,7 +5364,7 @@ async function setNewPassword() {
         persist(); renderElevation(); renderCanvas(); renderCabinetList();
       }
     } else {
-      const cab = hitTestElevCab(mx, my, info);
+      const cab = hitTestElevCab(hx, hy, info);
       if (cab) {
         canvas.style.cursor = 'grab';
         if (elevHover !== cab.id) {
@@ -5382,7 +5393,8 @@ async function setNewPassword() {
     if (state.viewMode !== 'elevation') return;
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
-    const cab  = hitTestElevCab(t.clientX - rect.left, t.clientY - rect.top, info);
+    const ze = vpState.elev.zoom;
+    const cab  = hitTestElevCab((t.clientX - rect.left)/ze, (t.clientY - rect.top)/ze, info);
     if (!cab) return; e.preventDefault();
     elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale * vpState.elev.zoom, wallLength: info.wallLength, cabWidth: cab.width };
   }, { passive: false });
