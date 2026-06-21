@@ -137,6 +137,107 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .login-right { padding: 28px 20px; }
 }
 
+/* ── TABLET (≤1100px) ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  :root { --sidebar-width: 210px; }
+  /* Larger tap targets for fat-finger accuracy */
+  button, .btn, .toolbar-btn, .vp-btn, .elev-wall-tab,
+  .view-toggle-btn, .signout-btn, .cp-btn { min-height: 38px; touch-action: manipulation; }
+  /* Prevent iOS from zooming into focused inputs */
+  input, select, textarea { font-size: 16px !important; }
+  /* Toolbar allowed to wrap on smaller tablets */
+  .canvas-toolbar { flex-wrap: wrap; gap: 4px 8px; }
+  /* Right panel slightly narrower */
+  #cabinet-panel { width: 240px; }
+  /* 3D canvas a touch shorter so buttons stay in view */
+  #iso-plan { height: 480px !important; }
+}
+
+/* ── PHONE (≤767px) ────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Full-viewport height respecting browser chrome on iOS/Android */
+  #app-root { height: 100dvh; }
+
+  /* Always collapse sidebar and right panel — hidden entirely on phone */
+  #sidebar, .sb-expand-tab,
+  #cabinet-panel, .panel-expand-tab { display: none !important; }
+
+  /* Kill the desktop toolbar; the floor-plan-wrapper fills the gap */
+  .canvas-toolbar { display: none !important; }
+
+  /* Summary overlay not useful on phone */
+  #summary-table { display: none !important; }
+
+  /* Project header: compact single row */
+  .project-header { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+  #pv-name { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+  /* Hide all header action buttons on phone — quote lives in bottom nav */
+  .header-btns .btn-success,
+  .header-btns .btn-secondary { display: none !important; }
+  /* Compact view-toggle (still needed for floor/elev/3d on larger phones) */
+  .view-toggle { gap: 2px; }
+  .view-toggle-btn { padding: 5px 10px; font-size: 11px; min-height: 30px; }
+
+  /* Room tabs: horizontally scrollable */
+  .room-tabs-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap;
+                   padding: 4px 8px; scrollbar-width: none; }
+  .room-tabs-bar::-webkit-scrollbar { display: none; }
+
+  /* Workspace: fill remaining space above the phone bottom nav (56px) */
+  .workspace { height: calc(100dvh - 120px); overflow: hidden; }
+  #canvas-area { flex: 1; min-height: 0; overflow: hidden; }
+
+  /* Floor plan fills full canvas-area */
+  #view-floor, #view-elev { height: 100%; display: flex; flex-direction: column; }
+  #floor-plan-wrapper, #elevation-wrapper { flex: 1; min-height: 0; }
+  .fp-viewport { height: 100%; }
+
+  /* 3D view: no wrapper padding, fills area */
+  #view-3d { height: 100%; }
+  #iso-wrapper { max-width: 100%; height: 100%; margin: 0; padding: 8px; border-radius: 0; border: none; box-shadow: none; }
+  #iso-plan { height: 100% !important; }
+
+  /* Phone-only elements (hidden on desktop) */
+  #phone-bottomnav { display: flex !important; }
+  #phone-quote-panel.pq-open { display: flex !important; }
+}
+
+/* ── PHONE BOTTOM NAV STYLES ────── */
+#phone-bottomnav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 820;
+  background: #fff; border-top: 1px solid #e5e7eb;
+  height: 56px; align-items: stretch;
+}
+.pnav-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; border: none; background: none; cursor: pointer;
+  font-size: 10px; font-weight: 600; color: #9ca3af;
+  letter-spacing: 0.02em; padding: 0; touch-action: manipulation;
+  transition: color 0.12s;
+}
+.pnav-btn svg { flex-shrink: 0; }
+.pnav-btn.active { color: #b45309; }
+.pnav-btn.active svg { stroke: #b45309; }
+
+/* ── PHONE QUOTE PANEL STYLES ───── */
+#phone-quote-panel {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 56px; z-index: 810;
+  background: #faf9f7; flex-direction: column; overflow: hidden;
+}
+#phone-quote-header {
+  background: #2c1f14; color: #fff;
+  padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+}
+#phone-quote-header h2 { font-size: 16px; font-weight: 700; flex: 1; }
+#phone-quote-close {
+  background: none; border: none; color: rgba(255,255,255,0.6);
+  font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+#phone-quote-body { flex: 1; overflow-y: auto; padding: 16px; }
+
 /* ── APP ROOT ── */
 #app-root { display: flex; width: 100%; height: 100vh; overflow: hidden; }
 
@@ -839,6 +940,39 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
     </div>
   </div>
 </main>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHONE BOTTOM NAV  (hidden on desktop/tablet via CSS)
+     ══════════════════════════════════════════════════════════════ -->
+<nav id="phone-bottomnav" aria-label="Mobile navigation">
+  <button class="pnav-btn active" id="pnav-plan" onclick="phoneTab('plan')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Floor Plan
+  </button>
+  <button class="pnav-btn" id="pnav-elev" onclick="phoneTab('elev')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 6v12M18 6v12"/></svg>
+    Elevation
+  </button>
+  <button class="pnav-btn" id="pnav-3d" onclick="phoneTab('3d')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    3D View
+  </button>
+  <button class="pnav-btn" id="pnav-quote" onclick="phoneTab('quote')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+    Quote
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PHONE QUOTE PANEL  (slides over canvas when Quote tab tapped)
+     ══════════════════════════════════════════════════════════════ -->
+<div id="phone-quote-panel">
+  <div id="phone-quote-header">
+    <h2 id="phone-quote-title">Quote</h2>
+    <button id="phone-quote-close" onclick="phoneTab('plan')" aria-label="Close quote panel">&#x2715;</button>
+  </div>
+  <div id="phone-quote-body"></div>
+</div>
 
 </div><!-- end app-root -->
 
@@ -5191,25 +5325,92 @@ async function exportPDF(btn) {
     }
   });
   window.addEventListener('mouseup', () => { if(drag){drag=null;canvas.style.cursor='default';tooltip.style.background='#1e293b';setTimeout(()=>{tooltip.style.display='none';},1200);} });
-  canvas.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1) return; // let the viewport pinch-zoom handler take 2-finger
-    const info=getCanvasInfo(); if(!info)return;
-    const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
-    const z=vpState.floor.zoom;
-    const hit=hitTestCab((t.clientX-rect.left)/z,(t.clientY-rect.top)/z,info); if(!hit)return; e.preventDefault();
-    const effectiveScale = info.scale * vpState.floor.zoom;
-    drag={cabId:hit.cab.id,startMX:t.clientX-rect.left,startMY:t.clientY-rect.top,startOffset:hit.cab.offset||0,scale:effectiveScale,isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2'};
-  },{passive:false});
-  window.addEventListener('touchmove', e => {
-    if(!drag)return; const info=getCanvasInfo(); if(!info)return;
-    const rect=canvas.getBoundingClientRect(); const t=e.touches[0];
-    const delta=drag.isNS?(t.clientX-rect.left-drag.startMX):(t.clientY-rect.top-drag.startMY);
-    const newOffset=Math.max(0,snap(drag.startOffset+delta/drag.scale));
-    const cab=info.r.cabinets.find(c=>c.id===drag.cabId)||(info.r.appliances||[]).find(a=>a.id===drag.cabId);
-    if(cab){cab.offset=newOffset;tooltip.style.display='block';tooltip.textContent=`${newOffset}" from left`;persist();renderCanvas();renderCabinetList();}
-    e.preventDefault();
-  },{passive:false});
-  window.addEventListener('touchend',()=>{if(drag){drag=null;setTimeout(()=>{tooltip.style.display='none';},1200);}});
+  // ── Floor-plan touch: pan, drag, double-tap to edit ──────────────────────
+  {
+    let fpLastTapTime = 0, fpLastTapId = null;
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return; // 2-finger handled by viewport pinch handler
+      const info = getCanvasInfo(); if (!info) return;
+      const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+      const z = vpState.floor.zoom;
+      const hit = hitTestCab((t.clientX-rect.left)/z, (t.clientY-rect.top)/z, info);
+
+      // No cabinet hit → start single-finger pan
+      if (!hit) {
+        const vp = document.getElementById('fp-viewport');
+        if (!vp) return;
+        const st = vpState.floor;
+        const panStart = { x: t.clientX, y: t.clientY, px: st.panX, py: st.panY };
+        vp.classList.add('panning');
+        function onPanMove(ev) {
+          if (ev.touches.length !== 1) return;
+          const tt = ev.touches[0];
+          st.panX = panStart.px + (tt.clientX - panStart.x);
+          st.panY = panStart.py + (tt.clientY - panStart.y);
+          applyVpTransform('floor');
+          ev.preventDefault();
+        }
+        function onPanEnd() {
+          vp.classList.remove('panning');
+          window.removeEventListener('touchmove', onPanMove);
+          window.removeEventListener('touchend', onPanEnd);
+        }
+        window.addEventListener('touchmove', onPanMove, { passive: false });
+        window.addEventListener('touchend', onPanEnd);
+        return;
+      }
+
+      // Double-tap to open edit modal (≤350 ms between taps on same cabinet)
+      const now = Date.now();
+      if (now - fpLastTapTime < 350 && fpLastTapId === hit.cab.id) {
+        fpLastTapTime = 0; fpLastTapId = null;
+        if (hit.isIsland)                   openEditIslandModal(hit.cab);
+        else if (CATALOG[hit.cab.type])      openEditModal(hit.cab);
+        else if (APPLIANCES[hit.cab.type])   openEditApplianceModal(hit.cab);
+        return;
+      }
+      fpLastTapTime = now; fpLastTapId = hit.cab.id;
+
+      // Phone is view-only — no dragging
+      if (window.innerWidth <= 767) return;
+
+      e.preventDefault();
+      const effectiveScale = info.scale * vpState.floor.zoom;
+      if (hit.isIsland) {
+        drag = { cabId: hit.cab.id, startMX: t.clientX-rect.left, startMY: t.clientY-rect.top,
+                 startX: hit.cab.x, startY: hit.cab.y, scale: effectiveScale, isIsland: true };
+      } else {
+        drag = { cabId: hit.cab.id, startMX: t.clientX-rect.left, startMY: t.clientY-rect.top,
+                 startOffset: hit.cab.offset||0, scale: effectiveScale,
+                 isNS: hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchmove', e => {
+      if (!drag) return;
+      const info = getCanvasInfo(); if (!info) return;
+      const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+      if (drag.isIsland) {
+        const isl = (info.r.islands||[]).find(i => i.id === drag.cabId);
+        if (isl) {
+          const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);
+          const roomH = Math.max(info.r.walls.east,  info.r.walls.west,  48);
+          isl.x = Math.max(0, Math.min(roomW - isl.width, Math.round(drag.startX + (t.clientX-rect.left - drag.startMX) / drag.scale)));
+          isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (t.clientY-rect.top  - drag.startMY) / drag.scale)));
+          tooltip.style.display='block'; tooltip.textContent=`${isl.label||'Island'} · ${isl.x}", ${isl.y}"`;
+          persist(); renderCanvas(); renderCabinetList();
+        }
+      } else {
+        const delta = drag.isNS ? (t.clientX-rect.left-drag.startMX) : (t.clientY-rect.top-drag.startMY);
+        const newOffset = Math.max(0, snap(drag.startOffset + delta / drag.scale));
+        const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
+        if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => { if(drag){ drag=null; setTimeout(()=>{ tooltip.style.display='none'; }, 1200); } });
+  }
 })();
 
 // ════════════════════════════
@@ -5479,32 +5680,162 @@ async function setNewPassword() {
     }
   });
 
-  // Touch support
-  canvas.addEventListener('touchstart', e => {
-    if (state.viewMode !== 'elevation') return;
-    const info = getElevInfo(); if (!info) return;
-    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
-    const ze = vpState.elev.zoom;
-    const cab  = hitTestElevCab((t.clientX - rect.left)/ze, (t.clientY - rect.top)/ze, info);
-    if (!cab) return; e.preventDefault();
-    elevDrag = { cabId: cab.id, startMX: t.clientX - rect.left, startOffset: cab.offset || 0, scale: info.scale * vpState.elev.zoom, wallLength: info.wallLength, cabWidth: cab.width };
-  }, { passive: false });
+  // ── Elevation touch: pan, drag, double-tap to edit ───────────────────────
+  {
+    let elvLastTapTime = 0, elvLastTapId = null;
+    canvas.addEventListener('touchstart', e => {
+      if (state.viewMode !== 'elevation') return;
+      if (e.touches.length !== 1) return;
+      const info = getElevInfo(); if (!info) return;
+      const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+      const ze = vpState.elev.zoom;
+      const cab = hitTestElevCab((t.clientX-rect.left)/ze, (t.clientY-rect.top)/ze, info);
 
-  window.addEventListener('touchmove', e => {
-    if (!elevDrag || state.viewMode !== 'elevation') return;
-    const info = getElevInfo(); if (!info) return;
-    const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
-    const delta = t.clientX - rect.left - elevDrag.startMX;
-    const newOffset = Math.max(0, Math.min(Math.round((elevDrag.startOffset + delta / elevDrag.scale) / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
-    const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId);
-    if (cab) { cab.offset = newOffset; tooltip.style.display = 'block'; tooltip.textContent = `${newOffset}" from left`; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
-    e.preventDefault();
-  }, { passive: false });
+      // No cabinet hit → single-finger pan
+      if (!cab) {
+        const vp = document.getElementById('elev-viewport');
+        if (!vp) return;
+        const st = vpState.elev;
+        const panStart = { x: t.clientX, y: t.clientY, px: st.panX, py: st.panY };
+        vp.classList.add('panning');
+        function onEPanMove(ev) {
+          if (ev.touches.length !== 1) return;
+          const tt = ev.touches[0];
+          st.panX = panStart.px + (tt.clientX - panStart.x);
+          st.panY = panStart.py + (tt.clientY - panStart.y);
+          applyVpTransform('elev');
+          ev.preventDefault();
+        }
+        function onEPanEnd() {
+          vp.classList.remove('panning');
+          window.removeEventListener('touchmove', onEPanMove);
+          window.removeEventListener('touchend', onEPanEnd);
+        }
+        window.addEventListener('touchmove', onEPanMove, { passive: false });
+        window.addEventListener('touchend', onEPanEnd);
+        return;
+      }
 
-  window.addEventListener('touchend', () => {
-    if (elevDrag) { elevDrag = null; setTimeout(() => { tooltip.style.display = 'none'; }, 1200); }
-  });
+      // Double-tap to edit
+      const now = Date.now();
+      if (now - elvLastTapTime < 350 && elvLastTapId === cab.id) {
+        elvLastTapTime = 0; elvLastTapId = null;
+        if (CATALOG[cab.type])         openEditModal(cab);
+        else if (APPLIANCES[cab.type]) openEditApplianceModal(cab);
+        return;
+      }
+      elvLastTapTime = now; elvLastTapId = cab.id;
+
+      // Phone is view-only
+      if (window.innerWidth <= 767) return;
+
+      e.preventDefault();
+      elevDrag = { cabId: cab.id, startMX: t.clientX-rect.left, startOffset: cab.offset||0,
+                   scale: info.scale * vpState.elev.zoom, wallLength: info.wallLength,
+                   cabWidth: cab.width, wall: info.wall };
+    }, { passive: false });
+
+    window.addEventListener('touchmove', e => {
+      if (!elevDrag || state.viewMode !== 'elevation') return;
+      const info = getElevInfo(); if (!info) return;
+      const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
+      const delta = t.clientX - rect.left - elevDrag.startMX;
+      const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
+      const newOffset = Math.max(0, Math.min(Math.round((elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale) / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
+      const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId) || (info.r.appliances||[]).find(a => a.id === elevDrag.cabId);
+      if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+      e.preventDefault();
+    }, { passive: false });
+
+    window.addEventListener('touchend', () => {
+      if (elevDrag) { elevDrag=null; setTimeout(()=>{ tooltip.style.display='none'; }, 1200); }
+    });
+  }
 })();
+
+// ════════════════════════════
+// PHONE MODE
+// ════════════════════════════
+function phoneTab(tab) {
+  // Update bottom nav active state
+  ['plan','elev','3d','quote'].forEach(t => {
+    const btn = document.getElementById('pnav-' + t);
+    if (btn) {
+      btn.classList.toggle('active', t === tab);
+      const svg = btn.querySelector('svg');
+      if (svg) svg.style.stroke = t === tab ? '#b45309' : '#9ca3af';
+    }
+  });
+
+  const qp = document.getElementById('phone-quote-panel');
+  if (tab === 'quote') {
+    // Show quote panel over the canvas
+    qp.classList.add('pq-open');
+    renderPhoneQuote();
+  } else {
+    qp.classList.remove('pq-open');
+    // Switch canvas view
+    const modeMap = { plan: 'floor', elev: 'elevation', '3d': '3d' };
+    if (modeMap[tab]) setViewMode(modeMap[tab]);
+  }
+}
+
+function renderPhoneQuote() {
+  const r = activeRoom ? activeRoom() : null;
+  const titleEl = document.getElementById('phone-quote-title');
+  const bodyEl  = document.getElementById('phone-quote-body');
+  if (!r) {
+    if (titleEl) titleEl.textContent = 'Quote';
+    if (bodyEl)  bodyEl.innerHTML = '<p style="color:#6b7280;text-align:center;padding:40px 0;">No project selected.</p>';
+    return;
+  }
+  if (titleEl) titleEl.textContent = (r.name || 'Room') + ' — Quote';
+
+  const cabs  = r.cabinets  || [];
+  const apps  = r.appliances || [];
+  const isls  = r.islands   || [];
+  const all   = [...cabs, ...apps, ...isls];
+
+  if (!all.length) {
+    bodyEl.innerHTML = '<p style="color:#6b7280;text-align:center;padding:40px 0;">No items added yet.</p>';
+    return;
+  }
+
+  // Group by type+label
+  const groups = {};
+  all.forEach(item => {
+    const key   = item.type;
+    const label = CATALOG[key]?.label || APPLIANCES[key]?.label || key;
+    if (!groups[key]) groups[key] = { label, count: 0, items: [] };
+    groups[key].count++;
+    groups[key].items.push(item);
+  });
+
+  const rows = Object.values(groups).map(g => `
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                padding:13px 0;border-bottom:1px solid #e5e7eb;">
+      <span style="font-size:14px;color:#1e1409;font-weight:500;">${g.label}</span>
+      <span style="font-size:14px;font-weight:700;color:#1e1409;white-space:nowrap;margin-left:12px;">× ${g.count}</span>
+    </div>
+  `).join('');
+
+  bodyEl.innerHTML = `
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+      ${rows}
+      <div style="display:flex;justify-content:space-between;padding:14px 0 0;font-size:13px;color:#6b7280;">
+        <span>Total items</span>
+        <strong style="color:#1e1409;">${all.length}</strong>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#9ca3af;text-align:center;line-height:1.6;">
+      Pricing &amp; full PDF export available on desktop or tablet.
+    </p>
+  `;
+}
+
+// Sync phone nav active state when desktop view toggle is used
+const _origSetViewMode = typeof setViewMode === 'function' ? setViewMode : null;
+// (phoneTab calls setViewMode internally; desktop calls setViewMode directly — both are fine)
 
 // ════════════════════════════
 // ════════════════════════════
