@@ -2655,6 +2655,8 @@ function openProject(projId, roomId) {
   // Reset zoom/pan so auto-fit fires on the new project's rooms
   vpState.floor = { zoom: 1, panX: 0, panY: 0 };
   vpState.elev  = { zoom: 1, panX: 0, panY: 0 };
+  // Reset 3D camera so it re-frames the new room correctly
+  if (iso3D) iso3D.initedCamera = false;
   persist(); renderProjectView();
 }
 function renderProjectView() {
@@ -3632,36 +3634,74 @@ function renderIsometric() {
   const roomD   = Math.max(r.walls.east,  r.walls.west,  48);
   const ceiling = r.ceilingHeight || 96;
   const openings = r.openings || [];
+  const ld = getLShapeData(r); // null for rectangular rooms
+
+  // ── Auto-pick which wall to omit (open) for camera visibility ──
+  // Camera sits at SW corner looking NE, so south+west walls block the view most.
+  const allWallItems = [...r.cabinets, ...(r.appliances||[])];
+  const wallEmpty = name => !allWallItems.some(c => c.wall === name);
+  const openWall = ['south','west','east','north'].find(w => wallEmpty(w)) || null;
+
+  // ── Wall color map ──
+  const wallColors = { north:0xF8FAFC, south:0xF1F5F9, east:0xEFF3F7, west:0xF0F4F8, step1:0xF4F6F8, step2:0xF4F6F8 };
 
   // ── Floor ──
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(roomW, roomD),
-    new THREE.MeshStandardMaterial({ color: 0xE8EDF2, roughness: 0.95 })
-  );
-  floor.rotation.x = -Math.PI/2;
-  floor.position.set(roomW/2, 0, roomD/2);
-  floor.receiveShadow = true;
-  root.add(floor);
-  root.add(buildFloorGrid3D(roomW, roomD));
+  if (ld) {
+    // L-shaped floor via ShapeGeometry
+    // THREE.Shape is in XY; after rotation.x = -PI/2: (sx, sy) → 3D (sx, 0, -sy)
+    // So use (x, -z) to map to correct 3D (x, 0, z)
+    const fShape = new THREE.Shape();
+    fShape.moveTo(ld.polygon[0][0], -ld.polygon[0][1]);
+    for (let i=1; i<ld.polygon.length; i++) fShape.lineTo(ld.polygon[i][0], -ld.polygon[i][1]);
+    const floorL = new THREE.Mesh(new THREE.ShapeGeometry(fShape), new THREE.MeshStandardMaterial({ color:0xE8EDF2, roughness:0.95 }));
+    floorL.rotation.x = -Math.PI/2;
+    floorL.receiveShadow = true;
+    root.add(floorL);
+  } else {
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), new THREE.MeshStandardMaterial({ color:0xE8EDF2, roughness:0.95 }));
+    floor.rotation.x = -Math.PI/2;
+    floor.position.set(roomW/2, 0, roomD/2);
+    floor.receiveShadow = true;
+    root.add(floor);
+    root.add(buildFloorGrid3D(roomW, roomD));
+  }
 
-  // ── Walls (with door/window cutouts) ──
-  const north = buildWall3D('north', roomW, ceiling, openings, 0xF8FAFC);
-  north.position.set(0,0,0);
-  root.add(north);
+  // ── Walls ──
+  function addWall3D(wallName, length, posX, posZ, rotY) {
+    if (wallName === openWall) return;
+    const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName] || 0xF4F6F8);
+    if (rotY) mesh.rotation.y = rotY;
+    mesh.position.set(posX, 0, posZ);
+    root.add(mesh);
+  }
 
-  const south = buildWall3D('south', roomW, ceiling, openings, 0xF1F5F9);
-  south.position.set(0,0,roomD);
-  root.add(south);
-
-  const west = buildWall3D('west', roomD, ceiling, openings, 0xF0F4F8);
-  west.rotation.y = -Math.PI/2;
-  west.position.set(0,0,0);
-  root.add(west);
-
-  const east = buildWall3D('east', roomD, ceiling, openings, 0xEFF3F7);
-  east.rotation.y = -Math.PI/2;
-  east.position.set(roomW,0,0);
-  root.add(east);
+  if (ld) {
+    // Trace each polygon edge and build the matching wall panel
+    const poly = ld.polygon, n = poly.length;
+    for (let i=0; i<n; i++) {
+      const [ax, az] = poly[i], [bx, bz] = poly[(i+1)%n];
+      const horiz = Math.abs(az-bz) < 0.1;
+      const length = horiz ? Math.abs(bx-ax) : Math.abs(bz-az);
+      // Name each edge by where it sits
+      const wallName = horiz
+        ? (az < 0.1 ? 'north' : Math.abs(az-roomD)<0.1 ? 'south' : 'step2')
+        : (ax < 0.1 ? 'west'  : Math.abs(ax-roomW)<0.1 ? 'east'  : 'step1');
+      if (wallName === openWall) continue;
+      const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName]||0xF4F6F8);
+      if (horiz) {
+        mesh.position.set(Math.min(ax,bx), 0, az);
+      } else {
+        mesh.rotation.y = -Math.PI/2;
+        mesh.position.set(ax, 0, Math.min(az,bz));
+      }
+      root.add(mesh);
+    }
+  } else {
+    addWall3D('north', roomW, 0,     0,     0);
+    addWall3D('south', roomW, 0,     roomD, 0);
+    addWall3D('west',  roomD, 0,     0,     -Math.PI/2);
+    addWall3D('east',  roomD, roomW, 0,     -Math.PI/2);
+  }
 
   // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
   function cabPos(wall, offset, width, depth) {
@@ -3670,6 +3710,24 @@ function renderIsometric() {
       case 'south': return { x0: offset,      z0: roomD-depth, w: width, d: depth };
       case 'west':  return { x0: 0,           z0: offset,      w: depth, d: width };
       case 'east':  return { x0: roomW-depth, z0: offset,      w: depth, d: width };
+      case 'step1': {
+        if (!ld) return { x0: offset, z0: 0, w: width, d: depth };
+        const sw = ld.step1;
+        if (sw.isVertical)
+          return sw.depthRight ? { x0: sw.x, z0: sw.startY+offset, w: depth, d: width }
+                               : { x0: sw.x-depth, z0: sw.startY+offset, w: depth, d: width };
+        return sw.depthDown ? { x0: sw.startX+offset, z0: sw.y, w: width, d: depth }
+                            : { x0: sw.startX+offset, z0: sw.y-depth, w: width, d: depth };
+      }
+      case 'step2': {
+        if (!ld) return { x0: offset, z0: 0, w: width, d: depth };
+        const sw = ld.step2;
+        if (sw.isVertical)
+          return sw.depthRight ? { x0: sw.x, z0: sw.startY+offset, w: depth, d: width }
+                               : { x0: sw.x-depth, z0: sw.startY+offset, w: depth, d: width };
+        return sw.depthDown ? { x0: sw.startX+offset, z0: sw.y, w: width, d: depth }
+                            : { x0: sw.startX+offset, z0: sw.y-depth, w: width, d: depth };
+      }
       default:      return { x0: offset,      z0: 0,           w: width, d: depth };
     }
   }
@@ -3718,6 +3776,16 @@ function renderIsometric() {
       case 'east': {
         const dd = pos.d - inset*2; if (dd<=0) return;
         geoArgs = [thk,hh,dd]; cx = pos.x0-thk/2; cz = pos.z0+pos.d/2; break;
+      }
+      case 'step1': case 'step2': {
+        // Map step wall to the face that looks into the main room
+        const sw = ld && ld[wall];
+        if (!sw) return;
+        const effectiveDir = sw.isVertical
+          ? (sw.depthRight ? 'east' : 'west')   // east = panel on left face; west = panel on right face
+          : (sw.depthDown  ? 'south' : 'north');
+        addFrontPanel(pos, baseY, h, effectiveDir, color, glass);
+        return;
       }
       default: return;
     }
