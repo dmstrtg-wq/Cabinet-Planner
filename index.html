@@ -7,7 +7,7 @@
 <meta name="description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for contractors, designers, and homeowners.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -30,7 +30,7 @@ nav{
   padding:0 6%;display:flex;align-items:center;justify-content:space-between;height:60px;
 }
 .nav-logo{display:flex;align-items:center;gap:10px;}
-.nav-logo-text{font-size:15px;font-weight:800;color:white;letter-spacing:-0.3px;}
+.nav-logo-text{font-size:12px;font-weight:700;color:white;letter-spacing:0;font-family:'Unbounded',sans-serif;}
 .nav-links{display:flex;align-items:center;gap:32px;}
 .nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);transition:color 0.12s;}
 .nav-links a:hover{color:white;}
@@ -60,9 +60,10 @@ nav{
 }
 .hero-eyebrow::before{content:'';display:block;width:28px;height:1px;background:var(--accent);}
 .hero h1{
-  font-size:clamp(44px,5.5vw,76px);
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(26px,3.2vw,48px);
   font-weight:900;color:white;
-  line-height:1.0;letter-spacing:-3px;
+  line-height:1.1;letter-spacing:-1px;
   margin-bottom:28px;
 }
 .hero h1 em{font-style:normal;color:var(--accent);}
@@ -133,8 +134,9 @@ nav{
 }
 .stat-item:last-child{border-right:none;}
 .stat-num{
-  font-size:48px;font-weight:900;color:white;
-  letter-spacing:-3px;line-height:1;margin-bottom:8px;
+  font-family:'Unbounded',sans-serif;
+  font-size:36px;font-weight:900;color:white;
+  letter-spacing:-1px;line-height:1;margin-bottom:8px;
 }
 .stat-num em{font-style:normal;color:var(--accent);}
 .stat-label{font-size:12px;color:rgba(255,255,255,0.35);font-weight:500;letter-spacing:0.04em;}
@@ -148,8 +150,9 @@ nav{
 }
 .section-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--accent);}
 .section-title{
-  font-size:clamp(32px,4vw,52px);font-weight:900;
-  letter-spacing:-2px;line-height:1.05;color:var(--ink);
+  font-family:'Unbounded',sans-serif;
+  font-size:clamp(22px,2.6vw,36px);font-weight:900;
+  letter-spacing:-0.5px;line-height:1.1;color:var(--ink);
 }
 .section-sub{font-size:16px;color:var(--muted);line-height:1.75;margin-top:18px;max-width:480px;}
 
@@ -164,11 +167,13 @@ nav{
 }
 .step-row:first-child{border-top:1px solid var(--border);}
 .step-big-num{
-  font-size:72px;font-weight:900;color:var(--border);
-  letter-spacing:-4px;line-height:1;margin-top:-8px;
+  font-family:'Unbounded',sans-serif;
+  font-size:48px;font-weight:900;color:var(--border);
+  letter-spacing:-2px;line-height:1;margin-top:-4px;
 }
 .step-content h3{
-  font-size:24px;font-weight:800;letter-spacing:-0.5px;
+  font-family:'Unbounded',sans-serif;
+  font-size:17px;font-weight:700;letter-spacing:-0.3px;
   margin-bottom:12px;color:var(--ink);
 }
 .step-content p{font-size:15px;color:var(--muted);line-height:1.8;max-width:560px;}
@@ -189,8 +194,9 @@ nav{
   text-transform:uppercase;color:var(--accent);margin-bottom:14px;
 }
 .feature-text h3{
-  font-size:30px;font-weight:800;letter-spacing:-1px;
-  line-height:1.2;margin-bottom:16px;color:var(--ink);
+  font-family:'Unbounded',sans-serif;
+  font-size:20px;font-weight:700;letter-spacing:-0.3px;
+  line-height:1.25;margin-bottom:16px;color:var(--ink);
 }
 .feature-text p{font-size:15px;color:var(--muted);line-height:1.8;}
 .feature-visual{
@@ -243,8 +249,9 @@ nav{
   text-transform:uppercase;color:var(--accent);margin-bottom:18px;
 }
 .for-card h3{
-  font-size:22px;font-weight:800;color:white;
-  letter-spacing:-0.5px;margin-bottom:20px;line-height:1.2;
+  font-family:'Unbounded',sans-serif;
+  font-size:15px;font-weight:700;color:white;
+  letter-spacing:-0.2px;margin-bottom:20px;line-height:1.35;
 }
 .for-card ul{list-style:none;display:flex;flex-direction:column;gap:12px;}
 .for-card ul li{
@@ -275,8 +282,9 @@ nav{
 }
 .pricing-card.featured .plan-name{color:var(--accent);}
 .plan-price{
-  font-size:60px;font-weight:900;
-  letter-spacing:-4px;line-height:1;margin-bottom:6px;
+  font-family:'Unbounded',sans-serif;
+  font-size:44px;font-weight:900;
+  letter-spacing:-2px;line-height:1;margin-bottom:6px;
 }
 .plan-period{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0;}
 .pricing-card.featured .plan-period{color:rgba(255,255,255,0.4);}
@@ -319,7 +327,7 @@ nav{
   background:var(--bg);border:1px solid var(--border);
   border-radius:16px;padding:36px;
 }
-.demo-form-card h3{font-size:18px;font-weight:800;letter-spacing:-0.3px;margin-bottom:24px;}
+.demo-form-card h3{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;letter-spacing:-0.2px;margin-bottom:24px;}
 .demo-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .demo-field label{
   display:block;font-size:11px;font-weight:700;
@@ -722,7 +730,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   <div class="demo-inner">
     <div class="demo-left">
       <div class="section-eyebrow">Request a Demo</div>
-      <h2 class="section-title" style="max-width:440px;">See it with your own project.</h2>
+      <h2 class="section-title" style="max-width:480px;">See it with your own project.</h2>
       <p class="section-sub">We'll walk through the tool live, answer your questions, and have you building your first design inside 30 minutes.</p>
       <ul class="demo-bullets">
         <li>Live walkthrough tailored to your trade</li>
