@@ -488,10 +488,11 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <div class="win-dot" style="background:#ef4444;"></div>
         <div class="win-dot" style="background:#f59e0b;"></div>
         <div class="win-dot" style="background:#22c55e;"></div>
-        <span class="app-window-bar-title">Smith Family Kitchen</span>
+        <span class="app-window-bar-title">Miller Kitchen · 2 Rooms</span>
         <div class="app-view-btns">
           <div class="pvb active" id="pvb-floor">Floor Plan</div>
           <div class="pvb" id="pvb-elev">Elevation</div>
+          <div class="pvb" id="pvb-3d">3D</div>
         </div>
         <div id="pvb-quote" style="margin-left:8px;background:#16a34a;color:white;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;">Quote</div>
       </div>
@@ -841,34 +842,57 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  // Cabinet data
-  const BASE = [
-    { w:36, col:'#3B82F6', lbl:'B36', ox:0   },
-    { w:30, col:'#3B82F6', lbl:'B30', ox:36  },
-    { w:30, col:'#06B6D4', lbl:'SB30',ox:66  },
-    { w:36, col:'#3B82F6', lbl:'B36', ox:96  },
+  const ROOM_W = 144, ROOM_D = 108, CEIL = 96; // inches
+
+  // North wall: left→right, depth from north wall into room
+  const N_BASE = [
+    { ox:0,   w:30, d:30, col:'#6B7280', lbl:'REF',  isAppl:true },
+    { ox:30,  w:24, d:24, col:'#818CF8', lbl:'DW',   isAppl:true },
+    { ox:54,  w:30, d:24, col:'#06B6D4', lbl:'SB30' },
+    { ox:84,  w:30, d:24, col:'#3B82F6', lbl:'B30'  },
+    { ox:114, w:30, d:24, col:'#3B82F6', lbl:'B30'  },
   ];
-  const WALL = [
-    { w:36, col:'#93C5FD', lbl:'W36', ox:0   },
-    { w:30, col:'#93C5FD', lbl:'W30', ox:36  },
-    { w:30, col:'#93C5FD', lbl:'W30', ox:66  },
-    { w:36, col:'#93C5FD', lbl:'W36', ox:96  },
+  const N_WALL = [
+    { ox:54,  w:30, d:12, col:'#93C5FD', lbl:'W30' },
+    { ox:84,  w:30, d:12, col:'#93C5FD', lbl:'W30' },
+    { ox:114, w:30, d:12, col:'#93C5FD', lbl:'W30' },
   ];
+  // West wall: offset from north corner, depth from west wall
+  const W_CABS = [
+    { oy:30, h:30, d:24, col:'#F59E0B', lbl:'RNG', isAppl:true },
+    { oy:60, h:36, d:24, col:'#3B82F6', lbl:'B36' },
+  ];
+  const ISLAND = { ox:54, oy:48, w:48, d:30 };
+
   const QUOTE_LINES = [
-    { l:'Base Cabinet 36"W × 34.5"H', p:457 },
-    { l:'Base Cabinet 30"W × 34.5"H', p:422 },
-    { l:'Sink Base 30"W × 34.5"H',    p:339 },
-    { l:'Base Cabinet 36"W × 34.5"H', p:457 },
-    { l:'Wall Cabinet 36"W × 36"H',   p:376 },
-    { l:'Wall Cabinet 30"W × 36"H',   p:338 },
-    { l:'Wall Cabinet 30"W × 36"H',   p:338 },
-    { l:'Wall Cabinet 36"W × 36"H',   p:376 },
-    { l:'Labor & Installation',        p:950 },
+    { l:'Refrigerator End Panel 30"',    p: 285 },
+    { l:'Dishwasher Panel 24"',           p: 198 },
+    { l:'Sink Base 30"W × 34.5"H',       p: 339 },
+    { l:'Base Cabinet 30"W × 34.5"H',    p: 285 },
+    { l:'Base Cabinet 30"W × 34.5"H',    p: 285 },
+    { l:'Wall Cabinet 30"W × 36"H',      p: 338 },
+    { l:'Wall Cabinet 30"W × 36"H',      p: 338 },
+    { l:'Wall Cabinet 30"W × 36"H',      p: 338 },
+    { l:'Range Base 30"W × 34.5"H',      p: 265 },
+    { l:'Base Cabinet 36"W × 34.5"H',    p: 457 },
+    { l:'Kitchen Island 48"×30" × 36"H', p: 890 },
+    { l:'Labor & Installation',           p:1850 },
   ];
   const Q_TOTAL = QUOTE_LINES.reduce((s,i)=>s+i.p,0);
 
-  const LOOP = 25000; // 25 second loop
-  const ROOM_W = 132, ROOM_H = 84, CEIL = 96; // inches
+  const LOOP = 32000;
+  const T = {
+    ROOM_END:   2000,
+    N_END:      9000,
+    W_END:     11500,
+    ISL_END:   13500,
+    HOLD_END:  15000,
+    ELEV_DONE: 17500,
+    ELEV_HOLD: 19500,
+    ISO_DONE:  22500,
+    ISO_HOLD:  24500,
+    QUOTE_END: 32000,
+  };
 
   function easeOut(t){ return 1-Math.pow(1-t,3); }
   function easeInOut(t){ return t<0.5?2*t*t:-1+(4-2*t)*t; }
@@ -878,109 +902,170 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     canvas.height = canvas.parentElement.clientHeight;
   }
 
-  // ── FLOOR PLAN ──
-  function drawFloorPlan(t_room, cabProgress) {
+  function getLayout(){
     const W=canvas.width, H=canvas.height;
-    const SC = Math.min((W-80)/ROOM_W, (H-60)/ROOM_H);
-    const PAD = Math.floor((W - ROOM_W*SC)/2);
-    const PADY = Math.floor((H - ROOM_H*SC)/2) + 10;
-    const RX=PAD, RY=PADY, RW=ROOM_W*SC, RH=ROOM_H*SC;
-    const roomAlpha = easeOut(Math.min(1, t_room));
+    const SC=Math.min((W-80)/ROOM_W,(H-60)/ROOM_D);
+    const RW=ROOM_W*SC, RH=ROOM_D*SC;
+    const RX=Math.floor((W-RW)/2), RY=Math.floor((H-RH)/2)+8;
+    return{W,H,SC,RX,RY,RW,RH};
+  }
+
+  // ── FLOOR PLAN ──
+  function drawFloorPlan(roomP, nP, wP, islP) {
+    const{W,H,SC,RX,RY,RW,RH}=getLayout();
+    const ra=easeOut(Math.min(1,roomP));
 
     ctx.fillStyle='#F1F5F9'; ctx.fillRect(0,0,W,H);
-
-    ctx.globalAlpha=roomAlpha*0.4; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.5;
+    ctx.globalAlpha=ra*0.35; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.5;
     const G=12*SC;
     for(let x=RX;x<=RX+RW;x+=G){ctx.beginPath();ctx.moveTo(x,RY);ctx.lineTo(x,RY+RH);ctx.stroke();}
     for(let y=RY;y<=RY+RH;y+=G){ctx.beginPath();ctx.moveTo(RX,y);ctx.lineTo(RX+RW,y);ctx.stroke();}
-
-    ctx.globalAlpha=roomAlpha;
+    ctx.globalAlpha=ra;
     ctx.fillStyle='white'; ctx.fillRect(RX,RY,RW,RH);
     ctx.strokeStyle='#1E293B'; ctx.lineWidth=2.5; ctx.strokeRect(RX,RY,RW,RH);
-
-    ctx.fillStyle='#94A3B8'; ctx.font=`bold ${Math.max(9,SC*1.1)}px sans-serif`;
-    ctx.textAlign='left'; ctx.textBaseline='bottom';
-    ctx.fillText('↑ N', RX+4, RY-4);
+    ctx.fillStyle='#94A3B8'; ctx.font=`bold ${Math.max(9,SC)}px sans-serif`;
+    ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.fillText('↑ N',RX+4,RY-4);
+    ctx.fillStyle='#64748B'; ctx.font=`600 ${Math.max(8,SC*0.95)}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(`${ROOM_W}" (12')`,RX+RW/2,RY-13);
     ctx.globalAlpha=1;
 
-    ctx.fillStyle='#64748B'; ctx.font=`600 ${Math.max(9,SC*1.0)}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(`${ROOM_W}" (${Math.floor(ROOM_W/12)}'${ROOM_W%12>0?ROOM_W%12+'"':''})`, RX+RW/2, RY-14);
-
-    if(cabProgress <= 0) return;
-
-    const allCabs = [...BASE,...WALL];
-    const cabDur = 1.0 / allCabs.length;
-
-    allCabs.forEach((cab,i)=>{
-      const start = i * cabDur;
-      const p = Math.max(0, Math.min(1,(cabProgress-start)/cabDur));
+    // North wall base + appliances
+    const nDur=1/N_BASE.length;
+    N_BASE.forEach((cab,i)=>{
+      const s=i*nDur, p=Math.max(0,Math.min(1,(nP-s)/nDur));
       if(p<=0) return;
-
-      const isWall = cab.col==='#93C5FD';
-      const depth = isWall ? 12 : 24;
-      const x = RX + cab.ox*SC;
-      const w = cab.w*SC;
-      const h = depth*SC;
-      const y = RY;
-      const popScale = easeOut(Math.min(1,p*2));
-
+      const x=RX+cab.ox*SC, y=RY, w=cab.w*SC, h=cab.d*SC;
+      const ps=easeOut(Math.min(1,p*2));
       ctx.save();
-      ctx.globalAlpha = isWall ? 0.5*easeOut(p) : 0.88*easeOut(p);
-      ctx.translate(x+w/2, y); ctx.scale(1,popScale); ctx.translate(-(x+w/2),-y);
-      ctx.fillStyle = cab.col; ctx.fillRect(x,y,w,h);
+      ctx.globalAlpha=easeOut(p)*(cab.isAppl?0.75:0.92);
+      ctx.translate(x+w/2,y); ctx.scale(1,ps); ctx.translate(-(x+w/2),-y);
+      ctx.fillStyle=cab.col; ctx.fillRect(x,y,w,h);
       ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
-
-      if(p>0.5){
-        ctx.globalAlpha=Math.min(1,(p-0.5)*3)*(isWall?0.5:1);
-        const dark=['#3B82F6','#06B6D4'].includes(cab.col);
-        ctx.fillStyle=dark?'#fff':'#1e293b';
-        ctx.font=`bold ${Math.max(7,SC*0.9)}px sans-serif`;
+      if(p>0.45&&w>18*SC/12){
+        ctx.globalAlpha=Math.min(1,(p-0.45)*3);
+        ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(6,SC*0.75)}px sans-serif`;
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(cab.lbl, x+w/2, y+h/2);
+        ctx.fillText(cab.lbl,x+w/2,y+h/2);
       }
       ctx.restore();
     });
+
+    // North wall cabs (translucent overlay)
+    if(nP>0.65){
+      const wp=(nP-0.65)/0.35;
+      N_WALL.forEach(cab=>{
+        const x=RX+cab.ox*SC, y=RY, w=cab.w*SC, h=cab.d*SC;
+        ctx.save();
+        ctx.globalAlpha=easeOut(Math.min(1,wp*2))*0.45;
+        ctx.fillStyle=cab.col; ctx.fillRect(x,y,w,h);
+        ctx.strokeStyle='rgba(100,180,255,0.5)'; ctx.lineWidth=0.8; ctx.strokeRect(x,y,w,h);
+        ctx.restore();
+      });
+    }
+
+    // West wall
+    if(wP>0){
+      const wDur=1/W_CABS.length;
+      W_CABS.forEach((cab,i)=>{
+        const s=i*wDur, p=Math.max(0,Math.min(1,(wP-s)/wDur));
+        if(p<=0) return;
+        const x=RX, y=RY+cab.oy*SC, w=cab.d*SC, h=cab.h*SC;
+        const ps=easeOut(Math.min(1,p*2));
+        ctx.save();
+        ctx.globalAlpha=easeOut(p)*(cab.isAppl?0.75:0.92);
+        ctx.translate(x,y+h/2); ctx.scale(ps,1); ctx.translate(-x,-(y+h/2));
+        ctx.fillStyle=cab.col; ctx.fillRect(x,y,w,h);
+        ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+        if(p>0.5){
+          ctx.globalAlpha=Math.min(1,(p-0.5)*4);
+          ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(6,SC*0.75)}px sans-serif`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(cab.lbl,x+w/2,y+h/2);
+        }
+        ctx.restore();
+      });
+    }
+
+    // Island pops in from center
+    if(islP>0){
+      const p=easeOut(Math.min(1,islP));
+      const ix=RX+ISLAND.ox*SC, iy=RY+ISLAND.oy*SC, iw=ISLAND.w*SC, ih=ISLAND.d*SC;
+      ctx.save();
+      ctx.globalAlpha=p;
+      const sc2=0.15+0.85*p;
+      ctx.translate(ix+iw/2,iy+ih/2); ctx.scale(sc2,sc2); ctx.translate(-(ix+iw/2),-(iy+ih/2));
+      ctx.fillStyle='#F5F3FF'; ctx.fillRect(ix,iy,iw,ih);
+      ctx.strokeStyle='#7C3AED'; ctx.lineWidth=2; ctx.strokeRect(ix,iy,iw,ih);
+      ctx.strokeStyle='rgba(124,58,237,0.15)'; ctx.lineWidth=0.6;
+      for(let off=0;off<iw+ih;off+=7*SC/12){
+        ctx.beginPath();
+        ctx.moveTo(ix+Math.max(0,off-ih),iy+Math.min(ih,off));
+        ctx.lineTo(ix+Math.min(iw,off),iy+Math.max(0,off-iw));
+        ctx.stroke();
+      }
+      ctx.fillStyle='#7C3AED'; ctx.font=`bold ${Math.max(7,SC*0.8)}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('ISLAND 48"×30"',ix+iw/2,iy+ih/2);
+      ctx.restore();
+    }
   }
 
-  // ── ELEVATION ──
+  // ── ELEVATION (north wall) ──
   function drawElevation(alpha) {
     const W=canvas.width, H=canvas.height;
-    const SC = Math.min((W-80)/ROOM_W, (H-60)/CEIL);
-    const PAD = Math.floor((W - ROOM_W*SC)/2);
-    const PADY = Math.floor((H - CEIL*SC)/2);
-    const WX=PAD, WY=PADY, WW=ROOM_W*SC, WH=CEIL*SC;
-    const floorY=WY+WH;
+    const eSC=Math.min((W-80)/ROOM_W,(H-60)/CEIL);
+    const eW=ROOM_W*eSC;
+    const EX=Math.floor((W-eW)/2), EY=Math.floor((H-CEIL*eSC)/2);
+    const floorY=EY+CEIL*eSC;
     const swatch='#E7DFD0';
 
     ctx.globalAlpha=alpha;
     ctx.fillStyle='#F0F4F8'; ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
-
+    ctx.fillStyle='#FAFAFA'; ctx.fillRect(EX,EY,eW,CEIL*eSC);
     ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.5;
-    const G=12*SC;
-    for(let x=WX;x<=WX+WW;x+=G){ctx.beginPath();ctx.moveTo(x,WY);ctx.lineTo(x,WY+WH);ctx.stroke();}
+    const G=12*eSC;
+    for(let x=EX;x<=EX+eW;x+=G){ctx.beginPath();ctx.moveTo(x,EY);ctx.lineTo(x,EY+CEIL*eSC);ctx.stroke();}
 
-    const cY=floorY-36*SC;
-    ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.moveTo(WX,cY); ctx.lineTo(WX+WW,cY); ctx.stroke();
-    ctx.setLineDash([]); ctx.fillStyle='#94A3B8'; ctx.font='9px sans-serif';
-    ctx.textAlign='left'; ctx.fillText('Counter 36"',WX+4,cY-4);
+    // Counter dash line
+    const cY=floorY-36*eSC;
+    ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(EX,cY); ctx.lineTo(EX+eW,cY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#94A3B8'; ctx.font='9px sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.fillText('Counter 36"',EX+4,cY-2);
 
-    BASE.forEach(cab=>{
-      const x=WX+cab.ox*SC, w=cab.w*SC, h=34.5*SC, y=floorY-h;
-      ctx.fillStyle=swatch; ctx.fillRect(x,y,w,h);
-      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
-      ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+3,y+3,w-6,h-10);
-      ctx.fillStyle='#94A3B8'; ctx.beginPath();
-      ctx.roundRect(x+w/2-7,y+h-16,14,5,2); ctx.fill();
-      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-6,w,6);
-      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-3,w+2,3);
+    // Base cabs + appliances
+    N_BASE.forEach(cab=>{
+      const x=EX+cab.ox*eSC, w=cab.w*eSC;
+      const h=(cab.lbl==='REF'?71:34.5)*eSC;
+      const y=floorY-h;
+      ctx.fillStyle=cab.isAppl?'#D1D5DB':swatch;
+      ctx.fillRect(x,y,w,h);
+      ctx.strokeStyle=cab.isAppl?'#6B7280':'#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
+      if(!cab.isAppl){
+        ctx.strokeStyle='#475569'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,w-6,h-10);
+        ctx.fillStyle='#94A3B8'; ctx.beginPath();
+        ctx.roundRect(x+w/2-6,y+h-14,12,4,2); ctx.fill();
+      } else if(cab.lbl==='REF'){
+        ctx.strokeStyle='#4B5563'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(x+w-8,y+h*0.3); ctx.lineTo(x+w-8,y+h*0.7); ctx.stroke();
+        ctx.strokeStyle='#D1D5DB'; ctx.lineWidth=0.5;
+        ctx.beginPath(); ctx.moveTo(x,y+h*0.55); ctx.lineTo(x+w,y+h*0.55); ctx.stroke();
+      } else if(cab.lbl==='DW'){
+        ctx.strokeStyle='#818CF8'; ctx.lineWidth=0.8;
+        ctx.strokeRect(x+3,y+4,w-6,6*eSC/12);
+      }
+      ctx.fillStyle=cab.isAppl?'#374151':'#475569';
+      ctx.font=`bold ${Math.max(7,eSC*0.75)}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(cab.lbl,x+w/2,y+h/2);
     });
 
-    WALL.forEach(cab=>{
-      const x=WX+cab.ox*SC, w=cab.w*SC, h=36*SC;
-      const y=Math.max(WY,floorY-54*SC-h);
+    // Wall cabs
+    N_WALL.forEach(cab=>{
+      const x=EX+cab.ox*eSC, w=cab.w*eSC, h=36*eSC;
+      const y=Math.max(EY,floorY-54*eSC-h);
       ctx.fillStyle=swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
       ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
       ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,w-6,h-8);
@@ -988,14 +1073,105 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       ctx.roundRect(x+w/2-5,y+h-11,10,4,2); ctx.fill();
     });
 
-    ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(WX,WY,WW,WH);
-    ctx.fillStyle='#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
-    ctx.fillStyle='#CBD5E1'; ctx.fillRect(WX,floorY,WW,4);
-
-    ctx.fillStyle='#475569'; ctx.font=`600 ${Math.max(10,SC)}px sans-serif`;
+    ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(EX,EY,eW,CEIL*eSC);
+    ctx.fillStyle='#94A3B8'; ctx.fillRect(EX,EY-3,eW,3);
+    ctx.fillStyle='#CBD5E1'; ctx.fillRect(EX,floorY,eW,4);
+    ctx.fillStyle='#475569'; ctx.font=`600 ${Math.max(10,eSC)}px sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('North Wall Elevation', WX+WW/2, WY-16);
+    ctx.fillText('North Wall Elevation',EX+eW/2,EY-16);
+    ctx.globalAlpha=1;
+  }
 
+  // ── 3D ISOMETRIC ──
+  function drawIso(alpha) {
+    const W=canvas.width, H=canvas.height;
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle='#0d1b2a'; ctx.fillRect(0,0,W,H);
+
+    const SC=Math.min(W,H)/230;
+    const OX=W*0.5, OY=H*0.42;
+    const cos30=Math.cos(Math.PI/6), sin30=Math.sin(Math.PI/6);
+
+    function iso(wx,wy,wz){
+      return{ x:OX+(wx-wz)*cos30*SC, y:OY+(wx+wz)*sin30*SC-wy*SC };
+    }
+
+    function isoBox(wx,wy,wz,ww,wh,wd,cTop,cLeft,cFront){
+      // Top face
+      let p=[iso(wx,wy+wh,wz),iso(wx+ww,wy+wh,wz),iso(wx+ww,wy+wh,wz+wd),iso(wx,wy+wh,wz+wd)];
+      ctx.beginPath(); ctx.moveTo(p[0].x,p[0].y); p.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+      ctx.fillStyle=cTop; ctx.fill();
+      // Left face (west)
+      p=[iso(wx,wy,wz),iso(wx,wy+wh,wz),iso(wx,wy+wh,wz+wd),iso(wx,wy,wz+wd)];
+      ctx.beginPath(); ctx.moveTo(p[0].x,p[0].y); p.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+      ctx.fillStyle=cLeft; ctx.fill();
+      // Front face (south)
+      p=[iso(wx,wy,wz+wd),iso(wx+ww,wy,wz+wd),iso(wx+ww,wy+wh,wz+wd),iso(wx,wy+wh,wz+wd)];
+      ctx.beginPath(); ctx.moveTo(p[0].x,p[0].y); p.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+      ctx.fillStyle=cFront; ctx.fill();
+      // Subtle edge
+      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5;
+      const top=[iso(wx,wy+wh,wz),iso(wx+ww,wy+wh,wz),iso(wx+ww,wy+wh,wz+wd),iso(wx,wy+wh,wz+wd)];
+      ctx.beginPath(); ctx.moveTo(top[0].x,top[0].y); top.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath(); ctx.stroke();
+    }
+
+    // Room in iso units (1 unit = 6"). RW=24, RD=18, ceiling=16
+    const RW=24, RD=18, RH=16;
+
+    // Floor
+    ctx.globalAlpha=alpha*0.95;
+    let fp=[iso(0,0,0),iso(RW,0,0),iso(RW,0,RD),iso(0,0,RD)];
+    ctx.beginPath(); ctx.moveTo(fp[0].x,fp[0].y); fp.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+    ctx.fillStyle='#162033'; ctx.fill();
+    ctx.strokeStyle='rgba(56,189,248,0.07)'; ctx.lineWidth=0.5;
+    for(let i=0;i<=RW;i+=2){const a=iso(i,0,0),b=iso(i,0,RD);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    for(let i=0;i<=RD;i+=2){const a=iso(0,0,i),b=iso(RW,0,i);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+
+    // Back wall (north)
+    ctx.globalAlpha=alpha*0.5;
+    let bw=[iso(0,0,0),iso(RW,0,0),iso(RW,RH,0),iso(0,RH,0)];
+    ctx.beginPath(); ctx.moveTo(bw[0].x,bw[0].y); bw.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+    ctx.fillStyle='#0e1f35'; ctx.fill();
+    // Left wall (west)
+    let lw=[iso(0,0,0),iso(0,0,RD),iso(0,RH,RD),iso(0,RH,0)];
+    ctx.beginPath(); ctx.moveTo(lw[0].x,lw[0].y); lw.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath();
+    ctx.fillStyle='#0b1929'; ctx.fill();
+
+    ctx.globalAlpha=alpha;
+    const bH=5.75, wH=6, wY=9; // unit heights
+
+    // North wall cabinets
+    isoBox(0, 0,0, 5,11.75,5, '#374151','#1F2937','#4B5563'); // REF
+    isoBox(5, 0,0, 4,bH,   4, '#4C51BF','#3730A3','#6366F1'); // DW
+    isoBox(9, 0,0, 5,bH,   4, '#0E7490','#0C6680','#0891B2'); // SB30
+    isoBox(14,0,0, 5,bH,   4, '#1D4ED8','#1E40AF','#2563EB'); // B30
+    isoBox(19,0,0, 5,bH,   4, '#1D4ED8','#1E40AF','#2563EB'); // B30
+
+    // Wall cabs on north wall
+    isoBox(9, wY,0, 5,wH,2, '#93C5FD','#60A5FA','#BFDBFE');
+    isoBox(14,wY,0, 5,wH,2, '#93C5FD','#60A5FA','#BFDBFE');
+    isoBox(19,wY,0, 5,wH,2, '#93C5FD','#60A5FA','#BFDBFE');
+
+    // West wall: Range + Base36
+    isoBox(0,0,5, 4,bH,5, '#B45309','#92400E','#D97706');
+    isoBox(0,0,10,4,bH,6, '#1D4ED8','#1E40AF','#2563EB');
+
+    // Island
+    isoBox(9,0,8, 8,bH,5, '#7C3AED','#5B21B6','#8B5CF6');
+
+    // Blueprint room outline
+    ctx.globalAlpha=alpha*0.65;
+    ctx.strokeStyle='#38bdf8'; ctx.lineWidth=1;
+    let pts=[iso(0,0,0),iso(RW,0,0),iso(RW,RH,0),iso(0,RH,0)];
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); pts.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath(); ctx.stroke();
+    pts=[iso(0,0,0),iso(0,0,RD),iso(0,RH,RD),iso(0,RH,0)];
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); pts.forEach(v=>ctx.lineTo(v.x,v.y)); ctx.closePath(); ctx.stroke();
+
+    ctx.globalAlpha=alpha;
+    ctx.fillStyle='rgba(56,189,248,0.85)';
+    ctx.font=`bold ${Math.max(10,Math.min(W,H)*0.038)}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('3D View',W/2,H*0.9);
     ctx.globalAlpha=1;
   }
 
@@ -1003,159 +1179,168 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   function drawQuote(progress) {
     const W=canvas.width, H=canvas.height;
     const cardW=Math.min(W-32,480);
-    const cardH=Math.min(H-24,400);
+    const cardH=Math.min(H-20,H*0.93);
     const cardX=(W-cardW)/2;
-    const slideProgress=easeOut(Math.min(1,progress*1.5));
-    const cardY=H-(cardH*slideProgress)+16;
+    const sp=easeOut(Math.min(1,progress*1.5));
+    const cardY=H-(cardH*sp)+16;
 
-    ctx.fillStyle=`rgba(15,23,42,${0.35*Math.min(1,progress*2)})`;
+    ctx.fillStyle=`rgba(13,27,42,${0.4*Math.min(1,progress*2)})`;
     ctx.fillRect(0,0,W,H);
 
-    ctx.shadowBlur=40; ctx.shadowColor='rgba(0,0,0,0.25)';
+    ctx.shadowBlur=36; ctx.shadowColor='rgba(0,0,0,0.22)';
     ctx.fillStyle='white'; ctx.beginPath();
     ctx.roundRect(cardX,cardY,cardW,cardH,14); ctx.fill();
     ctx.shadowBlur=0;
 
-    ctx.fillStyle='#2c1f14'; ctx.beginPath();
+    ctx.fillStyle='#0f2744'; ctx.beginPath();
     ctx.roundRect(cardX,cardY,cardW,48,[14,14,0,0]); ctx.fill();
     ctx.fillStyle='white'; ctx.font='bold 13px sans-serif';
     ctx.textAlign='left'; ctx.textBaseline='middle';
-    ctx.fillText('QUOTE — Smith Family Kitchen', cardX+14, cardY+24);
+    ctx.fillText('QUOTE — Miller Kitchen Remodel', cardX+14, cardY+24);
     ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.font='10px sans-serif';
     ctx.textAlign='right';
-    ctx.fillText('CD-XK4R2P · '+new Date().toLocaleDateString(), cardX+cardW-14, cardY+24);
+    ctx.fillText('MK-'+new Date().getFullYear()+' · '+new Date().toLocaleDateString(), cardX+cardW-14, cardY+24);
 
-    const itemsToShow=Math.floor(QUOTE_LINES.length*Math.min(1,Math.max(0,(progress-0.15)*2.2)));
+    const rowH=Math.min(25,(cardH-90)/QUOTE_LINES.length);
+    const items=Math.floor(QUOTE_LINES.length*Math.min(1,Math.max(0,(progress-0.12)*2)));
     let iy=cardY+58;
-    const rowH=26;
 
-    QUOTE_LINES.slice(0,itemsToShow).forEach((item,i)=>{
-      if(i%2===0){ctx.fillStyle='#faf7f4';ctx.fillRect(cardX+8,iy-3,cardW-16,rowH-2);}
-      ctx.fillStyle='#1c1008'; ctx.font='12px sans-serif';
+    QUOTE_LINES.slice(0,items).forEach((item,i)=>{
+      const isIsl=item.l.includes('Island');
+      if(i%2===0){ctx.fillStyle=isIsl?'#faf5ff':'#faf7f4'; ctx.fillRect(cardX+8,iy-2,cardW-16,rowH-1);}
+      ctx.fillStyle='#1c1008'; ctx.font='11px sans-serif';
       ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(item.l, cardX+16, iy+rowH/2-3);
-      ctx.fillStyle='#16a34a'; ctx.font='bold 12px sans-serif';
+      ctx.fillText(item.l,cardX+14,iy+rowH/2-2);
+      ctx.fillStyle=isIsl?'#7C3AED':'#16a34a'; ctx.font='bold 11px sans-serif';
       ctx.textAlign='right';
-      ctx.fillText('$'+item.p.toLocaleString(), cardX+cardW-14, iy+rowH/2-3);
+      ctx.fillText('$'+item.p.toLocaleString(),cardX+cardW-14,iy+rowH/2-2);
       iy+=rowH;
     });
 
-    if(progress>0.75){
-      const ta=easeOut(Math.min(1,(progress-0.75)*4));
+    if(progress>0.72){
+      const ta=easeOut(Math.min(1,(progress-0.72)*4));
       ctx.globalAlpha=ta;
       iy+=4;
-      ctx.fillStyle='#e7ddd5'; ctx.fillRect(cardX+8,iy,cardW-16,2);
-      iy+=12;
-      ctx.fillStyle='#1c1008'; ctx.font='bold 15px sans-serif';
+      ctx.fillStyle='#e7ddd5'; ctx.fillRect(cardX+8,iy,cardW-16,1.5);
+      iy+=10;
+      ctx.fillStyle='#1c1008'; ctx.font='bold 14px sans-serif';
       ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText('TOTAL', cardX+16, iy+10);
+      ctx.fillText('TOTAL',cardX+14,iy+10);
       ctx.fillStyle='#16a34a'; ctx.font='bold 18px sans-serif';
       ctx.textAlign='right';
-      ctx.fillText('$'+Q_TOTAL.toLocaleString(), cardX+cardW-14, iy+10);
+      ctx.fillText('$'+Q_TOTAL.toLocaleString(),cardX+cardW-14,iy+10);
 
-      if(progress>0.88){
-        const sa=easeOut(Math.min(1,(progress-0.88)*8));
+      if(progress>0.87){
+        const sa=easeOut(Math.min(1,(progress-0.87)*8));
         ctx.globalAlpha=sa*0.85;
         ctx.save();
-        ctx.translate(cardX+cardW-80, cardY+cardH-70);
-        ctx.rotate(-0.35);
+        ctx.translate(cardX+cardW-90,cardY+cardH-70);
+        ctx.rotate(-0.32);
         ctx.strokeStyle='#16a34a'; ctx.lineWidth=3;
         ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.strokeText('READY TO SEND', 0, 0);
-        ctx.fillStyle='#16a34a'; ctx.fillText('READY TO SEND', 0, 0);
+        ctx.strokeText('READY TO SEND',0,0);
+        ctx.fillStyle='#16a34a'; ctx.fillText('READY TO SEND',0,0);
         ctx.restore();
       }
       ctx.globalAlpha=1;
     }
   }
 
-  // ── UPDATE UI CHROME ──
+  // ── CHROME UPDATES ──
   function updateChrome(phase) {
     const fl=document.getElementById('pvb-floor');
     const el=document.getElementById('pvb-elev');
+    const td=document.getElementById('pvb-3d');
     const qt=document.getElementById('pvb-quote');
     if(!fl) return;
-    if(phase==='floor'){
-      fl.classList.add('active'); el.classList.remove('active');
-      qt.style.opacity='1';
-    } else if(phase==='elev'){
-      el.classList.add('active'); fl.classList.remove('active');
-      qt.style.opacity='1';
-    } else {
-      el.classList.add('active'); fl.classList.remove('active');
-      qt.style.background='#b45309'; qt.style.opacity='1';
-    }
+    [fl,el,td].forEach(b=>{if(b)b.classList.remove('active');});
+    if(qt){qt.style.background='#16a34a'; qt.style.opacity='1';}
+    if(phase==='floor') fl.classList.add('active');
+    else if(phase==='elev') el.classList.add('active');
+    else if(phase==='iso'){if(td)td.classList.add('active');}
+    else{el.classList.add('active'); if(qt)qt.style.background='#b45309';}
 
     const list=document.getElementById('pvp-cab-list');
-    if(!list) return;
     const lbl=document.getElementById('pvp-wall-label');
-    if(phase==='floor'&&list){
+    if(!list) return;
+    if(phase==='floor'){
       if(lbl) lbl.textContent='North Wall';
-      list.innerHTML=BASE.slice(0,Math.min(BASE.length,4)).map((c,i)=>`
-        <div style="background:#f8fafc;border-radius:4px;padding:5px;margin-bottom:3px;border:1px solid #e2e8f0;display:flex;gap:4px;align-items:center;">
-          <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
-          <div><div style="font-size:8px;font-weight:600;color:#334155;">Base ${c.w}"W</div><div style="font-size:7px;color:#94a3b8;">34.5"H × 24"D</div></div>
-        </div>`).join('');
+      list.innerHTML=[
+        {col:'#6B7280',name:'REF Panel 30"',   sub:'71"H × 30"D'},
+        {col:'#818CF8',name:'Dishwasher 24"',   sub:'Built-in 34.5"H'},
+        {col:'#06B6D4',name:'Sink Base 30"',    sub:'34.5"H × 24"D'},
+        {col:'#7C3AED',name:'Island 48"×30"',   sub:'36"H counter'},
+      ].map(c=>`<div style="background:#f8fafc;border-radius:4px;padding:5px;margin-bottom:3px;border:1px solid #e2e8f0;display:flex;gap:4px;align-items:center;">
+        <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
+        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#94a3b8;">${c.sub}</div></div>
+      </div>`).join('');
+    } else if(phase==='iso'){
+      if(lbl) lbl.textContent='3D Objects';
+      list.innerHTML=[
+        {col:'#374151',name:'5 Base Cabinets',  sub:'incl. appliance panels'},
+        {col:'#93C5FD',name:'3 Wall Cabinets',  sub:'30"W × 36"H'},
+        {col:'#7C3AED',name:'Kitchen Island',   sub:'48"×30"'},
+        {col:'#F59E0B',name:'Range Base 30"',   sub:'West wall'},
+      ].map(c=>`<div style="background:#f8fafc;border-radius:4px;padding:5px;margin-bottom:3px;border:1px solid #e2e8f0;display:flex;gap:4px;align-items:center;">
+        <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
+        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#94a3b8;">${c.sub}</div></div>
+      </div>`).join('');
     }
   }
 
-  // ── MAIN ANIMATION LOOP ──
+  // ── MAIN LOOP ──
   let startTime=null;
-
-  const T={
-    ROOM_END:   1800,
-    CABS_END:  11000,
-    HOLD_END:  13000,
-    ELEV_END:  16000,
-    ELEV_HOLD: 18000,
-    QUOTE_END: 24000,
-  };
 
   function animate(ts){
     if(!startTime) startTime=ts;
     const t=(ts-startTime)%LOOP;
-
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if(t < T.ROOM_END){
-      drawFloorPlan(t/T.ROOM_END, 0);
-      updateChrome('floor');
-    } else if(t < T.CABS_END){
-      const p=(t-T.ROOM_END)/(T.CABS_END-T.ROOM_END);
-      drawFloorPlan(1, p);
-      updateChrome('floor');
+      drawFloorPlan(t/T.ROOM_END,0,0,0); updateChrome('floor');
+    } else if(t < T.N_END){
+      const p=(t-T.ROOM_END)/(T.N_END-T.ROOM_END);
+      drawFloorPlan(1,p,0,0); updateChrome('floor');
+    } else if(t < T.W_END){
+      const p=(t-T.N_END)/(T.W_END-T.N_END);
+      drawFloorPlan(1,1,p,0); updateChrome('floor');
+    } else if(t < T.ISL_END){
+      const p=(t-T.W_END)/(T.ISL_END-T.W_END);
+      drawFloorPlan(1,1,1,p); updateChrome('floor');
     } else if(t < T.HOLD_END){
-      drawFloorPlan(1, 1);
-      updateChrome('floor');
-    } else if(t < T.ELEV_END){
-      const p=(t-T.HOLD_END)/(T.ELEV_END-T.HOLD_END);
+      drawFloorPlan(1,1,1,1); updateChrome('floor');
+    } else if(t < T.ELEV_DONE){
+      const p=(t-T.HOLD_END)/(T.ELEV_DONE-T.HOLD_END);
       if(p<0.4){
-        const fp=1-easeInOut(p/0.4);
-        ctx.globalAlpha=fp; drawFloorPlan(1,1); ctx.globalAlpha=1;
+        ctx.globalAlpha=1-easeInOut(p/0.4); drawFloorPlan(1,1,1,1); ctx.globalAlpha=1;
+        updateChrome('floor');
       } else {
-        const ep=easeInOut((p-0.4)/0.6);
-        drawElevation(ep);
-        updateChrome('elev');
+        drawElevation(easeInOut((p-0.4)/0.6)); updateChrome('elev');
       }
     } else if(t < T.ELEV_HOLD){
-      drawElevation(1);
-      updateChrome('elev');
+      drawElevation(1); updateChrome('elev');
+    } else if(t < T.ISO_DONE){
+      const p=(t-T.ELEV_HOLD)/(T.ISO_DONE-T.ELEV_HOLD);
+      if(p<0.35){
+        ctx.globalAlpha=1-easeInOut(p/0.35); drawElevation(1); ctx.globalAlpha=1;
+        updateChrome('elev');
+      } else {
+        drawIso(easeInOut((p-0.35)/0.65)); updateChrome('iso');
+      }
+    } else if(t < T.ISO_HOLD){
+      drawIso(1); updateChrome('iso');
     } else if(t < T.QUOTE_END){
-      const p=(t-T.ELEV_HOLD)/(T.QUOTE_END-T.ELEV_HOLD);
-      drawElevation(1);
-      drawQuote(p);
-      updateChrome('quote');
+      const p=(t-T.ISO_HOLD)/(T.QUOTE_END-T.ISO_HOLD);
+      drawIso(1); drawQuote(p); updateChrome('quote');
     } else {
-      drawElevation(1);
-      drawQuote(1);
-      updateChrome('quote');
+      drawIso(1); drawQuote(1); updateChrome('quote');
     }
 
     requestAnimationFrame(animate);
   }
 
   resize();
-  window.addEventListener('resize', ()=>{ resize(); });
+  window.addEventListener('resize',()=>resize());
   requestAnimationFrame(animate);
 })();
 
