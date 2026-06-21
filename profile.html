@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — My Cabinet Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --accent: #b45309; --accent-hover: #92400e;
+    --text: #1e1409; --muted: #6b7280; --border: #e5e7eb;
+    --surface: #fff; --bg: #faf9f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(180deg, #2c1f14 0%, #1e1409 100%);
+    padding: 0 5%; height: 58px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .hdr-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .hdr-brand span { color: #fff; font-size: 15px; font-weight: 700; }
+  .hdr-actions { display: flex; gap: 10px; align-items: center; }
+  .hdr-btn {
+    padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .hdr-btn-ghost { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+  .hdr-btn-ghost:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .hdr-btn-primary { background: var(--accent); color: #fff; }
+  .hdr-btn-primary:hover { background: var(--accent-hover); }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  .page-title { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+  .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 32px; }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* ── COMPANY INFO ── */
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .info-row {
+    display: flex; flex-direction: column; padding: 14px 20px;
+    border-bottom: 1px solid var(--border); border-right: 1px solid var(--border);
+  }
+  .info-row:nth-child(even) { border-right: none; }
+  .info-row:nth-last-child(-n+2) { border-bottom: none; }
+  .info-label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+  .info-value { font-size: 14px; color: var(--text); font-weight: 500; }
+  .info-value.empty { color: var(--muted); font-style: italic; }
+  .info-logo { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); }
+
+  /* ── PRICING TABLE ── */
+  .price-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .price-table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; background: #f9fafb; border-bottom: 1px solid var(--border); }
+  .price-table td { padding: 11px 16px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .price-table tr:last-child td { border-bottom: none; }
+  .price-table tr:hover td { background: #f9fafb; }
+  .price-default { color: var(--muted); }
+
+  /* ── DOOR STYLES ── */
+  .styles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 16px; }
+  .style-chip {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-weight: 600;
+  }
+  .style-swatch { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
+  .style-empty { padding: 16px 20px; font-size: 13px; color: var(--muted); }
+
+  /* ── PROJECTS TABLE ── */
+  .proj-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .proj-table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; background: #f9fafb; border-bottom: 1px solid var(--border); }
+  .proj-table td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .proj-table tr:last-child td { border-bottom: none; }
+  .proj-table tr:hover td { background: #f9fafb; }
+  .proj-name { font-weight: 600; color: var(--text); }
+  .proj-company { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .proj-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 12px; }
+  .proj-link:hover { text-decoration: underline; }
+
+  /* ── STATUS BADGE ── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.8; display: inline-block; }
+  .s-Lead       { background: #dbeafe; color: #1d4ed8; }
+  .s-Quoted     { background: #fef9c3; color: #a16207; }
+  .s-Ordered    { background: #ffedd5; color: #c2410c; }
+  .s-Installing { background: #f3e8ff; color: #7e22ce; }
+  .s-Complete   { background: #dcfce7; color: #15803d; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display: flex; gap: 0; margin-bottom: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .stat { flex: 1; padding: 18px 20px; border-right: 1px solid var(--border); }
+  .stat:last-child { border-right: none; }
+  .stat-num { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── EDIT BTN ── */
+  .edit-btn {
+    padding: 5px 12px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text);
+  }
+  .edit-btn:hover { background: var(--bg); }
+
+  /* ── LOADING ── */
+  #loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 15px; }
+
+  /* ── AUTH GATE ── */
+  #auth-gate { display: none; text-align: center; padding: 80px 24px; }
+  #auth-gate h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+  #auth-gate p { color: var(--muted); margin-bottom: 24px; }
+
+  @media (max-width: 600px) {
+    .page { padding: 24px 16px 60px; }
+    .info-grid { grid-template-columns: 1fr; }
+    .info-row { border-right: none; }
+    .info-row:nth-last-child(-n+2) { border-bottom: 1px solid var(--border); }
+    .info-row:last-child { border-bottom: none; }
+    .stats-bar { flex-direction: column; }
+    .stat { border-right: none; border-bottom: 1px solid var(--border); }
+    .stat:last-child { border-bottom: none; }
+    .proj-table thead { display: none; }
+    .proj-table td { display: block; border-bottom: none; padding: 6px 16px; }
+    .proj-table td:first-child { padding-top: 12px; }
+    .proj-table td:last-child { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .hdr-brand span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="hdr-brand">
+    <svg width="30" height="30" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#pg)"/>
+      <rect x="7" y="7" width="38" height="38" rx="4" fill="none" stroke="rgba(200,168,130,0.45)" stroke-width="1.5"/>
+      <rect x="21" y="30.5" width="10" height="7" rx="3.5" fill="#c8a882"/>
+      <defs><linearGradient id="pg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#5a3820"/><stop offset="100%" stop-color="#1e1208"/></linearGradient></defs>
+    </svg>
+    <span>My Cabinet Planner</span>
+  </a>
+  <div class="hdr-actions">
+    <a href="/app" class="hdr-btn hdr-btn-ghost">← Back to Planner</a>
+    <button class="hdr-btn hdr-btn-ghost" onclick="handleSignOut()">Sign Out</button>
+  </div>
+</header>
+
+<div id="loading">Loading your profile…</div>
+<div id="auth-gate">
+  <h2>Sign in to view your profile</h2>
+  <p>Your profile is only available to signed-in subscribers.</p>
+  <a href="/app" class="hdr-btn hdr-btn-primary" style="display:inline-flex;">Go to Sign In</a>
+</div>
+
+<div class="page" id="profile-page" style="display:none;">
+
+  <h1 class="page-title" id="profile-name">My Profile</h1>
+  <p class="page-sub" id="profile-email"></p>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Projects</div></div>
+    <div class="stat"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Active (Lead + Quoted + Ordered)</div></div>
+    <div class="stat"><div class="stat-num" id="stat-complete">—</div><div class="stat-label">Complete</div></div>
+    <div class="stat"><div class="stat-num" id="stat-rooms">—</div><div class="stat-label">Total Rooms Designed</div></div>
+  </div>
+
+  <!-- Company Info -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Company Info</div>
+      <a href="/app" class="edit-btn" onclick="sessionStorage.setItem('open-company-settings','1');return true;">✏ Edit in App</a>
+    </div>
+    <div class="card">
+      <div id="company-logo-row" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;">
+        <img id="company-logo" class="info-logo" alt="Company logo">
+        <div>
+          <div id="company-name-large" style="font-size:17px;font-weight:700;"></div>
+          <div id="company-tagline" style="font-size:13px;color:var(--muted);"></div>
+        </div>
+      </div>
+      <div class="info-grid" id="info-grid"></div>
+    </div>
+  </div>
+
+  <!-- Pricing -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Pricing Overrides</div>
+    </div>
+    <div class="card">
+      <table class="price-table">
+        <thead><tr><th>Cabinet Type</th><th>$/inch (your rate)</th></tr></thead>
+        <tbody id="pricing-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Door Styles -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Custom Door Styles</div>
+    </div>
+    <div class="card" id="styles-card"></div>
+  </div>
+
+  <!-- Projects -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">All Projects</div>
+      <a href="/app" class="hdr-btn hdr-btn-primary" style="font-size:12px;padding:6px 14px;">＋ New Project</a>
+    </div>
+    <div class="card">
+      <table class="proj-table">
+        <thead>
+          <tr>
+            <th>Project / Customer</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Rooms</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="projects-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PRICE_LABELS = {
+  base: 'Base Cabinet', wall: 'Wall Cabinet', drawerBase: 'Drawer Base',
+  sink: 'Sink Base', cornerBase: 'Corner Base', lazysusan: 'Lazy Susan',
+  vanity: 'Vanity', tall: 'Tall / Pantry', diagWall: 'Diagonal Corner Wall',
+  fridgePanel: 'Fridge End Panel'
+};
+
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function statusBadge(s) {
+  const cl = 's-' + (s||'Lead').replace(/\s/g,'');
+  return `<span class="status-badge ${cl}">${esc(s||'Lead')}</span>`;
+}
+
+async function handleSignOut() {
+  await db.auth.signOut();
+  location.href = '/app';
+}
+
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('auth-gate').style.display = 'block';
+    return;
+  }
+  const user = session.user;
+
+  // Load company profile
+  const { data: company } = await db.from('company_profiles').select('*').eq('user_id', user.id).single();
+
+  // Load all projects
+  const { data: projects } = await db.from('projects').select('*').order('created_at', { ascending: false });
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('profile-page').style.display = 'block';
+
+  // Profile title
+  const name = company?.company_name || user.email.split('@')[0];
+  document.getElementById('profile-name').textContent = name;
+  document.getElementById('profile-email').textContent = user.email;
+
+  // Stats
+  const projs = projects || [];
+  const activeStatuses = ['Lead','Quoted','Ordered','Installing'];
+  const totalRooms = projs.reduce((s, p) => s + ((p.data?.rooms?.length) || 0), 0);
+  document.getElementById('stat-total').textContent   = projs.length;
+  document.getElementById('stat-active').textContent  = projs.filter(p => activeStatuses.includes(p.data?.status || 'Lead')).length;
+  document.getElementById('stat-complete').textContent= projs.filter(p => (p.data?.status) === 'Complete').length;
+  document.getElementById('stat-rooms').textContent   = totalRooms;
+
+  // Company info card
+  if (company) {
+    if (company.logo_url) {
+      document.getElementById('company-logo-row').style.display = 'flex';
+      document.getElementById('company-logo').src = company.logo_url;
+      document.getElementById('company-name-large').textContent = company.company_name || '';
+      document.getElementById('company-tagline').textContent = company.tagline || '';
+    }
+    const fields = [
+      { label: 'Company Name',  value: company.company_name },
+      { label: 'Tagline',       value: company.tagline },
+      { label: 'Address',       value: company.address },
+      { label: 'City / State',  value: [company.city, company.state, company.zip].filter(Boolean).join(', ') },
+      { label: 'Phone',         value: company.phone },
+      { label: 'Email',         value: company.email },
+      { label: 'Website',       value: company.website },
+    ];
+    document.getElementById('info-grid').innerHTML = fields.map(f => `
+      <div class="info-row">
+        <div class="info-label">${esc(f.label)}</div>
+        <div class="info-value ${f.value ? '' : 'empty'}">${esc(f.value) || 'Not set'}</div>
+      </div>
+    `).join('');
+
+    // Pricing
+    const overrides = company.price_overrides || {};
+    document.getElementById('pricing-body').innerHTML = Object.entries(PRICE_LABELS).map(([k, label]) => `
+      <tr>
+        <td>${esc(label)}</td>
+        <td>${overrides[k] != null
+          ? `<strong>$${parseFloat(overrides[k]).toFixed(2)}/in</strong>`
+          : `<span class="price-default">Default (Forevermark MSRP)</span>`}</td>
+      </tr>
+    `).join('');
+
+    // Door styles
+    const styles = company.custom_styles || [];
+    const stylesCard = document.getElementById('styles-card');
+    if (styles.length) {
+      stylesCard.innerHTML = `<div class="styles-grid">${styles.map(s => `
+        <div class="style-chip">
+          <div class="style-swatch" style="background:${esc(s.swatch||'#F5F4F0')};"></div>
+          <div><div style="font-size:12px;font-weight:700;">${esc(s.code||'')}</div><div style="font-size:11px;color:var(--muted);">${esc(s.name||'')}</div></div>
+        </div>`).join('')}</div>`;
+    } else {
+      stylesCard.innerHTML = '<div class="style-empty">No custom door styles added yet. Add them in Company Settings inside the app.</div>';
+    }
+  } else {
+    document.getElementById('info-grid').innerHTML = '<div class="info-row" style="grid-column:1/-1"><div class="info-value empty">No company info set up yet — <a href="/app">open the app</a> and go to Company Settings.</div></div>';
+    document.getElementById('pricing-body').innerHTML = '<tr><td colspan="2" style="color:var(--muted);padding:16px;">No pricing overrides set.</td></tr>';
+    document.getElementById('styles-card').innerHTML = '<div class="style-empty">No custom door styles added yet.</div>';
+  }
+
+  // Projects table
+  const tbody = document.getElementById('projects-body');
+  if (!projs.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px;">No projects yet.</td></tr>';
+  } else {
+    tbody.innerHTML = projs.map(p => {
+      const rooms = (p.data?.rooms || []).length;
+      const status = p.data?.status || 'Lead';
+      const created = new Date(p.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+      return `
+        <tr>
+          <td>
+            <div class="proj-name">${esc(p.customer)}</div>
+            ${p.company ? `<div class="proj-company">${esc(p.company)}</div>` : ''}
+          </td>
+          <td>${esc(p.type||'—')}</td>
+          <td>${statusBadge(status)}</td>
+          <td>${rooms}</td>
+          <td style="color:var(--muted);">${created}</td>
+          <td><a href="/app" class="proj-link">Open →</a></td>
+        </tr>`;
+    }).join('');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

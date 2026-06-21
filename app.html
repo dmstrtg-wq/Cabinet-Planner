@@ -347,6 +347,61 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .project-header h2 { font-size: 17px; font-weight: 700; }
 .project-header-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .header-btns { display: flex; gap: 7px; flex-shrink: 0; }
+
+/* ── PROJECT STATUS ── */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px; border: none; cursor: pointer;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  transition: opacity 0.12s;
+}
+.status-pill:hover { opacity: 0.85; }
+.status-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: currentColor; opacity: 0.8; }
+.status-Lead      { background: #eff6ff; color: #1d4ed8; }
+.status-Quoted    { background: #fefce8; color: #a16207; }
+.status-Ordered   { background: #fff7ed; color: #c2410c; }
+.status-Installing{ background: #fdf4ff; color: #7e22ce; }
+.status-Complete  { background: #f0fdf4; color: #15803d; }
+
+/* ── STATUS DROPDOWN ── */
+#status-menu {
+  position: absolute; z-index: 600;
+  background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 5px;
+  min-width: 160px; display: none;
+}
+#status-menu.open { display: block; }
+.status-menu-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 7px; cursor: pointer;
+  font-size: 13px; font-weight: 600; border: none; background: none; width: 100%; text-align: left;
+  transition: background 0.1s;
+}
+.status-menu-opt:hover { background: var(--hover); }
+.status-menu-opt .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── SIDEBAR STATUS DOT ── */
+.proj-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-left: auto; }
+.dot-Lead       { background: #3b82f6; }
+.dot-Quoted     { background: #eab308; }
+.dot-Ordered    { background: #f97316; }
+.dot-Installing { background: #a855f7; }
+.dot-Complete   { background: #22c55e; }
+
+/* ── ACTIVITY LOG MODAL ── */
+#modal-activity-log .modal-box { max-width: 560px; max-height: 80vh; display: flex; flex-direction: column; }
+.al-entry {
+  display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.al-entry:last-child { border-bottom: none; }
+.al-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#c8a882,#6b4c2a); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+.al-body { flex: 1; }
+.al-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+.al-text { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+.al-add { display: flex; gap: 8px; margin-bottom: 14px; flex-shrink: 0; }
+.al-add textarea { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; resize: none; height: 60px; outline: none; }
+.al-add textarea:focus { border-color: var(--accent); }
+.al-feed { overflow-y: auto; flex: 1; }
 .btn { padding: 7px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.12s; display: inline-flex; align-items: center; gap: 5px; }
 .btn-primary { background: var(--accent); color: white; }
 .btn-primary:hover { background: var(--accent-hover); }
@@ -630,6 +685,15 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 <!-- ═══ APP ROOT ═══ -->
 <div id="app-root" class="hidden">
 
+<!-- Status dropdown (absolute-positioned, shown near pill) -->
+<div id="status-menu" role="listbox" aria-label="Project status">
+  <button class="status-menu-opt" onclick="setProjectStatus('Lead')"><span class="dot dot-Lead"></span>Lead</button>
+  <button class="status-menu-opt" onclick="setProjectStatus('Quoted')"><span class="dot dot-Quoted"></span>Quoted</button>
+  <button class="status-menu-opt" onclick="setProjectStatus('Ordered')"><span class="dot dot-Ordered"></span>Ordered</button>
+  <button class="status-menu-opt" onclick="setProjectStatus('Installing')"><span class="dot dot-Installing"></span>Installing</button>
+  <button class="status-menu-opt" onclick="setProjectStatus('Complete')"><span class="dot dot-Complete"></span>Complete</button>
+</div>
+
 <!-- Demo mode banner — only shown when ?demo=1 -->
 <div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#b45309;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
   Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
@@ -666,10 +730,11 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <span class="sync-dot" id="sync-dot"></span>
       <span style="font-size:10px;color:rgba(255,255,255,0.3);" id="sync-label">Saved</span>
     </div>
-    <div style="display:flex;gap:6px;">
+    <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">⚙ Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
+    <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">👤 My Profile</a>
   </div>
 </aside>
 
@@ -688,7 +753,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
     <div class="project-header">
       <div class="project-header-info">
         <h2 id="pv-name">—</h2>
-        <div class="project-header-meta" id="pv-meta"></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="project-header-meta" id="pv-meta"></div>
+          <button id="pv-status-pill" class="status-pill" onclick="openStatusMenu(this)" title="Change project status"></button>
+        </div>
       </div>
       <div class="header-btns">
         <div class="view-toggle">
@@ -696,6 +764,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           <button class="view-toggle-btn" id="vt-elev" onclick="setViewMode('elevation')">Elevation</button>
           <button class="view-toggle-btn" id="vt-3d" onclick="setViewMode('3d')">3D View</button>
         </div>
+        <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">📋 Log</button>
         <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
         <button class="btn btn-secondary" onclick="window.print()">Print</button>
         <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
@@ -1429,6 +1498,26 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   </div>
 </div>
 
+<!-- ── ACTIVITY LOG MODAL ── -->
+<div id="modal-activity-log" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Project activity log">
+  <div class="modal-box" style="max-width:540px;max-height:82vh;display:flex;flex-direction:column;padding:0;overflow:hidden;">
+    <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <h3 style="font-size:17px;font-weight:700;">Project Log</h3>
+        <button onclick="closeModal('modal-activity-log')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);line-height:1;" aria-label="Close">×</button>
+      </div>
+      <div id="al-project-name" style="font-size:12px;color:var(--text-muted);"></div>
+    </div>
+    <div style="padding:16px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div class="al-add">
+        <textarea id="al-note-input" placeholder="Add a note — what's happening with this project?" aria-label="New log entry"></textarea>
+        <button class="btn btn-primary" onclick="addActivityNote()" style="align-self:flex-end;white-space:nowrap;">Add Note</button>
+      </div>
+    </div>
+    <div class="al-feed" id="al-feed" style="padding:8px 24px 16px;overflow-y:auto;flex:1;"></div>
+  </div>
+</div>
+
 <div id="modal-faq" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Help and FAQ">
   <div class="modal" style="max-width:560px;max-height:82vh;overflow-y:auto;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -1867,7 +1956,7 @@ async function syncActiveProject() {
     type: p.type,
     notes: p.notes || '',
     style: p.style || 'AW',
-    data: { rooms: p.rooms },
+    data: { rooms: p.rooms, status: p.status || 'Lead', activityLog: p.activityLog || [] },
     updated_at: new Date().toISOString()
   }, { onConflict: 'id' });
   setSyncStatus(error ? 'error' : 'saved');
@@ -1897,7 +1986,9 @@ async function loadProjects() {
     notes: row.notes || '',
     style: row.style || 'AW',
     createdAt: new Date(row.created_at).getTime(),
-    rooms: (row.data && row.data.rooms) || []
+    rooms: (row.data && row.data.rooms) || [],
+    status: (row.data && row.data.status) || 'Lead',
+    activityLog: (row.data && row.data.activityLog) || []
   }));
   renderSidebar();
   const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
@@ -2025,7 +2116,8 @@ function createProject() {
     address: document.getElementById('np-address').value.trim(),
     city:    document.getElementById('np-city').value.trim(),
     state:   document.getElementById('np-state').value,
-    style: 'AW', createdAt: Date.now(), rooms: [room]
+    style: 'AW', createdAt: Date.now(), rooms: [room],
+    status: 'Lead', activityLog: []
   };
   state.projects.unshift(proj);
   persist();
@@ -2757,15 +2849,21 @@ function projectThumbSVG(p) {
 function renderSidebar() {
   const list = document.getElementById('project-list');
   if (!state.projects.length) { list.innerHTML = '<div class="empty-msg">No projects yet.<br>Click + New Project above.</div>'; return; }
-  list.innerHTML = state.projects.map(p => `
+  list.innerHTML = state.projects.map(p => {
+    const st = p.status || 'Lead';
+    return `
     <div class="project-item ${p.id === state.activeProjectId ? 'active' : ''}" onclick="openProject('${p.id}')">
       ${projectThumbSVG(p)}
       <div class="project-item-text">
-        <div class="project-item-name">${escHtml(p.customer)}</div>
-        <div class="project-item-meta">${p.type} · ${new Date(p.createdAt).toLocaleDateString()}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="project-item-name">${escHtml(p.customer)}</div>
+          <span class="proj-status-dot dot-${st.replace(/\s/g,'')}" title="${st}"></span>
+        </div>
+        <div class="project-item-meta">${p.type} · ${st} · ${new Date(p.createdAt).toLocaleDateString()}</div>
       </div>
       <button class="project-item-menu-btn" onclick="showProjectMenu('${p.id}',event)" title="Options" aria-label="Project options">⋯</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ════════════════════════════
@@ -2801,6 +2899,11 @@ function renderProjectView() {
   document.getElementById('pv-name').textContent = p.customer;
   const si = getStyles().find(s => s.code === (p.style || getStyles()[0]?.code));
   document.getElementById('pv-meta').textContent = `${p.type} · Style: ${si ? si.code + ' – ' + si.name : ''} · Created ${new Date(p.createdAt).toLocaleDateString()}`;
+  // Status pill
+  const pill = document.getElementById('pv-status-pill');
+  const status = p.status || 'Lead';
+  pill.textContent = status;
+  pill.className = 'status-pill status-' + status.replace(/\s/g,'');
   syncStylePanel(); renderSidebar(); renderRoomTabs();
   selectWall(state.activeWall); setViewMode(state.viewMode || 'floor');
 }
@@ -5412,6 +5515,99 @@ async function exportPDF(btn) {
     window.addEventListener('touchend', () => { if(drag){ drag=null; setTimeout(()=>{ tooltip.style.display='none'; }, 1200); } });
   }
 })();
+
+// ════════════════════════════
+// PROJECT MANAGEMENT
+// ════════════════════════════
+const STATUS_COLORS = {
+  Lead:       { bg:'#dbeafe', color:'#1d4ed8' },
+  Quoted:     { bg:'#fef9c3', color:'#a16207' },
+  Ordered:    { bg:'#ffedd5', color:'#c2410c' },
+  Installing: { bg:'#f3e8ff', color:'#7e22ce' },
+  Complete:   { bg:'#dcfce7', color:'#15803d' },
+};
+
+function openStatusMenu(pill) {
+  const menu = document.getElementById('status-menu');
+  const rect = pill.getBoundingClientRect();
+  menu.style.top  = (rect.bottom + 4) + 'px';
+  menu.style.left = rect.left + 'px';
+  menu.classList.toggle('open');
+  if (menu.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', function close(e) {
+      if (!menu.contains(e.target) && e.target !== pill) {
+        menu.classList.remove('open');
+        document.removeEventListener('click', close);
+      }
+    }), 0);
+  }
+}
+
+function setProjectStatus(status) {
+  const p = activeProj(); if (!p) return;
+  const prev = p.status || 'Lead';
+  p.status = status;
+  // Auto-add a log entry for the status change
+  if (!p.activityLog) p.activityLog = [];
+  p.activityLog.unshift({
+    id: uid(), type: 'status',
+    text: `Status changed from ${prev} to ${status}`,
+    createdAt: new Date().toISOString(),
+    user: currentUser ? currentUser.email : 'You'
+  });
+  document.getElementById('status-menu').classList.remove('open');
+  persist(); renderProjectView();
+}
+
+function openActivityLog() {
+  const p = activeProj(); if (!p) return;
+  document.getElementById('al-project-name').textContent = p.customer + (p.company ? ` · ${p.company}` : '');
+  document.getElementById('al-note-input').value = '';
+  renderActivityFeed();
+  openModal('modal-activity-log');
+}
+
+function renderActivityFeed() {
+  const p = activeProj();
+  const feed = document.getElementById('al-feed');
+  if (!p) return;
+  const log = p.activityLog || [];
+  if (!log.length) {
+    feed.innerHTML = '<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:24px 0;">No activity yet — add a note above.</p>';
+    return;
+  }
+  feed.innerHTML = log.map(e => {
+    const d = new Date(e.createdAt);
+    const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const timeStr = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+    const isStatus = e.type === 'status';
+    const initials = (e.user || 'You').split('@')[0].slice(0,2).toUpperCase();
+    return `
+      <div class="al-entry">
+        <div class="al-avatar" style="${isStatus ? 'background:linear-gradient(135deg,#3b82f6,#1d4ed8);' : ''}">${isStatus ? '⟳' : initials}</div>
+        <div class="al-body">
+          <div class="al-meta">${escHtml(e.user || 'You')} · ${dateStr} at ${timeStr}</div>
+          <div class="al-text" style="${isStatus ? 'color:var(--text-muted);font-style:italic;' : ''}">${escHtml(e.text)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function addActivityNote() {
+  const p = activeProj(); if (!p) return;
+  const input = document.getElementById('al-note-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!p.activityLog) p.activityLog = [];
+  p.activityLog.unshift({
+    id: uid(), type: 'note',
+    text,
+    createdAt: new Date().toISOString(),
+    user: currentUser ? currentUser.email : 'You'
+  });
+  input.value = '';
+  persist(); renderActivityFeed();
+}
 
 // ════════════════════════════
 // COMPANY SETTINGS
