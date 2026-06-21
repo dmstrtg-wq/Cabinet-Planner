@@ -3510,14 +3510,17 @@ function buildWall3D(wallName, lengthAxisSize, ceiling, openings, color) {
     shape.holes.push(hole);
   });
 
-  // ExtrudeGeometry gives walls real depth — eliminates z-fighting at corners and floor junction.
-  // Extrusion goes in local +Z. Caller positions mesh so extrusion points OUTWARD (away from room).
+  // ExtrudeGeometry gives walls real 3D depth, eliminating coplanar-edge z-fighting at corners.
+  // polygonOffset pushes walls slightly back in the depth buffer so cabinet faces win cleanly.
   const geo = new THREE.ExtrudeGeometry(shape, { depth: WALL_THICK, bevelEnabled: false });
   const mat = new THREE.MeshStandardMaterial({
     color,
-    side: THREE.DoubleSide,  // both faces lit (interior + exterior caps)
+    side: THREE.DoubleSide,
     roughness: 0.92,
-    metalness: 0
+    metalness: 0,
+    polygonOffset: true,
+    polygonOffsetFactor: 4,
+    polygonOffsetUnits: 4
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
@@ -3676,13 +3679,10 @@ function renderIsometric() {
   }
 
   // ── Walls ──
-  // ExtrudeGeometry extrudes in local +Z. After rotation.y=-PI/2, local +Z = world +X.
-  // Position each wall so the extrusion points OUTWARD (away from room interior):
-  //   North (no rot):  posZ = -WALL_THICK  → extrudes outward to z=0 (interior flush)
-  //   South (no rot):  posZ = roomD        → extrudes outward to z=roomD+WALL_THICK
-  //   West (rot -PI/2): posX = -WALL_THICK → extrudes outward to x=0 (interior flush)
-  //   East (rot -PI/2): posX = roomW       → extrudes outward to x=roomW+WALL_THICK
-  // This gives clean interior corners with no overlapping geometry.
+  // Each wall sits at its natural interior boundary (z=0, z=roomD, x=0, x=roomW).
+  // ExtrudeGeometry gives each wall 3.5" of physical depth so perpendicular corner walls
+  // cannot z-fight (they're never coplanar). polygonOffset on the wall material handles
+  // any remaining coplanarity with cabinet back-faces at the same plane.
   const WT = 3.5;
 
   function addWall3D(wallName, length, posX, posZ, rotY) {
@@ -3706,22 +3706,24 @@ function renderIsometric() {
       if (wallName === openWall) continue;
       const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName]||0xF4F6F8);
       if (horiz) {
-        // Push edge-of-room walls outward; inner step2 walls push toward cut corner
-        const pz = az < 0.1 ? -WT : (Math.abs(az-roomD)<0.1 ? az : az - WT);
-        mesh.position.set(Math.min(ax,bx), 0, pz);
+        // Natural position: interior face sits exactly at the polygon edge z-value.
+        // ExtrudeGeometry extrudes outward (away from interior) — no corner gaps.
+        mesh.position.set(Math.min(ax,bx), 0, az);
       } else {
         mesh.rotation.y = -Math.PI/2;
-        // Push edge-of-room walls outward; inner step1 wall: extrusion already goes into cut corner
-        const px = ax < 0.1 ? -WT : (Math.abs(ax-roomW)<0.1 ? ax : ax);
-        mesh.position.set(px, 0, Math.min(az,bz));
+        // Natural position: interior face at the polygon edge x-value.
+        mesh.position.set(ax, 0, Math.min(az,bz));
       }
       root.add(mesh);
     }
   } else {
-    addWall3D('north', roomW, 0,     -WT,   0);
-    addWall3D('south', roomW, 0,     roomD, 0);
-    addWall3D('west',  roomD, -WT,   0,     -Math.PI/2);
-    addWall3D('east',  roomD, roomW, 0,     -Math.PI/2);
+    // Natural positions: interior face sits at the room boundary.
+    // ExtrudeGeometry gives each wall 3D thickness so perpendicular walls can't z-fight at corners.
+    // polygonOffset on the material handles any remaining wall/cabinet coplanarity.
+    addWall3D('north', roomW, 0,     0,     0);           // interior face at z=0
+    addWall3D('south', roomW, 0,     roomD, 0);           // interior face at z=roomD
+    addWall3D('west',  roomD, 0,     0,     -Math.PI/2);  // interior face at x=0
+    addWall3D('east',  roomD, roomW, 0,     -Math.PI/2);  // interior face at x=roomW
   }
 
   // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
