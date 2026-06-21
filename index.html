@@ -234,6 +234,24 @@ footer{
 .footer-links a{font-size:13px;color:rgba(255,255,255,0.35);transition:color 0.12s;}
 .footer-links a:hover{color:rgba(255,255,255,0.7);}
 .footer-copy{font-size:12px;color:rgba(255,255,255,0.2);}
+/* Accessibility widget */
+#a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:#b45309;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
+#a11y-btn:hover{background:#92400e;}
+#a11y-btn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;}
+#a11y-panel{position:fixed;bottom:76px;right:16px;z-index:9100;background:#fff;border:1px solid #e7ddd5;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:16px;width:220px;display:none;}
+#a11y-panel.open{display:block;}
+#a11y-panel h4{font-size:13px;font-weight:700;color:#1c1008;margin-bottom:12px;}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e7ddd5;font-size:13px;color:#1c1008;}
+.a11y-row:last-child{border-bottom:none;padding-bottom:0;}
+.a11y-toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.a11y-toggle input{opacity:0;width:0;height:0;}
+.a11y-slider{position:absolute;inset:0;background:#ccc;border-radius:20px;cursor:pointer;transition:background 0.2s;}
+.a11y-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s;}
+.a11y-toggle input:checked+.a11y-slider{background:#b45309;}
+.a11y-toggle input:checked+.a11y-slider:before{transform:translateX(16px);}
+body.a11y-large-text{font-size:110%;}
+body.a11y-high-contrast{filter:contrast(1.3);}
+body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-motion *::after{animation-duration:0.001ms!important;transition-duration:0.001ms!important;}
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
@@ -912,6 +930,64 @@ async function submitDemo() {
   }
   btn.disabled = false; btn.textContent = 'Request My Demo →';
 }
+</script>
+
+<!-- Accessibility widget -->
+<button id="a11y-btn" aria-label="Accessibility options" aria-expanded="false" aria-controls="a11y-panel" onclick="toggleA11yPanel()">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <line x1="4" y1="6" x2="20" y2="6"/><circle cx="8" cy="6" r="2" fill="#fff" stroke="none"/>
+    <line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2" fill="#fff" stroke="none"/>
+    <line x1="4" y1="18" x2="20" y2="18"/><circle cx="10" cy="18" r="2" fill="#fff" stroke="none"/>
+  </svg>
+</button>
+<div id="a11y-panel" role="dialog" aria-label="Accessibility options" aria-modal="false">
+  <h4>Display Options</h4>
+  <div class="a11y-row">
+    <span>Larger Text</span>
+    <label class="a11y-toggle"><input type="checkbox" id="a11y-text" onchange="applyA11y()"><span class="a11y-slider"></span></label>
+  </div>
+  <div class="a11y-row">
+    <span>High Contrast</span>
+    <label class="a11y-toggle"><input type="checkbox" id="a11y-contrast" onchange="applyA11y()"><span class="a11y-slider"></span></label>
+  </div>
+  <div class="a11y-row">
+    <span>Reduce Motion</span>
+    <label class="a11y-toggle"><input type="checkbox" id="a11y-motion" onchange="applyA11y()"><span class="a11y-slider"></span></label>
+  </div>
+</div>
+<script>
+(function(){
+  const prefs = JSON.parse(localStorage.getItem('a11y_prefs') || '{}');
+  function applyA11y() {
+    const text = document.getElementById('a11y-text').checked;
+    const contrast = document.getElementById('a11y-contrast').checked;
+    const motion = document.getElementById('a11y-motion').checked;
+    document.body.classList.toggle('a11y-large-text', text);
+    document.body.classList.toggle('a11y-high-contrast', contrast);
+    document.body.classList.toggle('a11y-reduce-motion', motion);
+    localStorage.setItem('a11y_prefs', JSON.stringify({text, contrast, motion}));
+  }
+  window.applyA11y = applyA11y;
+  window.toggleA11yPanel = function() {
+    const panel = document.getElementById('a11y-panel');
+    const btn = document.getElementById('a11y-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen);
+    if (isOpen) {
+      document.addEventListener('click', function handler(e) {
+        if (!panel.contains(e.target) && e.target !== btn) {
+          panel.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('click', handler);
+        }
+      });
+    }
+  };
+  if (prefs.text) { document.getElementById('a11y-text').checked = true; }
+  if (prefs.contrast) { document.getElementById('a11y-contrast').checked = true; }
+  if (prefs.motion) { document.getElementById('a11y-motion').checked = true; }
+  applyA11y();
+})();
 </script>
 </body>
 </html>
