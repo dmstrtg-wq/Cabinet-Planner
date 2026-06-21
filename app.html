@@ -285,7 +285,25 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .elev-wall-tab { padding: 5px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
 .elev-wall-tab:hover { border-color: var(--accent); color: var(--accent); }
 .elev-wall-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
-#summary-table { margin-top: 14px; margin-left: auto; margin-right: auto; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: inline-block; min-width: 300px; }
+/* === SIDEBAR COLLAPSE === */
+#sidebar { transition: width 0.22s ease; }
+body.sb-collapsed #sidebar { width: 0 !important; overflow: hidden; }
+.sb-collapse-btn { background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; font-size: 18px; font-weight: 700; padding: 0 4px; line-height: 1; margin-left: auto; flex-shrink: 0; transition: color 0.1s; }
+.sb-collapse-btn:hover { color: rgba(255,255,255,0.8); }
+.sb-expand-tab { display: none; position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 400; width: 18px; height: 52px; background: var(--surface); border: 1px solid var(--border); border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; align-items: center; justify-content: center; font-size: 13px; color: var(--text-muted); box-shadow: 2px 0 8px rgba(0,0,0,0.10); transition: background 0.1s; }
+.sb-expand-tab:hover { background: var(--bg); }
+body.sb-collapsed .sb-expand-tab { display: flex; }
+/* === PANEL COLLAPSE === */
+#cabinet-panel { transition: width 0.22s ease; position: relative; }
+body.panel-collapsed #cabinet-panel { width: 0 !important; overflow: hidden; border-left: none; }
+.panel-collapse-btn { display: flex; align-items: center; gap: 5px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; padding: 8px 13px 6px; width: 100%; border-bottom: 1px solid var(--border); letter-spacing: 0.03em; transition: color 0.1s; }
+.panel-collapse-btn:hover { color: var(--accent); }
+.panel-expand-tab { display: none; position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 400; width: 18px; height: 52px; background: var(--surface); border: 1px solid var(--border); border-right: none; border-radius: 8px 0 0 8px; cursor: pointer; align-items: center; justify-content: center; font-size: 13px; color: var(--text-muted); box-shadow: -2px 0 8px rgba(0,0,0,0.10); transition: background 0.1s; }
+.panel-expand-tab:hover { background: var(--bg); }
+body.panel-collapsed .panel-expand-tab { display: flex; }
+/* === SUMMARY TABLE === */
+#summary-table { margin-top: 14px; margin-left: auto; margin-right: auto; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: none; min-width: 300px; }
+#summary-table.summary-open { display: inline-block; }
 #summary-table h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
 .summary-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid var(--border); }
 .summary-row:last-child { border-bottom: none; }
@@ -533,6 +551,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
         <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">Cabinet Planner</div>
       </div>
+      <button class="sb-collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button>
     </div>
   </div>
   <div class="sidebar-actions">
@@ -609,6 +628,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
             <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
+            <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()" style="margin-left:0;">☰ Summary</button>
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('floor')" title="Fit to view (F)">⊡ Fit</button>
               <button class="vp-btn" onclick="stepZoom('floor',-1)" title="Zoom out">−</button>
@@ -665,6 +685,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
       </div>
 
       <div id="cabinet-panel">
+        <button class="panel-collapse-btn" onclick="togglePanel()" title="Collapse panel" aria-label="Collapse panel">› Collapse Panel</button>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Door Style</div>
           <div class="style-current" id="style-current" onclick="toggleStylePicker()">
@@ -820,6 +841,10 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 </main>
 
 </div><!-- end app-root -->
+
+<!-- Sidebar / panel expand tabs (visible only when collapsed) -->
+<button class="sb-expand-tab" onclick="toggleSidebar()" title="Show projects" aria-label="Expand sidebar">›</button>
+<button class="panel-expand-tab" onclick="togglePanel()" title="Show panel" aria-label="Expand panel">‹</button>
 
 <footer id="app-footer">
   <span>© 2025 My Cabinet Planner</span>
@@ -4420,6 +4445,22 @@ function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
 // ════════════════════════════
 // WORK TRIANGLE
 // ════════════════════════════
+function toggleSidebar() {
+  document.body.classList.toggle('sb-collapsed');
+}
+function togglePanel() {
+  document.body.classList.toggle('panel-collapsed');
+  // Let the canvas re-fit after the panel animates
+  setTimeout(() => fitView(state.viewMode === 'elevation' ? 'elev' : 'floor'), 250);
+}
+function toggleSummary() {
+  const el = document.getElementById('summary-table');
+  const open = el.classList.toggle('summary-open');
+  const btn = document.getElementById('summary-toggle-btn');
+  if (open) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
+  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+}
+
 function toggleWorkTriangle() {
   showWorkTriangle = !showWorkTriangle;
   const btn = document.getElementById('tri-btn');
