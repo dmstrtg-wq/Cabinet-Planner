@@ -156,6 +156,32 @@ nav{
 }
 .section-sub{font-size:16px;color:var(--muted);line-height:1.75;margin-top:18px;max-width:480px;}
 
+/* ── PROBLEM ── */
+.problem-section{padding:90px 6%;background:var(--bg);}
+.problem-inner{max-width:680px;}
+.problem-points{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.problem-points li{list-style:none;font-size:14px;color:var(--muted);padding-left:22px;position:relative;line-height:1.6;}
+.problem-points li::before{content:'✕';position:absolute;left:0;top:1px;color:#b91c1c;font-weight:700;font-size:12px;}
+
+/* ── ONE PLATFORM ── */
+.platform-section{padding:100px 6%;background:var(--white);}
+.platform-header{max-width:640px;margin-bottom:56px;}
+.platform-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+}
+.platform-card{background:white;padding:36px 30px;}
+.platform-num{
+  font-family:'Unbounded',sans-serif;font-size:12px;font-weight:900;
+  color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;
+}
+.platform-card h3{
+  font-family:'Unbounded',sans-serif;font-size:17px;font-weight:700;
+  color:var(--ink);margin-bottom:10px;letter-spacing:-0.2px;
+}
+.platform-card p{font-size:14px;color:var(--muted);line-height:1.7;}
+
 /* ── HOW IT WORKS ── */
 .how-section{padding:100px 6%;background:var(--bg);}
 .how-header{max-width:600px;margin-bottom:64px;}
@@ -232,6 +258,14 @@ nav{
 }
 .mock-devices{display:flex;gap:12px;align-items:flex-end;}
 .mock-device{background:white;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.mock-pipeline{display:flex;gap:6px;width:100%;}
+.mock-stage{flex:1;text-align:center;padding:9px 4px;border-radius:6px;background:white;border:1px solid var(--border);font-size:9px;font-weight:700;color:var(--muted);}
+.mock-stage.active{background:var(--accent);color:white;border-color:var(--accent);}
+.mock-activity{width:100%;display:flex;flex-direction:column;gap:10px;}
+.mock-activity-item{display:flex;gap:8px;align-items:flex-start;}
+.mock-activity-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;}
+.mock-activity-item>div:last-child{font-size:11px;color:var(--ink);line-height:1.5;}
+.mock-activity-time{font-size:9.5px;color:var(--muted);margin-top:2px;display:block;}
 
 /* ── WHO IT'S FOR ── */
 .for-section{padding:100px 6%;background:var(--ink);}
@@ -261,6 +295,20 @@ nav{
 .for-card ul li::before{
   content:'—';position:absolute;left:0;color:var(--accent);font-weight:700;
 }
+
+/* ── COMPARE (one platform vs three tools) ── */
+.compare-section{padding:100px 6%;background:var(--bg);}
+.compare-header{max-width:640px;margin-bottom:56px;}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:840px;}
+.compare-card{border-radius:16px;padding:36px;border:1px solid var(--border);background:white;}
+.compare-card.good{border-color:transparent;background:var(--ink);}
+.compare-card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:22px;}
+.compare-card.good .compare-card-label{color:var(--accent);}
+.compare-list{list-style:none;display:flex;flex-direction:column;gap:16px;}
+.compare-list li{font-size:14px;color:var(--muted);padding-left:24px;position:relative;line-height:1.55;}
+.compare-list li::before{content:'✕';position:absolute;left:0;top:1px;color:#b91c1c;font-weight:700;font-size:12px;}
+.compare-card.good .compare-list li{color:rgba(255,255,255,0.6);}
+.compare-card.good .compare-list li::before{content:'✓';color:var(--accent);font-weight:800;}
 
 /* ── PRICING ── */
 .pricing-section{padding:100px 6%;background:var(--bg);}
@@ -410,6 +458,8 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   .feature-row,.feature-row.flip{grid-template-columns:1fr;direction:ltr;}
   .pricing-cards{grid-template-columns:1fr;max-width:440px;}
   .demo-inner{grid-template-columns:1fr;}
+  .platform-grid{grid-template-columns:1fr;}
+  .compare-grid{grid-template-columns:1fr;}
 }
 @media(max-width:680px){
   .stats-bar{flex-direction:column;}
@@ -422,6 +472,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   .btn-hero,.btn-hero-ghost{width:100%;text-align:center;justify-content:center;}
   .demo-row{grid-template-columns:1fr;}
   footer{flex-direction:column;gap:24px;}
+  .problem-points{grid-template-columns:1fr;gap:16px;}
 }
 @media(max-width:480px){
   .app-window .win-sidebar,.app-window .win-panel{display:none;}
@@ -472,9 +523,9 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
 <!-- HERO -->
 <section class="hero">
   <div class="hero-left">
-    <div class="hero-eyebrow">Cabinet Planning Software</div>
+    <div class="hero-eyebrow">All-in-One Cabinet Software</div>
     <h1>From blank room<br>to <em>signed quote.</em></h1>
-    <p class="hero-sub">Lay out cabinets, check the elevation, and hand over a branded PDF quote — without leaving the kitchen you're standing in.</p>
+    <p class="hero-sub">Design the layout, send a branded quote, and track the job through to install — all in one platform built for cabinet pros.</p>
     <div class="hero-actions">
       <a href="/app?demo=1" class="btn-hero">Try the Demo &rarr;</a>
       <a href="#pricing" class="btn-hero-ghost">View Pricing</a>
@@ -536,6 +587,46 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   </div>
 </div>
 
+<!-- PROBLEM -->
+<section class="problem-section">
+  <div class="problem-inner">
+    <div class="section-eyebrow">The Old Way</div>
+    <h2 class="section-title">One missed line item,<br>and you're working for free.</h2>
+    <p class="section-sub">Hand-drawn floor plans. A price list you flip back to mid-conversation. A number you promise to "follow up on" because you can't do the math standing in the kitchen. Get one cabinet wrong, and you've quietly under-quoted a job you'll eat the cost on.</p>
+    <ul class="problem-points">
+      <li>Quotes built from memory and a price sheet, not the actual room</li>
+      <li>No way to know a number was wrong until the job's already underway</li>
+      <li>Design, pricing, and job status — three different places, one of them probably your head</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ONE PLATFORM -->
+<section class="platform-section">
+  <div class="platform-header">
+    <div class="section-eyebrow">One Platform</div>
+    <h2 class="section-title">Design it. Quote it.<br>Run the job.</h2>
+    <p class="section-sub">Most cabinet businesses run on three disconnected tools — a design program, a price list, and whatever they use to remember where a job stands. My Cabinet Planner replaces all three with one record that never falls out of sync.</p>
+  </div>
+  <div class="platform-grid">
+    <div class="platform-card">
+      <div class="platform-num">Design</div>
+      <h3>Lay out the room.</h3>
+      <p>Drop in cabinets and appliances, see it in 3D — no CAD experience required.</p>
+    </div>
+    <div class="platform-card">
+      <div class="platform-num">Quote</div>
+      <h3>Send the number.</h3>
+      <p>Generate a branded, itemized PDF in seconds — about 10x faster than pricing it out by hand.</p>
+    </div>
+    <div class="platform-card">
+      <div class="platform-num">Manage</div>
+      <h3>Run the job.</h3>
+      <p>Track every project from lead to install with a status pipeline and activity log that's always current.</p>
+    </div>
+  </div>
+</section>
+
 <!-- HOW IT WORKS -->
 <section class="how-section" id="how-it-works">
   <div class="how-header">
@@ -547,22 +638,22 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <div class="step-row">
       <div class="step-big-num">01</div>
       <div class="step-content">
-        <h3>Enter the room.</h3>
-        <p>Type in your wall dimensions and ceiling height, then mark the doors, windows, and appliances. Most rooms take under two minutes.</p>
+        <h3>Get your measurements.</h3>
+        <p>With a free-form canvas, no room is too large or too complex to design. Enter the dimensions and you're already on your way.</p>
       </div>
     </div>
     <div class="step-row">
       <div class="step-big-num">02</div>
       <div class="step-content">
-        <h3>Build the layout.</h3>
-        <p>Drag base cabinets, uppers, tall cabinets, corner units, islands, and appliances from the catalog. The floor plan and elevation update as you place each one — move anything, anytime.</p>
+        <h3>Start building.</h3>
+        <p>Choose your door style and finish, then drag in cabinets, islands, and appliances — whatever the room actually needs. The floor plan and elevation update as you place each one.</p>
       </div>
     </div>
     <div class="step-row">
       <div class="step-big-num">03</div>
       <div class="step-content">
-        <h3>Print the quote.</h3>
-        <p>One click builds a fully itemized PDF — your company name, your pricing, your terms, signature lines for both of you. Hand it over before you leave the kitchen.</p>
+        <h3>Produce the quote.</h3>
+        <p>One click builds an accurate, fully itemized PDF — floor plan included, your company name, your pricing, your terms, signature lines for both of you. Hand it over before you leave the kitchen.</p>
       </div>
     </div>
   </div>
@@ -603,9 +694,9 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
 
   <div class="feature-row flip">
     <div class="feature-text">
-      <div class="feature-tag">Quoting</div>
-      <h3>Your pricing. Your quote.</h3>
-      <p>Set your own price per cabinet type, then add labor, demo, crown molding, and trim right in the quote builder. The math runs itself; the PDF looks like you hired a designer.</p>
+      <div class="feature-tag">Quote</div>
+      <h3>Your price. Your quote. One click.</h3>
+      <p>Set your price per cabinet type, then add labor, demo, crown molding, and trim. One click turns it into a branded, itemized PDF — your logo, your terms, signature lines for both of you. About 10x faster than pricing a kitchen out by hand.</p>
     </div>
     <div class="feature-visual">
       <div class="mock-quote-lines">
@@ -620,23 +711,31 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
 
   <div class="feature-row">
     <div class="feature-text">
-      <div class="feature-tag">Output</div>
-      <h3>Print-ready in one click.</h3>
-      <p>Branded with your name, address, and logo. Itemized down to the cabinet, with tax, total, your terms, and a signature line for both of you.</p>
+      <div class="feature-tag">Manage</div>
+      <h3>Every job, tracked automatically.</h3>
+      <p>Move a project from Lead to Quoted to Scheduled to Complete with one click. Every status change and customer note lands in the activity log — so you always know where a job stands without digging through texts and sticky notes.</p>
     </div>
-    <div class="feature-visual" style="flex-direction:column;gap:12px;">
-      <div style="width:100%;background:white;border-radius:8px;padding:16px;border:1px solid var(--border);">
-        <div style="height:8px;width:40%;background:#2c1f14;border-radius:2px;margin-bottom:8px;"></div>
-        <div style="height:5px;width:60%;background:var(--border);border-radius:2px;margin-bottom:4px;"></div>
-        <div style="height:5px;width:45%;background:var(--border);border-radius:2px;margin-bottom:12px;"></div>
-        <div style="height:1px;background:var(--border);margin-bottom:8px;"></div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          <div style="display:flex;justify-content:space-between;"><div style="height:5px;width:55%;background:var(--border);border-radius:2px;"></div><div style="height:5px;width:15%;background:#16a34a;opacity:0.4;border-radius:2px;"></div></div>
-          <div style="display:flex;justify-content:space-between;"><div style="height:5px;width:48%;background:var(--border);border-radius:2px;"></div><div style="height:5px;width:15%;background:#16a34a;opacity:0.4;border-radius:2px;"></div></div>
-          <div style="display:flex;justify-content:space-between;"><div style="height:5px;width:50%;background:var(--border);border-radius:2px;"></div><div style="height:5px;width:15%;background:#16a34a;opacity:0.4;border-radius:2px;"></div></div>
+    <div class="feature-visual" style="flex-direction:column;gap:14px;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;align-self:flex-start;">Job Status</div>
+      <div class="mock-pipeline">
+        <div class="mock-stage">Lead</div>
+        <div class="mock-stage">Quoted</div>
+        <div class="mock-stage active">Scheduled</div>
+        <div class="mock-stage">Complete</div>
+      </div>
+      <div class="mock-activity">
+        <div class="mock-activity-item">
+          <div class="mock-activity-dot"></div>
+          <div>Status changed to <strong>Scheduled</strong><span class="mock-activity-time">Today, 9:14 AM</span></div>
         </div>
-        <div style="height:1px;background:var(--border);margin:10px 0;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;"><div style="height:7px;width:20%;background:var(--ink);border-radius:2px;"></div><div style="height:7px;width:20%;background:#16a34a;border-radius:2px;"></div></div>
+        <div class="mock-activity-item">
+          <div class="mock-activity-dot"></div>
+          <div>Quote sent to customer<span class="mock-activity-time">Yesterday, 4:02 PM</span></div>
+        </div>
+        <div class="mock-activity-item">
+          <div class="mock-activity-dot"></div>
+          <div>Design finalized — 14 cabinets<span class="mock-activity-time">Jun 18</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -663,6 +762,35 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   </div>
 </section>
 
+<!-- WHY ONE PLATFORM -->
+<section class="compare-section">
+  <div class="compare-header">
+    <div class="section-eyebrow">Why One Platform</div>
+    <h2 class="section-title">Stop paying for three tools<br>that don't talk to each other.</h2>
+    <p class="section-sub">Most cabinet businesses are already paying for this — just split across a design program, a price sheet, and whatever they use (or don't) to track a job after the sale.</p>
+  </div>
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="compare-card-label">Stitching It Together</div>
+      <ul class="compare-list">
+        <li>A design program — one subscription</li>
+        <li>A price list or spreadsheet, kept separately</li>
+        <li>A sticky note, text thread, or memory for where the job stands</li>
+        <li>Three logins. Three things to keep updated. Nothing synced.</li>
+      </ul>
+    </div>
+    <div class="compare-card good">
+      <div class="compare-card-label">One Platform</div>
+      <ul class="compare-list">
+        <li>One login for design, quoting, and job status</li>
+        <li>One price per cabinet type, applied automatically every time</li>
+        <li>One activity log that updates the moment something changes</li>
+        <li>One subscription. One source of truth.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <!-- WHO IT'S FOR -->
 <section class="for-section" id="who">
   <div class="for-header">
@@ -676,7 +804,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <ul>
         <li>Measure the kitchen, build the layout, print the quote — before a competitor follows up</li>
         <li>Show customers exactly what their kitchen will look like before touching a wall</li>
-        <li>Walk out of the first visit with a signed deposit, not a follow-up call</li>
+        <li>Track every job from first visit to final install without leaving the platform</li>
       </ul>
     </div>
     <div class="for-card">
@@ -685,7 +813,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <ul>
         <li>Skip manual drafting — layouts build in minutes, not hours</li>
         <li>Adjust cabinet sizes and positions live during client meetings</li>
-        <li>Hand off a finished package the same day you meet</li>
+        <li>Keep every client's status, notes, and quote history in one dashboard</li>
       </ul>
     </div>
     <div class="for-card">
@@ -704,8 +832,8 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
 <section class="pricing-section" id="pricing">
   <div class="pricing-header">
     <div class="section-eyebrow">Pricing</div>
-    <h2 class="section-title">Build free.<br>Subscribe to quote.</h2>
-    <p class="section-sub">Build and design for free, for as long as you want. Pay only once you're ready to send a quote.</p>
+    <h2 class="section-title">Build free.<br>Subscribe to run the business.</h2>
+    <p class="section-sub">One subscription instead of three — design, quoting, and job tracking, all included. Pay only once you're ready to send a quote.</p>
   </div>
   <div class="pricing-cards">
     <div class="pricing-card">
@@ -723,11 +851,12 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <div class="pricing-card featured">
       <div class="plan-name">Pro</div>
       <div class="plan-price">$99<span class="plan-period"> / month</span></div>
-      <p class="plan-desc">Everything in the demo, plus quoting and export. Cancel anytime.</p>
+      <p class="plan-desc">Everything in the demo, plus quoting, job tracking, and export. Cancel anytime.</p>
       <ul class="plan-list">
         <li>Branded PDF quotes with your logo</li>
         <li>Print-ready quote builder with labor &amp; trim</li>
         <li>Your custom pricing per cabinet type</li>
+        <li>Job status pipeline &amp; activity log</li>
         <li>State sales tax auto-fill</li>
         <li>Cloud saves — access from any device</li>
         <li>Team member access</li>
@@ -748,7 +877,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <ul class="demo-bullets">
         <li>Live walkthrough tailored to your trade</li>
         <li>Bring a real project — we'll build it together</li>
-        <li>Get set up with your catalog and pricing</li>
+        <li>Get set up with your catalog, pricing, and job pipeline</li>
         <li>Leave knowing exactly what it costs for your team</li>
       </ul>
     </div>
