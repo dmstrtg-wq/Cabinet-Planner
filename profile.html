@@ -91,6 +91,18 @@
   .info-value.empty { color: var(--muted); font-style: italic; }
   .info-logo { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); }
 
+  /* ── LOGO UPLOAD ── */
+  .logo-preview {
+    width: 72px; height: 72px; border-radius: 14px; flex-shrink: 0;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .logo-preview svg { width: 30px; height: 30px; }
+  .logo-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ── COMPANY FORM ── */
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; }
+
   /* ── PRICING TABLE ── */
   .price-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .price-table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; background: #f9fafb; border-bottom: 1px solid var(--border); }
@@ -253,6 +265,7 @@
     .hdr-brand span { display: none; }
     .plan-card-top { flex-direction: column; }
     .plan-card-price { text-align: left; }
+    .form-grid-2 { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -409,17 +422,42 @@
         <div class="section">
           <div class="section-head">
             <div class="section-title">Company Info</div>
-            <a href="/app" class="edit-btn" onclick="sessionStorage.setItem('open-company-settings','1');return true;">✏ Edit in App</a>
+            <span id="company-save-status" style="font-size:12px;font-weight:600;"></span>
           </div>
-          <div class="card">
-            <div id="company-logo-row" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;">
-              <img id="company-logo" class="info-logo" alt="Company logo">
+          <div class="card" style="padding:24px;">
+
+            <div style="display:flex;align-items:flex-start;gap:18px;margin-bottom:26px;flex-wrap:wrap;">
+              <div class="logo-preview" id="logo-preview">
+                <svg id="logo-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15.5l-5.2-5.2a1 1 0 0 0-1.4 0L5 19"/></svg>
+                <img id="logo-preview-img" style="display:none;" alt="Company logo">
+              </div>
               <div>
-                <div id="company-name-large" style="font-size:17px;font-weight:700;"></div>
-                <div id="company-tagline" style="font-size:13px;color:var(--muted);"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button type="button" class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="document.getElementById('logo-file-input').click()">Upload Logo</button>
+                  <button type="button" class="btn btn-ghost" id="logo-remove-btn" style="font-size:12px;padding:7px 14px;display:none;" onclick="removeLogo()">Remove</button>
+                </div>
+                <input type="file" id="logo-file-input" accept="image/*" style="display:none;" onchange="handleLogoFileSelect(event)">
+                <div style="font-size:11px;color:var(--muted);margin-top:8px;max-width:220px;">PNG or JPG. Square images work best — it'll be resized automatically.</div>
               </div>
             </div>
-            <div class="info-grid" id="info-grid"></div>
+
+            <div class="form-grid-2">
+              <div class="form-group"><label>Company Name</label><input type="text" id="cp-name" placeholder="Smith Cabinets"></div>
+              <div class="form-group"><label>Tagline</label><input type="text" id="cp-tagline" placeholder="Custom cabinetry since 1998"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label>Address</label><input type="text" id="cp-address" placeholder="123 Main St"></div>
+              <div class="form-group"><label>City</label><input type="text" id="cp-city" placeholder="Springfield"></div>
+              <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;">State</label><input type="text" id="cp-state" placeholder="IL" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);"></div>
+                <div><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:5px;">Zip</label><input type="text" id="cp-zip" placeholder="62704" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);"></div>
+              </div>
+              <div class="form-group"><label>Phone</label><input type="tel" id="cp-phone" placeholder="(555) 555-5555"></div>
+              <div class="form-group"><label>Email</label><input type="email" id="cp-email" placeholder="hello@smithcabinets.com"></div>
+              <div class="form-group" style="grid-column:1/-1;"><label>Website</label><input type="text" id="cp-website" placeholder="smithcabinets.com"></div>
+            </div>
+
+            <div style="margin-top:8px;">
+              <button class="btn btn-primary" onclick="saveCompanySettings()">Save Changes</button>
+            </div>
           </div>
         </div>
 
@@ -739,6 +777,128 @@ function confirmInvite() {
   showToast(`Invite sent to ${email}.`);
 }
 
+/* ── COMPANY SETTINGS (logo upload + inline edit) ── */
+let currentUser = null;
+let pendingLogoDataUrl = null; // null = no pending change, '' = explicit removal, string = new data URL
+
+function updateLogoPreview(url) {
+  const imgEl = document.getElementById('logo-preview-img');
+  const iconEl = document.getElementById('logo-placeholder-icon');
+  const removeBtn = document.getElementById('logo-remove-btn');
+  if (url) {
+    imgEl.src = url; imgEl.style.display = 'block'; iconEl.style.display = 'none';
+    removeBtn.style.display = 'inline-flex';
+  } else {
+    imgEl.style.display = 'none'; iconEl.style.display = 'block';
+    removeBtn.style.display = 'none';
+  }
+}
+
+function handleLogoFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Please choose an image file.'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 320;
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+      else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      pendingLogoDataUrl = canvas.toDataURL('image/png');
+      updateLogoPreview(pendingLogoDataUrl);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+function removeLogo() {
+  pendingLogoDataUrl = '';
+  updateLogoPreview('');
+}
+
+function applyCompanyData(company) {
+  const name = company?.company_name || (currentUser ? currentUser.email.split('@')[0] : 'My Profile');
+  document.getElementById('profile-name').textContent = name;
+
+  document.getElementById('cp-name').value    = company?.company_name || '';
+  document.getElementById('cp-tagline').value = company?.tagline      || '';
+  document.getElementById('cp-address').value = company?.address     || '';
+  document.getElementById('cp-city').value    = company?.city        || '';
+  document.getElementById('cp-state').value   = company?.state       || '';
+  document.getElementById('cp-zip').value     = company?.zip         || '';
+  document.getElementById('cp-phone').value   = company?.phone       || '';
+  document.getElementById('cp-email').value   = company?.email       || '';
+  document.getElementById('cp-website').value = company?.website     || '';
+  if (pendingLogoDataUrl === null) updateLogoPreview(company?.logo_url || '');
+
+  document.getElementById('overview-company-line').textContent = company?.company_name
+    ? `${company.company_name}${company.city ? ' · ' + company.city + (company.state ? ', ' + company.state : '') : ''}`
+    : 'No company info set up yet';
+
+  const overrides = company?.price_overrides || {};
+  document.getElementById('pricing-body').innerHTML = Object.entries(PRICE_LABELS).map(([k, label]) => `
+    <tr>
+      <td>${esc(label)}</td>
+      <td>${overrides[k] != null
+        ? `<strong>$${parseFloat(overrides[k]).toFixed(2)}/in</strong>`
+        : `<span class="price-default">Default (Forevermark MSRP)</span>`}</td>
+    </tr>
+  `).join('');
+
+  const styles = company?.custom_styles || [];
+  const stylesCard = document.getElementById('styles-card');
+  if (styles.length) {
+    stylesCard.innerHTML = `<div class="styles-grid">${styles.map(s => `
+      <div class="style-chip">
+        <div class="style-swatch" style="background:${esc(s.swatch||'#F5F4F0')};"></div>
+        <div><div style="font-size:12px;font-weight:700;">${esc(s.code||'')}</div><div style="font-size:11px;color:var(--muted);">${esc(s.name||'')}</div></div>
+      </div>`).join('')}</div>`;
+  } else {
+    stylesCard.innerHTML = '<div class="style-empty">No custom door styles added yet. Add them in Company Settings inside the app.</div>';
+  }
+}
+
+async function saveCompanySettings() {
+  if (!currentUser) return;
+  const statusEl = document.getElementById('company-save-status');
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Saving…';
+
+  const profile = {
+    user_id:      currentUser.id,
+    company_name: document.getElementById('cp-name').value.trim(),
+    tagline:      document.getElementById('cp-tagline').value.trim(),
+    address:      document.getElementById('cp-address').value.trim(),
+    city:         document.getElementById('cp-city').value.trim(),
+    state:        document.getElementById('cp-state').value.trim(),
+    zip:          document.getElementById('cp-zip').value.trim(),
+    phone:        document.getElementById('cp-phone').value.trim(),
+    email:        document.getElementById('cp-email').value.trim(),
+    website:      document.getElementById('cp-website').value.trim(),
+    updated_at:   new Date().toISOString(),
+  };
+  if (pendingLogoDataUrl !== null) profile.logo_url = pendingLogoDataUrl || null;
+
+  const { data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single();
+  if (error) {
+    statusEl.style.color = '#b91c1c';
+    statusEl.textContent = 'Error: ' + error.message;
+    return;
+  }
+  pendingLogoDataUrl = null;
+  statusEl.style.color = '#15803d';
+  statusEl.textContent = '✓ Saved';
+  setTimeout(() => { statusEl.textContent = ''; }, 2500);
+  applyCompanyData(data);
+}
+
 async function handleSignOut() {
   await db.auth.signOut();
   location.href = '/app';
@@ -752,6 +912,7 @@ async function init() {
     return;
   }
   const user = session.user;
+  currentUser = user;
 
   // Load company profile
   const { data: company } = await db.from('company_profiles').select('*').eq('user_id', user.id).single();
@@ -782,62 +943,8 @@ async function init() {
   document.getElementById('stat-complete').textContent= projs.filter(p => (p.data?.status) === 'Complete').length;
   document.getElementById('stat-rooms').textContent   = totalRooms;
 
-  // Company info card
-  if (company) {
-    if (company.logo_url) {
-      document.getElementById('company-logo-row').style.display = 'flex';
-      document.getElementById('company-logo').src = company.logo_url;
-      document.getElementById('company-name-large').textContent = company.company_name || '';
-      document.getElementById('company-tagline').textContent = company.tagline || '';
-    }
-    const fields = [
-      { label: 'Company Name',  value: company.company_name },
-      { label: 'Tagline',       value: company.tagline },
-      { label: 'Address',       value: company.address },
-      { label: 'City / State',  value: [company.city, company.state, company.zip].filter(Boolean).join(', ') },
-      { label: 'Phone',         value: company.phone },
-      { label: 'Email',         value: company.email },
-      { label: 'Website',       value: company.website },
-    ];
-    document.getElementById('info-grid').innerHTML = fields.map(f => `
-      <div class="info-row">
-        <div class="info-label">${esc(f.label)}</div>
-        <div class="info-value ${f.value ? '' : 'empty'}">${esc(f.value) || 'Not set'}</div>
-      </div>
-    `).join('');
-    document.getElementById('overview-company-line').textContent = company.company_name
-      ? `${company.company_name}${company.city ? ' · ' + company.city + (company.state ? ', ' + company.state : '') : ''}`
-      : 'No company info set up yet';
-
-    // Pricing
-    const overrides = company.price_overrides || {};
-    document.getElementById('pricing-body').innerHTML = Object.entries(PRICE_LABELS).map(([k, label]) => `
-      <tr>
-        <td>${esc(label)}</td>
-        <td>${overrides[k] != null
-          ? `<strong>$${parseFloat(overrides[k]).toFixed(2)}/in</strong>`
-          : `<span class="price-default">Default (Forevermark MSRP)</span>`}</td>
-      </tr>
-    `).join('');
-
-    // Door styles
-    const styles = company.custom_styles || [];
-    const stylesCard = document.getElementById('styles-card');
-    if (styles.length) {
-      stylesCard.innerHTML = `<div class="styles-grid">${styles.map(s => `
-        <div class="style-chip">
-          <div class="style-swatch" style="background:${esc(s.swatch||'#F5F4F0')};"></div>
-          <div><div style="font-size:12px;font-weight:700;">${esc(s.code||'')}</div><div style="font-size:11px;color:var(--muted);">${esc(s.name||'')}</div></div>
-        </div>`).join('')}</div>`;
-    } else {
-      stylesCard.innerHTML = '<div class="style-empty">No custom door styles added yet. Add them in Company Settings inside the app.</div>';
-    }
-  } else {
-    document.getElementById('info-grid').innerHTML = '<div class="info-row" style="grid-column:1/-1"><div class="info-value empty">No company info set up yet — <a href="/app">open the app</a> and go to Company Settings.</div></div>';
-    document.getElementById('pricing-body').innerHTML = '<tr><td colspan="2" style="color:var(--muted);padding:16px;">No pricing overrides set.</td></tr>';
-    document.getElementById('styles-card').innerHTML = '<div class="style-empty">No custom door styles added yet.</div>';
-    document.getElementById('overview-company-line').textContent = 'No company info set up yet';
-  }
+  // Company info card (editable form + logo upload)
+  applyCompanyData(company);
 
   // Projects table
   const tbody = document.getElementById('projects-body');
