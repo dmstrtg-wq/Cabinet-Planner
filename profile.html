@@ -36,9 +36,35 @@
   .hdr-btn-primary:hover { background: var(--accent-hover); }
 
   /* ── LAYOUT ── */
-  .page { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
   .page-title { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; letter-spacing: -0.4px; margin-bottom: 6px; }
   .page-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+  /* ── SIDEBAR + TABS ── */
+  .profile-layout { display: flex; gap: 32px; align-items: flex-start; }
+  .profile-sidebar { width: 230px; flex-shrink: 0; position: sticky; top: 78px; }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 9px;
+    font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer;
+    text-decoration: none; margin-bottom: 2px;
+  }
+  .sidebar-link svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+  .sidebar-link:hover { background: var(--surface); color: var(--text); }
+  .sidebar-link.active { background: var(--accent); color: #fff; }
+  .sidebar-link.active svg { opacity: 1; }
+  .sidebar-divider { height: 1px; background: var(--border); margin: 14px 0; }
+  .sidebar-foot { margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .sidebar-danger-link {
+    display: block; font-size: 13px; font-weight: 600; color: #b91c1c;
+    cursor: pointer; padding: 8px 14px; border-radius: 9px;
+  }
+  .sidebar-danger-link:hover { background: #fef2f2; }
+
+  .profile-content { flex: 1; min-width: 0; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .tab-title { font-family: 'Unbounded', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px; margin-bottom: 4px; }
+  .tab-desc { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
 
   /* ── SECTION ── */
   .section { margin-bottom: 32px; }
@@ -82,7 +108,7 @@
   .style-swatch { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--border); flex-shrink: 0; }
   .style-empty { padding: 16px 20px; font-size: 13px; color: var(--muted); }
 
-  /* ── PROJECTS TABLE ── */
+  /* ── GENERIC ROW TABLE (projects / team / invoices) ── */
   .proj-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .proj-table th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; background: #f9fafb; border-bottom: 1px solid var(--border); }
   .proj-table td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -92,8 +118,10 @@
   .proj-company { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .proj-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 12px; }
   .proj-link:hover { text-decoration: underline; }
+  .row-link { color: #b91c1c; text-decoration: none; font-weight: 600; font-size: 12px; cursor: pointer; }
+  .row-link:hover { text-decoration: underline; }
 
-  /* ── STATUS BADGE ── */
+  /* ── BADGES ── */
   .status-badge {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 3px 9px; border-radius: 20px;
@@ -105,6 +133,19 @@
   .s-Ordered    { background: #ffedd5; color: #c2410c; }
   .s-Installing { background: #f3e8ff; color: #7e22ce; }
   .s-Complete   { background: #dcfce7; color: #15803d; }
+  .s-Paid       { background: #dcfce7; color: #15803d; }
+  .s-Active     { background: #dcfce7; color: #15803d; }
+  .s-Canceling  { background: #ffedd5; color: #c2410c; }
+  .s-Canceled   { background: #f3f4f6; color: #6b7280; }
+
+  .role-badge {
+    display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .role-Owner   { background: #fef3c7; color: #92400e; }
+  .role-Admin   { background: #dbeafe; color: #1d4ed8; }
+  .role-Member  { background: #f3f4f6; color: #374151; }
+  .role-Pending { background: #f3e8ff; color: #7e22ce; }
 
   /* ── STATS BAR ── */
   .stats-bar { display: flex; gap: 0; margin-bottom: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
@@ -113,12 +154,71 @@
   .stat-num { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 900; color: var(--text); letter-spacing: -1px; line-height: 1; }
   .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
-  /* ── EDIT BTN ── */
+  /* ── EDIT BTN / GENERIC BUTTONS ── */
   .edit-btn {
     padding: 5px 12px; border-radius: 7px; border: 1px solid var(--border);
     background: var(--surface); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text);
   }
   .edit-btn:hover { background: var(--bg); }
+  .btn { padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-ghost { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: #fff; color: #b91c1c; border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-danger-solid { background: #b91c1c; color: #fff; }
+  .btn-danger-solid:hover { background: #991b1b; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  /* ── SUBSCRIPTION CARD ── */
+  .plan-card { padding: 26px 28px; }
+  .plan-card-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .plan-card-name { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; margin: 4px 0 6px; }
+  .plan-card-price { font-family: 'Unbounded', sans-serif; font-size: 30px; font-weight: 900; text-align: right; }
+  .plan-card-price span { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .plan-banner { margin-top: 18px; padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+  .plan-banner.warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; }
+  .plan-feature-list { list-style: none; margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .plan-feature-list li { font-size: 13.5px; color: var(--muted); padding-left: 22px; position: relative; }
+  .plan-feature-list li::before { content: '✓'; position: absolute; left: 0; color: var(--accent); font-weight: 800; }
+  .plan-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+
+  /* ── BILLING ── */
+  .payment-row { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; flex-wrap: wrap; gap: 12px; }
+  .payment-card-icon {
+    width: 40px; height: 28px; border-radius: 5px; background: linear-gradient(135deg,#2c1f14,#1e1409);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .payment-meta { display: flex; align-items: center; gap: 12px; }
+  .payment-label { font-size: 14px; font-weight: 600; }
+  .payment-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--text); color: #fff; padding: 11px 20px; border-radius: 9px;
+    font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    z-index: 9300; opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,8,5,0.55); z-index: 9200;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 28px; max-width: 440px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.25); }
+  .modal-box h3 { font-size: 18px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.2px; }
+  .modal-box p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 5px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--text); background: var(--bg);
+  }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
 
   /* ── LOADING ── */
   #loading { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 15px; }
@@ -128,6 +228,15 @@
   #auth-gate h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
   #auth-gate p { color: var(--muted); margin-bottom: 24px; }
 
+  @media (max-width: 760px) {
+    .profile-layout { flex-direction: column; }
+    .profile-sidebar {
+      width: 100%; position: static; display: flex; gap: 4px;
+      overflow-x: auto; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
+    }
+    .sidebar-link { flex-shrink: 0; white-space: nowrap; }
+    .sidebar-divider, .sidebar-foot { display: none; }
+  }
   @media (max-width: 600px) {
     .page { padding: 24px 16px 60px; }
     .info-grid { grid-template-columns: 1fr; }
@@ -142,6 +251,8 @@
     .proj-table td:first-child { padding-top: 12px; }
     .proj-table td:last-child { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     .hdr-brand span { display: none; }
+    .plan-card-top { flex-direction: column; }
+    .plan-card-price { text-align: left; }
   }
 </style>
 </head>
@@ -191,77 +302,291 @@
   <h1 class="page-title" id="profile-name">My Profile</h1>
   <p class="page-sub" id="profile-email"></p>
 
-  <!-- Stats bar -->
-  <div class="stats-bar" id="stats-bar">
-    <div class="stat"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Projects</div></div>
-    <div class="stat"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Active (Lead + Quoted + Ordered)</div></div>
-    <div class="stat"><div class="stat-num" id="stat-complete">—</div><div class="stat-label">Complete</div></div>
-    <div class="stat"><div class="stat-num" id="stat-rooms">—</div><div class="stat-label">Total Rooms Designed</div></div>
-  </div>
+  <div class="profile-layout">
 
-  <!-- Company Info -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Company Info</div>
-      <a href="/app" class="edit-btn" onclick="sessionStorage.setItem('open-company-settings','1');return true;">✏ Edit in App</a>
-    </div>
-    <div class="card">
-      <div id="company-logo-row" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;">
-        <img id="company-logo" class="info-logo" alt="Company logo">
-        <div>
-          <div id="company-name-large" style="font-size:17px;font-weight:700;"></div>
-          <div id="company-tagline" style="font-size:13px;color:var(--muted);"></div>
+    <!-- SIDEBAR -->
+    <aside class="profile-sidebar">
+      <nav>
+        <a class="sidebar-link active" href="#overview" data-tab="overview">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+          Overview
+        </a>
+        <a class="sidebar-link" href="#projects" data-tab="projects">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2 5a1.3 1.3 0 0 1 1.3-1.3h2.4l1 1.2h6a1.3 1.3 0 0 1 1.3 1.3v5.5A1.3 1.3 0 0 1 12.7 13H3.3A1.3 1.3 0 0 1 2 11.7V5z"/></svg>
+          Projects
+        </a>
+        <a class="sidebar-link" href="#company" data-tab="company">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="10" height="12" rx="1"/><line x1="6" y1="5.5" x2="6.01" y2="5.5"/><line x1="10" y1="5.5" x2="10.01" y2="5.5"/><line x1="6" y1="8.5" x2="6.01" y2="8.5"/><line x1="10" y1="8.5" x2="10.01" y2="8.5"/></svg>
+          Company Settings
+        </a>
+        <a class="sidebar-link" href="#team" data-tab="team">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.2"/><path d="M2 14c0-2.4 1.8-4 4-4s4 1.6 4 4"/><circle cx="11.7" cy="6" r="1.7"/><path d="M9.8 8.6c.6-.3 1.2-.4 1.9-.4 2 0 3.7 1.4 3.7 3.8"/></svg>
+          Team
+        </a>
+        <a class="sidebar-link" href="#subscription" data-tab="subscription">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
+          Subscription
+        </a>
+        <a class="sidebar-link" href="#billing" data-tab="billing">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h8v12l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1L4 14V2z"/><line x1="6" y1="5.5" x2="11" y2="5.5"/><line x1="6" y1="8" x2="11" y2="8"/></svg>
+          Billing
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <a class="sidebar-danger-link" id="sidebar-cancel-link" href="#subscription">Cancel Subscription</a>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <div class="profile-content">
+
+      <!-- OVERVIEW -->
+      <div class="tab-panel active" data-tab="overview">
+        <div class="tab-title">Overview</div>
+        <div class="tab-desc">A quick snapshot of your account.</div>
+
+        <div class="stats-bar" id="stats-bar">
+          <div class="stat"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total Projects</div></div>
+          <div class="stat"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Active (Lead + Quoted + Ordered)</div></div>
+          <div class="stat"><div class="stat-num" id="stat-complete">—</div><div class="stat-label">Complete</div></div>
+          <div class="stat"><div class="stat-num" id="stat-rooms">—</div><div class="stat-label">Total Rooms Designed</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Plan</div></div>
+          <div class="card plan-card" style="padding:20px 24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <div style="font-size:14px;font-weight:700;" id="overview-plan-name">Pro Plan</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="overview-plan-sub">Renews monthly</div>
+              </div>
+              <a href="#subscription" class="btn btn-ghost" style="font-size:12px;padding:7px 14px;">Manage Subscription →</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Company</div></div>
+          <div class="card" style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div style="font-size:14px;color:var(--muted);" id="overview-company-line">—</div>
+            <a href="#company" class="btn btn-ghost" style="font-size:12px;padding:7px 14px;">Company Settings →</a>
+          </div>
         </div>
       </div>
-      <div class="info-grid" id="info-grid"></div>
+
+      <!-- PROJECTS -->
+      <div class="tab-panel" data-tab="projects">
+        <div class="tab-title">Projects</div>
+        <div class="tab-desc">Every project across your account.</div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">All Projects</div>
+            <a href="/app" class="hdr-btn hdr-btn-primary" style="font-size:12px;padding:6px 14px;">＋ New Project</a>
+          </div>
+          <div class="card">
+            <table class="proj-table">
+              <thead>
+                <tr>
+                  <th>Project / Customer</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Rooms</th>
+                  <th>Created</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="projects-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPANY SETTINGS -->
+      <div class="tab-panel" data-tab="company">
+        <div class="tab-title">Company Settings</div>
+        <div class="tab-desc">Your company profile, pricing, and door styles.</div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Company Info</div>
+            <a href="/app" class="edit-btn" onclick="sessionStorage.setItem('open-company-settings','1');return true;">✏ Edit in App</a>
+          </div>
+          <div class="card">
+            <div id="company-logo-row" style="display:none;padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;">
+              <img id="company-logo" class="info-logo" alt="Company logo">
+              <div>
+                <div id="company-name-large" style="font-size:17px;font-weight:700;"></div>
+                <div id="company-tagline" style="font-size:13px;color:var(--muted);"></div>
+              </div>
+            </div>
+            <div class="info-grid" id="info-grid"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Pricing Overrides</div>
+          </div>
+          <div class="card">
+            <table class="price-table">
+              <thead><tr><th>Cabinet Type</th><th>$/inch (your rate)</th></tr></thead>
+              <tbody id="pricing-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Custom Door Styles</div>
+          </div>
+          <div class="card" id="styles-card"></div>
+        </div>
+      </div>
+
+      <!-- TEAM -->
+      <div class="tab-panel" data-tab="team">
+        <div class="tab-title">Team</div>
+        <div class="tab-desc">Everyone with access to your account.</div>
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Team Members</div>
+            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openInviteModal()">＋ Invite Teammate</button>
+          </div>
+          <div class="card">
+            <table class="proj-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="team-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBSCRIPTION -->
+      <div class="tab-panel" data-tab="subscription">
+        <div class="tab-title">Subscription</div>
+        <div class="tab-desc">Your plan, status, and billing cycle.</div>
+
+        <div class="section">
+          <div class="card plan-card">
+            <div class="plan-card-top">
+              <div>
+                <div class="info-label">Current Plan</div>
+                <div class="plan-card-name" id="sub-plan-name">Pro</div>
+                <div id="sub-status-line" style="font-size:13px;color:var(--muted);"></div>
+              </div>
+              <div class="plan-card-price" id="sub-price">$99<span>/mo</span></div>
+            </div>
+
+            <div id="sub-banner"></div>
+
+            <ul class="plan-feature-list">
+              <li>Branded PDF quotes with your logo</li>
+              <li>Print-ready quote builder with labor &amp; trim</li>
+              <li>Your custom pricing per cabinet type</li>
+              <li>Job status pipeline &amp; activity log</li>
+              <li>State sales tax auto-fill</li>
+              <li>Cloud saves — access from any device</li>
+              <li>Team member access</li>
+              <li>Priority support</li>
+            </ul>
+
+            <div class="plan-actions" id="sub-actions"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BILLING -->
+      <div class="tab-panel" data-tab="billing">
+        <div class="tab-title">Billing</div>
+        <div class="tab-desc">Payment method and billing history.</div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Payment Method</div></div>
+          <div class="card">
+            <div class="payment-row">
+              <div class="payment-meta">
+                <div class="payment-card-icon">
+                  <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><rect x="0.5" y="0.5" width="19" height="13" rx="2" stroke="#fff" stroke-width="0.8" opacity="0.5"/><rect x="2" y="4" width="16" height="2.4" fill="#fff" opacity="0.85"/></svg>
+                </div>
+                <div>
+                  <div class="payment-label" id="billing-card-label">Visa ending in 4242</div>
+                  <div class="payment-sub" id="billing-card-sub">Expires 08/27</div>
+                </div>
+              </div>
+              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="showToast(&quot;Payment updates will open Stripe&apos;s secure portal once billing is connected.&quot;)">Update Payment Method</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><div class="section-title">Billing History</div></div>
+          <div class="card">
+            <table class="proj-table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="invoices-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
-
-  <!-- Pricing -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Pricing Overrides</div>
-    </div>
-    <div class="card">
-      <table class="price-table">
-        <thead><tr><th>Cabinet Type</th><th>$/inch (your rate)</th></tr></thead>
-        <tbody id="pricing-body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Door Styles -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Custom Door Styles</div>
-    </div>
-    <div class="card" id="styles-card"></div>
-  </div>
-
-  <!-- Projects -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">All Projects</div>
-      <a href="/app" class="hdr-btn hdr-btn-primary" style="font-size:12px;padding:6px 14px;">＋ New Project</a>
-    </div>
-    <div class="card">
-      <table class="proj-table">
-        <thead>
-          <tr>
-            <th>Project / Customer</th>
-            <th>Type</th>
-            <th>Status</th>
-            <th>Rooms</th>
-            <th>Created</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="projects-body"></tbody>
-      </table>
-    </div>
-  </div>
-
 </div>
+
+<!-- CANCEL SUBSCRIPTION MODAL -->
+<div class="modal-overlay" id="cancel-modal-overlay">
+  <div class="modal-box">
+    <h3>Cancel your subscription?</h3>
+    <p>You'll keep full access through the end of your current billing period. After that, quoting, PDF export, job tracking, and team access will be turned off — your projects stay saved.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCancelModal()">Keep Subscription</button>
+      <button class="btn btn-danger-solid" onclick="confirmCancelSubscription()">Cancel Subscription</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE TEAMMATE MODAL -->
+<div class="modal-overlay" id="invite-modal-overlay">
+  <div class="modal-box">
+    <h3>Invite a teammate</h3>
+    <p>They'll get access to your projects, pricing, and quotes.</p>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="invite-name" placeholder="Jane Smith">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="invite-email" placeholder="jane@smithcabinets.com">
+    </div>
+    <div class="form-group">
+      <label>Role</label>
+      <select id="invite-role">
+        <option>Member</option>
+        <option>Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmInvite()">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
@@ -276,10 +601,142 @@ const PRICE_LABELS = {
 };
 
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtDate = d => d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
 function statusBadge(s) {
   const cl = 's-' + (s||'Lead').replace(/\s/g,'');
   return `<span class="status-badge ${cl}">${esc(s||'Lead')}</span>`;
+}
+
+/* ── TABS ── */
+function setActiveTab(tab) {
+  document.querySelectorAll('.sidebar-link[data-tab]').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel[data-tab]').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+}
+function applyHashTab() {
+  const tab = (location.hash || '#overview').slice(1);
+  const valid = ['overview','projects','company','team','subscription','billing'];
+  setActiveTab(valid.includes(tab) ? tab : 'overview');
+}
+window.addEventListener('hashchange', applyHashTab);
+
+/* ── TOAST ── */
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── SUBSCRIPTION (mock state — swap for real billing data later) ── */
+const subscription = {
+  plan: 'Pro',
+  price: 99,
+  status: 'active', // active | canceling | canceled
+  renewalDate: new Date(Date.now() + 30*24*60*60*1000),
+};
+
+function renderSubscription() {
+  document.getElementById('sub-plan-name').textContent = subscription.plan;
+  document.getElementById('sub-price').innerHTML = subscription.plan === 'Pro' ? '$' + subscription.price + '<span>/mo</span>' : '<span style="font-size:15px;">—</span>';
+
+  const statusLine = document.getElementById('sub-status-line');
+  const banner = document.getElementById('sub-banner');
+  const actions = document.getElementById('sub-actions');
+  const overviewName = document.getElementById('overview-plan-name');
+  const overviewSub = document.getElementById('overview-plan-sub');
+
+  if (subscription.status === 'active') {
+    statusLine.innerHTML = `${statusBadge('Active')} &nbsp;Renews ${fmtDate(subscription.renewalDate)}`;
+    banner.innerHTML = '';
+    actions.innerHTML = `
+      <a href="/#pricing" class="btn btn-ghost">Change Plan</a>
+      <button class="btn btn-danger" onclick="openCancelModal()">Cancel Subscription</button>`;
+    overviewName.textContent = subscription.plan + ' Plan';
+    overviewSub.textContent = 'Renews ' + fmtDate(subscription.renewalDate);
+  } else if (subscription.status === 'canceling') {
+    statusLine.innerHTML = `${statusBadge('Canceling')} &nbsp;Active until ${fmtDate(subscription.renewalDate)}`;
+    banner.innerHTML = `<div class="plan-banner warn">Your subscription is set to cancel on <strong>${fmtDate(subscription.renewalDate)}</strong>. You'll keep full access until then.</div>`;
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="resumeSubscription()">Resume Subscription</button>`;
+    overviewName.textContent = subscription.plan + ' Plan';
+    overviewSub.textContent = 'Cancels ' + fmtDate(subscription.renewalDate);
+  } else {
+    statusLine.innerHTML = statusBadge('Canceled');
+    banner.innerHTML = `<div class="plan-banner warn">Your subscription has ended. Quoting, export, and team access are turned off.</div>`;
+    actions.innerHTML = `<a href="/#pricing" class="btn btn-primary">Resubscribe</a>`;
+    overviewName.textContent = 'No active plan';
+    overviewSub.textContent = 'Demo access only';
+  }
+}
+
+function openCancelModal() { document.getElementById('cancel-modal-overlay').classList.add('open'); }
+function closeCancelModal() { document.getElementById('cancel-modal-overlay').classList.remove('open'); }
+function confirmCancelSubscription() {
+  subscription.status = 'canceling';
+  renderSubscription();
+  closeCancelModal();
+  showToast('Subscription set to cancel at the end of the billing period.');
+}
+function resumeSubscription() {
+  subscription.status = 'active';
+  renderSubscription();
+  showToast('Subscription resumed.');
+}
+document.getElementById('sidebar-cancel-link').addEventListener('click', () => {
+  setTimeout(openCancelModal, 50);
+});
+
+/* ── BILLING (mock invoices) ── */
+function renderBilling() {
+  const invoices = [0,1,2].map(i => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    return { number: `INV-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`, date: d, amount: subscription.price, status: 'Paid' };
+  });
+  document.getElementById('invoices-body').innerHTML = invoices.map(inv => `
+    <tr>
+      <td style="font-weight:600;">${esc(inv.number)}</td>
+      <td style="color:var(--muted);">${fmtDate(inv.date)}</td>
+      <td>$${inv.amount.toFixed(2)}</td>
+      <td>${statusBadge(inv.status)}</td>
+    </tr>`).join('');
+}
+
+/* ── TEAM (mock — seeded with the signed-in owner) ── */
+let teamMembers = [];
+function renderTeam() {
+  document.getElementById('team-body').innerHTML = teamMembers.map((m, i) => `
+    <tr>
+      <td class="proj-name">${esc(m.name)}</td>
+      <td style="color:var(--muted);">${esc(m.email)}</td>
+      <td><span class="role-badge role-${m.role}">${esc(m.role)}</span></td>
+      <td>${m.role === 'Owner' ? '' : `<a class="row-link" onclick="removeTeamMember(${i})">Remove</a>`}</td>
+    </tr>`).join('');
+}
+function removeTeamMember(i) {
+  teamMembers.splice(i, 1);
+  renderTeam();
+  showToast('Teammate removed.');
+}
+function openInviteModal() { document.getElementById('invite-modal-overlay').classList.add('open'); }
+function closeInviteModal() {
+  document.getElementById('invite-modal-overlay').classList.remove('open');
+  document.getElementById('invite-name').value = '';
+  document.getElementById('invite-email').value = '';
+  document.getElementById('invite-role').value = 'Member';
+}
+function confirmInvite() {
+  const name = document.getElementById('invite-name').value.trim();
+  const email = document.getElementById('invite-email').value.trim();
+  const role = document.getElementById('invite-role').value;
+  if (!name || !email) { showToast('Add a name and email first.'); return; }
+  teamMembers.push({ name, email, role: 'Pending' === role ? 'Pending' : role });
+  renderTeam();
+  closeInviteModal();
+  showToast(`Invite sent to ${email}.`);
 }
 
 async function handleSignOut() {
@@ -309,6 +766,12 @@ async function init() {
   const name = company?.company_name || user.email.split('@')[0];
   document.getElementById('profile-name').textContent = name;
   document.getElementById('profile-email').textContent = user.email;
+
+  // Seed team with the signed-in user as Owner
+  teamMembers = [{ name: name, email: user.email, role: 'Owner' }];
+  renderTeam();
+  renderSubscription();
+  renderBilling();
 
   // Stats
   const projs = projects || [];
@@ -342,6 +805,9 @@ async function init() {
         <div class="info-value ${f.value ? '' : 'empty'}">${esc(f.value) || 'Not set'}</div>
       </div>
     `).join('');
+    document.getElementById('overview-company-line').textContent = company.company_name
+      ? `${company.company_name}${company.city ? ' · ' + company.city + (company.state ? ', ' + company.state : '') : ''}`
+      : 'No company info set up yet';
 
     // Pricing
     const overrides = company.price_overrides || {};
@@ -370,6 +836,7 @@ async function init() {
     document.getElementById('info-grid').innerHTML = '<div class="info-row" style="grid-column:1/-1"><div class="info-value empty">No company info set up yet — <a href="/app">open the app</a> and go to Company Settings.</div></div>';
     document.getElementById('pricing-body').innerHTML = '<tr><td colspan="2" style="color:var(--muted);padding:16px;">No pricing overrides set.</td></tr>';
     document.getElementById('styles-card').innerHTML = '<div class="style-empty">No custom door styles added yet.</div>';
+    document.getElementById('overview-company-line').textContent = 'No company info set up yet';
   }
 
   // Projects table
@@ -395,6 +862,8 @@ async function init() {
         </tr>`;
     }).join('');
   }
+
+  applyHashTab();
 }
 
 init();
