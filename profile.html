@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Profile — My Cabinet Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
@@ -421,7 +422,7 @@
       <!-- COMPANY SETTINGS -->
       <div class="tab-panel" data-tab="company">
         <div class="tab-title">Company Settings</div>
-        <div class="tab-desc">Your company profile, pricing, and door styles.</div>
+        <div class="tab-desc">Your company profile and contact info.</div>
 
         <div class="section">
           <div class="section-head">
@@ -465,24 +466,6 @@
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">Pricing Overrides</div>
-          </div>
-          <div class="card">
-            <table class="price-table">
-              <thead><tr><th>Cabinet Type</th><th>$/inch (your rate)</th></tr></thead>
-              <tbody id="pricing-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">Custom Door Styles</div>
-          </div>
-          <div class="card" id="styles-card"></div>
-        </div>
       </div>
 
       <!-- FILES -->
@@ -504,6 +487,7 @@
               <tbody id="pricelist-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
             </table>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel price sheet and we'll walk you through matching it to your cabinet pricing. PDFs are saved for reference but can't be read automatically — enter pricing by hand in the app for those.</div>
         </div>
 
         <div class="section">
@@ -666,19 +650,38 @@
   </div>
 </div>
 
+<!-- PRICE LIST MAPPING MODAL -->
+<div class="modal-overlay" id="pricemap-modal-overlay">
+  <div class="modal-box" style="max-width:640px;max-height:85vh;overflow-y:auto;">
+    <h3>Match your price list</h3>
+    <p>We found <strong id="pricemap-row-count">0</strong> rows in <strong id="pricemap-filename"></strong>. Pick which column holds the price, then match each cabinet type to a row — leave any type as "Use Default" to skip it.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Label / Description Column</label>
+        <select id="pricemap-label-col"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>Price Column</label>
+        <select id="pricemap-price-col"></select>
+      </div>
+    </div>
+
+    <div id="pricemap-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closePriceMapModal()">Skip — Keep File Only</button>
+      <button class="btn btn-primary" onclick="applyPriceMapping()">Apply Pricing</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const PRICE_LABELS = {
-  base: 'Base Cabinet', wall: 'Wall Cabinet', drawerBase: 'Drawer Base',
-  sink: 'Sink Base', cornerBase: 'Corner Base', lazysusan: 'Lazy Susan',
-  vanity: 'Vanity', tall: 'Tall / Pantry', diagWall: 'Diagonal Corner Wall',
-  fridgePanel: 'Fridge End Panel'
-};
 
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const fmtDate = d => d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
@@ -883,28 +886,6 @@ function applyCompanyData(company) {
   document.getElementById('overview-company-line').textContent = company?.company_name
     ? `${company.company_name}${company.city ? ' · ' + company.city + (company.state ? ', ' + company.state : '') : ''}`
     : 'No company info set up yet';
-
-  const overrides = company?.price_overrides || {};
-  document.getElementById('pricing-body').innerHTML = Object.entries(PRICE_LABELS).map(([k, label]) => `
-    <tr>
-      <td>${esc(label)}</td>
-      <td>${overrides[k] != null
-        ? `<strong>$${parseFloat(overrides[k]).toFixed(2)}/in</strong>`
-        : `<span class="price-default">Default (Forevermark MSRP)</span>`}</td>
-    </tr>
-  `).join('');
-
-  const styles = company?.custom_styles || [];
-  const stylesCard = document.getElementById('styles-card');
-  if (styles.length) {
-    stylesCard.innerHTML = `<div class="styles-grid">${styles.map(s => `
-      <div class="style-chip">
-        <div class="style-swatch" style="background:${esc(s.swatch||'#F5F4F0')};"></div>
-        <div><div style="font-size:12px;font-weight:700;">${esc(s.code||'')}</div><div style="font-size:11px;color:var(--muted);">${esc(s.name||'')}</div></div>
-      </div>`).join('')}</div>`;
-  } else {
-    stylesCard.innerHTML = '<div class="style-empty">No custom door styles added yet. Add them in Company Settings inside the app.</div>';
-  }
 }
 
 async function saveCompanySettings() {
@@ -1035,6 +1016,159 @@ async function handleFileUpload(e, category) {
     showToast(file.name + ' uploaded.');
   }
   loadCompanyFiles(category);
+
+  if (category === 'price_list' && isSpreadsheet(file)) {
+    tryOpenPriceMapping(file);
+  }
+}
+
+/* ── PRICE LIST PARSING (CSV / Excel → price_overrides) ── */
+const CABINET_TYPES = [
+  { key:'base',        label:'Base Cabinet' },
+  { key:'wall',        label:'Wall Cabinet' },
+  { key:'drawerBase',  label:'Drawer Base' },
+  { key:'sink',        label:'Sink Base' },
+  { key:'cornerBase',  label:'Corner Base' },
+  { key:'lazysusan',   label:'Lazy Susan' },
+  { key:'vanity',      label:'Vanity' },
+  { key:'tall',        label:'Tall / Pantry' },
+  { key:'diagWall',    label:'Diagonal Corner Wall' },
+  { key:'fridgePanel', label:'Fridge End Panel' },
+];
+const TYPE_HINTS = {
+  base:        [/\bbase\b/i],
+  wall:        [/\bwall\b/i],
+  drawerBase:  [/drawer/i],
+  sink:        [/\bsink\b/i],
+  cornerBase:  [/corner.*base|blind\s*corner/i, /\bcorner\b/i],
+  lazysusan:   [/lazy\s*susan/i],
+  vanity:      [/vanity/i],
+  tall:        [/\btall\b/i, /pantry/i],
+  diagWall:    [/diagonal/i, /diag.*wall/i],
+  fridgePanel: [/fridge/i, /refrigerator/i, /end\s*panel/i],
+};
+
+let _priceMapDataRows = [];
+let _parsedRows = [];
+
+function isSpreadsheet(file) {
+  const name = file.name.toLowerCase();
+  return name.endsWith('.csv') || name.endsWith('.xls') || name.endsWith('.xlsx');
+}
+
+function guessRowForType(typeKey, rows) {
+  const hints = TYPE_HINTS[typeKey] || [];
+  for (const hint of hints) {
+    const idx = rows.findIndex(r => hint.test(r.label));
+    if (idx !== -1) return idx;
+  }
+  return -1;
+}
+
+async function tryOpenPriceMapping(file) {
+  if (typeof XLSX === 'undefined') return; // parsing library failed to load — fail silently, file is already saved
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+      .filter(r => r.some(c => String(c).trim() !== ''));
+    if (grid.length < 2) { showToast("Couldn't find pricing rows in that file — saved it as a file only."); return; }
+
+    const headers = grid[0].map((h, i) => String(h).trim() || `Column ${i + 1}`);
+    const dataRows = grid.slice(1);
+
+    let labelColIdx = headers.findIndex(h => /desc|name|item|type|product|cabinet/i.test(h));
+    if (labelColIdx === -1) labelColIdx = 0;
+    let priceColIdx = headers.findIndex(h => /price|cost|rate|msrp|\$/i.test(h));
+    if (priceColIdx === -1) priceColIdx = headers.length - 1;
+
+    document.getElementById('pricemap-filename').textContent = file.name;
+    const labelSel = document.getElementById('pricemap-label-col');
+    const priceSel = document.getElementById('pricemap-price-col');
+    const colOptions = headers.map((h, i) => `<option value="${i}">${esc(h)}</option>`).join('');
+    labelSel.innerHTML = colOptions;
+    priceSel.innerHTML = colOptions;
+    labelSel.value = String(labelColIdx);
+    priceSel.value = String(priceColIdx);
+
+    _priceMapDataRows = dataRows;
+    renderPriceMapRows(dataRows, labelColIdx, priceColIdx);
+    document.getElementById('pricemap-modal-overlay').classList.add('open');
+  } catch (err) {
+    console.warn('Price list parsing skipped:', err);
+  }
+}
+
+function refreshPriceMapColumns() {
+  const labelColIdx = parseInt(document.getElementById('pricemap-label-col').value, 10);
+  const priceColIdx = parseInt(document.getElementById('pricemap-price-col').value, 10);
+  renderPriceMapRows(_priceMapDataRows, labelColIdx, priceColIdx);
+}
+document.getElementById('pricemap-label-col').addEventListener('change', refreshPriceMapColumns);
+document.getElementById('pricemap-price-col').addEventListener('change', refreshPriceMapColumns);
+
+function renderPriceMapRows(dataRows, labelColIdx, priceColIdx) {
+  _parsedRows = dataRows.map(r => {
+    const label = String(r[labelColIdx] ?? '').trim();
+    const rawPrice = String(r[priceColIdx] ?? '').replace(/[^0-9.\-]/g, '');
+    const price = parseFloat(rawPrice);
+    return { label, price: isNaN(price) ? null : price };
+  }).filter(r => r.label || r.price != null);
+
+  document.getElementById('pricemap-row-count').textContent = _parsedRows.length;
+
+  const rowOptions = _parsedRows.map((r, i) =>
+    `<option value="${i}">${esc(r.label || '(no label)')}${r.price != null ? ' — $' + r.price.toFixed(2) : ''}</option>`
+  ).join('');
+
+  document.getElementById('pricemap-rows').innerHTML = CABINET_TYPES.map(t => `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:150px;font-size:13px;font-weight:600;flex-shrink:0;">${esc(t.label)}</div>
+      <select class="pricemap-type-select" data-type="${t.key}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);">
+        <option value="">— Use Default —</option>
+        ${rowOptions}
+      </select>
+    </div>`).join('');
+
+  CABINET_TYPES.forEach(t => {
+    const guessIdx = guessRowForType(t.key, _parsedRows);
+    if (guessIdx !== -1) {
+      const sel = document.querySelector(`.pricemap-type-select[data-type="${t.key}"]`);
+      if (sel) sel.value = String(guessIdx);
+    }
+  });
+}
+
+function closePriceMapModal() {
+  document.getElementById('pricemap-modal-overlay').classList.remove('open');
+}
+
+async function applyPriceMapping() {
+  if (!currentUser) return;
+  const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', currentUser.id).single();
+  const overrides = { ...(existing?.price_overrides || {}) };
+  let mappedCount = 0;
+
+  document.querySelectorAll('.pricemap-type-select').forEach(sel => {
+    const typeKey = sel.dataset.type;
+    const val = sel.value;
+    if (val === '') return; // left as "Use Default" — don't touch this type's existing value
+    const row = _parsedRows[parseInt(val, 10)];
+    if (row && row.price != null) { overrides[typeKey] = row.price; mappedCount++; }
+  });
+
+  if (!mappedCount) { closePriceMapModal(); return; }
+
+  const { error } = await db.from('company_profiles').upsert({
+    user_id: currentUser.id,
+    price_overrides: overrides,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' });
+
+  if (error) { showToast('Could not save pricing: ' + error.message); return; }
+  closePriceMapModal();
+  showToast(`Updated pricing for ${mappedCount} cabinet type${mappedCount === 1 ? '' : 's'}.`);
 }
 
 async function downloadCompanyFile(path, name) {
