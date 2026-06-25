@@ -4083,6 +4083,10 @@ function renderIsometric() {
     root.add(mesh);
   }
 
+  // ── Style colour (use project door-style swatch for all cabinets) ──
+  const _p3d = activeProj();
+  const _styleHex = (getStyles().find(s => s.code === (_p3d?.style || getStyles()[0]?.code)) || getStyles()[0])?.swatch || '#F2F1EE';
+
   // ── Cabinets ──
   r.cabinets.forEach(cab => {
     const cat = CATALOG[cab.type]; if (!cat) return;
@@ -4091,7 +4095,7 @@ function renderIsometric() {
     const dep = cab.depth  || cat.depth || 24;
     const baseY = cab.type === 'wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
     const pos = cabPos(cab.wall, off, cab.width, dep);
-    const baseCol = cat.color || '#6B7280';
+    const baseCol = _styleHex;
 
     addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
     if (cab.type !== 'cornerBase' && cab.type !== 'lazysusan') {
@@ -4116,7 +4120,7 @@ function renderIsometric() {
   // ── Islands ──
   (r.islands||[]).forEach(isl => {
     const h = 34.5; // standard counter height
-    addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, 0xF59E0B);
+    addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, _styleHex);
     addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
 
