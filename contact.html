@@ -133,7 +133,7 @@ footer{
   <p class="sub">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
 
   <div class="form-card">
-    <form id="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" onsubmit="submitContact(event)">
+    <form id="contact-form" name="contact" method="POST" action="/contact-success" data-netlify="true" netlify-honeypot="bot-field">
       <input type="hidden" name="form-name" value="contact">
       <p style="display:none"><label>Don't fill this out: <input name="bot-field"></label></p>
       <div class="form-group">
@@ -207,27 +207,17 @@ footer{
 </footer>
 
 <script>
-function submitContact(e) {
-  e.preventDefault();
-  const form   = document.getElementById('contact-form');
-  const errEl  = document.getElementById('contact-error');
+document.getElementById('contact-form').addEventListener('submit', function(e) {
+  const errEl = document.getElementById('contact-error');
   const name    = document.getElementById('c-name').value.trim();
   const email   = document.getElementById('c-email').value.trim();
   const subject = document.getElementById('c-subject').value;
   const message = document.getElementById('c-message').value.trim();
-  if (!name || !email || !subject || !message) { errEl.textContent = 'Please fill in all fields.'; return; }
-  errEl.textContent = '';
-
-  const data = new FormData(form);
-  fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(data).toString() })
-    .then(() => {
-      form.reset();
-      form.style.display = 'none';
-      document.getElementById('contact-success').style.display = 'block';
-    })
-    .catch(() => { errEl.textContent = 'Something went wrong. Please email us directly at contact@mycabinetplanner.com'; });
-}
+  if (!name || !email || !subject || !message) {
+    e.preventDefault();
+    errEl.textContent = 'Please fill in all fields.';
+  }
+});
 </script>
 </body>
 </html>
