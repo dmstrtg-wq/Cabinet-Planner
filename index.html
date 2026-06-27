@@ -1634,7 +1634,7 @@ function submitLpContact() {
   if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
   const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
   const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
-  window.location.href = `mailto:dmstrtg@gmail.com?subject=${subjectLine}&body=${body}`;
+  window.location.href = `mailto:contact@mycabinetplanner.com?subject=${subjectLine}&body=${body}`;
   closeContactModal();
 }
 document.getElementById('lp-contact-modal').addEventListener('click', function(e) {

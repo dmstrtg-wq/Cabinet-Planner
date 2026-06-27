@@ -6189,7 +6189,7 @@ async function submitContact() {
   // Send via mailto as a fallback until a backend form is wired up
   const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
   const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
-  window.location.href = `mailto:dmstrtg@gmail.com?subject=${subjectLine}&body=${body}`;
+  window.location.href = `mailto:contact@mycabinetplanner.com?subject=${subjectLine}&body=${body}`;
   closeModal('modal-contact');
   // Clear fields
   ['contact-name','contact-email','contact-message'].forEach(id => document.getElementById(id).value = '');
