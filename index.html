@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Cabinet Planner — Design It. Quote It. Win the Job.</title>
 <meta name="description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for contractors, designers, and homeowners.">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mycabinetplanner.com/">
+<meta property="og:title" content="My Cabinet Planner — Design It. Quote It. Win the Job.">
+<meta property="og:description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for contractors, designers, and homeowners.">
+<meta property="og:image" content="https://mycabinetplanner.com/og-image.png">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://mycabinetplanner.com/">
+<meta name="twitter:title" content="My Cabinet Planner — Design It. Quote It. Win the Job.">
+<meta name="twitter:description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for contractors, designers, and homeowners.">
+<meta name="twitter:image" content="https://mycabinetplanner.com/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
@@ -820,64 +832,14 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <h2 class="section-title">Plans for every stage</h2>
     <p class="section-sub">Start free and upgrade when you're ready to quote, track jobs, and run your business — no lock-in, cancel anytime.</p>
   </div>
-  <div class="pricing-cards">
-
-    <!-- Free Demo -->
-    <div class="pricing-card tier-free">
-      <div class="plan-name">Free Demo</div>
-      <div class="plan-price">$0<span class="plan-period"> forever</span></div>
-      <p class="plan-desc">No account needed. Just open the planner and start designing.</p>
-      <ul class="plan-list">
-        <li>Floor plan, elevation &amp; 3D views</li>
-        <li>Full cabinet catalog</li>
-        <li>Unlimited cabinets &amp; rooms</li>
-        <li>Saves locally in your browser</li>
-      </ul>
-      <a href="/app?demo=1" class="plan-cta ghost" style="margin-top:auto;">Try the Demo &rarr;</a>
-    </div>
-
-    <!-- Student -->
-    <div class="pricing-card tier-bronze">
-      <div class="plan-name">Student</div>
-      <div class="plan-price">$19<span class="plan-period"> / mo</span></div>
-      <p class="plan-desc">For students, remodelers, and one-project homeowners.</p>
-      <ul class="plan-list">
-        <li>Everything in Free Demo</li>
-        <li>Cloud saves — any device</li>
-        <li>Unlimited projects</li>
-      </ul>
-      <a href="/app" class="plan-cta ghost" style="margin-top:auto;">Get Started &rarr;</a>
-    </div>
-
-    <!-- Silver -->
-    <div class="pricing-card tier-silver">
-      <div class="plan-name">Silver</div>
-      <div class="plan-price">$39<span class="plan-period"> / mo</span></div>
-      <p class="plan-desc">For contractors and designers who quote and track jobs.</p>
-      <ul class="plan-list">
-        <li>Everything in Bronze</li>
-        <li>PDF quote export with your logo</li>
-        <li>Custom pricing catalog</li>
-        <li>Job status pipeline &amp; activity log</li>
-      </ul>
-      <a href="/app" class="plan-cta ghost" style="margin-top:auto;">Get Started &rarr;</a>
-    </div>
-
-    <!-- Gold -->
-    <div class="pricing-card tier-gold">
-      <div class="plan-name">Gold</div>
-      <div class="plan-price">$99<span class="plan-period"> / mo</span></div>
-      <p class="plan-desc">For cabinet dealers and high-volume pros.</p>
-      <ul class="plan-list">
-        <li>Everything in Silver</li>
-        <li>Team member access</li>
-        <li>Custom catalog upload</li>
-        <li>Priority support</li>
-      </ul>
-      <a href="/app" class="plan-cta solid" style="margin-top:auto;">Get Started &rarr;</a>
-    </div>
-
-  </div>
+  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
+  <stripe-pricing-table
+    pricing-table-id="prctbl_1ToV6GAO0398J98Jngzy7sQY"
+    publishable-key="pk_test_51ToTXXAO0398J98JjEwojkdjFUf6dYiZpLpOWdJ7yYpRKiEZI40sbwAHhRJYQARQZ3MqYIwcrzhqtvOAdxSuPqeN00fqF7ehND">
+  </stripe-pricing-table>
+  <p style="text-align:center;margin-top:32px;font-size:13px;color:var(--muted);">
+    No account needed to try it — <a href="/app.html?demo=1" style="color:var(--accent);font-weight:600;">open the free demo &rarr;</a>
+  </p>
 </section>
 
 
@@ -1638,18 +1600,35 @@ function closeContactModal() {
   document.getElementById('lp-contact-subject').value = '';
   document.getElementById('lp-contact-error').textContent = '';
 }
-function submitLpContact() {
+async function submitLpContact() {
   const name    = document.getElementById('lp-contact-name').value.trim();
   const email   = document.getElementById('lp-contact-email').value.trim();
   const subject = document.getElementById('lp-contact-subject').value;
   const message = document.getElementById('lp-contact-message').value.trim();
   const errEl   = document.getElementById('lp-contact-error');
+  const btn     = document.querySelector('#lp-contact-modal .lp-btn-primary');
   if (!name || !email || !subject || !message) { errEl.textContent = 'Please fill in all fields.'; return; }
   if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-  const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
-  const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
-  window.location.href = `mailto:contact@mycabinetplanner.com?subject=${subjectLine}&body=${body}`;
-  closeContactModal();
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch('https://formspree.io/f/YOUR_CONTACT_FORM_ID', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ name, email, subject, message })
+    });
+    if (res.ok) {
+      document.querySelector('#lp-contact-modal .lp-modal').innerHTML =
+        '<div style="text-align:center;padding:40px 20px;"><div style="font-size:32px;margin-bottom:16px;">✓</div><h3 style="margin-bottom:8px;">Message sent!</h3><p style="color:var(--muted);font-size:14px;">We\'ll get back to you within one business day.</p><button class="lp-btn lp-btn-secondary" style="margin-top:24px;" onclick="closeContactModal()">Close</button></div>';
+    } else { throw new Error(); }
+  } catch {
+    // Fallback to mailto if Formspree isn't configured yet
+    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
+    const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
+    window.location.href = `mailto:contact@mycabinetplanner.com?subject=${subjectLine}&body=${body}`;
+    closeContactModal();
+  }
+  btn.disabled = false; btn.textContent = 'Send Message';
 }
 document.getElementById('lp-contact-modal').addEventListener('click', function(e) {
   if (e.target === this) closeContactModal();
