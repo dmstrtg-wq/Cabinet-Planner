@@ -1209,7 +1209,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   <div class="modal">
     <h3>New Project</h3>
     <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder=""></div>
-    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="np-company" placeholder=""></div>
+    <div class="form-row">
+      <div class="form-group"><label>Customer Phone</label><input type="tel" id="np-phone" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(on quote)</span></label><input type="text" id="np-company" placeholder=""></div>
+    </div>
     <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
     <div class="form-row">
@@ -1238,7 +1241,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   <div class="modal">
     <h3>Edit Project</h3>
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
-    <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(appears on printed quote)</span></label><input type="text" id="ep-company" placeholder=""></div>
+    <div class="form-row">
+      <div class="form-group"><label>Customer Phone</label><input type="tel" id="ep-phone" placeholder="(555) 000-0000"></div>
+      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(on quote)</span></label><input type="text" id="ep-company" placeholder=""></div>
+    </div>
     <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder=""></div>
     <div class="form-row">
@@ -2103,7 +2109,7 @@ function setViewMode(m) {
 // PROJECT CRUD
 // ════════════════════════════
 function openNewProjectModal() {
-  ['np-customer','np-company','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['np-customer','np-phone','np-company','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('np-ceiling').value = '96';
   document.getElementById('np-type').value = 'Kitchen';
   // Populate state dropdown if empty
@@ -2131,6 +2137,7 @@ function createProject() {
   };
   const proj = {
     id: newId(), customer,
+    phone:   document.getElementById('np-phone').value.trim(),
     company: document.getElementById('np-company').value.trim(),
     type:    document.getElementById('np-type').value,
     notes:   document.getElementById('np-notes').value.trim(),
@@ -2148,6 +2155,7 @@ function createProject() {
 function openEditProjectModal() {
   const p = activeProj(); if (!p) return;
   document.getElementById('ep-customer').value = p.customer;
+  document.getElementById('ep-phone').value    = p.phone   || '';
   document.getElementById('ep-company').value  = p.company || '';
   document.getElementById('ep-type').value     = p.type;
   document.getElementById('ep-address').value  = p.address || '';
@@ -2163,6 +2171,7 @@ function openEditProjectModal() {
 function saveEditProject() {
   const p = activeProj(); if (!p) return;
   p.customer = document.getElementById('ep-customer').value.trim() || p.customer;
+  p.phone    = document.getElementById('ep-phone').value.trim();
   p.company  = document.getElementById('ep-company').value.trim();
   p.type     = document.getElementById('ep-type').value;
   p.address  = document.getElementById('ep-address').value.trim();

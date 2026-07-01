@@ -446,10 +446,11 @@ function renderInfo() {
   const updated  = new Date(p.updated_at||p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
   const fields = [
     { label:'Customer',      value: p.customer },
-    { label:'Company',       value: p.company },
-    { label:'Project Type',  value: p.type },
+    { label:'Phone',         value: p.phone },
     { label:'Address',       value: p.address },
     { label:'City / State',  value: [p.city, p.state].filter(Boolean).join(', ') },
+    { label:'Company',       value: p.company },
+    { label:'Project Type',  value: p.type },
     { label:'Notes',         value: p.notes },
     { label:'Door Style',    value: p.style },
     { label:'Created',       value: created },
