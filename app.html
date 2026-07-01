@@ -1972,7 +1972,7 @@ async function syncActiveProject() {
   const p = activeProj();
   if (!p) return;
   // Demo mode or Free tier: persist to localStorage only
-  if (IS_DEMO || !currentUser || !canAccess('bronze')) {
+  if (IS_DEMO || !currentUser || !canAccess('student')) {
     localStorage.setItem('cp_demo_projects', JSON.stringify(state.projects));
     setSyncStatus('saved');
     return;
@@ -5719,8 +5719,8 @@ function addActivityNote() {
 let companyProfile = {};
 
 // ── Subscription tier helpers ──────────────────────────────────────────────
-// Tier order: free < bronze < silver < gold
-const TIER_RANK = { free: 0, bronze: 1, silver: 2, gold: 3 };
+// Tier order: free < student < silver < gold
+const TIER_RANK = { free: 0, student: 1, silver: 2, gold: 3 };
 function currentTier() { return companyProfile.subscription_tier || 'free'; }
 function canAccess(requiredTier) {
   return (TIER_RANK[currentTier()] ?? 0) >= (TIER_RANK[requiredTier] ?? 99);
@@ -5749,7 +5749,7 @@ function applyTierGates() {
 }
 
 function showTierUpgradePrompt(required, featureName) {
-  const tierLabel = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
+  const tierLabel = { student: 'Student', silver: 'Silver', gold: 'Gold' };
   const msg = `${featureName} is available on the ${tierLabel[required] || required} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`;
   alert(msg);
 }
