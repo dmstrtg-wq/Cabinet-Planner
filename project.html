@@ -137,6 +137,19 @@
   #error-state { display:none; text-align:center; padding:80px 24px; }
   #error-state h2 { font-size:20px; font-weight:700; margin-bottom:10px; }
 
+  /* ── INFO EDIT FORM ── */
+  .info-edit-form { display: flex; flex-direction: column; gap: 10px; }
+  .ie-row { display: flex; flex-direction: column; gap: 3px; }
+  .ie-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .ie-input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; font-family: inherit; outline: none; background: var(--bg); width: 100%; }
+  .ie-input:focus { border-color: var(--accent); background: #fff; }
+  .ie-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ie-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+  .ie-save { padding: 7px 18px; background: var(--accent); color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .ie-save:hover { background: var(--accent-hover); }
+  .ie-cancel { padding: 7px 14px; background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .ie-cancel:hover { background: var(--hover); }
+
   @media (max-width: 600px) {
     .page { padding: 20px 14px 60px; }
     .proj-title { font-size: 20px; }
@@ -256,7 +269,10 @@
     <!-- RIGHT: project info -->
     <div>
       <div class="card">
-        <div class="card-head"><div class="card-title">Project Info</div></div>
+        <div class="card-head">
+          <div class="card-title">Project Info</div>
+          <button id="info-edit-btn" class="hdr-btn btn-outline" style="font-size:12px;padding:5px 12px;" onclick="toggleInfoEdit()">Edit</button>
+        </div>
         <div class="card-body" id="info-body"></div>
       </div>
     </div>
@@ -440,10 +456,64 @@ function renderCabSummary() {
     </tr>`).join('');
 }
 
+let infoEditMode = false;
+
+function toggleInfoEdit() {
+  infoEditMode = !infoEditMode;
+  document.getElementById('info-edit-btn').textContent = infoEditMode ? 'Cancel' : 'Edit';
+  renderInfo();
+}
+
 function renderInfo() {
   const p = projData;
-  const created  = new Date(p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-  const updated  = new Date(p.updated_at||p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const created = new Date(p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const updated = new Date(p.updated_at||p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+
+  if (infoEditMode) {
+    document.getElementById('info-body').innerHTML = `
+      <div class="info-edit-form">
+        <div class="ie-row">
+          <label class="ie-label">Customer Name</label>
+          <input class="ie-input" id="ie-customer" value="${esc(p.customer||'')}">
+        </div>
+        <div class="ie-row">
+          <label class="ie-label">Phone</label>
+          <input class="ie-input" id="ie-phone" type="tel" value="${esc(p.phone||'')}">
+        </div>
+        <div class="ie-row">
+          <label class="ie-label">Address</label>
+          <input class="ie-input" id="ie-address" value="${esc(p.address||'')}">
+        </div>
+        <div class="ie-grid2">
+          <div class="ie-row">
+            <label class="ie-label">City</label>
+            <input class="ie-input" id="ie-city" value="${esc(p.city||'')}">
+          </div>
+          <div class="ie-row">
+            <label class="ie-label">State</label>
+            <input class="ie-input" id="ie-state" value="${esc(p.state||'')}">
+          </div>
+        </div>
+        <div class="ie-row">
+          <label class="ie-label">Company</label>
+          <input class="ie-input" id="ie-company" value="${esc(p.company||'')}">
+        </div>
+        <div class="ie-row">
+          <label class="ie-label">Project Type</label>
+          <input class="ie-input" id="ie-type" value="${esc(p.type||'')}">
+        </div>
+        <div class="ie-row">
+          <label class="ie-label">Notes</label>
+          <textarea class="ie-input" id="ie-notes" rows="3" style="resize:vertical;">${esc(p.notes||'')}</textarea>
+        </div>
+        <div class="ie-actions">
+          <button class="ie-cancel" onclick="toggleInfoEdit()">Cancel</button>
+          <button class="ie-save" onclick="saveInfoEdit()">Save</button>
+        </div>
+      </div>`;
+    return;
+  }
+
   const fields = [
     { label:'Customer',      value: p.customer },
     { label:'Phone',         value: p.phone },
@@ -461,6 +531,45 @@ function renderInfo() {
       <span class="info-label">${esc(f.label)}</span>
       <span class="info-value">${esc(f.value)}</span>
     </div>`).join('');
+}
+
+async function saveInfoEdit() {
+  const customer = document.getElementById('ie-customer').value.trim();
+  const phone    = document.getElementById('ie-phone').value.trim();
+  const address  = document.getElementById('ie-address').value.trim();
+  const city     = document.getElementById('ie-city').value.trim();
+  const state    = document.getElementById('ie-state').value.trim();
+  const company  = document.getElementById('ie-company').value.trim();
+  const type     = document.getElementById('ie-type').value.trim();
+  const notes    = document.getElementById('ie-notes').value.trim();
+
+  const btn = document.querySelector('.ie-save');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const { error } = await db.from('projects').update({
+    customer, phone, address, city, state, company, type, notes,
+    updated_at: new Date().toISOString()
+  }).eq('id', projId);
+
+  if (error) {
+    console.error('Save error:', error);
+    btn.textContent = 'Save'; btn.disabled = false;
+    return;
+  }
+
+  // Update local data
+  Object.assign(projData, { customer, phone, address, city, state, company, type, notes });
+
+  // Refresh hero
+  document.getElementById('proj-title').textContent = customer;
+  document.getElementById('bc-name').textContent = customer;
+  document.title = `${customer} — My Cabinet Planner`;
+  const subParts = [company, type, city ? `${city}${state ? ', '+state : ''}` : ''].filter(Boolean);
+  document.getElementById('proj-sub').textContent = subParts.join(' · ');
+
+  infoEditMode = false;
+  document.getElementById('info-edit-btn').textContent = 'Edit';
+  renderInfo();
 }
 
 async function init() {
