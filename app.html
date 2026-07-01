@@ -1970,8 +1970,8 @@ function persist() {
 async function syncActiveProject() {
   const p = activeProj();
   if (!p) return;
-  // Demo mode: persist to localStorage only
-  if (IS_DEMO || !currentUser) {
+  // Demo mode or Free tier: persist to localStorage only
+  if (IS_DEMO || !currentUser || !canAccess('bronze')) {
     localStorage.setItem('cp_demo_projects', JSON.stringify(state.projects));
     setSyncStatus('saved');
     return;
@@ -4659,6 +4659,7 @@ function checkCompanyProfile() {
 
 function printQuote() {
   if (!demoGate('quote')) return;
+  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
   if (!checkCompanyProfile()) return;
   const p = activeProj(); if (!p) return;
   // Company name: quote modal field → project field → company profile → default
@@ -5059,6 +5060,7 @@ function loadScript(src) {
 
 async function exportPDF(btn) {
   if (!demoGate('export')) return;
+  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
   if (!checkCompanyProfile()) return;
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
@@ -5660,6 +5662,7 @@ function setProjectStatus(status) {
 }
 
 function openActivityLog() {
+  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'Job Status Pipeline'); return; }
   const p = activeProj(); if (!p) return;
   document.getElementById('al-project-name').textContent = p.customer + (p.company ? ` · ${p.company}` : '');
   document.getElementById('al-note-input').value = '';
@@ -5714,10 +5717,40 @@ function addActivityNote() {
 // ════════════════════════════
 let companyProfile = {};
 
+// ── Subscription tier helpers ──────────────────────────────────────────────
+// Tier order: free < bronze < silver < gold
+const TIER_RANK = { free: 0, bronze: 1, silver: 2, gold: 3 };
+function currentTier() { return companyProfile.subscription_tier || 'free'; }
+function canAccess(requiredTier) {
+  return (TIER_RANK[currentTier()] ?? 0) >= (TIER_RANK[requiredTier] ?? 99);
+}
+
 async function loadCompanyProfile() {
   if (!currentUser) return;
   const { data } = await db.from('company_profiles').select('*').eq('user_id', currentUser.id).single();
   if (data) companyProfile = data;
+  applyTierGates();
+}
+
+// Apply/remove tier-gated UI after profile loads
+function applyTierGates() {
+  // PDF export button — Silver+
+  const pdfBtn = document.getElementById('pdf-export-btn');
+  if (pdfBtn) {
+    const locked = !canAccess('silver');
+    pdfBtn.style.opacity  = locked ? '0.45' : '';
+    pdfBtn.style.cursor   = locked ? 'not-allowed' : '';
+    pdfBtn.title          = locked ? 'PDF export requires Silver or higher' : '';
+  }
+  // Status pill + log button visibility — Silver+
+  const statusPill = document.getElementById('pv-status-pill');
+  if (statusPill) statusPill.style.display = canAccess('silver') ? '' : 'none';
+}
+
+function showTierUpgradePrompt(required, featureName) {
+  const tierLabel = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold' };
+  const msg = `${featureName} is available on the ${tierLabel[required] || required} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`;
+  alert(msg);
 }
 
 const CS_PRICING_TYPES = [
