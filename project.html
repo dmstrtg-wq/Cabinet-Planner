@@ -499,10 +499,6 @@ function renderInfo() {
           </div>
         </div>
         <div class="ie-row">
-          <label class="ie-label">Company</label>
-          <input class="ie-input" id="ie-company" value="${esc(d.company||'')}">
-        </div>
-        <div class="ie-row">
           <label class="ie-label">Project Type</label>
           <input class="ie-input" id="ie-type" value="${esc(p.type||'')}">
         </div>
@@ -523,7 +519,6 @@ function renderInfo() {
     { label:'Phone',         value: d.phone },
     { label:'Address',       value: d.address },
     { label:'City / State',  value: [d.city, d.state].filter(Boolean).join(', ') },
-    { label:'Company',       value: d.company },
     { label:'Project Type',  value: p.type },
     { label:'Notes',         value: p.notes },
     { label:'Door Style',    value: p.style },
@@ -543,7 +538,6 @@ async function saveInfoEdit() {
   const address  = document.getElementById('ie-address').value.trim();
   const city     = document.getElementById('ie-city').value.trim();
   const state    = document.getElementById('ie-state').value.trim();
-  const company  = document.getElementById('ie-company').value.trim();
   const type     = document.getElementById('ie-type').value.trim();
   const notes    = document.getElementById('ie-notes').value.trim();
 
@@ -553,7 +547,7 @@ async function saveInfoEdit() {
   // customer/type/notes are top-level Supabase columns;
   // phone/company/address/city/state live in the data JSON blob
   if (!projData.data) projData.data = {};
-  Object.assign(projData.data, { phone, company, address, city, state });
+  Object.assign(projData.data, { phone, address, city, state });
   projData.customer = customer;
   projData.type     = type;
   projData.notes    = notes;
@@ -574,7 +568,7 @@ async function saveInfoEdit() {
   document.getElementById('proj-title').textContent = customer;
   document.getElementById('bc-name').textContent = customer;
   document.title = `${customer} — My Cabinet Planner`;
-  const subParts = [company, type, city ? `${city}${state ? ', '+state : ''}` : ''].filter(Boolean);
+  const subParts = [type, city ? `${city}${state ? ', '+state : ''}` : ''].filter(Boolean);
   document.getElementById('proj-sub').textContent = subParts.join(' · ');
 
   infoEditMode = false;
