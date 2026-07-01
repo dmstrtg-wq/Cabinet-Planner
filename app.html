@@ -4358,7 +4358,10 @@ function renderElevation() {
         const atCorner = atFarEnd ? (off + cab.width >= adjLen - 1) : (off <= 1);
         if (!atCorner) return;
         const cat = CATALOG[cab.type]; if (!cat) return;
-        const depthPx = (cab.depth || cat.depth || 24) * scale;
+        // lazysusan L-shape extends cab.width along the adjacent wall (floor plan confirms this);
+        // cornerBase and diagWall extend cab.depth — use depth for those.
+        const crossW = cab.type === 'lazysusan' ? cab.width : (cab.depth || cat.depth || 24);
+        const depthPx = crossW * scale;
         const cH = (cab.height || cat.heights?.[0] || (cab.type === 'diagWall' ? 30 : 34.5)) * scale;
         const cW = depthPx;
         const x = drawAtRight ? WX + WW - cW : WX;
