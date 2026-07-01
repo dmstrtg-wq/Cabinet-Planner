@@ -469,6 +469,10 @@ function renderInfo() {
   const created = new Date(p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
   const updated = new Date(p.updated_at||p.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
 
+  // Convenience: customer-level fields live in top-level columns,
+  // extended fields (phone/company/address/city/state) live in data blob
+  const d = p.data || {};
+
   if (infoEditMode) {
     document.getElementById('info-body').innerHTML = `
       <div class="info-edit-form">
@@ -478,25 +482,25 @@ function renderInfo() {
         </div>
         <div class="ie-row">
           <label class="ie-label">Phone</label>
-          <input class="ie-input" id="ie-phone" type="tel" value="${esc(p.phone||'')}">
+          <input class="ie-input" id="ie-phone" type="tel" value="${esc(d.phone||'')}">
         </div>
         <div class="ie-row">
           <label class="ie-label">Address</label>
-          <input class="ie-input" id="ie-address" value="${esc(p.address||'')}">
+          <input class="ie-input" id="ie-address" value="${esc(d.address||'')}">
         </div>
         <div class="ie-grid2">
           <div class="ie-row">
             <label class="ie-label">City</label>
-            <input class="ie-input" id="ie-city" value="${esc(p.city||'')}">
+            <input class="ie-input" id="ie-city" value="${esc(d.city||'')}">
           </div>
           <div class="ie-row">
             <label class="ie-label">State</label>
-            <input class="ie-input" id="ie-state" value="${esc(p.state||'')}">
+            <input class="ie-input" id="ie-state" value="${esc(d.state||'')}">
           </div>
         </div>
         <div class="ie-row">
           <label class="ie-label">Company</label>
-          <input class="ie-input" id="ie-company" value="${esc(p.company||'')}">
+          <input class="ie-input" id="ie-company" value="${esc(d.company||'')}">
         </div>
         <div class="ie-row">
           <label class="ie-label">Project Type</label>
@@ -516,10 +520,10 @@ function renderInfo() {
 
   const fields = [
     { label:'Customer',      value: p.customer },
-    { label:'Phone',         value: p.phone },
-    { label:'Address',       value: p.address },
-    { label:'City / State',  value: [p.city, p.state].filter(Boolean).join(', ') },
-    { label:'Company',       value: p.company },
+    { label:'Phone',         value: d.phone },
+    { label:'Address',       value: d.address },
+    { label:'City / State',  value: [d.city, d.state].filter(Boolean).join(', ') },
+    { label:'Company',       value: d.company },
     { label:'Project Type',  value: p.type },
     { label:'Notes',         value: p.notes },
     { label:'Door Style',    value: p.style },
@@ -546,8 +550,17 @@ async function saveInfoEdit() {
   const btn = document.querySelector('.ie-save');
   btn.textContent = 'Saving…'; btn.disabled = true;
 
+  // customer/type/notes are top-level Supabase columns;
+  // phone/company/address/city/state live in the data JSON blob
+  if (!projData.data) projData.data = {};
+  Object.assign(projData.data, { phone, company, address, city, state });
+  projData.customer = customer;
+  projData.type     = type;
+  projData.notes    = notes;
+
   const { error } = await db.from('projects').update({
-    customer, phone, address, city, state, company, type, notes,
+    customer, type, notes,
+    data: projData.data,
     updated_at: new Date().toISOString()
   }).eq('id', projId);
 
@@ -556,9 +569,6 @@ async function saveInfoEdit() {
     btn.textContent = 'Save'; btn.disabled = false;
     return;
   }
-
-  // Update local data
-  Object.assign(projData, { customer, phone, address, city, state, company, type, notes });
 
   // Refresh hero
   document.getElementById('proj-title').textContent = customer;

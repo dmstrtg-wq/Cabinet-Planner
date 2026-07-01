@@ -1983,7 +1983,9 @@ async function syncActiveProject() {
     type: p.type,
     notes: p.notes || '',
     style: p.style || 'AW',
-    data: { rooms: p.rooms, status: p.status || 'Lead', activityLog: p.activityLog || [] },
+    data: { rooms: p.rooms, status: p.status || 'Lead', activityLog: p.activityLog || [],
+            phone: p.phone || '', company: p.company || '',
+            address: p.address || '', city: p.city || '', state: p.state || '' },
     updated_at: new Date().toISOString()
   }, { onConflict: 'id' });
   setSyncStatus(error ? 'error' : 'saved');
@@ -2015,7 +2017,12 @@ async function loadProjects() {
     createdAt: new Date(row.created_at).getTime(),
     rooms: (row.data && row.data.rooms) || [],
     status: (row.data && row.data.status) || 'Lead',
-    activityLog: (row.data && row.data.activityLog) || []
+    activityLog: (row.data && row.data.activityLog) || [],
+    phone:   (row.data && row.data.phone)   || '',
+    company: (row.data && row.data.company) || '',
+    address: (row.data && row.data.address) || '',
+    city:    (row.data && row.data.city)    || '',
+    state:   (row.data && row.data.state)   || ''
   }));
   renderSidebar();
   const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
