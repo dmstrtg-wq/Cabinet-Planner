@@ -4338,6 +4338,60 @@ function renderElevation() {
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
   });
 
+  // ── Corner cabinet crossover: adjacent-wall corner cabs shown at elevation edges ──
+  // A lazysusan/cornerBase/diagWall physically spans two walls; show the depth face here.
+  {
+    const CORNER_CAB_TYPES = ['lazysusan','cornerBase','diagWall'];
+    // For each elevation wall: left corner and right corner, which adjacent wall and at which end.
+    // atFarEnd:true  → corner is at offset ≈ adjWallLength (far end of adj wall)
+    // atFarEnd:false → corner is at offset ≈ 0 (near/north/west end of adj wall)
+    const cornerMap = {
+      north: [{ adjWall:'west',  atFarEnd:false, drawAtRight:false }, { adjWall:'east',  atFarEnd:false, drawAtRight:true  }],
+      south: [{ adjWall:'east',  atFarEnd:true,  drawAtRight:false }, { adjWall:'west',  atFarEnd:true,  drawAtRight:true  }],
+      east:  [{ adjWall:'north', atFarEnd:true,  drawAtRight:false }, { adjWall:'south', atFarEnd:true,  drawAtRight:true  }],
+      west:  [{ adjWall:'south', atFarEnd:false, drawAtRight:false }, { adjWall:'north', atFarEnd:false, drawAtRight:true  }],
+    };
+    (cornerMap[wall] || []).forEach(({ adjWall, atFarEnd, drawAtRight }) => {
+      const adjLen = r.walls[adjWall] || 120;
+      r.cabinets.filter(c => c.wall === adjWall && CORNER_CAB_TYPES.includes(c.type)).forEach(cab => {
+        const off = cab.offset || 0;
+        const atCorner = atFarEnd ? (off + cab.width >= adjLen - 1) : (off <= 1);
+        if (!atCorner) return;
+        const cat = CATALOG[cab.type]; if (!cat) return;
+        const depthPx = (cab.depth || cat.depth || 24) * scale;
+        const cH = (cab.height || cat.heights?.[0] || (cab.type === 'diagWall' ? 30 : 34.5)) * scale;
+        const cW = depthPx;
+        const x = drawAtRight ? WX + WW - cW : WX;
+        const isWallCab = cab.type === 'diagWall';
+        let y;
+        if (isWallCab) {
+          const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
+          y = Math.max(WY, floorY - bIn * scale - cH);
+        } else {
+          y = floorY - cH;
+        }
+        const si = cabStyle(cab);
+        ctx.globalAlpha = 0.65;
+        ctx.fillStyle = si.swatch;
+        ctx.fillRect(x, y, cW, cH);
+        ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(x, y, cW, cH);
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        if (!isWallCab) {
+          ctx.fillStyle = '#94A3B8'; ctx.globalAlpha = 0.7;
+          ctx.fillRect(x, floorY - 7, cW, 7);
+          ctx.globalAlpha = 1;
+        }
+        const fs = Math.max(7, Math.min(scale * 1.5, 9));
+        ctx.fillStyle = darkSwatches.includes(si.swatch) ? '#fff' : '#475569';
+        ctx.font = `600 ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cat.abbr || '', x + cW / 2, y + cH / 2);
+      });
+    });
+  }
+
   // Appliances in elevation
   (r.appliances||[]).filter(a => a.wall === wall).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
