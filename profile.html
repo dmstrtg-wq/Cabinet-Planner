@@ -478,7 +478,7 @@
             <div class="section-title">Price Lists</div>
             <div>
               <input type="file" id="pricelist-file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx" style="display:none;" onchange="handleFileUpload(event,'price_list')">
-              <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="document.getElementById('pricelist-file-input').click()">＋ Upload Price List</button>
+              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Price List</button>
             </div>
           </div>
           <div class="card">
@@ -495,7 +495,7 @@
             <div class="section-title">Catalogs</div>
             <div>
               <input type="file" id="catalog-file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx" style="display:none;" onchange="handleFileUpload(event,'catalog')">
-              <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="document.getElementById('catalog-file-input').click()">＋ Upload Catalog</button>
+              <button id="catalog-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('catalog')">＋ Upload Catalog</button>
             </div>
           </div>
           <div class="card">
@@ -824,7 +824,15 @@ function confirmInvite() {
 
 /* ── COMPANY SETTINGS (logo upload + inline edit) ── */
 let currentUser = null;
-let pendingLogoDataUrl = null; // null = no pending change, '' = explicit removal, string = new data URL
+let companyProfile = {};
+let pendingLogoDataUrl = null;
+
+/* ── SUBSCRIPTION TIER HELPERS ── */
+const TIER_RANK = { free: 0, student: 1, silver: 2, gold: 3 };
+function currentTier() { return companyProfile.subscription_tier || 'free'; }
+function canAccess(requiredTier) {
+  return (TIER_RANK[currentTier()] ?? 0) >= (TIER_RANK[requiredTier] ?? 99);
+} // null = no pending change, '' = explicit removal, string = new data URL
 
 function updateLogoPreview(url) {
   const imgEl = document.getElementById('logo-preview-img');
@@ -924,6 +932,40 @@ async function saveCompanySettings() {
 
 /* ── PRICE LISTS & CATALOGS ── */
 const FILES_BUCKET = 'company-files';
+
+// Required tiers: Silver for price lists, Gold for catalogs
+const FILE_TIER = { price_list: 'silver', catalog: 'gold' };
+const FILE_TIER_LABEL = { silver: 'Silver', gold: 'Gold' };
+
+function applyFilesTabTierGating() {
+  const plBtn  = document.getElementById('pricelist-upload-btn');
+  const catBtn = document.getElementById('catalog-upload-btn');
+  const plLocked  = !canAccess('silver');
+  const catLocked = !canAccess('gold');
+
+  if (plBtn) {
+    plBtn.style.opacity = plLocked ? '0.45' : '';
+    plBtn.style.cursor  = plLocked ? 'not-allowed' : '';
+    plBtn.title         = plLocked ? 'Price list upload requires Silver plan or higher' : '';
+  }
+  if (catBtn) {
+    catBtn.style.opacity = catLocked ? '0.45' : '';
+    catBtn.style.cursor  = catLocked ? 'not-allowed' : '';
+    catBtn.title         = catLocked ? 'Catalog upload requires Gold plan' : '';
+  }
+}
+
+function triggerFileUpload(category) {
+  const required = FILE_TIER[category] || 'silver';
+  if (!canAccess(required)) {
+    const label = FILE_TIER_LABEL[required] || required;
+    const featureLabel = category === 'catalog' ? 'Catalog upload' : 'Price list upload';
+    alert(`${featureLabel} is available on the ${label} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`);
+    return;
+  }
+  const inputId = category === 'price_list' ? 'pricelist-file-input' : 'catalog-file-input';
+  document.getElementById(inputId).click();
+}
 const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB per file
 
 function humanFileSize(bytes) {
@@ -984,6 +1026,15 @@ async function handleFileUpload(e, category) {
   const file = e.target.files[0];
   e.target.value = '';
   if (!file || !currentUser) return;
+
+  // Tier gate — belt-and-suspenders check in case button gating was bypassed
+  const required = FILE_TIER[category] || 'silver';
+  if (!canAccess(required)) {
+    const label = FILE_TIER_LABEL[required] || required;
+    const featureLabel = category === 'catalog' ? 'Catalog upload' : 'Price list upload';
+    alert(`${featureLabel} is available on the ${label} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`);
+    return;
+  }
 
   if (file.size > MAX_FILE_BYTES) {
     showToast(`That file is too large — max size is ${humanFileSize(MAX_FILE_BYTES)}.`);
@@ -1209,6 +1260,7 @@ async function init() {
 
   // Load company profile
   const { data: company } = await db.from('company_profiles').select('*').eq('user_id', user.id).single();
+  companyProfile = company || {};
 
   // Load all projects
   const { data: projects } = await db.from('projects').select('*').order('created_at', { ascending: false });
@@ -1226,6 +1278,7 @@ async function init() {
   renderTeam();
   renderSubscription();
   renderBilling();
+  applyFilesTabTierGating();
   loadCompanyFiles('price_list');
   loadCompanyFiles('catalog');
 
