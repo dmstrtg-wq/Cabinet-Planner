@@ -2725,15 +2725,15 @@ function openEditModal(cab) {
     ds.value = String(cab.depth || 12);
   } else { dg.style.display = 'none'; }
 
-  // Wall bottom (wall cabs only)
+  // Wall bottom (wall + diagWall)
   const wbg = document.getElementById('edit-wallbottom-group');
-  if (cab.type === 'wall') {
+  if (cab.type === 'wall' || cab.type === 'diagWall') {
     wbg.style.display = '';
     document.getElementById('edit-cab-wallbottom').value = cab.wallBottom != null ? cab.wallBottom : 54;
   } else { wbg.style.display = 'none'; }
 
-  // Glass doors (wall cabs only)
-  document.getElementById('edit-glass-group').style.display = cab.type === 'wall' ? '' : 'none';
+  // Glass doors (wall + diagWall)
+  document.getElementById('edit-glass-group').style.display = (cab.type === 'wall' || cab.type === 'diagWall') ? '' : 'none';
 
   // Door style override
   const ss = document.getElementById('edit-cab-style');
@@ -2760,6 +2760,8 @@ function saveEditModal() {
   if (hs.options.length > 0 && hs.value) cab.height = parseFloat(hs.value);
   if (cab.type === 'wall') {
     cab.depth      = parseFloat(document.getElementById('edit-cab-depth').value) || 12;
+  }
+  if (cab.type === 'wall' || cab.type === 'diagWall') {
     cab.wallBottom = parseInt(document.getElementById('edit-cab-wallbottom').value) || 54;
     cab.glassDoors = document.getElementById('edit-cab-glass').checked;
   }
@@ -4109,12 +4111,12 @@ function renderIsometric() {
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
     const dep = cab.depth  || cat.depth || 24;
-    const baseY = cab.type === 'wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+    const baseY = (cab.type === 'wall' || cab.type === 'diagWall') ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
     const pos = cabPos(cab.wall, off, cab.width, dep);
     const baseCol = _styleHex;
 
     addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
-    if (cab.type !== 'cornerBase' && cab.type !== 'lazysusan') {
+    if (cab.type !== 'cornerBase') {
       addFrontPanel(pos, baseY, h, cab.wall, baseCol, cab.glassDoors);
     }
     addLabel(`${cab.width}"`, pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
@@ -4236,7 +4238,7 @@ function renderElevation() {
   }
 
   wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type)).forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||34.5)*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const isCorner=cab.type==='cornerBase';
     const si=cabStyle(cab);
@@ -4282,7 +4284,7 @@ function renderElevation() {
   });
 
   wallCabs.filter(c=>['wall','diagWall'].includes(c.type)).forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||30)*scale;
     const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
     const y=Math.max(WY, floorY-bottomIn*scale-cH);
     const x=eX(cab.offset||0, cab.width);
@@ -4324,7 +4326,7 @@ function renderElevation() {
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=cab.height*scale;
+    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||84)*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
     ctx.fillStyle=si.swatch; ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
@@ -5839,8 +5841,8 @@ async function setNewPassword() {
     for (const cab of r.cabinets.filter(c => c.wall === wall)) {
       const cW = cab.width*scale, cH = cab.height*scale;
       const x = eX(cab.offset||0, cab.width);
-      const bIn = cab.type==='wall' ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
-      const y = cab.type==='wall' ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
+      const bIn = (cab.type==='wall'||cab.type==='diagWall') ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+      const y = (cab.type==='wall'||cab.type==='diagWall') ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
     for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
