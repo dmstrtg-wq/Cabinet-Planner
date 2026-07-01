@@ -321,31 +321,41 @@ nav{
   border-radius:16px;padding:32px 28px;
   border:1px solid var(--border);background:white;
   display:flex;flex-direction:column;
+  border-top-width:4px;
 }
-.pricing-card.featured{
-  border-color:transparent;background:var(--ink);color:white;
-}
+/* Tier accent colors */
+.pricing-card.tier-free  { border-top-color:#CBD5E1; }
+.pricing-card.tier-bronze{ border-top-color:#B87333; }
+.pricing-card.tier-silver{ border-top-color:#94A3B8; }
+.pricing-card.tier-gold  { border-color:transparent;background:var(--ink);color:white; }
+
 .plan-name{
   font-size:11px;font-weight:700;text-transform:uppercase;
   letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;
 }
-.pricing-card.featured .plan-name{color:var(--accent);}
+.tier-bronze .plan-name { color:#B87333; }
+.tier-silver .plan-name { color:#64748B; }
+.tier-gold   .plan-name { color:#D4AF37; }
+
 .plan-price{
   font-family:'Unbounded',sans-serif;
   font-size:44px;font-weight:900;
   letter-spacing:-2px;line-height:1;margin-bottom:6px;
 }
 .plan-period{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0;}
-.pricing-card.featured .plan-period{color:rgba(255,255,255,0.4);}
+.tier-gold .plan-period{color:rgba(255,255,255,0.4);}
 .plan-desc{font-size:14px;color:var(--muted);margin:18px 0 28px;line-height:1.6;}
-.pricing-card.featured .plan-desc{color:rgba(255,255,255,0.45);}
+.tier-gold .plan-desc{color:rgba(255,255,255,0.45);}
 .plan-list{list-style:none;margin-bottom:36px;display:flex;flex-direction:column;gap:12px;}
 .plan-list li{
   font-size:14px;color:var(--muted);
   display:flex;gap:10px;align-items:flex-start;line-height:1.4;
 }
-.pricing-card.featured .plan-list li{color:rgba(255,255,255,0.55);}
-.plan-list li::before{content:'✓';color:var(--accent);font-weight:800;flex-shrink:0;}
+.tier-gold .plan-list li{color:rgba(255,255,255,0.55);}
+.plan-list li::before{content:'✓';font-weight:800;flex-shrink:0;color:var(--accent);}
+.tier-bronze .plan-list li::before { color:#B87333; }
+.tier-silver .plan-list li::before { color:#94A3B8; }
+.tier-gold   .plan-list li::before { color:#D4AF37; }
 .plan-cta{
   display:block;width:100%;padding:14px;
   border-radius:9px;font-size:14px;font-weight:700;
@@ -353,8 +363,10 @@ nav{
 }
 .plan-cta.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--border);}
 .plan-cta.ghost:hover{border-color:var(--accent);color:var(--accent);}
-.plan-cta.solid{background:var(--accent);color:white;}
-.plan-cta.solid:hover{background:#92400e;}
+.tier-bronze .plan-cta.ghost:hover{border-color:#B87333;color:#B87333;}
+.tier-silver .plan-cta.ghost:hover{border-color:#64748B;color:#64748B;}
+.plan-cta.solid{background:#D4AF37;color:#1C1917;}
+.plan-cta.solid:hover{background:#C09B2A;}
 
 /* ── DEMO REQUEST ── */
 .demo-section{padding:100px 6%;background:var(--white);}
@@ -840,7 +852,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   <div class="pricing-cards">
 
     <!-- Free Demo -->
-    <div class="pricing-card">
+    <div class="pricing-card tier-free">
       <div class="plan-name">Free Demo</div>
       <div class="plan-price">$0<span class="plan-period"> forever</span></div>
       <p class="plan-desc">No account needed. Just open the planner and start designing.</p>
@@ -854,9 +866,9 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     </div>
 
     <!-- Bronze -->
-    <div class="pricing-card">
+    <div class="pricing-card tier-bronze">
       <div class="plan-name">Bronze</div>
-      <div class="plan-price">$19.99<span class="plan-period"> / mo</span></div>
+      <div class="plan-price">$19<span class="plan-period"> / mo</span></div>
       <p class="plan-desc">For homeowners and DIYers planning their own space.</p>
       <ul class="plan-list">
         <li>Everything in Free Demo</li>
@@ -867,9 +879,9 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     </div>
 
     <!-- Silver -->
-    <div class="pricing-card">
+    <div class="pricing-card tier-silver">
       <div class="plan-name">Silver</div>
-      <div class="plan-price">$39.99<span class="plan-period"> / mo</span></div>
+      <div class="plan-price">$39<span class="plan-period"> / mo</span></div>
       <p class="plan-desc">For contractors and designers who quote and track jobs.</p>
       <ul class="plan-list">
         <li>Everything in Bronze</li>
@@ -881,9 +893,9 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     </div>
 
     <!-- Gold -->
-    <div class="pricing-card featured">
+    <div class="pricing-card tier-gold">
       <div class="plan-name">Gold</div>
-      <div class="plan-price">$99.99<span class="plan-period"> / mo</span></div>
+      <div class="plan-price">$99<span class="plan-period"> / mo</span></div>
       <p class="plan-desc">For cabinet dealers and high-volume pros.</p>
       <ul class="plan-list">
         <li>Everything in Silver</li>
