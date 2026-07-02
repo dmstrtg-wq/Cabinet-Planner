@@ -472,15 +472,15 @@
 
       <!-- FILES -->
       <div class="tab-panel" data-tab="files">
-        <div class="tab-title">Price Lists &amp; Catalogs</div>
-        <div class="tab-desc">Upload manufacturer price sheets and catalogs so they're saved with your account.</div>
+        <div class="tab-title">My Pricing</div>
+        <div class="tab-desc">Upload your supplier price sheets and we'll map them to your cabinet types so every quote uses your real numbers.</div>
 
         <div class="section">
           <div class="section-head">
-            <div class="section-title">Price Lists</div>
+            <div class="section-title">Price Sheets</div>
             <div>
-              <input type="file" id="pricelist-file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx" style="display:none;" onchange="handleFileUpload(event,'price_list')">
-              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Price List</button>
+              <input type="file" id="pricelist-file-input" accept=".csv,.xls,.xlsx" style="display:none;" onchange="handleFileUpload(event,'price_list')">
+              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Price Sheet</button>
             </div>
           </div>
           <div class="card">
@@ -489,23 +489,7 @@
               <tbody id="pricelist-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
             </table>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel price sheet and we'll walk you through matching it to your cabinet pricing. PDFs are saved for reference but can't be read automatically — enter pricing by hand in the app for those.</div>
-        </div>
-
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">Catalogs</div>
-            <div>
-              <input type="file" id="catalog-file-input" accept=".pdf,.csv,.xls,.xlsx,.doc,.docx" style="display:none;" onchange="handleFileUpload(event,'catalog')">
-              <button id="catalog-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('catalog')">＋ Upload Catalog</button>
-            </div>
-          </div>
-          <div class="card">
-            <table class="proj-table">
-              <thead><tr><th>File</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
-              <tbody id="catalog-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
-            </table>
-          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel sheet from your supplier and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
         </div>
       </div>
 
@@ -954,41 +938,25 @@ async function saveCompanySettings() {
   applyCompanyData(data);
 }
 
-/* ── PRICE LISTS & CATALOGS ── */
+/* ── MY PRICING / PRICE SHEETS ── */
 const FILES_BUCKET = 'company-files';
 
-// Required tiers: Silver for price lists, Gold for catalogs
-const FILE_TIER = { price_list: 'silver', catalog: 'gold' };
-const FILE_TIER_LABEL = { silver: 'Silver', gold: 'Gold' };
-
 function applyFilesTabTierGating() {
-  const plBtn  = document.getElementById('pricelist-upload-btn');
-  const catBtn = document.getElementById('catalog-upload-btn');
-  const plLocked  = !canAccess('silver');
-  const catLocked = !canAccess('gold');
-
+  const plBtn = document.getElementById('pricelist-upload-btn');
+  const locked = !canAccess('silver');
   if (plBtn) {
-    plBtn.style.opacity = plLocked ? '0.45' : '';
-    plBtn.style.cursor  = plLocked ? 'not-allowed' : '';
-    plBtn.title         = plLocked ? 'Price list upload requires Silver plan or higher' : '';
-  }
-  if (catBtn) {
-    catBtn.style.opacity = catLocked ? '0.45' : '';
-    catBtn.style.cursor  = catLocked ? 'not-allowed' : '';
-    catBtn.title         = catLocked ? 'Catalog upload requires Gold plan' : '';
+    plBtn.style.opacity = locked ? '0.45' : '';
+    plBtn.style.cursor  = locked ? 'not-allowed' : '';
+    plBtn.title         = locked ? 'Price sheet upload requires Silver plan or higher' : '';
   }
 }
 
 function triggerFileUpload(category) {
-  const required = FILE_TIER[category] || 'silver';
-  if (!canAccess(required)) {
-    const label = FILE_TIER_LABEL[required] || required;
-    const featureLabel = category === 'catalog' ? 'Catalog upload' : 'Price list upload';
-    alert(`${featureLabel} is available on the ${label} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`);
+  if (!canAccess('silver')) {
+    alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
     return;
   }
-  const inputId = category === 'price_list' ? 'pricelist-file-input' : 'catalog-file-input';
-  document.getElementById(inputId).click();
+  document.getElementById('pricelist-file-input').click();
 }
 const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB per file
 
@@ -1006,7 +974,7 @@ function fileRowIcon() {
 
 async function loadCompanyFiles(category) {
   if (!currentUser) return;
-  const tbody = document.getElementById(category === 'price_list' ? 'pricelist-body' : 'catalog-body');
+  const tbody = document.getElementById('pricelist-body');
   const { data, error } = await db.from('company_files')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -1018,8 +986,7 @@ async function loadCompanyFiles(category) {
     return;
   }
   if (!data || !data.length) {
-    const label = category === 'price_list' ? 'price lists' : 'catalogs';
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No ${label} uploaded yet.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No price sheets uploaded yet.</td></tr>`;
     return;
   }
 
@@ -1052,11 +1019,8 @@ async function handleFileUpload(e, category) {
   if (!file || !currentUser) return;
 
   // Tier gate — belt-and-suspenders check in case button gating was bypassed
-  const required = FILE_TIER[category] || 'silver';
-  if (!canAccess(required)) {
-    const label = FILE_TIER_LABEL[required] || required;
-    const featureLabel = category === 'catalog' ? 'Catalog upload' : 'Price list upload';
-    alert(`${featureLabel} is available on the ${label} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`);
+  if (!canAccess('silver')) {
+    alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
     return;
   }
 
@@ -1304,7 +1268,6 @@ async function init() {
   renderBilling();
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
-  loadCompanyFiles('catalog');
 
   // Stats
   const projs = projects || [];
