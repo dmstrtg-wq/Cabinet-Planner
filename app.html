@@ -310,7 +310,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 body.demo-mode .toolbar-pricing,
 body.demo-mode #pdf-export-btn,
 body.demo-mode .btn-success,
-body.demo-mode .cp-section:has(#pricing-toggle) { display: none !important; }
+body.demo-mode .cp-section:has(#pricing-toggle),
+body.free-tier .cp-section:has(#pricing-toggle) { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
 .empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
@@ -2847,6 +2848,13 @@ function removeAppliance(id) {
 function onPricingToggle(fromToolbar) {
   const main = document.getElementById('pricing-toggle');
   const tb = document.getElementById('pricing-toggle-2');
+  // Gate pricing visibility at Student tier (same as demo restriction)
+  if (!canAccess('student')) {
+    if (main) main.checked = false;
+    if (tb) tb.checked = false;
+    showTierUpgradePrompt('student', 'Show Pricing');
+    return;
+  }
   if (fromToolbar) { main.checked = tb.checked; } else if (tb) { tb.checked = main.checked; }
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
@@ -5786,6 +5794,9 @@ async function loadCompanyProfile() {
 
 // Apply/remove tier-gated UI after profile loads
 function applyTierGates() {
+  // Free tier body class — hides pricing toggle (same as demo-mode)
+  document.body.classList.toggle('free-tier', !canAccess('student'));
+
   // PDF export button — Silver+
   const pdfBtn = document.getElementById('pdf-export-btn');
   if (pdfBtn) {
