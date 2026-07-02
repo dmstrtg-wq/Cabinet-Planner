@@ -951,10 +951,21 @@ function applyFilesTabTierGating() {
   }
 }
 
-function triggerFileUpload(category) {
+async function triggerFileUpload(category) {
   if (!canAccess('silver')) {
     alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
     return;
+  }
+  // Silver is capped at 1 price sheet; Gold gets unlimited
+  if (!canAccess('gold')) {
+    const { count } = await db.from('company_files')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', currentUser.id)
+      .eq('category', 'price_list');
+    if (count >= 1) {
+      alert('Silver plan includes 1 price sheet.\n\nDelete your existing sheet to replace it, or upgrade to Gold for unlimited price sheets.');
+      return;
+    }
   }
   document.getElementById('pricelist-file-input').click();
 }
