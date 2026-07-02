@@ -1,6 +1,11 @@
 [build]
   functions = "netlify/functions"
 
+[build.environment]
+  # These files intentionally contain public-facing API keys (Stripe publishable key,
+  # Supabase anon key) that are safe to expose client-side. Real secrets are in env vars only.
+  SECRETS_SCAN_OMIT_PATHS = "index.html,app.html,profile.html"
+
 [functions]
   node_bundler = "esbuild"
 
