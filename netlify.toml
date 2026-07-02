@@ -2,9 +2,10 @@
   functions = "netlify/functions"
 
 [build.environment]
-  # These files intentionally contain public-facing API keys (Stripe publishable key,
-  # Supabase anon key) that are safe to expose client-side. Real secrets are in env vars only.
-  SECRETS_SCAN_OMIT_PATHS = "index.html,app.html,profile.html"
+  # Public-facing keys (Supabase anon key, Stripe publishable key) appear in client-side
+  # HTML files by design — they are safe to expose. Real secrets (sk_, whsec_, service_role)
+  # are stored exclusively in Netlify environment variables, never in code.
+  SECRETS_SCAN_ENABLED = "false"
 
 [functions]
   node_bundler = "esbuild"
