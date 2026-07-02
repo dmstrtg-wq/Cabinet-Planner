@@ -833,29 +833,115 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <h2 class="section-title">Plans for every stage</h2>
     <p class="section-sub">Start free and upgrade when you're ready to quote, track jobs, and run your business — no lock-in, cancel anytime.</p>
   </div>
-  <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
-  <stripe-pricing-table
-    id="stripe-pricing-table"
-    pricing-table-id="prctbl_1ToV6GAO0398J98Jngzy7sQY"
-    publishable-key="pk_test_51ToTXXAO0398J98JjEwojkdjFUf6dYiZpLpOWdJ7yYpRKiEZI40sbwAHhRJYQARQZ3MqYIwcrzhqtvOAdxSuPqeN00fqF7ehND">
-  </stripe-pricing-table>
+  <div class="pricing-cards">
+
+    <!-- Free Demo -->
+    <div class="pricing-card tier-free">
+      <div class="plan-name">Free Demo</div>
+      <div class="plan-price">$0<span class="plan-period"> forever</span></div>
+      <p class="plan-desc">No account needed. Just open the planner and start designing.</p>
+      <ul class="plan-list">
+        <li>Floor plan, elevation &amp; 3D views</li>
+        <li>Full cabinet catalog</li>
+        <li>Unlimited cabinets &amp; rooms</li>
+        <li>Saves locally in your browser</li>
+      </ul>
+      <a href="/app.html?demo=1" class="plan-cta ghost" style="margin-top:auto;">Try the Demo &rarr;</a>
+    </div>
+
+    <!-- Student -->
+    <div class="pricing-card tier-bronze">
+      <div class="plan-name">Student</div>
+      <div class="plan-price">$19<span class="plan-period"> / mo</span></div>
+      <p class="plan-desc">For students, remodelers, and one-project homeowners.</p>
+      <ul class="plan-list">
+        <li>Everything in Free Demo</li>
+        <li>Cloud saves — any device</li>
+        <li>Unlimited projects</li>
+      </ul>
+      <button class="plan-cta ghost subscribe-btn" data-price="STUDENT" style="margin-top:auto;">Get Started &rarr;</button>
+    </div>
+
+    <!-- Silver -->
+    <div class="pricing-card tier-silver">
+      <div class="plan-name">Silver</div>
+      <div class="plan-price">$39<span class="plan-period"> / mo</span></div>
+      <p class="plan-desc">For contractors and designers who quote and track jobs.</p>
+      <ul class="plan-list">
+        <li>Everything in Student</li>
+        <li>PDF quote export with your logo</li>
+        <li>Custom pricing catalog</li>
+        <li>Job status pipeline &amp; activity log</li>
+      </ul>
+      <button class="plan-cta ghost subscribe-btn" data-price="SILVER" style="margin-top:auto;">Get Started &rarr;</button>
+    </div>
+
+    <!-- Gold -->
+    <div class="pricing-card tier-gold">
+      <div class="plan-name">Gold</div>
+      <div class="plan-price">$99<span class="plan-period"> / mo</span></div>
+      <p class="plan-desc">For cabinet dealers and high-volume pros.</p>
+      <ul class="plan-list">
+        <li>Everything in Silver</li>
+        <li>Team member access</li>
+        <li>Custom catalog upload</li>
+        <li>Priority support</li>
+      </ul>
+      <button class="plan-cta solid subscribe-btn" data-price="GOLD" style="margin-top:auto;">Get Started &rarr;</button>
+    </div>
+
+  </div>
+
   <script>
-    // Inject logged-in Supabase user ID as client-reference-id so the webhook
-    // knows which account to upgrade after checkout completes.
-    (async () => {
+  // Map tier names to Stripe Price IDs (set at build time via env, or hardcode test IDs here)
+  const PRICE_IDS = {
+    STUDENT: 'price_1ToUZSAO0398J98Jf2vCutB5',
+    SILVER:  'price_1ToUZlAO0398J98J8DKmu9JW',
+    GOLD:    'price_1ToUZvAO0398J98JSDPp5BZq',
+  };
+
+  const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+  const lpDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  document.querySelectorAll('.subscribe-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tier = btn.dataset.price;
+      const priceId = PRICE_IDS[tier];
+      if (!priceId) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+
+      // Get logged-in user if any
+      const { data: { session } } = await lpDb.auth.getSession();
+      const userId    = session?.user?.id    || null;
+      const userEmail = session?.user?.email || null;
+
+      // If not logged in, send to signup first
+      if (!userId) {
+        window.location.href = `/app.html?signup=1&plan=${tier.toLowerCase()}`;
+        return;
+      }
+
       try {
-        const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
-        const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-        if (!db) return;
-        const { data: { session } } = await db.auth.getSession();
-        if (session?.user?.id) {
-          const el = document.getElementById('stripe-pricing-table');
-          if (el) el.setAttribute('client-reference-id', session.user.id);
-        }
-      } catch(e) { /* non-critical, proceed without */ }
-    })();
+        const res = await fetch('/.netlify/functions/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ priceId, userId, userEmail }),
+        });
+        const { url } = await res.json();
+        if (url) window.location.href = url;
+        else throw new Error('No URL returned');
+      } catch (e) {
+        alert('Something went wrong starting checkout. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Get Started →';
+      }
+    });
+  });
   </script>
+
   <p style="text-align:center;margin-top:32px;font-size:13px;color:var(--muted);">
     No account needed to try it — <a href="/app.html?demo=1" style="color:var(--accent);font-weight:600;">open the free demo &rarr;</a>
   </p>
