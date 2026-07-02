@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Cabinet Planner — Design It. Quote It. Win the Job.</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <meta name="description" content="Design cabinet layouts, generate professional quotes, and close more jobs. Built for contractors, designers, and homeowners.">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
@@ -834,9 +835,27 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   </div>
   <script async src="https://js.stripe.com/v3/pricing-table.js"></script>
   <stripe-pricing-table
+    id="stripe-pricing-table"
     pricing-table-id="prctbl_1ToV6GAO0398J98Jngzy7sQY"
     publishable-key="pk_test_51ToTXXAO0398J98JjEwojkdjFUf6dYiZpLpOWdJ7yYpRKiEZI40sbwAHhRJYQARQZ3MqYIwcrzhqtvOAdxSuPqeN00fqF7ehND">
   </stripe-pricing-table>
+  <script>
+    // Inject logged-in Supabase user ID as client-reference-id so the webhook
+    // knows which account to upgrade after checkout completes.
+    (async () => {
+      try {
+        const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+        const db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+        if (!db) return;
+        const { data: { session } } = await db.auth.getSession();
+        if (session?.user?.id) {
+          const el = document.getElementById('stripe-pricing-table');
+          if (el) el.setAttribute('client-reference-id', session.user.id);
+        }
+      } catch(e) { /* non-critical, proceed without */ }
+    })();
+  </script>
   <p style="text-align:center;margin-top:32px;font-size:13px;color:var(--muted);">
     No account needed to try it — <a href="/app.html?demo=1" style="color:var(--accent);font-weight:600;">open the free demo &rarr;</a>
   </p>
