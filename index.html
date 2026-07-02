@@ -859,7 +859,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Cloud saves — any device</li>
         <li>Unlimited projects</li>
       </ul>
-      <button class="plan-cta ghost subscribe-btn" data-price="STUDENT" style="margin-top:auto;">Get Started &rarr;</button>
+      <a href="/app.html" class="plan-cta ghost" style="margin-top:auto;">Get Started Free &rarr;</a>
     </div>
 
     <!-- Silver -->
@@ -873,7 +873,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Custom pricing catalog</li>
         <li>Job status pipeline &amp; activity log</li>
       </ul>
-      <button class="plan-cta ghost subscribe-btn" data-price="SILVER" style="margin-top:auto;">Get Started &rarr;</button>
+      <a href="/app.html" class="plan-cta ghost" style="margin-top:auto;">Get Started Free &rarr;</a>
     </div>
 
     <!-- Gold -->
@@ -887,54 +887,10 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Custom catalog upload</li>
         <li>Priority support</li>
       </ul>
-      <button class="plan-cta solid subscribe-btn" data-price="GOLD" style="margin-top:auto;">Get Started &rarr;</button>
+      <a href="/app.html" class="plan-cta solid" style="margin-top:auto;">Get Started Free &rarr;</a>
     </div>
 
   </div>
-
-  <script>
-  // Map tier names to Stripe Price IDs (set at build time via env, or hardcode test IDs here)
-  const PRICE_IDS = {
-    STUDENT: 'price_1ToUZSAO0398J98Jf2vCutB5',
-    SILVER:  'price_1ToUZlAO0398J98J8DKmu9JW',
-    GOLD:    'price_1ToUZvAO0398J98JSDPp5BZq',
-  };
-
-  const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
-  const lpDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-  document.querySelectorAll('.subscribe-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const tier = btn.dataset.price;
-      const priceId = PRICE_IDS[tier];
-      if (!priceId) return;
-
-      btn.disabled = true;
-      btn.textContent = 'Loading…';
-
-      // Get logged-in user if any
-      const { data: { session } } = await lpDb.auth.getSession();
-      const userId    = session?.user?.id    || null;
-      const userEmail = session?.user?.email || null;
-
-      try {
-        const res = await fetch('/.netlify/functions/create-checkout-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ priceId, userId, userEmail }),
-        });
-        const { url } = await res.json();
-        if (url) window.location.href = url;
-        else throw new Error('No URL returned');
-      } catch (e) {
-        alert('Something went wrong starting checkout. Please try again.');
-        btn.disabled = false;
-        btn.textContent = 'Get Started →';
-      }
-    });
-  });
-  </script>
 
   <p style="text-align:center;margin-top:32px;font-size:13px;color:var(--muted);">
     No account needed to try it — <a href="/app.html?demo=1" style="color:var(--accent);font-weight:600;">open the free demo &rarr;</a>

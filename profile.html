@@ -537,34 +537,25 @@
       <!-- SUBSCRIPTION -->
       <div class="tab-panel" data-tab="subscription">
         <div class="tab-title">Subscription</div>
-        <div class="tab-desc">Your plan, status, and billing cycle.</div>
+        <div class="tab-desc">Your current plan and upgrade options.</div>
 
         <div class="section">
           <div class="card plan-card">
             <div class="plan-card-top">
               <div>
                 <div class="info-label">Current Plan</div>
-                <div class="plan-card-name" id="sub-plan-name">Pro</div>
-                <div id="sub-status-line" style="font-size:13px;color:var(--muted);"></div>
+                <div class="plan-card-name" id="sub-plan-name">Free Demo</div>
               </div>
-              <div class="plan-card-price" id="sub-price">$99<span>/mo</span></div>
+              <div class="plan-card-price" id="sub-price"><span style="font-size:15px;">—</span></div>
             </div>
-
-            <div id="sub-banner"></div>
-
-            <ul class="plan-feature-list">
-              <li>Branded PDF quotes with your logo</li>
-              <li>Print-ready quote builder with labor &amp; trim</li>
-              <li>Your custom pricing per cabinet type</li>
-              <li>Job status pipeline &amp; activity log</li>
-              <li>State sales tax auto-fill</li>
-              <li>Cloud saves — access from any device</li>
-              <li>Team member access</li>
-              <li>Priority support</li>
-            </ul>
-
-            <div class="plan-actions" id="sub-actions"></div>
+            <div id="sub-actions" style="margin-top:20px;"></div>
           </div>
+        </div>
+
+        <!-- Upgrade options — shown when not on Gold -->
+        <div class="section" id="upgrade-section">
+          <div class="section-head"><div class="section-title">Upgrade Your Plan</div></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;" id="upgrade-cards"></div>
         </div>
       </div>
 
@@ -715,46 +706,77 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-/* ── SUBSCRIPTION (mock state — swap for real billing data later) ── */
-const subscription = {
-  plan: 'Pro',
-  price: 99,
-  status: 'active', // active | canceling | canceled
-  renewalDate: new Date(Date.now() + 30*24*60*60*1000),
+/* ── SUBSCRIPTION (live from companyProfile.subscription_tier) ── */
+const PLAN_META = {
+  free:    { label: 'Free Demo', price: '$0',  priceId: null },
+  student: { label: 'Student',   price: '$19', priceId: 'price_1ToUZSAO0398J98Jf2vCutB5' },
+  silver:  { label: 'Silver',    price: '$39', priceId: 'price_1ToUZlAO0398J98J8DKmu9JW' },
+  gold:    { label: 'Gold',      price: '$99', priceId: 'price_1ToUZvAO0398J98JSDPp5BZq' },
 };
+const UPGRADE_ORDER = ['student','silver','gold'];
+
+async function startCheckout(priceId) {
+  if (!currentUser) return;
+  const btn = event.currentTarget;
+  btn.disabled = true; btn.textContent = 'Loading…';
+  try {
+    const res = await fetch('/.netlify/functions/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId, userId: currentUser.id, userEmail: currentUser.email }),
+    });
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+    else throw new Error();
+  } catch {
+    showToast('Something went wrong — please try again.');
+    btn.disabled = false; btn.textContent = 'Upgrade';
+  }
+}
 
 function renderSubscription() {
-  document.getElementById('sub-plan-name').textContent = subscription.plan;
-  document.getElementById('sub-price').innerHTML = subscription.plan === 'Pro' ? '$' + subscription.price + '<span>/mo</span>' : '<span style="font-size:15px;">—</span>';
+  const tier = currentTier();
+  const meta = PLAN_META[tier] || PLAN_META.free;
 
-  const statusLine = document.getElementById('sub-status-line');
-  const banner = document.getElementById('sub-banner');
+  document.getElementById('sub-plan-name').textContent = meta.label;
+  document.getElementById('sub-price').innerHTML = tier === 'free'
+    ? '<span style="font-size:15px;">Free</span>'
+    : `${meta.price}<span>/mo</span>`;
+
   const actions = document.getElementById('sub-actions');
-  const overviewName = document.getElementById('overview-plan-name');
-  const overviewSub = document.getElementById('overview-plan-sub');
-
-  if (subscription.status === 'active') {
-    statusLine.innerHTML = `${statusBadge('Active')} &nbsp;Renews ${fmtDate(subscription.renewalDate)}`;
-    banner.innerHTML = '';
-    actions.innerHTML = `
-      <a href="/#pricing" class="btn btn-ghost">Change Plan</a>
-      <button class="btn btn-danger" onclick="openCancelModal()">Cancel Subscription</button>`;
-    overviewName.textContent = subscription.plan + ' Plan';
-    overviewSub.textContent = 'Renews ' + fmtDate(subscription.renewalDate);
-  } else if (subscription.status === 'canceling') {
-    statusLine.innerHTML = `${statusBadge('Canceling')} &nbsp;Active until ${fmtDate(subscription.renewalDate)}`;
-    banner.innerHTML = `<div class="plan-banner warn">Your subscription is set to cancel on <strong>${fmtDate(subscription.renewalDate)}</strong>. You'll keep full access until then.</div>`;
-    actions.innerHTML = `
-      <button class="btn btn-primary" onclick="resumeSubscription()">Resume Subscription</button>`;
-    overviewName.textContent = subscription.plan + ' Plan';
-    overviewSub.textContent = 'Cancels ' + fmtDate(subscription.renewalDate);
+  if (tier !== 'free') {
+    actions.innerHTML = `<button class="btn btn-danger" onclick="openCancelModal()">Cancel Subscription</button>`;
   } else {
-    statusLine.innerHTML = statusBadge('Canceled');
-    banner.innerHTML = `<div class="plan-banner warn">Your subscription has ended. Quoting, export, and team access are turned off.</div>`;
-    actions.innerHTML = `<a href="/#pricing" class="btn btn-primary">Resubscribe</a>`;
-    overviewName.textContent = 'No active plan';
-    overviewSub.textContent = 'Demo access only';
+    actions.innerHTML = '';
   }
+
+  // Upgrade cards — show plans above current tier
+  const upgradeSection = document.getElementById('upgrade-section');
+  const upgradeCards = document.getElementById('upgrade-cards');
+  const upgrades = UPGRADE_ORDER.filter(t => TIER_RANK[t] > TIER_RANK[tier]);
+
+  if (!upgrades.length) {
+    upgradeSection.style.display = 'none';
+  } else {
+    upgradeSection.style.display = '';
+    upgradeCards.innerHTML = upgrades.map(t => {
+      const m = PLAN_META[t];
+      return `
+        <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">${m.label}</div>
+            <div style="font-size:24px;font-weight:800;margin-top:4px;">${m.price}<span style="font-size:14px;font-weight:400;color:var(--muted);">/mo</span></div>
+          </div>
+          <button class="btn btn-primary" style="width:100%;" onclick="startCheckout('${m.priceId}')">Upgrade to ${m.label}</button>
+        </div>`;
+    }).join('');
+  }
+
+  // Overview card
+  const overviewName = document.getElementById('overview-plan-name');
+  const overviewSub  = document.getElementById('overview-plan-sub');
+  if (overviewName) overviewName.textContent = meta.label + ' Plan';
+  if (overviewSub)  overviewSub.textContent  = tier === 'free' ? 'Free — upgrade anytime' : 'Renews monthly';
 }
 
 function openCancelModal() { document.getElementById('cancel-modal-overlay').classList.add('open'); }
