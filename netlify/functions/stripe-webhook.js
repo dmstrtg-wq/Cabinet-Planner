@@ -74,9 +74,22 @@ exports.handler = async (event) => {
         const session = stripeEvent.data.object;
         if (session.mode !== 'subscription') break;
 
-        const supabaseUid = session.client_reference_id || session.metadata?.supabase_uid;
+        let supabaseUid = session.client_reference_id || session.metadata?.supabase_uid;
+
+        // Fallback: look up Supabase user by email if no UID was passed
+        if (!supabaseUid && session.customer_details?.email) {
+          const { data: { users } } = await db.auth.admin.listUsers();
+          const match = users?.find(u => u.email === session.customer_details.email);
+          if (match) {
+            supabaseUid = match.id;
+            console.log(`Matched user by email: ${session.customer_details.email}`);
+          } else {
+            console.log(`No Supabase user found for email ${session.customer_details.email} — will update when they sign up`);
+          }
+        }
+
         if (!supabaseUid) {
-          console.error('No supabase_uid on checkout session', session.id);
+          console.error('Could not identify Supabase user for session', session.id);
           break;
         }
 

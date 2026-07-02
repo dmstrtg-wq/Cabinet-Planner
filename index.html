@@ -918,12 +918,6 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       const userId    = session?.user?.id    || null;
       const userEmail = session?.user?.email || null;
 
-      // If not logged in, send to signup first
-      if (!userId) {
-        window.location.href = `/app.html?signup=1&plan=${tier.toLowerCase()}`;
-        return;
-      }
-
       try {
         const res = await fetch('/.netlify/functions/create-checkout-session', {
           method: 'POST',
