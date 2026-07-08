@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://app.termly.io/resource-blocker/7ef49079-dd37-482e-abb9-06aa5aee64cf?autoBlock=on"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Cabinet Planner — Design &amp; Quote Tool</title>
@@ -4764,7 +4765,8 @@ function printQuote() {
   const styleName = getStyles().find(s=>s.code===p.style)?.name || p.style;
 
   const win = window.open('', '_blank', 'width=920,height=750');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
+  win.document.write(`<!DOCTYPE html><html><head>
+<script src="https://app.termly.io/resource-blocker/7ef49079-dd37-482e-abb9-06aa5aee64cf?autoBlock=on"></script><meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,'Helvetica Neue',sans-serif;color:#1a1a1a;padding:48px;max-width:860px;margin:0 auto;font-size:12px;}
