@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://app.termly.io/resource-blocker/7ef49079-dd37-482e-abb9-06aa5aee64cf?autoBlock=on"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Policy — My Cabinet Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0f0805; --accent:#b45309; --accent-light:#c8a882;
+  --bg:#faf7f4; --border:#e7ddd5; --muted:#78614f; --white:#ffffff;
+}
+body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;overflow-x:hidden;}
+a{text-decoration:none;color:var(--accent);}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(15,8,5,0.88);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  padding:0 6%;display:flex;align-items:center;justify-content:space-between;height:60px;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-text{font-size:12px;font-weight:700;color:white;font-family:'Unbounded',sans-serif;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);transition:color 0.12s;text-decoration:none;}
+.nav-links a:hover{color:white;}
+.nav-cta{display:flex;gap:10px;align-items:center;}
+.nav-signin{font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);padding:7px 14px;transition:color 0.12s;}
+.nav-signin:hover{color:white;}
+.nav-trial{padding:8px 18px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;display:inline-block;text-decoration:none;}
+.nav-trial:hover{background:#92400e;}
+
+/* ── PAGE ── */
+main{max-width:860px;margin:0 auto;padding:100px 24px 100px;}
+
+/* ── POLICY WRAPPER ── */
+.policy-wrap{
+  background:var(--white);border:1px solid var(--border);border-radius:16px;
+  padding:48px 52px;
+  box-shadow:0 4px 24px rgba(107,76,42,0.06);
+}
+
+/* Termly custom class overrides */
+[data-custom-class='body'],[data-custom-class='body'] *{background:transparent !important;}
+[data-custom-class='title'],[data-custom-class='title'] *{font-family:'Unbounded',sans-serif !important;font-size:26px !important;color:var(--ink) !important;}
+[data-custom-class='subtitle'],[data-custom-class='subtitle'] *{font-family:'Inter',sans-serif !important;color:var(--muted) !important;font-size:14px !important;}
+[data-custom-class='heading_1'],[data-custom-class='heading_1'] *{font-family:'Inter',sans-serif !important;font-size:17px !important;color:var(--ink) !important;}
+[data-custom-class='heading_2'],[data-custom-class='heading_2']*{font-family:'Inter',sans-serif !important;font-size:15px !important;color:var(--ink) !important;}
+[data-custom-class='body_text'],[data-custom-class='body_text'] *{color:#595959 !important;font-size:14px !important;font-family:'Inter',sans-serif !important;}
+[data-custom-class='link'],[data-custom-class='link'] *{color:var(--accent) !important;font-size:14px !important;font-family:'Inter',sans-serif !important;word-break:break-word !important;}
+
+.policy-wrap h1{font-family:'Unbounded',sans-serif;font-size:clamp(20px,3vw,28px);font-weight:900;letter-spacing:-0.5px;line-height:1.15;margin-bottom:6px;color:var(--ink);}
+.policy-wrap h2{font-family:'Inter',sans-serif;font-size:17px;font-weight:700;color:var(--ink);margin-top:32px;margin-bottom:10px;padding-top:8px;border-top:1px solid var(--border);}
+.policy-wrap h3{font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:var(--ink);margin-top:24px;margin-bottom:8px;}
+.policy-wrap ul{padding-left:22px;margin:10px 0;}
+.policy-wrap ul li{margin-bottom:6px;font-size:14px;color:#595959;}
+.policy-wrap table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px;}
+.policy-wrap table th,.policy-wrap table td{padding:8px 10px;border:1px solid var(--border);color:#595959;vertical-align:top;text-align:left;}
+.policy-wrap table th{color:var(--ink);font-weight:600;}
+.policy-wrap section{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin:8px 0;}
+.policy-wrap section table{margin:0;}
+.policy-wrap section th{color:var(--muted);font-size:12px;min-width:80px;text-align:right;padding-right:8px;font-weight:500;}
+.policy-wrap section td{color:#595959;font-size:12px;}
+
+/* hide Termly watermark / hidden links */
+.policy-wrap > span:first-child{display:none !important;}
+.cookie123{display:none !important;}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--ink);padding:40px 6%;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;
+}
+.footer-brand{display:flex;align-items:center;gap:10px;}
+.footer-brand span{font-size:14px;font-weight:700;color:white;}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+.footer-links a{font-size:13px;color:rgba(255,255,255,0.3);transition:color 0.12s;}
+.footer-links a:hover{color:rgba(255,255,255,0.7);}
+.footer-copy{font-size:12px;color:rgba(255,255,255,0.18);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:680px){
+  nav .nav-links{display:none;}
+  main{padding:88px 16px 60px;}
+  .policy-wrap{padding:24px 20px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#ng)"/>
+      <circle cx="16" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <polyline points="44,10 10,10 10,44 44,44" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="10" width="34" height="8" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <rect x="10" y="10" width="8" height="34" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <line x1="18" y1="10" x2="18" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="26" y1="10" x2="26" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="34" y1="10" x2="34" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="26" x2="18" y2="26" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="36" x2="18" y2="36" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <rect x="24" y="28" width="16" height="12" rx="1.5" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+      <circle cx="32" cy="34" r="2" fill="#f59e0b"/>
+      <defs><linearGradient id="ng" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2744"/><stop offset="100%" stop-color="#071529"/></linearGradient></defs>
+    </svg>
+    <span class="nav-logo-text">My Cabinet Planner</span>
+  </a>
+  <div class="nav-links">
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/contact">Contact</a>
+  </div>
+  <div class="nav-cta">
+    <a href="/app" class="nav-signin">Sign In</a>
+    <a href="/app" class="nav-trial">Try Free</a>
+  </div>
+</nav>
+
+<main>
+  <div class="policy-wrap" data-custom-class="body">
+
+    <div><strong><span style="font-size: 26px;"><span data-custom-class="title"><h1>COOKIE POLICY</h1></span></span></strong></div><div><span style="color: rgb(127, 127, 127);"><strong><span style="font-size: 15px;"><span data-custom-class="subtitle">Last updated <bdt class="question">July 07, 2026</bdt></span></span></strong></span></div><div><br></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">This Cookie Policy explains how <bdt class="question">DM Strategies LLC</bdt> ("<strong>Company</strong>," "<strong>we</strong>," "<strong>us</strong>," and "<strong>our</strong>") uses cookies and similar technologies to recognize you when you visit our website at </span></span><span style="color: rgb(0, 58, 250); font-size: 15px;"><span data-custom-class="body_text"><a target="_blank" data-custom-class="link" href="https://www.mycabinetplanner.com">https://www.mycabinetplanner.com</a></span></span><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text"> ("<strong>Website</strong>"). It explains what these technologies are and why we use them, as well as your rights to control our use of them.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">In some cases we may use cookies to collect personal information, or that becomes personal information if we combine it with other information.</span></span></div><div style="line-height: 1.5;"><br></div>
+
+    <div style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 15px;"><strong><span data-custom-class="heading_1"><h2>What are cookies?</h2></span></strong></span></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">Cookies set by the website owner (in this case, <bdt class="question">DM Strategies LLC</bdt>) are called "first-party cookies." Cookies set by parties other than the website owner are called "third-party cookies." Third-party cookies enable third-party features or functionality to be provided on or through the website (e.g., advertising, interactive content, and analytics). The parties that set these third-party cookies can recognize your computer both when it visits the website in question and also when it visits certain other websites.</span></span></div><div style="line-height: 1.5;"><br></div>
+
+    <div style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 15px;"><strong><span data-custom-class="heading_1"><h2>Why do we use cookies?</h2></span></strong></span></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">We use first- and third-party cookies for several reasons. Some cookies are required for technical reasons in order for our Website to operate, and we refer to these as "essential" or "strictly necessary" cookies. Other cookies also enable us to track and target the interests of our users to enhance the experience on our Online Properties. Third parties serve cookies through our Website for advertising, analytics, and other purposes. This is described in more detail below.</span></span></div><div style="line-height: 1.5;"><br></div>
+
+    <div style="line-height: 1.5;"><span style="color: rgb(0, 0, 0); font-size: 15px;"><strong><span data-custom-class="heading_1"><h2>How can I control cookies?</h2></span></strong></span></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">You have the right to decide whether to accept or reject cookies. You can exercise your cookie rights by setting your preferences in the Cookie Preference Center. The Cookie Preference Center allows you to select which categories of cookies you accept or reject. Essential cookies cannot be rejected as they are strictly necessary to provide you with services.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">The Cookie Preference Center can be found in the notification banner and on our Website. If you choose to reject cookies, you may still use our Website though your access to some functionality and areas of our Website may be restricted. You may also set or amend your web browser controls to accept or refuse cookies.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">The specific types of first- and third-party cookies served through our Website and the purposes they perform are described in the table below (please note that the specific cookies served may vary depending on the specific Online Properties you visit):</span></span></div>
+
+    <div style="line-height: 1.5; margin-top: 20px;"><span style="font-size: 15px;"><span data-custom-class="heading_2"><strong><h3>Analytics and customization cookies:</h3></strong></span><span style="color: rgb(89, 89, 89);"><span data-custom-class="body_text">These cookies collect information that is used either in aggregate form to help us understand how our Website is being used or how effective our marketing campaigns are, or to help us customize our Website for you.</span></span></span></div><div style="margin-top:12px;"><section data-custom-class="body_text"><div style="padding: 8px 13px;"><table><tbody><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Name:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">s7</span></td></tr><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Purpose:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">Gather data regarding site usage and user behavior on the website.</span></td></tr><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Provider:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">mycabinetplanner.com</span></td></tr><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Service:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">Adobe Analytics — <a data-custom-class="link" href="https://www.adobe.com/uk/privacy/policy.html" target="_blank">View Service Privacy Policy</a></span></td></tr><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Type:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">html_local_storage</span></td></tr><tr><th style="text-align: right; color: var(--muted); min-width: 80px; font-weight: 500; font-size: 12px;">Expires in:</th><td style="padding-left: 8px;"><span style="color: #8b93a7; word-break: break-all; font-size: 12px;">Persistent</span></td></tr></tbody></table></div></section></div>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>How can I control cookies on my browser?</h2></span></strong></div><div style="line-height: 1.5;"><span data-custom-class="body_text">As the means by which you can refuse cookies through your web browser controls vary from browser to browser, you should visit your browser's help menu for more information. The following is information about how to manage cookies on the most popular browsers:</span></div><ul style="margin-top:10px;">
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://support.google.com/chrome/answer/95647#zippy=%2Callow-or-block-cookies" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Chrome</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://support.microsoft.com/en-us/windows/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Internet Explorer</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://support.mozilla.org/en-US/kb/enhanced-tracking-protection-firefox-desktop?redirectslug=enable-and-disable-cookies-website-preferences&redirectlocale=en-US" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Firefox</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://support.apple.com/en-ie/guide/safari/sfri11471/mac" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Safari</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://support.microsoft.com/en-us/windows/microsoft-edge-browsing-data-and-privacy-bb8174ba-9d73-dcf2-9b4a-c582b4e640dd" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Edge</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://help.opera.com/en/latest/web-preferences/" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Opera</span></a></li>
+    </ul>
+    <div style="line-height: 1.5; margin-top: 8px;"><span data-custom-class="body_text">In addition, most advertising networks offer you a way to opt out of targeted advertising. If you would like to find out more information, please visit:</span></div>
+    <ul style="margin-top:10px;">
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="http://www.aboutads.info/choices/" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Digital Advertising Alliance</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="https://youradchoices.ca/" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">Digital Advertising Alliance of Canada</span></a></li>
+      <li style="line-height: 1.5;"><a data-custom-class="link" href="http://www.youronlinechoices.com/" rel="noopener noreferrer" target="_blank"><span style="font-size: 15px;">European Interactive Digital Advertising Alliance</span></a></li>
+    </ul>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>What about other tracking technologies, like web beacons?</h2></span></strong></div><div style="line-height: 1.5;"><span style="color: rgb(89, 89, 89); font-size: 15px;"><span data-custom-class="body_text">Cookies are not the only way to recognize or track visitors to a website. We may use other, similar technologies from time to time, like web beacons (sometimes called "tracking pixels" or "clear gifs"). These are tiny graphics files that contain a unique identifier that enables us to recognize when someone has visited our Website or opened an email including them. This allows us, for example, to monitor the traffic patterns of users from one page within a website to another, to deliver or communicate with cookies, to understand whether you have come to the website from an online advertisement displayed on a third-party website, to improve site performance, and to measure the success of email marketing campaigns. In many instances, these technologies are reliant on cookies to function properly, and so declining cookies will impair their functioning.</span></span></div>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>Do you use Flash cookies or Local Shared Objects?</h2></span></strong></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">Websites may also use so-called "Flash Cookies" (also known as Local Shared Objects or "LSOs") to, among other things, collect and store information about your use of our services, fraud prevention, and for other site operations.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">If you do not want Flash Cookies stored on your computer, you can adjust the settings of your Flash player to block Flash Cookies storage using the tools contained in the <a data-custom-class="link" href="http://www.macromedia.com/support/documentation/en/flashplayer/help/settings_manager07.html" rel="noopener noreferrer" target="_blank">Website Storage Settings Panel</a>. You can also control Flash Cookies by going to the <a data-custom-class="link" href="http://www.macromedia.com/support/documentation/en/flashplayer/help/settings_manager03.html" rel="noopener noreferrer" target="_blank">Global Storage Settings Panel</a> and following the instructions (which may include instructions that explain, for example, how to delete existing Flash Cookies, how to prevent Flash LSOs from being placed on your computer without your being asked, and (for Flash Player 8 and later) how to block Flash Cookies that are not being delivered by the operator of the page you are on at the time).</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">Please note that setting the Flash Player to restrict or limit acceptance of Flash Cookies may reduce or impede the functionality of some Flash applications, including, potentially, Flash applications used in connection with our services or online content.</span></span></div>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>Do you serve targeted advertising?</h2></span></strong></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">Third parties may serve cookies on your computer or mobile device to serve advertising through our Website. These companies may use information about your visits to this and other websites in order to provide relevant advertisements about goods and services that you may be interested in. They may also employ technology that is used to measure the effectiveness of advertisements. They can accomplish this by using cookies or web beacons to collect information about your visits to this and other sites in order to provide relevant advertisements about goods and services of potential interest to you. The information collected through this process does not enable us or them to identify your name, contact details, or other details that directly identify you unless you choose to provide these.</span></span></div>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>How often will you update this Cookie Policy?</h2></span></strong></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">We may update this Cookie Policy from time to time in order to reflect, for example, changes to the cookies we use or for other operational, legal, or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies.</span></span></div><div style="line-height: 1.5;"><br></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">The date at the top of this Cookie Policy indicates when it was last updated.</span></span></div>
+
+    <div style="line-height: 1.5; margin-top: 28px;"><strong><span data-custom-class="heading_1"><h2>Where can I get further information?</h2></span></strong></div><div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">If you have any questions about our use of cookies or other technologies, please email us at <a target="_blank" data-custom-class="link" href="mailto:contact@mycabinetplanner.com">contact@mycabinetplanner.com</a> or by post to:</span></span></div><div style="line-height: 1.5;"><br></div>
+    <div style="line-height: 1.5;"><span style="font-size: 15px; color: rgb(89, 89, 89);"><span data-custom-class="body_text">DM Strategies LLC<br>1034 S Meade St<br>Denver, CO 80219<br>United States<br>Phone: (+1) 973-934-6505</span></span></div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-brand">
+    <svg width="24" height="24" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#fg)"/>
+      <circle cx="16" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <polyline points="44,10 10,10 10,44 44,44" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="10" width="34" height="8" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <rect x="10" y="10" width="8" height="34" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <line x1="18" y1="10" x2="18" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="26" y1="10" x2="26" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="34" y1="10" x2="34" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="26" x2="18" y2="26" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="36" x2="18" y2="36" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <rect x="24" y="28" width="16" height="12" rx="1.5" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+      <circle cx="32" cy="34" r="2" fill="#f59e0b"/>
+      <defs><linearGradient id="fg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2744"/><stop offset="100%" stop-color="#071529"/></linearGradient></defs>
+    </svg>
+    <span>My Cabinet Planner</span>
+  </div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/privacy">Privacy Policy</a>
+    <a href="/terms">Terms of Service</a>
+    <a href="/cookie">Cookie Policy</a>
+    <a href="/refund">Return Policy</a>
+    <a href="/contact">Contact</a>
+    <a href="/accessibility">Accessibility</a>
+    <a href="#" class="termly-display-preferences">Consent Preferences</a>
+  </div>
+  <div class="footer-copy">© 2025 My Cabinet Planner. All rights reserved.</div>
+</footer>
+
+</body>
+</html>
