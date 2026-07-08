@@ -549,7 +549,7 @@
         <div class="tab-desc">Payment method and billing history.</div>
 
         <div class="section">
-          <div class="section-head"><div class="section-title">Payment Method</div></div>
+          <div class="section-head"><div class="section-title">Payment Method &amp; Billing Portal</div></div>
           <div class="card">
             <div class="payment-row">
               <div class="payment-meta">
@@ -557,11 +557,11 @@
                   <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><rect x="0.5" y="0.5" width="19" height="13" rx="2" stroke="#fff" stroke-width="0.8" opacity="0.5"/><rect x="2" y="4" width="16" height="2.4" fill="#fff" opacity="0.85"/></svg>
                 </div>
                 <div>
-                  <div class="payment-label" id="billing-card-label">Visa ending in 4242</div>
-                  <div class="payment-sub" id="billing-card-sub">Expires 08/27</div>
+                  <div class="payment-label" id="billing-card-label">Manage your subscription</div>
+                  <div class="payment-sub" id="billing-card-sub">Update payment method, download invoices, or cancel — all in Stripe's secure portal.</div>
                 </div>
               </div>
-              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="showToast(&quot;Payment updates will open Stripe&apos;s secure portal once billing is connected.&quot;)">Update Payment Method</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openBillingPortal()" id="billing-portal-btn">Open Billing Portal</button>
             </div>
           </div>
         </div>
@@ -569,17 +569,22 @@
         <div class="section">
           <div class="section-head"><div class="section-title">Billing History</div></div>
           <div class="card">
-            <table class="proj-table">
+            <div id="invoices-loading" style="padding:24px;text-align:center;color:var(--muted);font-size:14px;">Loading billing history…</div>
+            <table class="proj-table" id="invoices-table" style="display:none;">
               <thead>
                 <tr>
                   <th>Invoice</th>
                   <th>Date</th>
                   <th>Amount</th>
                   <th>Status</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody id="invoices-body"></tbody>
             </table>
+            <div id="invoices-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;">
+              No invoices yet. They'll appear here once you subscribe.
+            </div>
           </div>
         </div>
       </div>
@@ -669,9 +674,11 @@ function statusBadge(s) {
 }
 
 /* ── TABS ── */
+let billingLoaded = false;
 function setActiveTab(tab) {
   document.querySelectorAll('.sidebar-link[data-tab]').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
   document.querySelectorAll('.tab-panel[data-tab]').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
+  if (tab === 'billing' && !billingLoaded) { billingLoaded = true; renderBilling(); }
 }
 function applyHashTab() {
   const tab = (location.hash || '#overview').slice(1);
@@ -780,20 +787,83 @@ document.getElementById('sidebar-cancel-link').addEventListener('click', () => {
   setTimeout(openCancelModal, 50);
 });
 
-/* ── BILLING (mock invoices) ── */
-function renderBilling() {
-  const invoices = [0,1,2].map(i => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    return { number: `INV-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}`, date: d, amount: subscription.price, status: 'Paid' };
-  });
-  document.getElementById('invoices-body').innerHTML = invoices.map(inv => `
-    <tr>
-      <td style="font-weight:600;">${esc(inv.number)}</td>
-      <td style="color:var(--muted);">${fmtDate(inv.date)}</td>
-      <td>$${inv.amount.toFixed(2)}</td>
-      <td>${statusBadge(inv.status)}</td>
-    </tr>`).join('');
+/* ── BILLING (real Stripe data) ── */
+async function renderBilling() {
+  const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data?.user : supabase.auth.user();
+  if (!user) return;
+
+  const loading = document.getElementById('invoices-loading');
+  const table   = document.getElementById('invoices-table');
+  const empty   = document.getElementById('invoices-empty');
+  const tbody   = document.getElementById('invoices-body');
+
+  try {
+    const res = await fetch('/.netlify/functions/stripe-invoices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    const { invoices } = await res.json();
+
+    loading.style.display = 'none';
+
+    if (!invoices || invoices.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    const statusLabel = { paid: 'Paid', open: 'Due', void: 'Void', uncollectible: 'Failed' };
+    const statusColor = { paid: 'green', open: 'var(--accent)', void: 'var(--muted)', uncollectible: '#dc2626' };
+
+    tbody.innerHTML = invoices.map(inv => {
+      const date = new Date(inv.date * 1000).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+      const label = statusLabel[inv.status] || inv.status;
+      const color = statusColor[inv.status] || 'var(--muted)';
+      const dlLink = inv.pdf ? `<a href="${inv.pdf}" target="_blank" style="color:var(--accent);font-size:12px;">PDF</a>` : '—';
+      return `<tr>
+        <td style="font-weight:600;">${esc(inv.number)}</td>
+        <td style="color:var(--muted);">${date}</td>
+        <td>$${Number(inv.amount).toFixed(2)}</td>
+        <td><span style="color:${color};font-weight:600;font-size:12px;">${label}</span></td>
+        <td>${dlLink}</td>
+      </tr>`;
+    }).join('');
+
+    table.style.display = 'table';
+  } catch (err) {
+    console.error('Billing fetch error:', err);
+    loading.textContent = 'Could not load billing history.';
+  }
+}
+
+async function openBillingPortal() {
+  const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data?.user : supabase.auth.user();
+  if (!user) return;
+
+  const btn = document.getElementById('billing-portal-btn');
+  btn.disabled = true;
+  btn.textContent = 'Opening…';
+
+  try {
+    const res = await fetch('/.netlify/functions/stripe-portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast(data.error || 'No billing account found. Subscribe first.');
+      btn.disabled = false;
+      btn.textContent = 'Open Billing Portal';
+    }
+  } catch (err) {
+    showToast('Could not open billing portal. Try again.');
+    btn.disabled = false;
+    btn.textContent = 'Open Billing Portal';
+  }
 }
 
 /* ── TEAM (mock — seeded with the signed-in owner) ── */
@@ -1276,7 +1346,6 @@ async function init() {
   teamMembers = [{ name: name, email: user.email, role: 'Owner' }];
   renderTeam();
   renderSubscription();
-  renderBilling();
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
 
