@@ -708,6 +708,21 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <div style="text-align:center;margin-top:8px;" id="forgot-wrap" style="display:none;">
         <button onclick="handleForgotPassword()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;">Forgot your password?</button>
       </div>
+
+      <!-- Email confirmation screen (shown after signup) -->
+      <div id="email-confirm-panel" style="display:none;text-align:center;padding:12px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">📬</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;">Check your inbox</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
+          We sent a confirmation link to<br>
+          <strong id="confirm-email-display" style="color:var(--text);"></strong>
+        </div>
+        <div style="background:#fdf8f3;border:1px solid #e7ddd5;border-radius:10px;padding:14px 18px;font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;text-align:left;">
+          Click the link in the email to activate your account, then come back here and sign in. Check your spam folder if you don't see it in a minute or two.
+        </div>
+        <button onclick="showSignInAfterConfirm()" style="width:100%;padding:13px;background:linear-gradient(135deg,#c8a882,#92400e);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Sign In →</button>
+        <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">Wrong email? <button onclick="showSignUpForm()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;padding:0;">Start over</button></div>
+      </div>
     </div>
   </div>
 
@@ -1783,6 +1798,39 @@ function demoGate(action) {
 // ════════════════════════════
 let authMode = 'signup'; // 'signup' | 'signin'
 
+function _setFormVisible(visible) {
+  const ids = ['auth-heading','auth-sub','login-btn','login-error','auth-toggle-btn','forgot-wrap'];
+  const fields = document.querySelectorAll('.login-field');
+  ids.forEach(id => document.getElementById(id).style.display = visible ? '' : 'none');
+  fields.forEach(el => el.style.display = visible ? '' : 'none');
+  document.getElementById('email-confirm-panel').style.display = visible ? 'none' : 'block';
+}
+function showEmailConfirmPanel(email) {
+  document.getElementById('confirm-email-display').textContent = email;
+  _setFormVisible(false);
+}
+function showSignInAfterConfirm() {
+  _setFormVisible(true);
+  authMode = 'signin';
+  document.getElementById('auth-heading').textContent  = 'Welcome back';
+  document.getElementById('auth-sub').textContent      = 'Sign in to your account';
+  document.getElementById('login-btn').textContent     = 'Sign In →';
+  document.getElementById('auth-toggle-btn').textContent = 'Create a free account';
+  document.getElementById('forgot-wrap').style.display = 'block';
+  document.getElementById('login-error').textContent   = '';
+}
+function showSignUpForm() {
+  _setFormVisible(true);
+  authMode = 'signup';
+  document.getElementById('auth-heading').textContent  = 'Create your free account';
+  document.getElementById('auth-sub').textContent      = 'No credit card required — start designing immediately';
+  document.getElementById('login-btn').textContent     = 'Create Free Account →';
+  document.getElementById('auth-toggle-btn').textContent = 'Sign in';
+  document.getElementById('forgot-wrap').style.display = 'none';
+  document.getElementById('login-error').textContent   = '';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
 function toggleAuthMode() {
   authMode = authMode === 'signup' ? 'signin' : 'signup';
   const isSignUp = authMode === 'signup';
@@ -1828,11 +1876,9 @@ async function handleSignIn() {
       maybeStartTour();
       setTimeout(() => openCompanySettings(), 400);
     } else {
-      // Email confirmation required
-      err.style.color = '#16a34a';
-      err.textContent = '✓ Check your email to confirm your account, then sign in.';
+      // Email confirmation required — show confirmation panel
       btn.disabled = false; btn.textContent = 'Create Free Account →';
-      toggleAuthMode(); // switch to sign in mode
+      showEmailConfirmPanel(email);
     }
     return;
   }
