@@ -25,8 +25,8 @@ const db = createClient(
 // ── Owner accounts — always Gold, never touched by Stripe ──────────────────
 // Paste the UUID from Supabase → Authentication → Users for each owner account
 const OWNER_USER_IDS = [
-  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Dan
-  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Sister
+  'f464edfb-8f74-49b7-b366-79b89605bbb7', // Dan
+  'd7620158-9fbd-44de-9770-2f00bdabe71c', // Sister
 ];
 
 // Map Stripe Price IDs → subscription tier names
