@@ -22,6 +22,13 @@ const db = createClient(
   process.env.SUPABASE_SERVICE_KEY   // service role key bypasses RLS — safe server-side only
 );
 
+// ── Owner accounts — always Gold, never touched by Stripe ──────────────────
+// Paste the UUID from Supabase → Authentication → Users for each owner account
+const OWNER_USER_IDS = [
+  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Dan
+  // 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // Sister
+];
+
 // Map Stripe Price IDs → subscription tier names
 function tierFromPriceId(priceId) {
   if (priceId === process.env.STRIPE_PRICE_STUDENT) return 'student';
@@ -31,6 +38,10 @@ function tierFromPriceId(priceId) {
 }
 
 async function setTier(supabaseUserId, tier) {
+  if (OWNER_USER_IDS.includes(supabaseUserId)) {
+    console.log(`Skipping tier update for owner account ${supabaseUserId}`);
+    return;
+  }
   const { error } = await db
     .from('company_profiles')
     .upsert({ user_id: supabaseUserId, subscription_tier: tier }, { onConflict: 'user_id' });
@@ -90,6 +101,12 @@ exports.handler = async (event) => {
 
         if (!supabaseUid) {
           console.error('Could not identify Supabase user for session', session.id);
+          break;
+        }
+
+        // Skip owner accounts — their tier is permanently set in Supabase
+        if (OWNER_USER_IDS.includes(supabaseUid)) {
+          console.log(`Skipping checkout tier update for owner account ${supabaseUid}`);
           break;
         }
 
