@@ -1887,6 +1887,12 @@ async function handleSignIn() {
   btn.disabled = false; btn.textContent = 'Sign In →';
   if (error) { err.textContent = error.message; return; }
   currentUser = data.user;
+  // If user came from a pricing plan link, send them to profile to subscribe
+  const planParam = new URLSearchParams(location.search).get('plan');
+  if (planParam && ['student','silver','gold'].includes(planParam)) {
+    window.location.href = `/profile?checkout=${planParam}`;
+    return;
+  }
   showApp();
   await Promise.all([loadProjects(), loadCompanyProfile()]);
   openProjectFromUrl();

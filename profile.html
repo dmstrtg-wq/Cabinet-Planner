@@ -709,12 +709,28 @@ function showToast(msg) {
 /* ── SUBSCRIPTION (live from companyProfile.subscription_tier) ── */
 const PLAN_META = {
   free:    { label: 'Free Demo', price: '$0',  priceId: null },
-  student: { label: 'Student',   price: '$19', priceId: 'price_1ToUZSAO0398J98Jf2vCutB5' },
-  silver:  { label: 'Silver',    price: '$39', priceId: 'price_1ToUZlAO0398J98J8DKmu9JW' },
-  gold:    { label: 'Gold',      price: '$99', priceId: 'price_1ToUZvAO0398J98JSDPp5BZq' },
+  student: { label: 'Student',   price: '$19', priceId: 'price_1TrNoFAO0398J98JInDBO6vz' },
+  silver:  { label: 'Silver',    price: '$39', priceId: 'price_1TrNouAO0398J98JsK3PgVu1' },
+  gold:    { label: 'Gold',      price: '$99', priceId: 'price_1TrNpMAO0398J98JdSsS2SIb' },
 };
 const UPGRADE_ORDER = ['student','silver','gold'];
 
+async function startCheckoutDirect(priceId, planLabel) {
+  if (!currentUser) return;
+  showToast(`Loading ${planLabel} checkout…`);
+  try {
+    const res = await fetch('/.netlify/functions/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId, userId: currentUser.id, userEmail: currentUser.email }),
+    });
+    const { url } = await res.json();
+    if (url) window.location.href = url;
+    else throw new Error();
+  } catch {
+    showToast('Something went wrong — please try again.');
+  }
+}
 async function startCheckout(priceId) {
   if (!currentUser) return;
   const btn = event.currentTarget;
@@ -1357,6 +1373,16 @@ async function init() {
   renderSubscription();
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
+
+  // Auto-trigger checkout if redirected from a pricing plan link
+  const checkoutPlan = new URLSearchParams(location.search).get('checkout');
+  if (checkoutPlan && PLAN_META[checkoutPlan]?.priceId) {
+    switchTab('subscription');
+    setTimeout(() => {
+      const priceId = PLAN_META[checkoutPlan].priceId;
+      startCheckoutDirect(priceId, checkoutPlan);
+    }, 500);
+  }
 
   // Stats
   const projs = projects || [];
