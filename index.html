@@ -868,7 +868,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Cloud saves — any device</li>
         <li>Unlimited projects</li>
       </ul>
-      <a href="/app?plan=student" class="plan-cta ghost" style="margin-top:auto;">Get Started &rarr;</a>
+      <a href="/app?plan=student" class="plan-cta ghost" data-plan="student" style="margin-top:auto;">Get Started &rarr;</a>
     </div>
 
     <!-- Silver -->
@@ -882,7 +882,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Upload your supplier price sheet</li>
         <li>Job status pipeline &amp; activity log</li>
       </ul>
-      <a href="/app?plan=silver" class="plan-cta ghost" style="margin-top:auto;">Get Started &rarr;</a>
+      <a href="/app?plan=silver" class="plan-cta ghost" data-plan="silver" style="margin-top:auto;">Get Started &rarr;</a>
     </div>
 
     <!-- Gold -->
@@ -896,7 +896,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Multiple supplier price sheets</li>
         <li>Priority support</li>
       </ul>
-      <a href="/app?plan=gold" class="plan-cta solid" style="margin-top:auto;">Get Started &rarr;</a>
+      <a href="/app?plan=gold" class="plan-cta solid" data-plan="gold" style="margin-top:auto;">Get Started &rarr;</a>
     </div>
 
   </div>
@@ -1703,6 +1703,20 @@ async function submitLpContact() {
 document.getElementById('lp-contact-modal').addEventListener('click', function(e) {
   if (e.target === this) closeContactModal();
 });
+
+// If user is already signed in, send pricing buttons straight to profile checkout
+(async () => {
+  const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    document.querySelectorAll('[data-plan]').forEach(btn => {
+      const plan = btn.getAttribute('data-plan');
+      btn.href = `/profile?checkout=${plan}`;
+    });
+  }
+})();
 </script>
 </body>
 </html>
