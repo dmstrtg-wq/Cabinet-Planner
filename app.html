@@ -6082,13 +6082,23 @@ async function setNewPassword() {
     else if (APPLIANCES[hit.type]) openEditApplianceModal(hit);
   });
 
+  let elevPan = null;
   canvas.addEventListener('mousedown', e => {
     if (state.viewMode !== 'elevation') return;
     const info = getElevInfo(); if (!info) return;
     const rect = canvas.getBoundingClientRect();
     const ze = vpState.elev.zoom;
     const cab  = hitTestElevCab((e.clientX - rect.left)/ze, (e.clientY - rect.top)/ze, info);
-    if (!cab) return;
+    if (!cab) {
+      // No cabinet hit — start pan
+      e.preventDefault();
+      const vp = document.getElementById('elev-viewport');
+      if (!vp) return;
+      const st = vpState.elev;
+      elevPan = { startX: e.clientX, startY: e.clientY, px: st.panX, py: st.panY };
+      vp.classList.add('panning');
+      return;
+    }
     e.preventDefault();
     const effectiveElevScale = info.scale * vpState.elev.zoom;
     elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: effectiveElevScale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
@@ -6103,6 +6113,13 @@ async function setNewPassword() {
     // mx in screen px for drag delta; hx in canvas px for hit testing
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
     const hx = mx/ze, hy = my/ze;
+
+    if (elevPan) {
+      vpState.elev.panX = elevPan.px + (e.clientX - elevPan.startX);
+      vpState.elev.panY = elevPan.py + (e.clientY - elevPan.startY);
+      applyVpTransform('elev');
+      return;
+    }
 
     if (elevDrag) {
       const delta = mx - elevDrag.startMX;
@@ -6127,13 +6144,18 @@ async function setNewPassword() {
           tooltip.textContent = `${lbl} · ${cab.offset || 0}" from left — drag to move`;
         }
       } else {
-        canvas.style.cursor = 'default';
+        canvas.style.cursor = '';   // let viewport's grab cursor show through
         if (elevHover) { elevHover = null; tooltip.style.display = 'none'; }
       }
     }
   });
 
   window.addEventListener('mouseup', () => {
+    if (elevPan) {
+      elevPan = null;
+      const vp = document.getElementById('elev-viewport');
+      if (vp) vp.classList.remove('panning');
+    }
     if (elevDrag) {
       elevDrag = null;
       canvas.style.cursor = 'default';

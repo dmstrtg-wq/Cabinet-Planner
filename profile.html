@@ -1374,24 +1374,6 @@ async function init() {
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
 
-  // Auto-trigger checkout if redirected from a pricing plan link
-  const checkoutPlan = new URLSearchParams(location.search).get('checkout');
-  if (checkoutPlan && PLAN_META[checkoutPlan]?.priceId) {
-    switchTab('subscription');
-    setTimeout(() => {
-      const priceId = PLAN_META[checkoutPlan].priceId;
-      startCheckoutDirect(priceId, checkoutPlan);
-    }, 500);
-  }
-
-  // Show success toast if returning from Stripe checkout
-  if (new URLSearchParams(location.search).get('subscribed') === '1') {
-    switchTab('subscription');
-    setTimeout(() => showToast('Subscription activated. Welcome aboard.'), 600);
-    // Clean the URL
-    history.replaceState({}, '', '/profile');
-  }
-
   // Stats
   const projs = projects || [];
   const activeStatuses = ['Lead','Quoted','Ordered','Installing'];
@@ -1429,6 +1411,23 @@ async function init() {
   }
 
   applyHashTab();
+
+  // Auto-trigger checkout if redirected from a pricing plan link
+  const checkoutPlan = new URLSearchParams(location.search).get('checkout');
+  if (checkoutPlan && PLAN_META[checkoutPlan]?.priceId) {
+    setActiveTab('subscription');
+    setTimeout(() => {
+      const priceId = PLAN_META[checkoutPlan].priceId;
+      startCheckoutDirect(priceId, checkoutPlan);
+    }, 500);
+  }
+
+  // Show success toast if returning from Stripe checkout
+  if (new URLSearchParams(location.search).get('subscribed') === '1') {
+    setActiveTab('subscription');
+    setTimeout(() => showToast('Subscription activated. Welcome aboard.'), 600);
+    history.replaceState({}, '', '/profile');
+  }
 }
 
 init();
