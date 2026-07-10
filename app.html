@@ -711,7 +711,6 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 
       <!-- Email confirmation screen (shown after signup) -->
       <div id="email-confirm-panel" style="display:none;text-align:center;padding:12px 0;">
-        <div style="font-size:48px;margin-bottom:16px;">📬</div>
         <div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;">Check your inbox</div>
         <div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
           We sent a confirmation link to<br>
@@ -792,10 +791,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <span style="font-size:10px;color:rgba(255,255,255,0.3);" id="sync-label">Saved</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">⚙ Company</button>
+      <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
-    <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">👤 My Profile</a>
+    <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">My Profile</a>
   </div>
 </aside>
 
@@ -825,7 +824,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           <button class="view-toggle-btn" id="vt-elev" onclick="setViewMode('elevation')">Elevation</button>
           <button class="view-toggle-btn" id="vt-3d" onclick="setViewMode('3d')">3D View</button>
         </div>
-        <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">📋 Log</button>
+        <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
         <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
         <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
         <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">Tips</button>
@@ -848,17 +847,17 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
             </select>
             <div class="toolbar-pricing">
               <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
-              <span class="toggle-label">💲 Pricing</span>
+              <span class="toggle-label">Pricing</span>
             </div>
             <div class="toolbar-divider"></div>
-            <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()" style="margin-left:0;">📏 Measure</button>
-            <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">✕ Clear</button>
-            <button id="dims-btn" class="toolbar-btn" onclick="toggleDimensions()">📐 Dims</button>
+            <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()" style="margin-left:0;">Measure</button>
+            <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">Clear</button>
+            <button id="dims-btn" class="toolbar-btn" onclick="toggleDimensions()">Dims</button>
             <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()">△ Triangle</button>
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
-            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">⬇ Export PDF</button>
-            <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()" style="margin-left:0;">☰ Summary</button>
+            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">Export PDF</button>
+            <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()" style="margin-left:0;">Summary</button>
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('floor')" title="Fit to view (F)">⊡ Fit</button>
               <button class="vp-btn" onclick="stepZoom('floor',-1)" title="Zoom out">−</button>
@@ -952,10 +951,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Wall Openings</div>
           <div class="opening-type-row" id="opening-type-btns">
-            <button class="opening-type-btn active" data-otype="door" onclick="selectOpeningType('door')">🚪 Door</button>
-            <button class="opening-type-btn" data-otype="window" onclick="selectOpeningType('window')">🪟 Window</button>
-            <button class="opening-type-btn" data-otype="sink" onclick="selectOpeningType('sink-loc')">🚰 Sink</button>
-            <button class="opening-type-btn" data-otype="arch" onclick="selectOpeningType('arch')">🏛 Opening</button>
+            <button class="opening-type-btn active" data-otype="door" onclick="selectOpeningType('door')">Door</button>
+            <button class="opening-type-btn" data-otype="window" onclick="selectOpeningType('window')">Window</button>
+            <button class="opening-type-btn" data-otype="sink" onclick="selectOpeningType('sink-loc')">Sink</button>
+            <button class="opening-type-btn" data-otype="arch" onclick="selectOpeningType('arch')">Opening</button>
           </div>
           <div class="opening-inputs" style="margin-bottom:5px;">
             <label style="font-size:11px;white-space:nowrap;">W:</label>
@@ -1030,8 +1029,8 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
             <option value="microwave">OTR Microwave</option>
             <option value="cooktop">Cooktop</option>
             <option value="hood">Range Hood</option>
-            <option value="beverageCooler">🧃 Beverage Cooler (UC)</option>
-            <option value="floatingShelf">📚 Floating Shelf</option>
+            <option value="beverageCooler">Beverage Cooler (UC)</option>
+            <option value="floatingShelf">Floating Shelf</option>
           </select>
           <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
           <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
@@ -1175,7 +1174,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <input type="text" id="edit-cab-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">🗑 Delete</button>
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-cabinet')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditModal()">Save Changes</button>
@@ -1202,7 +1201,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">🗑 Delete</button>
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-island')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditIslandModal()">Save Changes</button>
@@ -1236,7 +1235,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">🗑 Delete</button>
+      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-appliance')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditApplianceModal()">Save Changes</button>
@@ -1449,7 +1448,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 <!-- COMPANY SETTINGS MODAL -->
 <div id="modal-company-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Company Settings">
   <div class="modal" style="width:600px;max-width:100%;max-height:90vh;overflow-y:auto;">
-    <h3>⚙ Company Settings</h3>
+    <h3>Company Settings</h3>
 
     <!-- Tabs -->
     <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;margin-top:-4px;">
@@ -1506,7 +1505,6 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 <div id="modal-set-password" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Set Password">
   <div class="modal" style="max-width:400px;">
     <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:36px;margin-bottom:8px;">👋</div>
       <h3 style="margin-bottom:6px;">Welcome! Set Your Password</h3>
       <p style="font-size:13px;color:var(--text-muted);font-weight:400;">You're in. Choose a password so you can log in anytime.</p>
     </div>
@@ -1598,7 +1596,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <div class="faq-a">
         <p><strong>How do I create a project?</strong><br>Click <strong>New Project</strong> in the top header. Enter a customer name and project type, then add rooms.</p>
         <p><strong>How do I add a room?</strong><br>Click <strong>+ Add Room</strong> in the sidebar. Set each wall length (in inches) and the ceiling height.</p>
-        <p><strong>How do I set up my company info?</strong><br>Click the <strong>⚙ Company</strong> button in the header. Add your name, address, phone, and logo — this info prints on every PDF you export.</p>
+        <p><strong>How do I set up my company info?</strong><br>Click the <strong>Company</strong> button in the header. Add your name, address, phone, and logo — this info prints on every PDF you export.</p>
         <p><strong>What's the difference between a project and a room?</strong><br>A project is for one customer/job. Each project can have multiple rooms (Kitchen, Laundry, Bathroom, etc.), each with its own cabinet layout.</p>
       </div>
     </div>
@@ -1625,13 +1623,13 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <div class="faq-a">
         <p><strong>What does Export PDF produce?</strong><br>A multi-page PDF with: (1) floor plan + company header, (2) a wall elevation for each wall, (3) a full quote page with line items, totals, signature lines, and terms.</p>
         <p><strong>What does Print Quote do?</strong><br>Opens a browser print dialog with a polished quote document — logo, line items, terms, and signature blocks. Best for printing directly or saving as PDF via your browser.</p>
-        <p><strong>Why does the PDF show "My Cabinet Planner" instead of my company?</strong><br>Your company profile isn't set up yet. Click <strong>⚙ Company</strong> in the header and fill in your name. You'll be warned before exporting if it's not set.</p>
+        <p><strong>Why does the PDF show "My Cabinet Planner" instead of my company?</strong><br>Your company profile isn't set up yet. Click <strong>Company</strong> in the header and fill in your name. You'll be warned before exporting if it's not set.</p>
       </div>
     </div>
     <div class="faq-section">
       <button class="faq-q" onclick="toggleFaq(this)">Pricing & Quotes <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>How does cabinet pricing work?</strong><br>Each cabinet type has a base price formula. Toggle <strong>💲 Pricing</strong> in the toolbar to show prices on the floor plan. The Quote modal shows a full breakdown.</p>
+        <p><strong>How does cabinet pricing work?</strong><br>Each cabinet type has a base price formula. Toggle <strong>Pricing</strong> in the toolbar to show prices on the floor plan. The Quote modal shows a full breakdown.</p>
         <p><strong>How do I add custom job costs?</strong><br>Open the Quote modal and use the <strong>Additional Costs</strong> section to add line items like labor, delivery, or hardware.</p>
         <p><strong>Can I change the tax rate?</strong><br>Yes — set it in the Quote modal. It persists per project.</p>
       </div>
@@ -2322,8 +2320,8 @@ function showProjectMenu(id, e) {
   const menu = document.createElement('div');
   menu.className = 'project-ctx-menu';
   menu.innerHTML = `
-    <button onclick="renameProject('${id}')">✏️ Rename</button>
-    <button class="ctx-delete" onclick="deleteProject('${id}',_fakeEvent())">🗑 Delete</button>`;
+    <button onclick="renameProject('${id}')">Rename</button>
+    <button class="ctx-delete" onclick="deleteProject('${id}',_fakeEvent())">Delete</button>`;
   menu.style.top = (rect.bottom + 4) + 'px';
   menu.style.left = rect.left + 'px';
   document.body.appendChild(menu);
@@ -4770,7 +4768,7 @@ function refreshQuoteTotals() {
 function checkCompanyProfile() {
   if (companyProfile.company_name) return true;
   return confirm(
-    '⚠️ Your company profile is not set up.\n\n' +
+    'Your company profile is not set up.\n\n' +
     'The exported document will show "My Cabinet Planner" as the business name — ' +
     'which looks unprofessional on a customer quote.\n\n' +
     'Click OK to export anyway, or Cancel to go update your Company Settings first.'
@@ -5116,12 +5114,12 @@ function drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH) {
 // ROOM TEMPLATES
 // ════════════════════════════
 const ROOM_TEMPLATES = [
-  { id:'galley',   icon:'🍳', name:'Galley',    desc:'Long narrow, 2 parallel walls',   north:144, south:144, east:72,  west:72,  ceiling:96, shape:'rect' },
-  { id:'lshape',   icon:'📐', name:'L-Shape',   desc:'Two walls, one corner cut out',   north:144, south:144, east:120, west:120, ceiling:96, shape:'L',    corner:'NE', cutW:72, cutD:60 },
-  { id:'ushape',   icon:'〓', name:'U-Shape',   desc:'Three walls of cabinets',         north:144, south:144, east:120, west:120, ceiling:96, shape:'rect' },
-  { id:'gshape',   icon:'↩', name:'G-Shape',   desc:'Three walls + short peninsula',   north:168, south:168, east:144, west:144, ceiling:96, shape:'rect' },
-  { id:'peninsula',icon:'🏝', name:'Peninsula', desc:'Open plan with peninsula arm',    north:180, south:180, east:132, west:132, ceiling:96, shape:'rect' },
-  { id:'blank',    icon:'⬜', name:'Custom',    desc:'Start fresh, enter dimensions',   north:0,   south:0,   east:0,   west:0,   ceiling:96, shape:'rect' },
+  { id:'galley',   icon:'', name:'Galley',    desc:'Long narrow, 2 parallel walls',   north:144, south:144, east:72,  west:72,  ceiling:96, shape:'rect' },
+  { id:'lshape',   icon:'', name:'L-Shape',   desc:'Two walls, one corner cut out',   north:144, south:144, east:120, west:120, ceiling:96, shape:'L',    corner:'NE', cutW:72, cutD:60 },
+  { id:'ushape',   icon:'', name:'U-Shape',   desc:'Three walls of cabinets',         north:144, south:144, east:120, west:120, ceiling:96, shape:'rect' },
+  { id:'gshape',   icon:'', name:'G-Shape',   desc:'Three walls + short peninsula',   north:168, south:168, east:144, west:144, ceiling:96, shape:'rect' },
+  { id:'peninsula',icon:'', name:'Peninsula', desc:'Open plan with peninsula arm',    north:180, south:180, east:132, west:132, ceiling:96, shape:'rect' },
+  { id:'blank',    icon:'', name:'Custom',    desc:'Start fresh, enter dimensions',   north:0,   south:0,   east:0,   west:0,   ceiling:96, shape:'rect' },
 ];
 
 function openRoomTemplates() {
@@ -6357,7 +6355,7 @@ db.auth.onAuthStateChange((event, session) => {
 const TOUR_STEPS = [
   { tag:'Welcome',
     title:'Welcome to My Cabinet Planner!',
-    body:"Let's take a 30-second tour of the key features. You can skip anytime — the 💡 Tips button in the header replays it whenever you need." },
+    body:"Let's take a 30-second tour of the key features. You can skip anytime — the Tips button in the header replays it whenever you need." },
   { tag:'Adding Cabinets',
     title:'Left Panel — Add Cabinets',
     body:'Select a cabinet type and dimensions in the left panel, then click Add Cabinet. It appears on whichever wall is selected in the dropdown above it.' },

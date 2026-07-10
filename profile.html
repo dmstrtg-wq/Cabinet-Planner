@@ -1387,7 +1387,7 @@ async function init() {
   // Show success toast if returning from Stripe checkout
   if (new URLSearchParams(location.search).get('subscribed') === '1') {
     switchTab('subscription');
-    setTimeout(() => showToast('🎉 Subscription activated! Welcome aboard.'), 600);
+    setTimeout(() => showToast('Subscription activated. Welcome aboard.'), 600);
     // Clean the URL
     history.replaceState({}, '', '/profile');
   }
