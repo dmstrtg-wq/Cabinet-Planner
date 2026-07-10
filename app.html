@@ -350,9 +350,24 @@ body.free-tier .cp-section:has(#pricing-toggle) { display: none !important; }
 .a11y-toggle input:checked + .a11y-slider { background: var(--accent); }
 .a11y-toggle input:checked + .a11y-slider:before { transform: translateX(16px); }
 /* Accessibility state classes */
-body.a11y-large-text { font-size: 110%; }
+body.a11y-large-text { font-size: 115%; }
 body.a11y-large-text .btn, body.a11y-large-text label, body.a11y-large-text input, body.a11y-large-text select, body.a11y-large-text textarea { font-size: 1.05em; }
-body.a11y-high-contrast { filter: contrast(1.3); }
+body.a11y-high-contrast {
+  --bg: #000000;
+  --surface: #111111;
+  --sidebar-bg: #000000;
+  --border: #888888;
+  --text: #ffffff;
+  --text-muted: #cccccc;
+  --accent: #f9c740;
+  --accent-hover: #ffd460;
+  --accent-light: #3d2e00;
+  --danger: #ff6b6b;
+  --success: #4dff91;
+}
+body.a11y-high-contrast .cp-label,
+body.a11y-high-contrast .sidebar-label,
+body.a11y-high-contrast .plan-title { color: #ffffff; }
 body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-motion *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 #app-footer { position: fixed; bottom: 0; left: 0; right: 0; z-index: 900; padding: 6px 20px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
 #app-footer a { color: var(--text-muted); text-decoration: none; }
@@ -913,7 +928,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
         </div>
       </div>
 
-      <div id="cabinet-panel">
+      <div id="cabinet-panel" role="complementary" aria-label="Cabinet controls panel">
         <button class="panel-collapse-btn" onclick="togglePanel()" title="Collapse panel" aria-label="Collapse panel">› Collapse Panel</button>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Door Style</div>
@@ -958,18 +973,18 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           </div>
           <div class="opening-inputs" style="margin-bottom:5px;">
             <label style="font-size:11px;white-space:nowrap;">W:</label>
-            <input type="number" id="opening-width" placeholder='36"' min="6" style="width:52px;">
+            <input type="number" id="opening-width" aria-label="Opening width (inches)" placeholder='36"' min="6" style="width:52px;">
             <label style="font-size:11px;white-space:nowrap;">H:</label>
-            <input type="number" id="opening-height" placeholder='80"' min="6" style="width:52px;">
+            <input type="number" id="opening-height" aria-label="Opening height (inches)" placeholder='80"' min="6" style="width:52px;">
           </div>
           <div class="opening-inputs" id="sill-height-row" style="margin-bottom:5px;display:none;">
             <label style="font-size:11px;white-space:nowrap;">Sill ht:</label>
-            <input type="number" id="opening-sill" placeholder='36"' min="0" value="36" style="width:52px;">
+            <input type="number" id="opening-sill" aria-label="Sill height from floor (inches)" placeholder='36"' min="0" value="36" style="width:52px;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in. from floor</span>
           </div>
           <div class="opening-inputs" style="margin-bottom:4px;">
             <label style="font-size:11px;white-space:nowrap;">From left:</label>
-            <input type="number" id="opening-offset" placeholder='0"' min="0" value="0" style="width:52px;">
+            <input type="number" id="opening-offset" aria-label="Opening distance from left (inches)" placeholder='0"' min="0" value="0" style="width:52px;">
             <button class="btn btn-secondary" style="padding:5px 9px;font-size:11px;flex-shrink:0" onclick="addOpening()">＋ Add</button>
           </div>
           <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Inches from left edge of wall</div>
@@ -999,17 +1014,17 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           </select>
           <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
-            <input type="number" id="cab-wall-bottom" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
+            <input type="number" id="cab-wall-bottom" aria-label="Bottom of wall cabinet from floor (inches)" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in.</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
-            <input type="number" id="cab-offset-input" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <input type="number" id="cab-offset-input" aria-label="Cabinet distance from left wall (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
           <div id="glass-door-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
             <input type="checkbox" id="cab-glass-doors" style="width:auto;accent-color:var(--accent);">
-            <label style="font-size:12px;color:var(--text);margin:0;font-weight:600;">🪟 Add Glass Doors</label>
+            <label for="cab-glass-doors" style="font-size:12px;color:var(--text);margin:0;font-weight:600;">Add Glass Doors</label>
             <span style="font-size:10px;color:#94a3b8;">(+58% of cabinet price)</span>
           </div>
           <select id="cab-style-override" class="cp-select">
@@ -1037,7 +1052,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           <select id="app-elev-bottom-sel" class="cp-select hidden"><option value="">— Height from floor —</option></select>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
-            <input type="number" id="app-offset" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <input type="number" id="app-offset" aria-label="Appliance distance from left (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
           <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)" autocomplete="off">
@@ -1048,12 +1063,12 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           <div class="cp-label">Add Island</div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Width:</label>
-            <input type="number" id="island-width" class="cp-input" placeholder='36"' min="12" value="36" style="margin-bottom:0;flex:1;">
+            <input type="number" id="island-width" aria-label="Island width (inches)" class="cp-input" placeholder='36"' min="12" value="36" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;">in</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Depth:</label>
-            <input type="number" id="island-depth" class="cp-input" placeholder='24"' min="12" value="24" style="margin-bottom:0;flex:1;">
+            <input type="number" id="island-depth" aria-label="Island depth (inches)" class="cp-input" placeholder='24"' min="12" value="24" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;">in</span>
           </div>
           <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)" autocomplete="off">
@@ -1126,40 +1141,40 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
     <h3 id="edit-cab-title">Edit Cabinet</h3>
     <input type="hidden" id="edit-cab-id">
     <div class="form-group">
-      <label>Type</label>
+      <label for="edit-cab-type-label">Type</label>
       <input type="text" id="edit-cab-type-label" class="cp-input" readonly autocomplete="off" style="background:#f1f5f9;color:#64748b;cursor:default;">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Width</label>
+        <label for="edit-cab-width">Width</label>
         <select id="edit-cab-width" class="cp-select"></select>
       </div>
       <div class="form-group" id="edit-height-group">
-        <label>Height</label>
+        <label for="edit-cab-height">Height</label>
         <select id="edit-cab-height" class="cp-select"></select>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group" id="edit-depth-group">
-        <label>Depth</label>
+        <label for="edit-cab-depth">Depth</label>
         <select id="edit-cab-depth" class="cp-select">
           <option value="12">12" — Standard upper</option>
           <option value="24">24" — Over fridge/appliance</option>
         </select>
       </div>
       <div class="form-group" id="edit-wallbottom-group">
-        <label>Bottom from floor (in)</label>
+        <label for="edit-cab-wallbottom">Bottom from floor (in)</label>
         <input type="number" id="edit-cab-wallbottom" class="cp-input" value="54" min="0" style="margin-bottom:0;">
       </div>
     </div>
     <div class="form-group">
-      <label>From left (in)</label>
+      <label for="edit-cab-offset">From left (in)</label>
       <input type="number" id="edit-cab-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
     </div>
     <div class="form-group" id="edit-glass-group" style="display:none;">
       <div style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="edit-cab-glass" style="width:auto;accent-color:var(--accent);">
-        <label style="margin:0;font-weight:600;">🪟 Glass Doors</label>
+        <label for="edit-cab-glass" style="margin:0;font-weight:600;">Glass Doors</label>
         <span style="font-size:10px;color:#94a3b8;">(+58%)</span>
       </div>
     </div>
@@ -1215,23 +1230,23 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
     <h3 id="edit-app-title">Edit Appliance</h3>
     <input type="hidden" id="edit-app-id">
     <div class="form-group">
-      <label>Type</label>
+      <label for="edit-app-type-label">Type</label>
       <input type="text" id="edit-app-type-label" class="cp-input" readonly style="background:#f1f5f9;color:#64748b;cursor:default;">
     </div>
     <div class="form-group">
-      <label>Width</label>
+      <label for="edit-app-width">Width</label>
       <select id="edit-app-width" class="cp-select"></select>
     </div>
     <div class="form-group" id="edit-app-elevbottom-group" style="display:none;">
-      <label>Height from floor (in)</label>
+      <label for="edit-app-elevbottom">Height from floor (in)</label>
       <select id="edit-app-elevbottom" class="cp-select"></select>
     </div>
     <div class="form-group">
-      <label>From left (in)</label>
+      <label for="edit-app-offset">From left (in)</label>
       <input type="number" id="edit-app-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
     </div>
     <div class="form-group">
-      <label>Notes</label>
+      <label for="edit-app-note">Notes</label>
       <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
