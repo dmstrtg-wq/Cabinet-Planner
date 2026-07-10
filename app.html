@@ -4338,28 +4338,51 @@ function renderElevation() {
   const ceiling = r.ceilingHeight || 96;
   const p = activeProj();
   const styleInfo = getStyles().find(s => s.code === (p.style||getStyles()[0]?.code)) || getStyles()[0];
-  const PAD = 60;
+  const PDF = !!window._pdfMode;
+  const PAD = PDF ? 80 : 60;
   const canvasW = Math.max(wallLength*scale+PAD*2, 400);
   const canvasH = Math.max(ceiling*scale+PAD*2, 320);
   canvas.width = canvasW; canvas.height = canvasH;
   const WX=PAD, WY=PAD, WW=wallLength*scale, WH=ceiling*scale;
 
-  ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
-  ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
-  ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
-  const gs = 12*scale;
-  for (let x=WX; x<=WX+WW; x+=gs) { ctx.beginPath(); ctx.moveTo(x,WY); ctx.lineTo(x,WY+WH); ctx.stroke(); }
-  for (let y=WY; y<=WY+WH; y+=gs) { ctx.beginPath(); ctx.moveTo(WX,y); ctx.lineTo(WX+WW,y); ctx.stroke(); }
-  ctx.fillStyle = '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
+  if (PDF) {
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0,0,canvasW,canvasH);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(WX,WY,WW,WH);
+  } else {
+    ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
+    ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
+    ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
+    const gs = 12*scale;
+    for (let gx=WX; gx<=WX+WW; gx+=gs) { ctx.beginPath(); ctx.moveTo(gx,WY); ctx.lineTo(gx,WY+WH); ctx.stroke(); }
+    for (let gy=WY; gy<=WY+WH; gy+=gs) { ctx.beginPath(); ctx.moveTo(WX,gy); ctx.lineTo(WX+WW,gy); ctx.stroke(); }
+  }
+  ctx.fillStyle = PDF ? '#888888' : '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
   const counterY = WY+WH-36*scale;
-  ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.strokeStyle = PDF ? '#555555' : '#94A3B8'; ctx.lineWidth = PDF ? 1.5 : 1; ctx.setLineDash([4,4]);
   ctx.beginPath(); ctx.moveTo(WX,counterY); ctx.lineTo(WX+WW,counterY); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = PDF ? '#555555' : '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('Counter Height 36"', WX+4, counterY-4);
 
   const wallCabs     = r.cabinets.filter(c => c.wall === wall);
   const wallOpenings = (r.openings||[]).filter(o => o.wall === wall);
   const floorY = WY+WH;
+
+  // PDF: soffit band — dark fill from ceiling down to top of upper cabinets
+  if (PDF) {
+    const upperCabsForSoffit = wallCabs.filter(c => ['wall','diagWall'].includes(c.type));
+    if (upperCabsForSoffit.length > 0) {
+      const soffitBottom = Math.min(...upperCabsForSoffit.map(cab => {
+        const catS = CATALOG[cab.type];
+        const cHS = (cab.height || catS.heights?.[0] || 30) * scale;
+        const bInS = cab.wallBottom != null ? cab.wallBottom : 54;
+        return Math.max(WY, floorY - bInS*scale - cHS);
+      }));
+      if (soffitBottom > WY) {
+        ctx.fillStyle = '#2B2926';
+        ctx.fillRect(WX, WY, WW, soffitBottom - WY);
+      }
+    }
+  }
   // South and west walls are mirrored in elevation (you face the opposite direction)
   const flip = wall === 'south' || wall === 'west';
   const eX = (offset, width) => flip
@@ -4415,39 +4438,39 @@ function renderElevation() {
     const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
     if (isCorner) {
       const cutW=cW*0.28;
-      ctx.fillStyle=si.swatch;
+      ctx.fillStyle=PDF?'#FFFFFF':si.swatch;
       ctx.beginPath(); ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH); ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cH*0.12); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.stroke();
-      ctx.strokeStyle='#94A3B8'; ctx.beginPath(); ctx.moveTo(x,y+cH*0.12); ctx.lineTo(x+cutW,y); ctx.stroke();
-      ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+      ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5; ctx.stroke();
+      ctx.strokeStyle=PDF?'#888888':'#94A3B8'; ctx.beginPath(); ctx.moveTo(x,y+cH*0.12); ctx.lineTo(x+cutW,y); ctx.stroke();
+      ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(x+cutW+3,y+5); ctx.lineTo(x+cW-4,y+5); ctx.lineTo(x+cW-4,y+cH-12); ctx.lineTo(x+4,y+cH-12); ctx.lineTo(x+4,y+cH*0.18); ctx.closePath(); ctx.stroke();
-      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.55-7,y+cH-18,14,5,2); ctx.fill();
-      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
-      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
-      ctx.fillStyle=txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.55-7,y+cH-18,14,5,2); ctx.fill();
+      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
+      ctx.fillStyle=PDF?'#D0D0D0':'#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW*0.6, y+cH*0.5);
     } else {
-      ctx.fillStyle=si.swatch; ctx.fillRect(x,y,cW,cH);
-      ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,cW,cH);
+      ctx.fillStyle=PDF?'#FFFFFF':si.swatch; ctx.fillRect(x,y,cW,cH);
+      ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5; ctx.strokeRect(x,y,cW,cH);
       if (cab.type === 'lazysusan') {
         // Bifolding door — two panels meeting at center fold
         const midX = x + cW/2;
-        ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+        ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=1;
         ctx.strokeRect(x+3, y+4, cW/2-4, cH-14); // left panel
         ctx.strokeRect(midX+1, y+4, cW/2-4, cH-14); // right panel
-        ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
+        ctx.strokeStyle=PDF?'#888888':'#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
         ctx.beginPath(); ctx.moveTo(midX, y+4); ctx.lineTo(midX, y+cH-10); ctx.stroke();
         ctx.setLineDash([]);
         // Bifolding knobs at center fold
-        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(midX, y+cH*0.55, 3, 0, Math.PI*2); ctx.fill();
       } else {
-        ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
-        ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
+        ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=PDF?1.2:1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
+        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
       }
-      ctx.fillStyle='#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
-      ctx.fillStyle='#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
-      ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
+      ctx.fillStyle=PDF?'#D0D0D0':'#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
     }
     if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
@@ -4462,34 +4485,34 @@ function renderElevation() {
     if (cab.type === 'diagWall') {
       // Diagonal corner wall cabinet: rectangle with diagonal cut in top-left corner
       const cutW=cW*0.3, cutH=cH*0.15;
-      ctx.fillStyle=si.swatch;
+      ctx.fillStyle=PDF?'#F8F8F8':si.swatch;
       ctx.beginPath();
       ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH);
       ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cutH); ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5; ctx.stroke();
       // Diagonal cut line
       ctx.beginPath(); ctx.moveTo(x,y+cutH); ctx.lineTo(x+cutW,y); ctx.stroke();
       // Door inset
-      ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8;
+      ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
       ctx.strokeRect(x+cutW+3, y+5, cW-cutW-7, cH-14);
       // Knob
-      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.6-6,y+cH-12,12,4,2); ctx.fill();
-      ctx.fillStyle=txtColor; const fs2=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.6-6,y+cH-12,12,4,2); ctx.fill();
+      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs2=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`DCW${cab.width}`, x+cW*0.6, y+cH/2);
     } else {
-      ctx.fillStyle=si.swatch; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+      ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
       ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-      ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
-      ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
-      ctx.fillStyle=txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
+      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
+      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
-      if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
+      if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle=PDF?'#333333':'#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
     }
     // Bottom-from-floor annotation (both types)
     const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
     if (bIn !== 54) {
-      ctx.font=`600 8px sans-serif`; ctx.fillStyle='#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.font=`600 8px sans-serif`; ctx.fillStyle=PDF?'#333333':'#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
       ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
     }
     if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
@@ -4499,12 +4522,12 @@ function renderElevation() {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||84)*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
-    ctx.fillStyle=si.swatch; ctx.strokeStyle='#64748B'; ctx.lineWidth=1.5;
+    ctx.fillStyle=PDF?'#FFFFFF':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5;
     ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-    const mid=y+cH/2; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=0.8;
+    const mid=y+cH/2; ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
     ctx.strokeRect(x+4,y+4,cW-8,cH/2-8); ctx.strokeRect(x+4,mid+4,cW-8,cH/2-8);
-    ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
-    ctx.fillStyle=txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
+    ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
   });
 
@@ -4545,20 +4568,20 @@ function renderElevation() {
         }
         const si = cabStyle(cab);
         ctx.globalAlpha = 0.65;
-        ctx.fillStyle = si.swatch;
+        ctx.fillStyle = PDF ? '#F8F8F8' : si.swatch;
         ctx.fillRect(x, y, cW, cH);
-        ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1.2;
+        ctx.strokeStyle = PDF ? '#888888' : '#94A3B8'; ctx.lineWidth = 1.2;
         ctx.setLineDash([3, 3]);
         ctx.strokeRect(x, y, cW, cH);
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
         if (!isWallCab) {
-          ctx.fillStyle = '#94A3B8'; ctx.globalAlpha = 0.7;
+          ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.globalAlpha = 0.7;
           ctx.fillRect(x, floorY - 7, cW, 7);
           ctx.globalAlpha = 1;
         }
         const fs = Math.max(7, Math.min(scale * 1.5, 9));
-        ctx.fillStyle = darkSwatches.includes(si.swatch) ? '#fff' : '#475569';
+        ctx.fillStyle = PDF ? '#475569' : (darkSwatches.includes(si.swatch) ? '#fff' : '#475569');
         ctx.font = `600 ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(cat.abbr || '', x + cW / 2, y + cH / 2);
       });
@@ -4646,15 +4669,58 @@ function renderElevation() {
     }
   });
 
-  // Rulers
-  drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
-  drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor, 0 at top = ceiling)
+  // PDF: dimension callout strings
+  if (PDF) {
+    function pdfDimString(items, dimY, above) {
+      ctx.save();
+      ctx.strokeStyle = '#1a1a1a'; ctx.fillStyle = '#1a1a1a'; ctx.lineWidth = 0.8; ctx.setLineDash([]);
+      items.forEach(({x1, x2, label}) => {
+        if (x2 - x1 < 6) return;
+        const midX = (x1+x2)/2;
+        const tickOuter = above ? dimY - 10 : dimY + 10;
+        const tickInner = above ? dimY + 2  : dimY - 2;
+        // Extension lines
+        ctx.beginPath(); ctx.moveTo(x1, tickOuter); ctx.lineTo(x1, tickInner); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x2, tickOuter); ctx.lineTo(x2, tickInner); ctx.stroke();
+        // Dimension line
+        ctx.beginPath(); ctx.moveTo(x1, dimY); ctx.lineTo(x2, dimY); ctx.stroke();
+        // Slash ticks at ends (architectural style)
+        const sl = 5;
+        ctx.beginPath(); ctx.moveTo(x1-sl*0.5, dimY+sl*0.6); ctx.lineTo(x1+sl*0.5, dimY-sl*0.6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x2-sl*0.5, dimY+sl*0.6); ctx.lineTo(x2+sl*0.5, dimY-sl*0.6); ctx.stroke();
+        // Label
+        const fs2 = Math.max(7, Math.min(10, (x2-x1)*0.14));
+        ctx.font = `700 ${fs2}px sans-serif`; ctx.textAlign = 'center';
+        ctx.textBaseline = above ? 'bottom' : 'top';
+        ctx.fillText(label, midX, above ? dimY - 13 : dimY + 13);
+      });
+      ctx.restore();
+    }
+    // Upper cabinets → dim string above wall
+    const upperDimItems = wallCabs
+      .filter(c => ['wall','diagWall','tall'].includes(c.type))
+      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: `${c.width}"` }))
+      .sort((a,b) => a.x1-b.x1);
+    if (upperDimItems.length) pdfDimString(upperDimItems, WY - 28, true);
+    // Base cabinets → dim string below floor
+    const baseDimItems = wallCabs
+      .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type))
+      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: `${c.width}"` }))
+      .sort((a,b) => a.x1-b.x1);
+    if (baseDimItems.length) pdfDimString(baseDimItems, WY + WH + 22, false);
+  }
 
-  ctx.strokeStyle='#334155'; ctx.lineWidth=3; ctx.strokeRect(WX,WY,WW,WH);
-  ctx.fillStyle='#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
-  ctx.fillStyle='#475569';
-  const df=Math.max(10,scale*2.2); ctx.font=`600 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-20);
+  // Rulers (app mode only — PDF uses dimension strings instead)
+  if (!PDF) {
+    drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
+    drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor)
+  }
+
+  ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
+  ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
+  ctx.fillStyle=PDF?'#1a1a1a':'#475569';
+  const df=Math.max(10,scale*2.2); ctx.font=`700 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(PDF?55:20));
   ctx.save(); ctx.translate(WX-28,WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
   document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
@@ -5331,6 +5397,7 @@ async function exportPDF(btn) {
     const wallLabel = {north:'North Wall',south:'South Wall',east:'East Wall',west:'West Wall',
                        step1:'Inner Wall 1',step2:'Inner Wall 2'};
 
+    window._pdfMode = true;
     for (const wall of allWalls) {
       let wallLen;
       if (wall==='step1'&&ld) wallLen=ld.step1.length;
@@ -5361,6 +5428,7 @@ async function exportPDF(btn) {
         doc.addImage(evCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, ey, w, h);
       }
     }
+    window._pdfMode = false;
     state.elevWall = savedWall;
     renderElevation();
   }
