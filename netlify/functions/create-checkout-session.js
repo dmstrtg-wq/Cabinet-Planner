@@ -43,7 +43,7 @@ exports.handler = async (event) => {
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: userId,          // webhook uses this to find the Supabase user
       customer_email: userEmail || undefined, // pre-fills email on checkout page
-      success_url: 'https://mycabinetplanner.com/app.html?checkout=success',
+      success_url: 'https://mycabinetplanner.com/profile?subscribed=1',
       cancel_url:  'https://mycabinetplanner.com/#pricing',
     });
 

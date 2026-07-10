@@ -386,7 +386,7 @@
           <div class="card plan-card" style="padding:20px 24px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
               <div>
-                <div style="font-size:14px;font-weight:700;" id="overview-plan-name">Pro Plan</div>
+                <div style="font-size:14px;font-weight:700;" id="overview-plan-name">—</div>
                 <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="overview-plan-sub">Renews monthly</div>
               </div>
               <a href="#subscription" class="btn btn-ghost" style="font-size:12px;padding:7px 14px;">Manage Subscription →</a>
@@ -1382,6 +1382,14 @@ async function init() {
       const priceId = PLAN_META[checkoutPlan].priceId;
       startCheckoutDirect(priceId, checkoutPlan);
     }, 500);
+  }
+
+  // Show success toast if returning from Stripe checkout
+  if (new URLSearchParams(location.search).get('subscribed') === '1') {
+    switchTab('subscription');
+    setTimeout(() => showToast('🎉 Subscription activated! Welcome aboard.'), 600);
+    // Clean the URL
+    history.replaceState({}, '', '/profile');
   }
 
   // Stats

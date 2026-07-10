@@ -6,22 +6,32 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://mycabinetplanner.com/privacy.html</loc>
+    <loc>https://mycabinetplanner.com/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://mycabinetplanner.com/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://mycabinetplanner.com/terms.html</loc>
+    <loc>https://mycabinetplanner.com/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://mycabinetplanner.com/refund.html</loc>
+    <loc>https://mycabinetplanner.com/refund</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://mycabinetplanner.com/cookie.html</loc>
+    <loc>https://mycabinetplanner.com/cookie</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://mycabinetplanner.com/accessibility</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
