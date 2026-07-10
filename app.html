@@ -443,9 +443,11 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .btn-secondary:hover { background: #e2e8f0; }
 .btn-success { background: var(--success); color: white; }
 .btn-success:hover { background: #15803d; }
-.view-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 2px; flex-shrink: 0; }
-.view-toggle-btn { padding: 5px 12px; border: none; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted); transition: all 0.12s; }
-.view-toggle-btn.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(107,76,42,0.15); }
+.view-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; flex-shrink: 0; }
+.view-toggle-btn { padding: 6px 14px; border: none; background: transparent; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted); transition: all 0.12s; }
+.view-toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 6px rgba(180,83,9,0.25); }
+.view-toggle-btn.active:hover { background: var(--accent-hover); }
+.header-actions { display: flex; gap: 7px; padding-left: 12px; margin-left: 4px; border-left: 1px solid var(--border); align-items: center; }
 .room-tabs-bar { display: flex; align-items: center; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
 .room-tab { padding: 10px 14px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--text-muted); border-bottom: 2px solid transparent; white-space: nowrap; transition: color 0.12s; }
 .room-tab:hover { color: var(--text); }
@@ -839,10 +841,12 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
           <button class="view-toggle-btn" id="vt-elev" onclick="setViewMode('elevation')">Elevation</button>
           <button class="view-toggle-btn" id="vt-3d" onclick="setViewMode('3d')">3D View</button>
         </div>
-        <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
-        <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
-        <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
-        <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">Tips</button>
+        <div class="header-actions">
+          <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
+          <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
+          <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
+          <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">Tips</button>
+        </div>
       </div>
     </div>
 
@@ -1056,7 +1060,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
           <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)" autocomplete="off">
-          <button class="add-cab-btn" onclick="addAppliance()" style="background:linear-gradient(135deg,#6b7280,#374151);box-shadow:0 2px 6px rgba(55,65,81,0.3);">＋ Add Appliance</button>
+          <button class="add-cab-btn" onclick="addAppliance()">＋ Add Appliance</button>
         </div>
         <!-- Add Island -->
         <div class="cp-section" style="flex-shrink:0">
@@ -3773,6 +3777,39 @@ function renderCanvas() {
   } else {
     ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.strokeRect(RX-2,RY-2,RW+4,RH+4);
     ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
+  }
+
+  // Active wall highlight — orange stroke on selected wall
+  if (state.activeWall) {
+    let seg = null;
+    if (!_ld) {
+      const wallSegs = {
+        north: [[RX, RY],    [RX+RW, RY]],
+        south: [[RX, RY+RH], [RX+RW, RY+RH]],
+        west:  [[RX, RY],    [RX,    RY+RH]],
+        east:  [[RX+RW, RY], [RX+RW, RY+RH]]
+      };
+      seg = wallSegs[state.activeWall] || null;
+    } else if (state.activeWall === 'step1' && _ld.step1.isVertical) {
+      const _s1x = RX + _ld.step1.x * scale;
+      seg = [[_s1x, RY + _ld.step1.startY*scale], [_s1x, RY + (_ld.step1.startY+_ld.step1.length)*scale]];
+    } else if (state.activeWall === 'step2' && !_ld.step2.isVertical) {
+      const _s2y = RY + _ld.step2.y * scale;
+      seg = [[RX + _ld.step2.startX*scale, _s2y], [RX + (_ld.step2.startX+_ld.step2.length)*scale, _s2y]];
+    }
+    if (seg) {
+      ctx.save();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = 'rgba(180,83,9,0.4)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(seg[0][0], seg[0][1]);
+      ctx.lineTo(seg[1][0], seg[1][1]);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // Wall dimension labels
