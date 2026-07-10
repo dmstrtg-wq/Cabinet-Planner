@@ -97,6 +97,27 @@ footer{
   main{padding:88px 16px 60px;}
   .policy-wrap{padding:24px 20px;}
 }
+
+/* ── A11Y WIDGET ── */
+#a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
+#a11y-btn:hover{background:#92400e;}
+#a11y-btn svg{width:24px;height:24px;}
+#a11y-panel{position:fixed;bottom:76px;right:16px;z-index:9100;background:white;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:16px;width:220px;display:none;}
+#a11y-panel.open{display:block;}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.a11y-row:last-child{border-bottom:none;padding-bottom:0;}
+.a11y-toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.a11y-toggle input{opacity:0;width:0;height:0;}
+.a11y-slider{position:absolute;inset:0;background:#ccc;border-radius:20px;cursor:pointer;transition:background 0.2s;}
+.a11y-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:transform 0.2s;}
+.a11y-toggle input:checked+.a11y-slider{background:var(--accent);}
+.a11y-toggle input:checked+.a11y-slider:before{transform:translateX(16px);}
+body.a11y-large-text{font-size:115%;}
+body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-motion *::after{animation-duration:0.001ms!important;transition-duration:0.001ms!important;}
+#a11y-panel h4{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+.a11y-row{color:var(--ink);}
+body.a11y-high-contrast{--bg:#000000;--ink:#ffffff;--muted:#cccccc;--accent:#f9c740;--border:#888888;}
+body.a11y-high-contrast nav{background:rgba(0,0,0,0.98);}
 </style>
 </head>
 <body>
@@ -218,6 +239,56 @@ footer{
   </div>
   <div class="footer-copy">© 2026 My Cabinet Planner. All rights reserved.</div>
 </footer>
+
+
+<!-- Accessibility widget -->
+<button id="a11y-btn" aria-label="Accessibility options" aria-expanded="false" aria-controls="a11y-panel" onclick="toggleA11yPanel()">
+  <svg viewBox="0 0 128 128" aria-hidden="true">
+    <path d="M72.095 49.514l.01 18.415 7.401 30.374c.494 1.985.47 4.02-1.495 4.514-1.955.493-3.506-.06-4-2.035L64.767 72.63h-2.962l-8.794 28.152c-.74 1.906-2.103 2.775-4 2.035-1.886-.731-1.857-2.874-1.116-4.78l7.138-29.792V49.514L34.01 47.645c-1.836-.148-3.148-1.163-3-3 .139-1.847 1.875-2.945 3.702-2.797H68.01l25.056-.04c1.837-.069 3.885.98 3.944 2.837.08 1.827-2.107 2.921-3.944 3zm-1.721-17.707a6.833 6.833 0 0 1-6.838 6.838c-3.75 0-6.807-3.057-6.807-6.838-.01-3.75 3.047-6.807 6.807-6.807 3.78 0 6.838 3.057 6.838 6.807z" fill="#fff"/>
+  </svg>
+</button>
+<div id="a11y-panel" role="dialog" aria-label="Accessibility options" aria-modal="false">
+  <h4>Display Options</h4>
+  <div class="a11y-row"><span>Larger Text</span><label class="a11y-toggle"><input type="checkbox" id="a11y-text" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+  <div class="a11y-row"><span>High Contrast</span><label class="a11y-toggle"><input type="checkbox" id="a11y-contrast" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+  <div class="a11y-row"><span>Reduce Motion</span><label class="a11y-toggle"><input type="checkbox" id="a11y-motion" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+</div>
+<script>
+(function(){
+  const prefs = JSON.parse(localStorage.getItem('a11y_prefs') || '{}');
+  function applyA11y() {
+    const text = document.getElementById('a11y-text').checked;
+    const contrast = document.getElementById('a11y-contrast').checked;
+    const motion = document.getElementById('a11y-motion').checked;
+    document.body.classList.toggle('a11y-large-text', text);
+    document.body.classList.toggle('a11y-high-contrast', contrast);
+    document.body.classList.toggle('a11y-reduce-motion', motion);
+    localStorage.setItem('a11y_prefs', JSON.stringify({text, contrast, motion}));
+  }
+  window.applyA11y = applyA11y;
+  window.toggleA11yPanel = function() {
+    const panel = document.getElementById('a11y-panel');
+    const btn = document.getElementById('a11y-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen);
+    if (isOpen) {
+      setTimeout(function() {
+        document.addEventListener('click', function handler(e) {
+          if (!panel.contains(e.target) && !btn.contains(e.target)) {
+            panel.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', handler);
+          }
+        });
+      }, 0);
+    }
+  };
+  if (prefs.text) { document.getElementById('a11y-text').checked = true; }
+  if (prefs.contrast) { document.getElementById('a11y-contrast').checked = true; }
+  if (prefs.motion) { document.getElementById('a11y-motion').checked = true; }
+  applyA11y();
+})();
+</script>
 
 </body>
 </html>
