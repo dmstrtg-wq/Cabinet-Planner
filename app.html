@@ -3601,9 +3601,14 @@ function renderCanvas() {
       else if (wall==='west')  { ctx.moveTo(x+wallD, y+cW);    ctx.lineTo(x+cD, y+wallD);    }
       else                     { const rX=x+cD; ctx.moveTo(rX-wallD, y+cW); ctx.lineTo(x, y+wallD); }
       ctx.stroke();
+    } else if (cab.type === 'wall') {
+      // NKBA convention: upper/wall cabinets shown as dashed overlay in floor plan
+      ctx.globalAlpha = 0.15; ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
+      ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = isActive ? 2 : 1.2; ctx.setLineDash([5,3]);
+      ctx.strokeRect(x,y,w,h); ctx.setLineDash([]);
     } else {
-      ctx.globalAlpha = cab.type === 'wall' ? 0.45 : 0.88;
-      ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
+      ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha = 1;
       ctx.strokeStyle = isActive ? cat.color : 'rgba(0,0,0,0.12)'; ctx.lineWidth = isActive ? 2 : 1; ctx.strokeRect(x,y,w,h);
       ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 0.5;
       ctx.beginPath(); ctx.moveTo(x+2,y+h*0.45); ctx.lineTo(x+w-2,y+h*0.45); ctx.stroke();
@@ -3679,8 +3684,9 @@ function renderCanvas() {
 
   const _wallList = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
   _wallList.forEach(wall => {
-    cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    // Base cabs first (solid), then wall/upper cabs as dashed overlay on top (NKBA convention)
     cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
     (r.appliances||[]).filter(a => a.wall===wall).forEach(app => drawAppOnFloor(app,wall));
   });
 
