@@ -320,7 +320,11 @@ body.demo-mode .toolbar-pricing,
 body.demo-mode #pdf-export-btn,
 body.demo-mode .btn-success,
 body.demo-mode .cp-section:has(#pricing-toggle),
-body.free-tier .cp-section:has(#pricing-toggle) { display: none !important; }
+body.free-tier .cp-section:has(#pricing-toggle),
+body.pricing-locked .cp-section:has(#pricing-toggle) { display: none !important; }
+/* Print Floor Plan — Student+ only; hide for demo and free/unsubscribed users */
+body.demo-mode #floor-plan-print-btn,
+body.free-tier #floor-plan-print-btn { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
 .empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
@@ -880,7 +884,8 @@ body.free-tier #connect-pro-btn { display:block; }
             <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()">△ Triangle</button>
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
-            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">Export PDF</button>
+            <button id="floor-plan-print-btn" onclick="printFloorPlan(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #6366f1;border-radius:6px;font-size:12px;font-weight:600;background:#eef2ff;cursor:pointer;color:#4f46e5;">Print Plans</button>
+            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:4px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">Export PDF</button>
             <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()" style="margin-left:0;">Summary</button>
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('floor')" title="Fit to view (F)">⊡ Fit</button>
@@ -2930,11 +2935,11 @@ function removeAppliance(id) {
 function onPricingToggle(fromToolbar) {
   const main = document.getElementById('pricing-toggle');
   const tb = document.getElementById('pricing-toggle-2');
-  // Gate pricing visibility at Student tier (same as demo restriction)
-  if (!canAccess('student')) {
+  // Gate pricing visibility at Silver tier — Student is design-only, no pricing
+  if (!canAccess('silver')) {
     if (main) main.checked = false;
     if (tb) tb.checked = false;
-    showTierUpgradePrompt('student', 'Show Pricing');
+    showTierUpgradePrompt('silver', 'Show Pricing');
     return;
   }
   if (fromToolbar) { main.checked = tb.checked; } else if (tb) { tb.checked = main.checked; }
@@ -5306,6 +5311,128 @@ function loadScript(src) {
   });
 }
 
+/* ── PRINT FLOOR PLAN (Student+) ─────────────────────────────────
+   Clean layout drawing: floor plan + wall elevations.
+   No pricing, no company branding, no quote lines.
+   ──────────────────────────────────────────────────────────────── */
+async function printFloorPlan(btn) {
+  if (!canAccess('student')) { showTierUpgradePrompt('student', 'Print Floor Plan'); return; }
+  const p = activeProj();
+  if (!p || !p.rooms.length) { alert('Open a project with at least one room first.'); return; }
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Generating…'; btn.disabled = true;
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  } catch(e) {
+    alert('Could not load PDF library. Check your internet connection.');
+    btn.textContent = origText; btn.disabled = false; return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'letter' });
+  const PW=215.9, PH=279.4, MAR=16, CW=PW-MAR*2;
+  const today = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  const r = activeRoom();
+
+  function pxToMm(px) { return px * 0.264583; }
+  function fitImg(iw, ih, maxW, maxH) {
+    let w=pxToMm(iw), h=pxToMm(ih);
+    if (h>maxH){const ratio=maxH/h; h=maxH; w*=ratio;}
+    if (w>maxW){const ratio=maxW/w; w=maxW; h*=ratio;}
+    return {w,h};
+  }
+  function titleBlock(subTitle, pageLabel, pg) {
+    doc.setFillColor(28,16,8); doc.rect(0,0,PW,8,'F');
+    doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    doc.text('MY CABINET PLANNER', MAR, 5.5);
+    doc.text(pageLabel.toUpperCase(), PW/2, 5.5, {align:'center'});
+    doc.text(`Page ${pg}`, PW-MAR, 5.5, {align:'right'});
+    doc.setTextColor(30,30,30);
+    let y=14;
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+    doc.text(p.customer||'Untitled Project', MAR, y);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+    doc.text(today, PW-MAR, y, {align:'right'}); y+=3;
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(120,90,60);
+    doc.text(subTitle, MAR, y); y+=2;
+    doc.setDrawColor(180,83,9); doc.setLineWidth(0.4); doc.line(MAR,y,PW-MAR,y);
+    return y+5;
+  }
+
+  let pg=1;
+
+  // ── Page 1: Floor Plan ─────────────────────────────────────────
+  const roomLabel = r ? (r.name||'Room') : 'Floor Plan';
+  let y = titleBlock(roomLabel + ' — Floor Plan', 'Floor Plan', pg);
+
+  const fpCv = document.getElementById('floor-plan');
+  if (fpCv && fpCv.width>0) {
+    const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-12);
+    doc.addImage(fpCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y, w, h);
+  }
+
+  // Room dimensions at page bottom
+  if (r) {
+    const walls = r.walls||{};
+    const dimParts=[];
+    if (walls.north) { const ft=Math.floor(walls.north/12),ins=walls.north%12; dimParts.push(`N/S: ${ft>0?ft+"'−":''}${ins}"`); }
+    if (walls.east)  { const ft=Math.floor(walls.east/12),ins=walls.east%12;  dimParts.push(`E/W: ${ft>0?ft+"'−":''}${ins}"`); }
+    if (r.ceilingHeight) dimParts.push(`Ceiling: ${r.ceilingHeight}"`);
+    if (dimParts.length) {
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(120,120,120);
+      doc.text(dimParts.join('   ·   '), PW/2, PH-MAR+2, {align:'center'});
+    }
+  }
+
+  // ── Pages 2-N: Wall Elevations ─────────────────────────────────
+  if (r) {
+    const savedWall = state.elevWall;
+    const ld = getLShapeData(r);
+    const allWalls = ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+    const wallLabel = {north:'North Wall',south:'South Wall',east:'East Wall',west:'West Wall',
+                       step1:'Inner Wall 1',step2:'Inner Wall 2'};
+
+    window._pdfMode = true;
+    for (const wall of allWalls) {
+      let wallLen;
+      if (wall==='step1'&&ld) wallLen=ld.step1.length;
+      else if (wall==='step2'&&ld) wallLen=ld.step2.length;
+      else wallLen=(r.walls||{})[wall]||0;
+      if (!wallLen) continue;
+      if ((wall==='step1'||wall==='step2') &&
+          !r.cabinets.some(c=>c.wall===wall) &&
+          !(r.openings||[]).some(o=>o.wall===wall)) continue;
+
+      doc.addPage(); pg++;
+      const wl = wallLabel[wall]||wall;
+      const ft=Math.floor(wallLen/12), ins=wallLen%12;
+      const lenStr = ft>0 ? `${ft}'−${ins}"` : `${ins}"`;
+      const cabCount = r.cabinets.filter(c=>c.wall===wall).length;
+      y = titleBlock(`${roomLabel} — ${wl}`, 'Elevation', pg);
+
+      doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
+      doc.text(`Length: ${lenStr}   ·   Cabinets: ${cabCount}   ·   Ceiling: ${r.ceilingHeight||96}"`, MAR, y-1);
+
+      state.elevWall = wall;
+      renderElevation();
+      await new Promise(res=>setTimeout(res,60));
+
+      const evCv = document.getElementById('elevation-plan');
+      if (evCv && evCv.width>0) {
+        const {w,h} = fitImg(evCv.width, evCv.height, CW, PH-y-MAR-6);
+        doc.addImage(evCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y+2, w, h);
+      }
+    }
+    window._pdfMode = false;
+    state.elevWall = savedWall;
+    renderElevation();
+  }
+
+  const filename = `${(p.customer||'floor-plan').replace(/[^a-z0-9]/gi,'_').toLowerCase()}_plans.pdf`;
+  doc.save(filename);
+  btn.textContent = origText; btn.disabled = false;
+}
+
 async function exportPDF(btn) {
   if (!demoGate('export')) return;
   if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
@@ -5984,8 +6111,10 @@ async function loadCompanyProfile() {
 
 // Apply/remove tier-gated UI after profile loads
 function applyTierGates() {
-  // Free tier body class — hides pricing toggle (same as demo-mode)
+  // Free tier body class — controls "Connect with a Pro" button visibility
   document.body.classList.toggle('free-tier', !canAccess('student'));
+  // Pricing-locked class — hides pricing toggle for Student and below (Silver+ unlocks)
+  document.body.classList.toggle('pricing-locked', !canAccess('silver'));
 
   // PDF export button — Silver+
   const pdfBtn = document.getElementById('pdf-export-btn');
