@@ -31,16 +31,16 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --sidebar-bg: #2c1f14;
+  --sidebar-bg: #1e293b;
   --sidebar-width: 260px;
-  --accent: #b45309;
-  --accent-hover: #92400e;
-  --accent-light: #fef3c7;
-  --bg: #faf7f4;
+  --accent: #0d9488;
+  --accent-hover: #0f766e;
+  --accent-light: #ccfbf1;
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --border: #e7ddd5;
-  --text: #1c1008;
-  --text-muted: #78614f;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
   --danger: #ef4444;
   --success: #16a34a;
   --warning: #d97706;
@@ -82,7 +82,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 .login-left {
   width: 52%; min-width: 300px;
-  background: linear-gradient(145deg, #2c1f14 0%, #130b04 100%);
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 48px; position: relative; overflow: hidden;
@@ -99,7 +99,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .login-left::after {
   content: ''; position: absolute;
   width: 420px; height: 420px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(180,83,9,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%);
   top: 50%; left: 50%; transform: translate(-50%,-50%);
   z-index: 0;
 }
@@ -110,7 +110,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   letter-spacing: -0.5px; text-align: center; line-height: 1.1;
 }
 .login-app-name {
-  font-size: 11px; color: #c8a882; font-weight: 700;
+  font-size: 11px; color: #5eead4; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.14em;
   margin-top: 8px; text-align: center;
 }
@@ -121,7 +121,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 .login-divider {
   width: 40px; height: 2px;
-  background: linear-gradient(90deg, transparent, #c8a882, transparent);
+  background: linear-gradient(90deg, transparent, #5eead4, transparent);
   margin: 20px auto 0;
 }
 .login-domain {
@@ -131,7 +131,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 .login-right {
   flex: 1;
-  background: #faf7f4;
+  background: #f8fafc;
   display: flex; align-items: center; justify-content: center;
   padding: 48px 40px; overflow-y: auto;
 }
@@ -141,8 +141,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .login-field { margin-bottom: 16px; }
 .login-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
 .login-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.12s, box-shadow 0.12s; }
-.login-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(180,83,9,0.1); }
-.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
+.login-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
+.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#5eead4,#0f766e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
 .login-btn:hover { opacity: 0.92; transform: translateY(-1px); }
 .login-btn:active { transform: translateY(0); }
 .login-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
@@ -234,8 +234,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   transition: color 0.12s;
 }
 .pnav-btn svg { flex-shrink: 0; }
-.pnav-btn.active { color: #b45309; }
-.pnav-btn.active svg { stroke: #b45309; }
+.pnav-btn.active { color: #0d9488; }
+.pnav-btn.active svg { stroke: #0d9488; }
 
 /* ── PHONE QUOTE PANEL STYLES ───── */
 #phone-quote-panel {
@@ -244,7 +244,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   background: #faf9f7; flex-direction: column; overflow: hidden;
 }
 #phone-quote-header {
-  background: #2c1f14; color: #fff;
+  background: #1e293b; color: #fff;
   padding: 14px 16px; display: flex; align-items: center; gap: 10px;
   flex-shrink: 0;
 }
@@ -261,7 +261,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 /* ── SIDEBAR ── */
 #sidebar {
   width: var(--sidebar-width);
-  background: linear-gradient(180deg, #2c1f14 0%, #1e1409 100%);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   color: white; display: flex; flex-direction: column; flex-shrink: 0;
   padding-bottom: 32px;
 }
@@ -269,20 +269,20 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .sidebar-actions { padding: 10px; }
 #new-project-btn {
   width: 100%; padding: 9px 12px;
-  background: linear-gradient(135deg,#c8a882,#92400e);
+  background: linear-gradient(135deg,#5eead4,#0f766e);
   color: white; border: none; border-radius: 8px;
   font-size: 13px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: all 0.15s; box-shadow: 0 2px 8px rgba(107,76,42,0.25);
+  transition: all 0.15s; box-shadow: 0 2px 8px rgba(15,23,42,0.25);
 }
-#new-project-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); }
+#new-project-btn:hover { background: linear-gradient(135deg,#14b8a6,#0f766e); }
 .sidebar-label { padding: 6px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
 #project-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
 #project-list::-webkit-scrollbar { width: 3px; }
 #project-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 .project-item { padding: 9px 10px; border-radius: 8px; cursor: pointer; margin-bottom: 2px; transition: background 0.12s; position: relative; }
 .project-item:hover { background: rgba(255,255,255,0.06); }
-.project-item.active { background: rgba(180,83,9,0.3); }
+.project-item.active { background: rgba(13,148,136,0.3); }
 .project-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 22px; }
 .project-item-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
 .project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
@@ -363,9 +363,9 @@ body.a11y-high-contrast {
   --border: #888888;
   --text: #ffffff;
   --text-muted: #cccccc;
-  --accent: #f9c740;
-  --accent-hover: #ffd460;
-  --accent-light: #3d2e00;
+  --accent: #2dd4bf;
+  --accent-hover: #99f6e4;
+  --accent-light: #042f2e;
   --danger: #ff6b6b;
   --success: #4dff91;
 }
@@ -432,7 +432,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
   display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border);
 }
 .al-entry:last-child { border-bottom: none; }
-.al-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#c8a882,#6b4c2a); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+.al-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#5eead4,#0f766e); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
 .al-body { flex: 1; }
 .al-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
 .al-text { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
@@ -449,7 +449,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .btn-success:hover { background: #15803d; }
 .view-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; flex-shrink: 0; }
 .view-toggle-btn { padding: 6px 14px; border: none; background: transparent; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 6px; color: var(--text-muted); transition: all 0.12s; }
-.view-toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 6px rgba(180,83,9,0.25); }
+.view-toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 6px rgba(13,148,136,0.25); }
 .view-toggle-btn.active:hover { background: var(--accent-hover); }
 .header-actions { display: flex; gap: 7px; padding-left: 12px; margin-left: 4px; border-left: 1px solid var(--border); align-items: center; }
 .room-tabs-bar { display: flex; align-items: center; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; overflow-x: auto; }
@@ -517,13 +517,13 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; max-height: 160px; overflow-y: auto; }
 .style-opt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 3px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.12s; background: white; }
 .style-opt:hover { border-color: var(--accent); }
-.style-opt.selected { border-color: var(--accent); background: #fef3c7; }
+.style-opt.selected { border-color: var(--accent); background: #ccfbf1; }
 .style-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.12); }
 .style-code { font-size: 9px; font-weight: 700; color: var(--text-muted); }
 .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .wall-btn { padding: 7px 6px; border: 2px solid var(--border); border-radius: 7px; background: white; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.12s; text-align: center; }
 .wall-btn:hover { border-color: var(--accent); color: var(--accent); }
-.wall-btn.active { border-color: var(--accent); background: #fef3c7; color: var(--accent); }
+.wall-btn.active { border-color: var(--accent); background: #ccfbf1; color: var(--accent); }
 .opening-type-row { display: flex; gap: 5px; margin-bottom: 6px; flex-wrap: wrap; }
 .opening-type-btn { padding: 4px 9px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; background: white; color: var(--text-muted); transition: all 0.12s; }
 .opening-type-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -534,8 +534,8 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .cp-select:focus { outline: none; border-color: var(--accent); }
 .cp-input { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: white; margin-bottom: 6px; font-family: inherit; }
 .cp-input:focus { outline: none; border-color: var(--accent); }
-.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#c8a882,#92400e); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(107,76,42,0.2); }
-.add-cab-btn:hover { background: linear-gradient(135deg,#b8926a,#7a3510); }
+.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#5eead4,#0f766e); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(15,23,42,0.2); }
+.add-cab-btn:hover { background: linear-gradient(135deg,#14b8a6,#0f766e); }
 #cabinet-list { padding: 8px; }
 .cab-item { display: flex; align-items: flex-start; gap: 7px; padding: 8px 9px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px; background: white; transition: border-color 0.12s; }
 .cab-item:hover { border-color: #94a3b8; }
@@ -549,7 +549,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .cab-remove:hover { color: var(--danger); background: #fee2e2; }
 .opening-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #fde68a; border-radius: 7px; margin-bottom: 4px; background: #fffbeb; font-size: 11px; }
 .opening-item-icon { font-size: 13px; }
-.opening-item-info { flex: 1; font-weight: 600; color: #92400e; }
+.opening-item-info { flex: 1; font-weight: 600; color: #0f766e; }
 .opening-item-dim { color: #a16207; }
 .opening-remove { background: none; border: none; color: #d97706; cursor: pointer; font-size: 14px; }
 .opening-remove:hover { color: var(--danger); }
@@ -613,7 +613,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .cs-tab:hover { color:var(--accent); }
 .cs-tab.active { color:var(--accent);border-bottom-color:var(--accent); }
 .cs-price-row { display:contents; }
-.cs-price-label { font-size:12px;font-weight:600;color:#4b3728;align-self:center; }
+.cs-price-label { font-size:12px;font-weight:600;color:#0f4038;align-self:center; }
 .cs-price-input { display:flex;align-items:center;gap:6px; }
 .cs-price-input span { font-size:12px;color:var(--text-muted); }
 .cs-style-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
@@ -632,7 +632,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   box-shadow:0 16px 48px rgba(0,0,0,0.28);
 }
 .tour-step-tag { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:8px; }
-#tour-card h4 { font-size:17px;font-weight:800;color:#1c1008;margin-bottom:10px; }
+#tour-card h4 { font-size:17px;font-weight:800;color:#1e293b;margin-bottom:10px; }
 #tour-card p { font-size:13px;color:#6b7280;line-height:1.7;margin-bottom:20px; }
 .tour-dots { display:flex;gap:6px;margin-bottom:18px; }
 .tour-dot { width:7px;height:7px;border-radius:50%;background:#e2d5c8; }
@@ -641,7 +641,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .tour-skip { font-size:12px;color:#94a3b8;cursor:pointer;background:none;border:none;padding:0;font-weight:600; }
 .tour-skip:hover { color:#6b7280; }
 .tour-next { padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer; }
-.tour-next:hover { background:#92400e; }
+.tour-next:hover { background:#0f766e; }
 
 /* ── FAQ modal ── */
 .faq-section { border-bottom:1px solid var(--border); }
@@ -649,7 +649,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .faq-q {
   width:100%;text-align:left;background:none;border:none;padding:12px 0;
   font-size:13px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;
-  align-items:center;color:#1c1008;gap:8px;
+  align-items:center;color:#1e293b;gap:8px;
 }
 .faq-q:hover { color:var(--accent); }
 .faq-q .faq-arrow { font-size:12px;color:#94a3b8;transition:transform 0.15s;flex-shrink:0; }
@@ -658,7 +658,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .faq-a.open { display:block; }
 .faq-a p { margin-bottom:10px; }
 .faq-a p:last-child { margin-bottom:0; }
-.faq-a strong { color:#4b3728; }
+.faq-a strong { color:#0f4038; }
 /* Connect with a Pro — demo/free-tier users only */
 #connect-pro-btn { display:none; }
 body.demo-mode #connect-pro-btn,
@@ -741,10 +741,10 @@ body.free-tier #connect-pro-btn { display:block; }
           We sent a confirmation link to<br>
           <strong id="confirm-email-display" style="color:var(--text);"></strong>
         </div>
-        <div style="background:#fdf8f3;border:1px solid #e7ddd5;border-radius:10px;padding:14px 18px;font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;text-align:left;">
+        <div style="background:#fdf8f3;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;text-align:left;">
           Click the link in the email to activate your account, then come back here and sign in. Check your spam folder if you don't see it in a minute or two.
         </div>
-        <button onclick="showSignInAfterConfirm()" style="width:100%;padding:13px;background:linear-gradient(135deg,#c8a882,#92400e);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Sign In →</button>
+        <button onclick="showSignInAfterConfirm()" style="width:100%;padding:13px;background:linear-gradient(135deg,#5eead4,#0f766e);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Sign In →</button>
         <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">Wrong email? <button onclick="showSignUpForm()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;padding:0;">Start over</button></div>
       </div>
     </div>
@@ -765,7 +765,7 @@ body.free-tier #connect-pro-btn { display:block; }
 </div>
 
 <!-- Demo mode banner — only shown when ?demo=1 -->
-<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#b45309;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
+<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#0d9488;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
   Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
   <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;opacity:0.7;line-height:1;">&#x2715;</button>
 </div>
@@ -819,7 +819,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
-    <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(180,83,9,0.25);">Connect with a Pro</button>
+    <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(13,148,136,0.25);">Connect with a Pro</button>
     <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">My Profile</a>
   </div>
 </aside>
@@ -827,9 +827,9 @@ body.free-tier #connect-pro-btn { display:block; }
 <main id="main">
   <div id="welcome">
     <div style="text-align:center;max-width:420px;padding:24px;">
-      <div style="width:80px;height:80px;border-radius:20px;margin:0 auto 20px;background:linear-gradient(135deg,#c8a882,#6b4c2a);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 8px 32px rgba(107,76,42,0.25);">🪵</div>
-      <h2 style="font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
-      <p style="font-size:13px;color:#78614f;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Professional Cabinet Planning</p>
+      <div style="width:80px;height:80px;border-radius:20px;margin:0 auto 20px;background:linear-gradient(135deg,#5eead4,#0f766e);display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 8px 32px rgba(15,23,42,0.25);">🪵</div>
+      <h2 style="font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
+      <p style="font-size:13px;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Professional Cabinet Planning</p>
       <p style="font-size:14px;color:#a07850;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
       <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:12px 28px;font-size:14px;border-radius:10px;">＋ Create Your First Project</button>
     </div>
@@ -1086,7 +1086,7 @@ body.free-tier #connect-pro-btn { display:block; }
             <span style="font-size:10px;color:#94a3b8;">in</span>
           </div>
           <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)" autocomplete="off">
-          <button class="add-cab-btn" onclick="addIsland()" style="background:linear-gradient(135deg,#92400e,#78350f);box-shadow:0 2px 6px rgba(120,53,15,0.3);">＋ Add Island</button>
+          <button class="add-cab-btn" onclick="addIsland()" style="background:linear-gradient(135deg,#0f766e,#0f766e);box-shadow:0 2px 6px rgba(13,148,136,0.3);">＋ Add Island</button>
         </div>
 
         <div class="cp-section" style="flex-shrink:0;padding-bottom:5px;border-bottom:none;">
@@ -1424,13 +1424,13 @@ body.free-tier #connect-pro-btn { display:block; }
 
 <div id="modal-upgrade" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Upgrade to Pro">
   <div class="modal" style="width:480px;text-align:center;padding:40px 36px;">
-    <div style="width:56px;height:56px;background:#fef3c7;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <div style="width:56px;height:56px;background:#ccfbf1;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     </div>
     <h3 id="upgrade-modal-title" style="font-size:20px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;">This is a Pro feature</h3>
     <p id="upgrade-modal-body" style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:28px;">You're in demo mode. Pricing and quote export are available on a Pro subscription — sign up to unlock them and save your designs.</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <a href="/#pricing" target="_blank" style="display:block;padding:13px 24px;background:#b45309;color:white;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#92400e'" onmouseout="this.style.background='#b45309'">View Pricing &amp; Subscribe &rarr;</a>
+      <a href="/#pricing" target="_blank" style="display:block;padding:13px 24px;background:#0d9488;color:white;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">View Pricing &amp; Subscribe &rarr;</a>
       <button onclick="closeModal('modal-upgrade')" style="padding:11px 24px;background:var(--bg);border:1px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-muted);">Continue in Demo</button>
     </div>
     <p style="font-size:11px;color:var(--text-muted);margin-top:18px;opacity:0.7;">Already subscribed? <a href="/app" style="color:var(--accent);font-weight:600;">Sign in here</a></p>
@@ -1929,7 +1929,7 @@ async function handleSignIn() {
 async function handleForgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   const err   = document.getElementById('login-error');
-  if (!email) { err.style.color='#b45309'; err.textContent = 'Enter your email address above first.'; return; }
+  if (!email) { err.style.color='#0d9488'; err.textContent = 'Enter your email address above first.'; return; }
   err.textContent = '';
   const { error } = await db.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://mycabinetplanner.com'
@@ -3176,7 +3176,7 @@ function renderCabinetList() {
   if (allIslands.length) {
     html += '<div class="cab-wall-header">Islands</div>';
     html += allIslands.map(i => `<div class="cab-item">
-      <div class="cab-color" style="background:#92400e"></div>
+      <div class="cab-color" style="background:#0f766e"></div>
       <div class="cab-info">
         <div class="cab-name">${i.label || 'Island'}</div>
         <div class="cab-dim">${i.width}"W × ${i.depth}"D · pos ${i.x}", ${i.y}" from NW</div>
@@ -3815,10 +3815,10 @@ function renderCanvas() {
     }
     if (seg) {
       ctx.save();
-      ctx.strokeStyle = '#b45309';
+      ctx.strokeStyle = '#0d9488';
       ctx.lineWidth = 5;
       ctx.lineCap = 'round';
-      ctx.shadowColor = 'rgba(180,83,9,0.4)';
+      ctx.shadowColor = 'rgba(13,148,136,0.4)';
       ctx.shadowBlur = 10;
       ctx.beginPath();
       ctx.moveTo(seg[0][0], seg[0][1]);
@@ -4961,37 +4961,37 @@ function printQuote() {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,'Helvetica Neue',sans-serif;color:#1a1a1a;padding:48px;max-width:860px;margin:0 auto;font-size:12px;}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #b45309;}
-.co-name{font-size:26px;font-weight:800;color:#1c1008;letter-spacing:-.5px;}
-.co-sub{font-size:11px;color:#78614f;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #0d9488;}
+.co-name{font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-.5px;}
+.co-sub{font-size:11px;color:#64748b;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
 .co-info{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.6;}
-.q-title{font-size:22px;font-weight:800;color:#b45309;text-align:right;}
+.q-title{font-size:22px;font-weight:800;color:#0d9488;text-align:right;}
 .q-meta{font-size:11px;color:#6b7280;text-align:right;margin-top:6px;line-height:1.8;}
-.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#faf7f4;padding:14px 18px;border-radius:8px;border-left:4px solid #b45309;margin-bottom:22px;}
-.ci label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#78614f;display:block;margin-bottom:2px;}
-.ci span{font-size:13px;font-weight:700;color:#1c1008;}
+.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#f8fafc;padding:14px 18px;border-radius:8px;border-left:4px solid #0d9488;margin-bottom:22px;}
+.ci label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;display:block;margin-bottom:2px;}
+.ci span{font-size:13px;font-weight:700;color:#1e293b;}
 .ci small{font-size:10px;color:#6b7280;display:block;margin-top:2px;}
-.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid #e7ddd5;}
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid #e2e8f0;}
 table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:11px;}
-th{background:#2c1f14;color:#fff;text-align:left;padding:7px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
-td{padding:7px 10px;border-bottom:1px solid #f0e8e0;vertical-align:top;}
+th{background:#1e293b;color:#fff;text-align:left;padding:7px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
 tr:nth-child(even) td{background:#faf9f7;}
-tr.room-hdr td{background:#f0e8e0!important;font-weight:700;font-size:10px;color:#6b4c2a;padding:4px 10px;}
+tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color:#0f766e;padding:4px 10px;}
 .amt{text-align:right;font-weight:600;white-space:nowrap;}
-.totals{margin-top:12px;border:1px solid #e7ddd5;border-radius:6px;overflow:hidden;}
-.tr{display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #f0e8e0;font-size:12px;}
+.totals{margin-top:12px;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;}
+.tr{display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .tr:last-child{border-bottom:none;font-size:16px;font-weight:800;background:#f0fdf4;padding:10px 14px;}
 .tl{color:#6b7280;}.ta{font-weight:600;}
-.terms{margin-top:28px;padding:18px 20px;background:#faf7f4;border-radius:8px;border:1px solid #e7ddd5;page-break-inside:avoid;}
-.terms h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#78614f;margin-bottom:10px;}
+.terms{margin-top:28px;padding:18px 20px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;page-break-inside:avoid;}
+.terms h4{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:10px;}
 .terms p{font-size:10px;color:#6b7280;line-height:1.7;margin-bottom:5px;}
-.terms strong{color:#4b3728;}
+.terms strong{color:#0f4038;}
 .sigs{margin-top:36px;page-break-inside:avoid;}
 .sr{display:flex;gap:60px;margin-top:28px;}
 .sb{flex:1;}
 .sl{border-bottom:1px solid #374151;height:36px;margin-bottom:5px;}
 .slb{font-size:10px;color:#6b7280;font-weight:600;}
-.foot{margin-top:24px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e7ddd5;padding-top:12px;}
+.foot{margin-top:24px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px;}
 @media print{body{padding:24px;}@page{margin:.75in;size:letter;}}
 </style></head>
 <body onload="window.print()">
@@ -6506,7 +6506,7 @@ function phoneTab(tab) {
     if (btn) {
       btn.classList.toggle('active', t === tab);
       const svg = btn.querySelector('svg');
-      if (svg) svg.style.stroke = t === tab ? '#b45309' : '#9ca3af';
+      if (svg) svg.style.stroke = t === tab ? '#0d9488' : '#9ca3af';
     }
   });
 
@@ -6557,8 +6557,8 @@ function renderPhoneQuote() {
   const rows = Object.values(groups).map(g => `
     <div style="display:flex;justify-content:space-between;align-items:center;
                 padding:13px 0;border-bottom:1px solid #e5e7eb;">
-      <span style="font-size:14px;color:#1e1409;font-weight:500;">${g.label}</span>
-      <span style="font-size:14px;font-weight:700;color:#1e1409;white-space:nowrap;margin-left:12px;">× ${g.count}</span>
+      <span style="font-size:14px;color:#0f172a;font-weight:500;">${g.label}</span>
+      <span style="font-size:14px;font-weight:700;color:#0f172a;white-space:nowrap;margin-left:12px;">× ${g.count}</span>
     </div>
   `).join('');
 
@@ -6567,7 +6567,7 @@ function renderPhoneQuote() {
       ${rows}
       <div style="display:flex;justify-content:space-between;padding:14px 0 0;font-size:13px;color:#6b7280;">
         <span>Total items</span>
-        <strong style="color:#1e1409;">${all.length}</strong>
+        <strong style="color:#0f172a;">${all.length}</strong>
       </div>
     </div>
     <p style="font-size:12px;color:#9ca3af;text-align:center;line-height:1.6;">
