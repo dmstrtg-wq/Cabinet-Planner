@@ -655,6 +655,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .faq-a p { margin-bottom:10px; }
 .faq-a p:last-child { margin-bottom:0; }
 .faq-a strong { color:#4b3728; }
+/* Connect with a Pro — demo/free-tier users only */
+#connect-pro-btn { display:none; }
+body.demo-mode #connect-pro-btn,
+body.free-tier #connect-pro-btn { display:block; }
 </style>
 </head>
 <body>
@@ -811,6 +815,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
       <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
+    <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(180,83,9,0.25);">Connect with a Pro</button>
     <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">My Profile</a>
   </div>
 </aside>
@@ -6585,8 +6590,134 @@ function toggleFaq(btn) {
   if (!isOpen) { answer.classList.add('open'); btn.classList.add('open'); }
 }
 
+/* ── CONNECT WITH A PRO ── */
+async function submitProLead() {
+  const name  = (document.getElementById('lead-name').value  || '').trim();
+  const email = (document.getElementById('lead-email').value || '').trim();
+  const phone = (document.getElementById('lead-phone').value || '').trim();
+  const zip   = (document.getElementById('lead-zip').value   || '').trim();
+  const note  = (document.getElementById('lead-note').value  || '').trim();
+  const errEl = document.getElementById('lead-error');
+  const btn   = document.getElementById('lead-submit-btn');
+
+  errEl.style.display = 'none';
+  if (!name || !email || !zip) {
+    errEl.textContent = 'Name, email, and ZIP are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!email.includes('@')) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Sending…';
+
+  // Build plan summary from current project
+  let planSummary = '';
+  try {
+    const p = activeProj();
+    const r = activeRoom();
+    if (p && r) {
+      const walls = r.walls || [];
+      const cabCount = walls.reduce((s, w) => s + (w.cabinets || []).length, 0);
+      planSummary = `${p.customer || 'Untitled project'} — ${r.name || 'Room'}: ${walls.length} wall(s), ${cabCount} cabinet(s)`;
+    }
+  } catch(e) {}
+
+  // Thumbnail from the floor-plan canvas (JPEG, ~300px wide)
+  let floorPlanDataUrl = null;
+  try {
+    const fpCanvas = document.getElementById('floor-plan');
+    if (fpCanvas && fpCanvas.width > 0) {
+      const thumb = document.createElement('canvas');
+      thumb.width  = 300;
+      thumb.height = Math.round(300 * fpCanvas.height / fpCanvas.width);
+      thumb.getContext('2d').drawImage(fpCanvas, 0, 0, thumb.width, thumb.height);
+      floorPlanDataUrl = thumb.toDataURL('image/jpeg', 0.65);
+    }
+  } catch(e) {}
+
+  // Netlify Forms — sends email notification to site owner
+  try {
+    await fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        'form-name': 'cabinet-pro-lead',
+        name, email, phone, zip, note,
+        plan_summary: planSummary
+      }).toString()
+    });
+  } catch(e) { console.warn('Lead Netlify submit error:', e); }
+
+  // Supabase — stores lead for the admin Leads view in profile.html
+  try {
+    await db.from('leads').insert({
+      name, email, phone, zip, note,
+      plan_summary: planSummary,
+      floor_plan_dataurl: floorPlanDataUrl
+    });
+  } catch(e) { console.warn('Lead Supabase insert error:', e); }
+
+  // Reset + close
+  ['lead-name','lead-email','lead-phone','lead-zip','lead-note'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  btn.disabled = false; btn.textContent = 'Send My Info';
+  closeModal('modal-pro-lead');
+  alert('Thanks! A cabinet pro will be in touch soon.');
+}
+
 
 </script>
+
+<!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->
+<form name="cabinet-pro-lead" data-netlify="true" hidden>
+  <input type="text" name="name">
+  <input type="email" name="email">
+  <input type="tel" name="phone">
+  <input type="text" name="zip">
+  <textarea name="note"></textarea>
+  <input type="hidden" name="plan_summary">
+</form>
+
+<!-- Connect with a Pro modal -->
+<div id="modal-pro-lead" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Connect with a Cabinet Pro">
+  <div class="modal" style="width:480px;">
+    <h3>Connect with a Cabinet Pro</h3>
+    <p style="font-size:13px;color:#64748b;margin:0 0 16px;">Tell us about your project and a local cabinet professional in our network will reach out to you.</p>
+    <div class="form-group">
+      <label for="lead-name">Your Name *</label>
+      <input type="text" id="lead-name" class="cp-input" placeholder="Jane Smith" autocomplete="name">
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1;">
+        <label for="lead-email">Email *</label>
+        <input type="email" id="lead-email" class="cp-input" placeholder="jane@email.com" autocomplete="email">
+      </div>
+      <div class="form-group" style="flex:1;">
+        <label for="lead-phone">Phone</label>
+        <input type="tel" id="lead-phone" class="cp-input" placeholder="(555) 123-4567" autocomplete="tel">
+      </div>
+    </div>
+    <div class="form-group" style="max-width:180px;">
+      <label for="lead-zip">ZIP Code *</label>
+      <input type="text" id="lead-zip" class="cp-input" placeholder="90210" maxlength="10" autocomplete="postal-code">
+    </div>
+    <div class="form-group">
+      <label for="lead-note">About your project</label>
+      <textarea id="lead-note" class="cp-input" rows="3" placeholder="e.g. Full kitchen remodel, ~$15k budget, looking to start in the fall…" style="resize:vertical;font-family:inherit;"></textarea>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin:0 0 12px;line-height:1.5;">By submitting, you agree to be contacted by a cabinet professional in our network. We don't sell your information to third parties.</p>
+    <div id="lead-error" style="color:#ef4444;font-size:12px;margin-bottom:8px;display:none;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-pro-lead')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitProLead()" id="lead-submit-btn">Send My Info</button>
+    </div>
+  </div>
+</div>
 
 <!-- Accessibility widget -->
 <button id="a11y-btn" aria-label="Accessibility options" aria-expanded="false" aria-controls="a11y-panel" onclick="toggleA11yPanel()">

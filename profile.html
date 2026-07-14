@@ -380,6 +380,10 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h8v12l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1L4 14V2z"/><line x1="6" y1="5.5" x2="11" y2="5.5"/><line x1="6" y1="8" x2="11" y2="8"/></svg>
           Billing
         </a>
+        <a class="sidebar-link" href="#leads" data-tab="leads" id="leads-nav-link" style="display:none;">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.5 2-4 5-4s5 1.5 5 4"/><line x1="12" y1="4" x2="15" y2="4"/><line x1="13.5" y1="2.5" x2="13.5" y2="5.5"/></svg>
+          Leads
+        </a>
       </nav>
       <div class="sidebar-foot">
         <a class="sidebar-danger-link" id="sidebar-cancel-link" href="#subscription">Cancel Subscription</a>
@@ -618,6 +622,36 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
         </div>
       </div>
 
+      <!-- LEADS (admin only — Dan's view) -->
+      <div class="tab-panel" data-tab="leads">
+        <div class="tab-title">Leads</div>
+        <div class="tab-desc">Homeowners who requested a connection to a cabinet pro.</div>
+        <div class="section">
+          <div class="section-head"><div class="section-title">All Leads</div></div>
+          <div class="card" style="padding:0;overflow:hidden;">
+            <div id="leads-loading" style="padding:24px;text-align:center;color:var(--muted);font-size:14px;">Loading leads…</div>
+            <div id="leads-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;">No leads yet — they'll appear here when homeowners submit the Connect with a Pro form.</div>
+            <div id="leads-table-wrap" style="display:none;overflow-x:auto;">
+              <table class="proj-table" style="min-width:720px;">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>ZIP</th>
+                    <th>Plan Summary</th>
+                    <th>Floor Plan</th>
+                    <th style="text-align:center;">Contacted</th>
+                  </tr>
+                </thead>
+                <tbody id="leads-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -708,13 +742,55 @@ function setActiveTab(tab) {
   document.querySelectorAll('.sidebar-link[data-tab]').forEach(a => a.classList.toggle('active', a.dataset.tab === tab));
   document.querySelectorAll('.tab-panel[data-tab]').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
   if (tab === 'billing' && !billingLoaded) { billingLoaded = true; renderBilling(); }
+  if (tab === 'leads' && !leadsLoaded) { leadsLoaded = true; loadLeads(); }
 }
 function applyHashTab() {
   const tab = (location.hash || '#overview').slice(1);
-  const valid = ['overview','projects','company','files','team','subscription','billing'];
+  const valid = ['overview','projects','company','files','team','subscription','billing','leads'];
   setActiveTab(valid.includes(tab) ? tab : 'overview');
 }
 window.addEventListener('hashchange', applyHashTab);
+
+/* ── LEADS (admin) ── */
+let leadsLoaded = false;
+
+function leadsEsc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function loadLeads() {
+  const { data, error } = await db.from('leads').select('*').order('created_at', { ascending: false });
+  document.getElementById('leads-loading').style.display = 'none';
+  if (error || !data || data.length === 0) {
+    document.getElementById('leads-empty').style.display = 'block';
+    return;
+  }
+  const tbody = document.getElementById('leads-tbody');
+  tbody.innerHTML = data.map(lead => {
+    const date = new Date(lead.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const thumb = lead.floor_plan_dataurl
+      ? `<img src="${lead.floor_plan_dataurl}" style="width:80px;height:auto;border-radius:4px;border:1px solid #e2e8f0;" alt="Floor plan thumbnail">`
+      : '—';
+    return `<tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${date}</td>
+      <td style="font-weight:600;">${leadsEsc(lead.name)}</td>
+      <td><a href="mailto:${leadsEsc(lead.email)}" style="color:var(--accent);">${leadsEsc(lead.email)}</a>${lead.note ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${leadsEsc(lead.note)}</div>` : ''}</td>
+      <td>${leadsEsc(lead.phone) || '—'}</td>
+      <td>${leadsEsc(lead.zip) || '—'}</td>
+      <td style="font-size:12px;color:var(--muted);max-width:180px;">${leadsEsc(lead.plan_summary) || '—'}</td>
+      <td>${thumb}</td>
+      <td style="text-align:center;">
+        <input type="checkbox" ${lead.contacted ? 'checked' : ''} onchange="toggleContacted('${lead.id}', this.checked)"
+          style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer;" title="Mark as contacted">
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('leads-table-wrap').style.display = 'block';
+}
+
+async function toggleContacted(id, value) {
+  await db.from('leads').update({ contacted: value }).eq('id', id);
+}
 
 /* ── TOAST ── */
 let toastTimer = null;
@@ -1428,6 +1504,11 @@ async function init() {
           <td><a href="/project.html?id=${p.id}" class="proj-link">Open →</a></td>
         </tr>`;
     }).join('');
+  }
+
+  // Show Leads tab for admin only
+  if (user.email === 'dmstrtg@gmail.com') {
+    document.getElementById('leads-nav-link').style.display = '';
   }
 
   applyHashTab();
