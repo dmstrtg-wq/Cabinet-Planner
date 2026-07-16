@@ -4972,6 +4972,42 @@ function printQuote() {
   const total     = beforeTax + taxAmt;
   const styleName = getStyles().find(s=>s.code===p.style)?.name || p.style;
 
+  // ── Quote versioning (Gold tier) ──────────────────────────────────
+  if (!p.quoteHistory) p.quoteHistory = [];
+  const isGold = canAccess('gold');
+  let revision = 1;
+  let prevTotal = null;
+  let delta = null;
+
+  if (isGold) {
+    if (p.quoteHistory.length > 0) {
+      const last = p.quoteHistory[p.quoteHistory.length - 1];
+      prevTotal = last.total;
+      delta = total - prevTotal;
+      revision = p.quoteHistory.length + 1;
+    }
+    p.quoteHistory.push({
+      revision, quoteNum,
+      date: new Date().toISOString(),
+      total,
+      breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt }
+    });
+    if (!p.activityLog) p.activityLog = [];
+    const logText = revision === 1
+      ? `Quote sent — ${fmtMoney(total)} · Quote #${quoteNum}`
+      : `Revision ${revision} generated · ${delta >= 0 ? '+' : ''}${delta < 0 ? '-' : ''}${fmtMoney(Math.abs(delta))} from v${revision - 1} · New total: ${fmtMoney(total)} · Quote #${quoteNum}`;
+    p.activityLog.unshift({
+      id: uid(), type: 'quote',
+      text: logText,
+      createdAt: new Date().toISOString(),
+      user: currentUser ? currentUser.email : 'You'
+    });
+    persist();
+  }
+
+  const deltaStr   = delta != null ? `${delta >= 0 ? '+' : '-'}${fmtMoney(Math.abs(delta))}` : '';
+  const deltaColor = delta != null ? (delta >= 0 ? '#16a34a' : '#dc2626') : '';
+
   const win = window.open('', '_blank', 'width=920,height=750');
   win.document.write(`<!DOCTYPE html><html><head>
 <meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
@@ -5024,8 +5060,16 @@ tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color
       ${cp.website ? escHtml(cp.website) : 'mycabinetplanner.com'}
     </div>
   </div>
-  <div><div class="q-title">QUOTE</div><div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}</div></div>
+  <div>
+    <div class="q-title" style="${revision > 1 ? 'color:#d97706;' : ''}">${revision > 1 ? `REVISION ${revision}` : 'QUOTE'}</div>
+    <div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}${revision > 1 ? `<br><span style="color:#d97706;font-weight:700;">Revised Quote</span>` : ''}</div>
+  </div>
 </div>
+${revision > 1 ? `
+<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:11px 16px;margin-bottom:18px;font-size:11px;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+  <span style="font-weight:800;color:#92400e;white-space:nowrap;">REVISED QUOTE — Version ${revision}</span>
+  <span style="color:#78716c;">Prior total: <strong>${fmtMoney(prevTotal)}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Change: <strong style="color:${deltaColor}">${deltaStr}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;New total: <strong style="color:#1e293b;">${fmtMoney(total)}</strong></span>
+</div>` : ''}
 <div class="cust-bar">
   <div class="ci"><label>Customer</label><span>${escHtml(p.customer)}</span>${p.address?`<small>${escHtml(p.address)}${p.city?', '+escHtml(p.city):''}${p.state?' '+escHtml(p.state):''}</small>`:''}</div>
   <div class="ci"><label>Project</label><span>${escHtml(p.type)}</span>${p.notes?`<small>${escHtml(p.notes)}</small>`:''}</div>
@@ -6071,13 +6115,21 @@ function renderActivityFeed() {
     const dateStr = d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
     const timeStr = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
     const isStatus = e.type === 'status';
+    const isQuote  = e.type === 'quote';
     const initials = (e.user || 'You').split('@')[0].slice(0,2).toUpperCase();
+    const avatarStyle = isStatus ? 'background:linear-gradient(135deg,#3b82f6,#1d4ed8);'
+                      : isQuote  ? 'background:linear-gradient(135deg,#0d9488,#0f766e);'
+                      : '';
+    const avatarIcon = isStatus ? '⟳' : isQuote ? '📄' : initials;
+    const textStyle  = isStatus ? 'color:var(--text-muted);font-style:italic;'
+                     : isQuote  ? 'color:#0d9488;font-weight:600;'
+                     : '';
     return `
       <div class="al-entry">
-        <div class="al-avatar" style="${isStatus ? 'background:linear-gradient(135deg,#3b82f6,#1d4ed8);' : ''}">${isStatus ? '⟳' : initials}</div>
+        <div class="al-avatar" style="${avatarStyle}">${avatarIcon}</div>
         <div class="al-body">
           <div class="al-meta">${escHtml(e.user || 'You')} · ${dateStr} at ${timeStr}</div>
-          <div class="al-text" style="${isStatus ? 'color:var(--text-muted);font-style:italic;' : ''}">${escHtml(e.text)}</div>
+          <div class="al-text" style="${textStyle}">${escHtml(e.text)}</div>
         </div>
       </div>`;
   }).join('');
