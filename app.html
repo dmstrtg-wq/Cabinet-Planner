@@ -322,7 +322,7 @@ body.demo-mode .btn-success,
 body.demo-mode .cp-section:has(#pricing-toggle),
 body.free-tier .cp-section:has(#pricing-toggle),
 body.pricing-locked .cp-section:has(#pricing-toggle) { display: none !important; }
-/* Print Floor Plan — Student+ only; hide for demo and free/unsubscribed users */
+/* Print Floor Plan — Silver+ only; hide for demo and free/unsubscribed users */
 body.demo-mode #floor-plan-print-btn,
 body.free-tier #floor-plan-print-btn { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
@@ -1069,6 +1069,10 @@ body.free-tier #connect-pro-btn { display:block; }
             <input type="number" id="app-offset" aria-label="Appliance distance from left (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
           </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Price ($):</label>
+            <input type="number" id="app-price" aria-label="Appliance price (leave blank for N/A)" class="cp-input" placeholder="N/A — leave blank" min="0" step="0.01" style="margin-bottom:0;flex:1;">
+          </div>
           <input type="text" id="app-note" class="cp-input" placeholder="Notes (optional)" autocomplete="off">
           <button class="add-cab-btn" onclick="addAppliance()">＋ Add Appliance</button>
         </div>
@@ -1258,6 +1262,10 @@ body.free-tier #connect-pro-btn { display:block; }
     <div class="form-group">
       <label for="edit-app-offset">From left (in)</label>
       <input type="number" id="edit-app-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
+    </div>
+    <div class="form-group">
+      <label for="edit-app-price">Price ($) — leave blank for N/A</label>
+      <input type="number" id="edit-app-price" class="cp-input" placeholder="N/A — leave blank" min="0" step="0.01">
     </div>
     <div class="form-group">
       <label for="edit-app-note">Notes</label>
@@ -1916,7 +1924,7 @@ async function handleSignIn() {
   currentUser = data.user;
   // If user came from a pricing plan link, send them to profile to subscribe
   const planParam = new URLSearchParams(location.search).get('plan');
-  if (planParam && ['student','silver','gold'].includes(planParam)) {
+  if (planParam && ['silver','gold'].includes(planParam)) {
     window.location.href = `/profile?checkout=${planParam}`;
     return;
   }
@@ -2111,7 +2119,7 @@ async function syncActiveProject() {
   const p = activeProj();
   if (!p) return;
   // Demo mode or Free tier: persist to localStorage only
-  if (IS_DEMO || !currentUser || !canAccess('student')) {
+  if (IS_DEMO || !currentUser || !canAccess('silver')) {
     localStorage.setItem('cp_demo_projects', JSON.stringify(state.projects));
     setSyncStatus('saved');
     return;
@@ -2703,6 +2711,8 @@ function addAppliance() {
   const acat  = APPLIANCES[type];
   const note  = document.getElementById('app-note').value.trim();
   const offset = parseInt(document.getElementById('app-offset').value) || 0;
+  const priceRaw = document.getElementById('app-price').value.trim();
+  const price = priceRaw !== '' ? parseFloat(priceRaw) : null;
   const hs = document.getElementById('app-height-sel');
   const appHeight = (acat.heights && !hs.classList.contains('hidden') && hs.value)
     ? parseFloat(hs.value) : acat.height;
@@ -2710,9 +2720,10 @@ function addAppliance() {
   const customElevBottom = (acat.elevBottomOptions && !es.classList.contains('hidden') && es.value)
     ? parseFloat(es.value) : null;
   if (!r.appliances) r.appliances = [];
-  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom });
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom, price });
   document.getElementById('app-note').value   = '';
   document.getElementById('app-offset').value = '0';
+  document.getElementById('app-price').value  = '';
   persist(); renderCabinetList(); renderCanvas();
   if (state.viewMode === 'elevation') renderElevation();
 }
@@ -2775,6 +2786,7 @@ function openEditApplianceModal(app) {
   document.getElementById('edit-app-type-label').value  = acat.label;
   document.getElementById('edit-app-offset').value      = app.offset || 0;
   document.getElementById('edit-app-note').value        = app.note || '';
+  document.getElementById('edit-app-price').value       = app.price != null ? app.price : '';
   // Width options
   const ws = document.getElementById('edit-app-width');
   ws.innerHTML = '';
@@ -2808,6 +2820,8 @@ function saveEditApplianceModal() {
   app.width  = parseFloat(document.getElementById('edit-app-width').value) || app.width;
   app.offset = parseInt(document.getElementById('edit-app-offset').value) || 0;
   app.note   = document.getElementById('edit-app-note').value.trim();
+  const editPriceRaw = document.getElementById('edit-app-price').value.trim();
+  app.price  = editPriceRaw !== '' ? parseFloat(editPriceRaw) : null;
   const es = document.getElementById('edit-app-elevbottom');
   if (acat.elevBottomOptions && es.value) app.customElevBottom = parseFloat(es.value);
   closeModal('modal-edit-appliance');
@@ -4937,10 +4951,13 @@ function printQuote() {
   });
 
   let appRows = '';
+  let appSubtotal = 0;
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac = APPLIANCES[a.type];
-      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td colspan="2">${escHtml(a.note||'—')}</td></tr>`;
+      const hasPrice = a.price != null && a.price > 0;
+      if (hasPrice) appSubtotal += a.price;
+      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#94a3b8;font-style:italic;">N/A</span>'}</td></tr>`;
     });
   });
 
@@ -4950,7 +4967,7 @@ function printQuote() {
   const trimItems = (p.trimItems||[]).filter(t => t.label || t.unitPrice);
   const trimTotal = trimItems.reduce((s,t) => s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
   const trimRows  = trimItems.map(t => `<tr><td colspan="2">${escHtml(t.label||'Trim Item')}</td><td>Qty: ${t.qty||1}</td><td>${fmtMoney(parseFloat(t.unitPrice)||0)} ea</td><td class="amt">${fmtMoney((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0))}</td></tr>`).join('');
-  const beforeTax = cabSubtotal + jcTotal + trimTotal;
+  const beforeTax = cabSubtotal + appSubtotal + jcTotal + trimTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
   const styleName = getStyles().find(s=>s.code===p.style)?.name || p.style;
@@ -5018,25 +5035,18 @@ tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color
 <div class="sec">Cabinet Line Items</div>
 <table><thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
 <tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
-${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th colspan="2">Notes</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
+${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
 ${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
 ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>${trimRows}</tbody></table>`:''}
 <div class="totals" style="margin-top:16px;">
   <div class="tr"><span class="tl">Cabinet Subtotal</span><span class="ta">${fmtMoney(cabSubtotal)}</span></div>
+  ${appSubtotal>0?`<div class="tr"><span class="tl">Appliances</span><span class="ta">${fmtMoney(appSubtotal)}</span></div>`:''}
   ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
   ${trimTotal>0?`<div class="tr"><span class="tl">Trim &amp; Materials</span><span class="ta">${fmtMoney(trimTotal)}</span></div>`:''}
   ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
   <div class="tr"><span>TOTAL</span><span class="ta" style="color:#16a34a;">${fmtMoney(total)}</span></div>
 </div>
-<div class="terms"><h4>Terms &amp; Conditions</h4>
-  <p>Please read your quote carefully and make sure it includes everything exactly as you want it, <strong>all sales are FINAL.</strong> Cabinets on this order are to fit the dimensions provided by the customer and reflect accurately on your final floor plan layout.</p>
-  <p>Flat packed, direct shipped cabinetry lead time is approximately 1–4 weeks from the time you place your order (or starting at the next business day if the order was placed on a weekend or holiday). Shipping delays are entirely out of our control and cannot be foreseen. We do not compensate monetarily for shipping delays. <strong>We strongly advise waiting until cabinets are received before demolishing your existing kitchen or work site.</strong></p>
-  <p>All cabinets and included hardware are covered by the manufacturer's warranty. Please see specification sheet for all details and materials. Cabinets include soft-close door hinges and under mounted soft-close drawer slides. Decorative handles and knobs or specialty hardware sold separately. Assembly resources are available upon request. Estimates for pre-assembly are available upon request; free shipping does not apply to fully assembled cabinets. Pre-assembly services add approximately 7–10 days to the average lead time.</p>
-  <p>Please be sure the delivery information you provide is accurate and confirm again with the dispatcher when scheduling delivery. Once shipped from the distribution center you will receive an email and/or phone call from freight with a 3-day window to choose a delivery date to the address you provided or pick-up date at your closest shipping facility if applicable. If the delivery can't be scheduled within 7 days of your order arriving at a local loading dock, storage fees may apply at the discretion of the freight company. Please be sure you are available on the delivery date you choose or contact us immediately to make other arrangements.</p>
-  <p>Be sure to compare the packing list with the shipment to ensure you've received the correct number of boxes and the correct products and to report any visible shipping damage <strong>at the time of delivery.</strong> Any damage should be noted on the bill of lading and reported to us immediately. In order to file a warranty claim for shipping damage we must have a reference number generated by the truck driver at the time of delivery. Without the reference number a claim for shipping damage cannot be submitted. Any concealed shipping damage must be reported within <strong>5 days</strong> of receiving your order. We will also need photos of shipping damage to file your claim.</p>
-  <p>If your purchase contains factory defects that occurred during production this must be reported within <strong>14 days</strong> of receiving your order. Any other defects or issues related to the product, functionality, hardware, finishes or materials fall under the manufacturer's limited warranty. Warranty replacement parts are typically shipped within 1–2 weeks; availability of warranty parts does not negate payment terms.</p>
-  <p>We accept all major credit cards, cash or check. <strong>$100 fee for returned checks.</strong> Your cabinet order must be paid in full to begin fulfillment. Please feel free to reach out with any questions or concerns. We appreciate your business!</p>
-</div>
+${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><p style="white-space:pre-wrap;">${escHtml(cp.terms_and_conditions)}</p></div>` : ''}
 <div class="sigs">
   <div class="sr">
     <div class="sb"><div class="sl"></div><div class="slb">Customer Signature</div><div style="margin-top:20px;"><div class="sl"></div><div class="slb">Print Name</div></div></div>
@@ -5311,12 +5321,12 @@ function loadScript(src) {
   });
 }
 
-/* ── PRINT FLOOR PLAN (Student+) ─────────────────────────────────
+/* ── PRINT FLOOR PLAN (Silver+) ──────────────────────────────────
    Clean layout drawing: floor plan + wall elevations.
    No pricing, no company branding, no quote lines.
    ──────────────────────────────────────────────────────────────── */
 async function printFloorPlan(btn) {
-  if (!canAccess('student')) { showTierUpgradePrompt('student', 'Print Floor Plan'); return; }
+  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'Print Floor Plan'); return; }
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Open a project with at least one room first.'); return; }
   const origText = btn.textContent;
@@ -6096,7 +6106,7 @@ let companyProfile = {};
 
 // ── Subscription tier helpers ──────────────────────────────────────────────
 // Tier order: free < student < silver < gold
-const TIER_RANK = { free: 0, student: 1, silver: 2, gold: 3 };
+const TIER_RANK = { free: 0, silver: 1, gold: 2 };
 function currentTier() { return companyProfile.subscription_tier || 'free'; }
 function canAccess(requiredTier) {
   return (TIER_RANK[currentTier()] ?? 0) >= (TIER_RANK[requiredTier] ?? 99);
@@ -6112,7 +6122,7 @@ async function loadCompanyProfile() {
 // Apply/remove tier-gated UI after profile loads
 function applyTierGates() {
   // Free tier body class — controls "Connect with a Pro" button visibility
-  document.body.classList.toggle('free-tier', !canAccess('student'));
+  document.body.classList.toggle('free-tier', !canAccess('silver'));
   // Pricing-locked class — hides pricing toggle for Student and below (Silver+ unlocks)
   document.body.classList.toggle('pricing-locked', !canAccess('silver'));
 
@@ -6130,7 +6140,7 @@ function applyTierGates() {
 }
 
 function showTierUpgradePrompt(required, featureName) {
-  const tierLabel = { student: 'Student', silver: 'Silver', gold: 'Gold' };
+  const tierLabel = { silver: 'Silver', gold: 'Gold' };
   const msg = `${featureName} is available on the ${tierLabel[required] || required} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`;
   alert(msg);
 }

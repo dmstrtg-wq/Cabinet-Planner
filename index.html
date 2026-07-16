@@ -347,7 +347,6 @@ nav{
 }
 /* Tier accent colors */
 .pricing-card.tier-free  { border-top-color:#CBD5E1; }
-.pricing-card.tier-bronze{ border-top-color:#B87333; }
 .pricing-card.tier-silver{ border-top-color:#94A3B8; }
 .pricing-card.tier-gold  { border-color:transparent;background:var(--ink);color:white; }
 
@@ -355,7 +354,6 @@ nav{
   font-size:11px;font-weight:700;text-transform:uppercase;
   letter-spacing:0.1em;color:var(--muted);margin-bottom:24px;
 }
-.tier-bronze .plan-name { color:#B87333; }
 .tier-silver .plan-name { color:#64748B; }
 .tier-gold   .plan-name { color:#D4AF37; }
 
@@ -375,7 +373,6 @@ nav{
 }
 .tier-gold .plan-list li{color:rgba(255,255,255,0.55);}
 .plan-list li::before{content:'✓';font-weight:800;flex-shrink:0;color:var(--accent);}
-.tier-bronze .plan-list li::before { color:#B87333; }
 .tier-silver .plan-list li::before { color:#94A3B8; }
 .tier-gold   .plan-list li::before { color:#D4AF37; }
 .plan-cta{
@@ -385,7 +382,6 @@ nav{
 }
 .plan-cta.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--border);}
 .plan-cta.ghost:hover{border-color:var(--accent);color:var(--accent);}
-.tier-bronze .plan-cta.ghost:hover{border-color:#B87333;color:#B87333;}
 .tier-silver .plan-cta.ghost:hover{border-color:#64748B;color:#64748B;}
 .plan-cta.solid{background:#D4AF37;color:#1C1917;}
 .plan-cta.solid:hover{background:#C09B2A;}
@@ -757,7 +753,6 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Enter your measurements, drag cabinets into place — that's the whole process</li>
         <li>See the layout in 3D before ordering anything</li>
         <li>Export a clean floor plan PDF to share with contractors or professors</li>
-        <li>Connect with a local cabinet pro through our network</li>
       </ul>
     </div>
   </div>
@@ -782,23 +777,8 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Full cabinet catalog (30+ types)</li>
         <li>Unlimited cabinets per design</li>
         <li>Saves locally in your browser</li>
-        <li>Connect with a Pro — find a local installer</li>
       </ul>
       <a href="/app?demo=1" class="plan-cta ghost" style="margin-top:auto;">Try the Demo &rarr;</a>
-    </div>
-
-    <!-- Student -->
-    <div class="pricing-card tier-bronze">
-      <div class="plan-name">Student</div>
-      <div class="plan-price">$19<span class="plan-period"> / mo</span></div>
-      <p class="plan-desc">For design students and trade programs building real-world layout skills.</p>
-      <ul class="plan-list">
-        <li>Everything in Free Demo</li>
-        <li>Cloud save — access from any device</li>
-        <li>Unlimited saved projects</li>
-        <li>Print Floor Plan PDF — clean layout drawing, no pricing, for professors or contractors</li>
-      </ul>
-      <a href="/app?plan=student" class="plan-cta ghost" data-plan="student" style="margin-top:auto;">Get Started &rarr;</a>
     </div>
 
     <!-- Silver -->
@@ -807,7 +787,10 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <div class="plan-price">$39<span class="plan-period"> / mo</span></div>
       <p class="plan-desc">For contractors, designers, and cabinet shops quoting and tracking jobs.</p>
       <ul class="plan-list">
-        <li>Everything in Student</li>
+        <li>Everything in Free Demo</li>
+        <li>Cloud save — access from any device</li>
+        <li>Unlimited saved projects</li>
+        <li>Print Floor Plan PDF — clean layout drawing, no pricing</li>
         <li>Branded PDF quote — your logo, itemized pricing, signature lines</li>
         <li>In-app pricing view per cabinet</li>
         <li>Upload your supplier price sheet (CSV or Excel)</li>

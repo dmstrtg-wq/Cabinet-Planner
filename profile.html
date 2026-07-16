@@ -493,6 +493,11 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
               <div class="form-group"><label>Phone</label><input type="tel" id="cp-phone" placeholder="(555) 555-5555"></div>
               <div class="form-group"><label>Email</label><input type="email" id="cp-email" placeholder="hello@smithcabinets.com"></div>
               <div class="form-group" style="grid-column:1/-1;"><label>Website</label><input type="text" id="cp-website" placeholder="smithcabinets.com"></div>
+              <div class="form-group" style="grid-column:1/-1;">
+                <label>Terms &amp; Conditions <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);">(printed on quote PDF)</span></label>
+                <textarea id="cp-terms" rows="6" placeholder="Paste your standard terms and conditions here. These will appear at the bottom of every quote PDF you generate. Leave blank to omit the T&C section." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);resize:vertical;line-height:1.6;"></textarea>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">Tip: include payment terms, final sale policy, warranty info, and any other conditions your customers need to sign off on.</div>
+              </div>
             </div>
 
             <div style="margin-top:8px;">
@@ -804,12 +809,11 @@ function showToast(msg) {
 
 /* ── SUBSCRIPTION (live from companyProfile.subscription_tier) ── */
 const PLAN_META = {
-  free:    { label: 'Free Demo', price: '$0',  priceId: null },
-  student: { label: 'Student',   price: '$19', priceId: 'price_1TrNoFAO0398J98JInDBO6vz' },
-  silver:  { label: 'Silver',    price: '$39', priceId: 'price_1TrNouAO0398J98JsK3PgVu1' },
-  gold:    { label: 'Gold',      price: '$99', priceId: 'price_1TrNpMAO0398J98JdSsS2SIb' },
+  free:   { label: 'Free Demo', price: '$0',  priceId: null },
+  silver: { label: 'Silver',    price: '$39', priceId: 'price_1TrNouAO0398J98JsK3PgVu1' },
+  gold:   { label: 'Gold',      price: '$99', priceId: 'price_1TrNpMAO0398J98JdSsS2SIb' },
 };
-const UPGRADE_ORDER = ['student','silver','gold'];
+const UPGRADE_ORDER = ['silver','gold'];
 
 async function startCheckoutDirect(priceId, planLabel) {
   if (!currentUser) return;
@@ -1027,7 +1031,7 @@ let companyProfile = {};
 let pendingLogoDataUrl = null;
 
 /* ── SUBSCRIPTION TIER HELPERS ── */
-const TIER_RANK = { free: 0, student: 1, silver: 2, gold: 3 };
+const TIER_RANK = { free: 0, silver: 1, gold: 2 };
 function currentTier() { return companyProfile.subscription_tier || 'free'; }
 function canAccess(requiredTier) {
   return (TIER_RANK[currentTier()] ?? 0) >= (TIER_RANK[requiredTier] ?? 99);
@@ -1088,6 +1092,7 @@ function applyCompanyData(company) {
   document.getElementById('cp-phone').value   = company?.phone       || '';
   document.getElementById('cp-email').value   = company?.email       || '';
   document.getElementById('cp-website').value = company?.website     || '';
+  document.getElementById('cp-terms').value   = company?.terms_and_conditions || '';
   if (pendingLogoDataUrl === null) updateLogoPreview(company?.logo_url || '');
 
   document.getElementById('overview-company-line').textContent = company?.company_name
@@ -1111,8 +1116,9 @@ async function saveCompanySettings() {
     zip:          document.getElementById('cp-zip').value.trim(),
     phone:        document.getElementById('cp-phone').value.trim(),
     email:        document.getElementById('cp-email').value.trim(),
-    website:      document.getElementById('cp-website').value.trim(),
-    updated_at:   new Date().toISOString(),
+    website:               document.getElementById('cp-website').value.trim(),
+    terms_and_conditions:  document.getElementById('cp-terms').value.trim() || null,
+    updated_at:            new Date().toISOString(),
   };
   if (pendingLogoDataUrl !== null) profile.logo_url = pendingLogoDataUrl || null;
 
