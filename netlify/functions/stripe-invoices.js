@@ -2,8 +2,12 @@
  * Returns the last 12 Stripe invoices for the authenticated user.
  *
  * POST /.netlify/functions/stripe-invoices
- * Body: { userId: "supabase-uid" }
+ * Headers: Authorization: Bearer <supabase-access-token>
  * Returns: { invoices: [{ number, date, amount, status, pdf }] }
+ *
+ * The Supabase user ID is derived from the verified token, never from the
+ * request body — this endpoint runs with the service role key (bypasses RLS),
+ * so trusting a client-supplied ID would let anyone act on any account.
  *
  * Env vars: STRIPE_SECRET_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
  */
@@ -21,12 +25,17 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  let body;
-  try { body = JSON.parse(event.body); }
-  catch { return { statusCode: 400, body: 'Invalid JSON' }; }
-
-  const { userId } = body;
-  if (!userId) return { statusCode: 400, body: 'Missing userId' };
+  // Verify the caller's Supabase session token — never trust a client-supplied userId,
+  // since this function runs with the service role key and bypasses RLS.
+  const authHeader = event.headers.authorization || event.headers.Authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Missing auth token' }) };
+  }
+  const { data: authData, error: authError } = await db.auth.getUser(authHeader.slice(7));
+  if (authError || !authData?.user) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Invalid or expired session' }) };
+  }
+  const userId = authData.user.id;
 
   // Look up Stripe customer ID
   const { data, error } = await db
