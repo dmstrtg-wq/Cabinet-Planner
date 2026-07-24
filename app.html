@@ -1449,6 +1449,9 @@ body.free-tier #connect-pro-btn { display:block; }
   <div class="modal">
     <h3>Quote Builder</h3>
 
+    <!-- Lock State Banner (Gold only, shown when quote has been sent) -->
+    <div id="quote-lock-banner" style="display:none;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#78350f;line-height:1.5;"></div>
+
     <!-- Company Name -->
     <div style="margin-bottom:18px;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
@@ -2133,7 +2136,10 @@ async function syncActiveProject() {
     style: p.style || 'AW',
     data: { rooms: p.rooms, status: p.status || 'Lead', activityLog: p.activityLog || [],
             phone: p.phone || '', company: p.company || '',
-            address: p.address || '', city: p.city || '', state: p.state || '' },
+            address: p.address || '', city: p.city || '', state: p.state || '',
+            jobCosts: p.jobCosts || [], trimItems: p.trimItems || [],
+            quoteLocked: p.quoteLocked || false, lockedQuote: p.lockedQuote || null,
+            quoteHistory: p.quoteHistory || [] },
     updated_at: new Date().toISOString()
   }, { onConflict: 'id' });
   setSyncStatus(error ? 'error' : 'saved');
@@ -2170,7 +2176,12 @@ async function loadProjects() {
     company: (row.data && row.data.company) || '',
     address: (row.data && row.data.address) || '',
     city:    (row.data && row.data.city)    || '',
-    state:   (row.data && row.data.state)   || ''
+    state:   (row.data && row.data.state)   || '',
+    jobCosts:     (row.data && row.data.jobCosts)     || [],
+    trimItems:    (row.data && row.data.trimItems)    || [],
+    quoteLocked:  (row.data && row.data.quoteLocked)  || false,
+    lockedQuote:  (row.data && row.data.lockedQuote)  || null,
+    quoteHistory: (row.data && row.data.quoteHistory) || []
   }));
   renderSidebar();
   const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
@@ -2300,7 +2311,8 @@ function createProject() {
     city:    document.getElementById('np-city').value.trim(),
     state:   document.getElementById('np-state').value,
     style: 'AW', createdAt: Date.now(), rooms: [room],
-    status: 'Lead', activityLog: []
+    status: 'Lead', activityLog: [],
+    quoteLocked: false, lockedQuote: null, quoteHistory: []
   };
   state.projects.unshift(proj);
   persist();
@@ -4802,6 +4814,20 @@ function renderSummary(r) {
 // ════════════════════════════
 // QUOTE MODAL
 // ════════════════════════════
+function refreshQuoteLockBanner() {
+  const banner = document.getElementById('quote-lock-banner');
+  if (!banner) return;
+  const p = activeProj();
+  if (!p || !canAccess('gold') || !p.quoteLocked || !p.lockedQuote) {
+    banner.style.display = 'none';
+    return;
+  }
+  const sentDate = new Date(p.lockedQuote.date).toLocaleDateString();
+  const nextRev  = (p.quoteHistory || []).length + 1;
+  banner.style.display = 'block';
+  banner.innerHTML = `🔒 <strong>Sent to customer on ${sentDate}</strong> — further edits will be tracked as <strong>Revision ${nextRev}</strong> when printed.`;
+}
+
 function openQuoteModal() {
   if (!demoGate('quote')) return;
   const p = activeProj();
@@ -4816,6 +4842,7 @@ function openQuoteModal() {
   renderJobCostRows();
   renderTrimRows();
   refreshQuoteTotals();
+  refreshQuoteLockBanner();
   openModal('modal-quote');
 }
 
@@ -4979,13 +5006,11 @@ function printQuote() {
   let prevTotal = null;
   let delta = null;
 
-  if (isGold) {
-    if (p.quoteHistory.length > 0) {
-      const last = p.quoteHistory[p.quoteHistory.length - 1];
-      prevTotal = last.total;
-      delta = total - prevTotal;
-      revision = p.quoteHistory.length + 1;
-    }
+  if (isGold && p.quoteLocked) {
+    // Case B: already sent to customer — every subsequent print is a tracked revision
+    const last = p.quoteHistory[p.quoteHistory.length - 1];
+    if (last) { prevTotal = last.total; delta = total - prevTotal; }
+    revision = p.quoteHistory.length + 1;
     p.quoteHistory.push({
       revision, quoteNum,
       date: new Date().toISOString(),
@@ -4993,17 +5018,16 @@ function printQuote() {
       breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt }
     });
     if (!p.activityLog) p.activityLog = [];
-    const logText = revision === 1
-      ? `Quote sent — ${fmtMoney(total)} · Quote #${quoteNum}`
-      : `Revision ${revision} generated · ${delta >= 0 ? '+' : ''}${delta < 0 ? '-' : ''}${fmtMoney(Math.abs(delta))} from v${revision - 1} · New total: ${fmtMoney(total)} · Quote #${quoteNum}`;
     p.activityLog.unshift({
       id: uid(), type: 'quote',
-      text: logText,
+      text: `Revision ${revision} generated · ${delta >= 0 ? '+' : '-'}${fmtMoney(Math.abs(delta))} from v${revision - 1} · New total: ${fmtMoney(total)} · Quote #${quoteNum}`,
       createdAt: new Date().toISOString(),
       user: currentUser ? currentUser.email : 'You'
     });
     persist();
   }
+  // Case A (isGold && !p.quoteLocked): draft print — no versioning yet;
+  // after window opens we prompt to mark as sent (see below after win.document.close())
 
   const deltaStr   = delta != null ? `${delta >= 0 ? '+' : '-'}${fmtMoney(Math.abs(delta))}` : '';
   const deltaColor = delta != null ? (delta >= 0 ? '#16a34a' : '#dc2626') : '';
@@ -5104,6 +5128,33 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
 <div class="foot">${escHtml(companyName)}${cp.website ? ' · '+escHtml(cp.website) : ''} · Quote #${quoteNum} · Generated ${today}</div>
 </body></html>`);
   win.document.close();
+
+  // Case A: Gold + not yet locked — prompt to mark as sent after PDF opens
+  if (isGold && !p.quoteLocked) {
+    setTimeout(() => {
+      const doLock = confirm(
+        `Mark this quote as sent to ${p.customer || 'the customer'}?\n\n` +
+        `This locks it as the record of what they agreed to — ` +
+        `any changes after this will be tracked as a revision.`
+      );
+      if (doLock) {
+        p.quoteLocked  = true;
+        p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total,
+                           breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt } };
+        if (!p.quoteHistory) p.quoteHistory = [];
+        p.quoteHistory.push(p.lockedQuote);
+        if (!p.activityLog) p.activityLog = [];
+        p.activityLog.unshift({
+          id: uid(), type: 'quote',
+          text: `Quote sent — ${fmtMoney(total)} · Quote #${quoteNum}`,
+          createdAt: new Date().toISOString(),
+          user: currentUser ? currentUser.email : 'You'
+        });
+        persist();
+        refreshQuoteLockBanner();
+      }
+    }, 500);
+  }
 }
 
 // ════════════════════════════
