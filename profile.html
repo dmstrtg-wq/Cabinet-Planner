@@ -506,6 +506,17 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           </div>
         </div>
 
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Door Styles / Finishes</div>
+          </div>
+          <div class="card" style="padding:24px;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">These are the finishes shown in your price sheet template and the project style picker. If you don't add any, a set of generic defaults is used.</div>
+            <div id="cp-styles-list" style="margin-bottom:12px;"></div>
+            <button type="button" class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="addCpStyle()">＋ Add Style</button>
+          </div>
+        </div>
+
       </div>
 
       <!-- FILES -->
@@ -1091,6 +1102,37 @@ function applyCompanyData(company) {
   document.getElementById('overview-company-line').textContent = company?.company_name
     ? `${company.company_name}${company.city ? ' · ' + company.city + (company.state ? ', ' + company.state : '') : ''}`
     : 'No company info set up yet';
+
+  renderPfStyles(company?.custom_styles || []);
+}
+
+let _pfStyles = [];
+function renderPfStyles(styles) {
+  _pfStyles = styles.map(s => ({ ...s }));
+  const el = document.getElementById('cp-styles-list');
+  if (!_pfStyles.length) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--muted);margin-bottom:8px;">No custom styles yet — generic defaults are used. Add your own below.</p>';
+    return;
+  }
+  el.innerHTML = _pfStyles.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <input type="color" value="${s.swatch || '#F5F4F0'}" title="Pick color"
+        oninput="_pfStyles[${i}].swatch=this.value"
+        style="width:28px;height:28px;border-radius:6px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;padding:0;">
+      <input type="text" value="${esc(s.name || '')}" placeholder="Style name"
+        oninput="_pfStyles[${i}].name=this.value" autocomplete="off"
+        style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);">
+      <input type="text" value="${esc(s.code || '')}" placeholder="Code"
+        oninput="_pfStyles[${i}].code=this.value.toUpperCase()" autocomplete="off"
+        style="width:70px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);">
+      <button type="button" onclick="_pfStyles.splice(${i},1);renderPfStyles(_pfStyles);"
+        style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>
+    </div>
+  `).join('');
+}
+function addCpStyle() {
+  _pfStyles.push({ code: '', name: '', swatch: '#F5F4F0' });
+  renderPfStyles(_pfStyles);
 }
 
 async function saveCompanySettings() {
@@ -1111,6 +1153,7 @@ async function saveCompanySettings() {
     email:        document.getElementById('cp-email').value.trim(),
     website:               document.getElementById('cp-website').value.trim(),
     terms_and_conditions:  document.getElementById('cp-terms').value.trim() || null,
+    custom_styles:         (() => { const s = _pfStyles.filter(s => s.name.trim()); return s.length ? s : null; })(),
     updated_at:            new Date().toISOString(),
   };
   if (pendingLogoDataUrl !== null) profile.logo_url = pendingLogoDataUrl || null;

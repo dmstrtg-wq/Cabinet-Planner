@@ -608,18 +608,6 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   .project-header { border-bottom: 2px solid #000; }
 }
 
-/* ── Company settings tabs ── */
-.cs-tab { background:none;border:none;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-2px; }
-.cs-tab:hover { color:var(--accent); }
-.cs-tab.active { color:var(--accent);border-bottom-color:var(--accent); }
-.cs-price-row { display:contents; }
-.cs-price-label { font-size:12px;font-weight:600;color:#0f4038;align-self:center; }
-.cs-price-input { display:flex;align-items:center;gap:6px; }
-.cs-price-input span { font-size:12px;color:var(--text-muted); }
-.cs-style-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
-.cs-style-row input { flex:1; }
-.cs-style-swatch { width:28px;height:28px;border-radius:6px;border:1px solid var(--border);cursor:pointer;flex-shrink:0; }
-
 /* ── Tour overlay ── */
 #tour-overlay {
   position:fixed;top:0;left:0;width:100%;height:100%;
@@ -816,7 +804,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <span style="font-size:10px;color:rgba(255,255,255,0.3);" id="sync-label">Saved</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button class="signout-btn" style="flex:1;" onclick="openCompanySettings()">Company</button>
+      <button class="signout-btn" style="flex:1;" onclick="location.href='/profile#company'">Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
     <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(13,148,136,0.25);">Connect with a Pro</button>
@@ -1485,62 +1473,6 @@ body.free-tier #connect-pro-btn { display:block; }
   </div>
 </div>
 
-<!-- COMPANY SETTINGS MODAL -->
-<div id="modal-company-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Company Settings">
-  <div class="modal" style="width:600px;max-width:100%;max-height:90vh;overflow-y:auto;">
-    <h3>Company Settings</h3>
-
-    <!-- Tabs -->
-    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;margin-top:-4px;">
-      <button class="cs-tab active" onclick="switchCsTab('info',this)">Company Info</button>
-      <button class="cs-tab" onclick="switchCsTab('pricing',this)">Cabinet Pricing</button>
-      <button class="cs-tab" onclick="switchCsTab('styles',this)">Door Styles</button>
-    </div>
-
-    <!-- Tab: Company Info -->
-    <div id="cs-tab-info">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">This info appears on every printed quote and PDF export.</p>
-      <div class="form-row">
-        <div class="form-group"><label>Company Name *</label><input type="text" id="cs-name" placeholder="" autocomplete="off"></div>
-        <div class="form-group"><label>Tagline</label><input type="text" id="cs-tagline" placeholder="e.g. Designing Dreams, Built in Reality" autocomplete="off"></div>
-      </div>
-      <div class="form-group"><label>Address</label><input type="text" id="cs-address" placeholder="123 Main St" autocomplete="off"></div>
-      <div class="form-row">
-        <div class="form-group"><label>City</label><input type="text" id="cs-city" placeholder="City" autocomplete="off"></div>
-        <div class="form-group"><label>State</label><input type="text" id="cs-state" placeholder="FL" autocomplete="off"></div>
-        <div class="form-group"><label>Zip</label><input type="text" id="cs-zip" placeholder="33101" autocomplete="off"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Phone</label><input type="text" id="cs-phone" placeholder="(555) 555-5555" autocomplete="off"></div>
-        <div class="form-group"><label for="login-email">Email</label><input type="email" id="cs-email" placeholder="hello@yourcompany.com" autocomplete="off"></div>
-      </div>
-      <div class="form-group"><label>Website</label><input type="text" id="cs-website" placeholder="www.yourcompany.com" autocomplete="off"></div>
-      <div class="form-group"><label>Logo URL <span style="font-weight:400;color:#94a3b8;">(paste a link to your logo image)</span></label><input type="text" id="cs-logo" placeholder="https://..." autocomplete="off"></div>
-    </div>
-
-    <!-- Tab: Cabinet Pricing -->
-    <div id="cs-tab-pricing" class="hidden">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">Set your price per inch of cabinet width for each type. Used to calculate quote totals. Leave blank to use the system default.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;" id="cs-pricing-grid">
-        <!-- populated by JS -->
-      </div>
-    </div>
-
-    <!-- Tab: Door Styles -->
-    <div id="cs-tab-styles" class="hidden">
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;margin-top:-8px;">Add your available door styles. These appear in the project and cabinet style dropdowns. If empty, a set of generic defaults is used.</p>
-      <div id="cs-styles-list" style="margin-bottom:12px;"></div>
-      <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="addCsStyle()">＋ Add Style</button>
-    </div>
-
-    <div id="cs-status" style="font-size:12px;min-height:18px;margin-top:14px;"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-company-settings')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCompanySettings()">Save Settings</button>
-    </div>
-  </div>
-</div>
-
 <!-- SET PASSWORD MODAL (invite / recovery flow) -->
 <div id="modal-set-password" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Set Password">
   <div class="modal" style="max-width:400px;">
@@ -1911,7 +1843,6 @@ async function handleSignIn() {
       showApp();
       await Promise.all([loadProjects(), loadCompanyProfile()]);
       maybeStartTour();
-      setTimeout(() => openCompanySettings(), 400);
     } else {
       // Email confirmation required — show confirmation panel
       btn.disabled = false; btn.textContent = 'Create Free Account →';
@@ -1935,7 +1866,6 @@ async function handleSignIn() {
   await Promise.all([loadProjects(), loadCompanyProfile()]);
   openProjectFromUrl();
   maybeStartTour();
-  if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
 }
 async function handleForgotPassword() {
   const email = document.getElementById('login-email').value.trim();
@@ -6265,134 +6195,6 @@ function showTierUpgradePrompt(required, featureName) {
   alert(msg);
 }
 
-const CS_PRICING_TYPES = [
-  { key:'base',       label:'Base Cabinet'         },
-  { key:'wall',       label:'Wall Cabinet'          },
-  { key:'drawerBase', label:'Drawer Base'           },
-  { key:'sink',       label:'Sink Base'             },
-  { key:'cornerBase', label:'Corner Base'           },
-  { key:'lazysusan',  label:'Lazy Susan'            },
-  { key:'vanity',     label:'Vanity'                },
-  { key:'tall',       label:'Tall / Pantry'         },
-  { key:'diagWall',   label:'Diagonal Corner Wall'  },
-  { key:'fridgePanel',label:'Fridge End Panel'      },
-];
-
-async function openCompanySettings(startTab) {
-  await loadCompanyProfile();
-  const f = companyProfile;
-  document.getElementById('cs-name').value    = f.company_name || '';
-  document.getElementById('cs-tagline').value = f.tagline      || '';
-  document.getElementById('cs-address').value = f.address      || '';
-  document.getElementById('cs-city').value    = f.city         || '';
-  document.getElementById('cs-state').value   = f.state        || '';
-  document.getElementById('cs-zip').value     = f.zip          || '';
-  document.getElementById('cs-phone').value   = f.phone        || '';
-  document.getElementById('cs-email').value   = f.email        || '';
-  document.getElementById('cs-website').value = f.website      || '';
-  document.getElementById('cs-logo').value    = f.logo_url     || '';
-  document.getElementById('cs-status').textContent = '';
-
-  // Build pricing grid — a type may hold a per-width table uploaded from a price sheet
-  // (an object) rather than a flat rate (a number); only show/edit the flat-rate case here.
-  const overrides = f.price_overrides || {};
-  const grid = document.getElementById('cs-pricing-grid');
-  grid.innerHTML = CS_PRICING_TYPES.map(t => {
-    const ov = overrides[t.key];
-    const isFlatRate = typeof ov === 'number';
-    const fromPriceSheet = ov && typeof ov === 'object';
-    return `
-    <div class="cs-price-label">${t.label}</div>
-    <div class="cs-price-input">
-      <span>$/in</span>
-      <input type="number" id="csp-${t.key}" class="cp-input" style="margin:0;width:90px;"
-        placeholder="${fromPriceSheet ? 'From price sheet' : 'e.g. 4.50'}" step="0.01" min="0"
-        value="${isFlatRate ? ov : ''}" autocomplete="off">
-    </div>
-  `;
-  }).join('');
-
-  // Build styles list
-  _renderCsStyles(f.custom_styles || []);
-
-  // Switch to requested tab or default
-  switchCsTab(startTab || 'info', document.querySelector('.cs-tab'));
-  openModal('modal-company-settings');
-}
-
-function switchCsTab(tab, btn) {
-  ['info','pricing','styles'].forEach(t => {
-    document.getElementById('cs-tab-'+t).classList.toggle('hidden', t !== tab);
-  });
-  document.querySelectorAll('.cs-tab').forEach(b => b.classList.remove('active'));
-  // Find the button by its onclick text
-  document.querySelectorAll('.cs-tab').forEach(b => {
-    if (b.getAttribute('onclick').includes("'"+tab+"'")) b.classList.add('active');
-  });
-}
-
-let _csStyles = [];
-function _renderCsStyles(styles) {
-  _csStyles = styles.map(s => ({...s}));
-  const el = document.getElementById('cs-styles-list');
-  if (!_csStyles.length) {
-    el.innerHTML = '<p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">No custom styles yet — generic defaults are used. Add your own below.</p>';
-    return;
-  }
-  el.innerHTML = _csStyles.map((s,i) => `
-    <div class="cs-style-row">
-      <input type="color" class="cs-style-swatch" value="${s.swatch||'#F5F4F0'}" oninput="_csStyles[${i}].swatch=this.value" title="Pick color">
-      <input type="text" class="cp-input" style="margin:0;" value="${s.name||''}" placeholder="Style name"
-        oninput="_csStyles[${i}].name=this.value" autocomplete="off">
-      <input type="text" class="cp-input" style="margin:0;width:70px;" value="${s.code||''}" placeholder="Code"
-        oninput="_csStyles[${i}].code=this.value.toUpperCase()" autocomplete="off">
-      <button onclick="_csStyles.splice(${i},1);_renderCsStyles(_csStyles);"
-        style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>
-    </div>
-  `).join('');
-}
-function addCsStyle() {
-  _csStyles.push({ code:'', name:'', swatch:'#F5F4F0' });
-  _renderCsStyles(_csStyles);
-}
-
-async function saveCompanySettings() {
-  // Collect price overrides — start from what's already saved (may include per-width
-  // tables from an uploaded price sheet) and only touch types with a flat rate typed
-  // here, so saving this form can never silently wipe out an uploaded price sheet.
-  const price_overrides = { ...(companyProfile.price_overrides || {}) };
-  CS_PRICING_TYPES.forEach(t => {
-    const val = document.getElementById('csp-'+t.key)?.value.trim();
-    if (val !== '' && !isNaN(parseFloat(val))) price_overrides[t.key] = parseFloat(val);
-  });
-
-  // Collect styles — filter out incomplete entries
-  const custom_styles = _csStyles.filter(s => s.name.trim());
-
-  const profile = {
-    user_id:        currentUser.id,
-    company_name:   document.getElementById('cs-name').value.trim(),
-    tagline:        document.getElementById('cs-tagline').value.trim(),
-    address:        document.getElementById('cs-address').value.trim(),
-    city:           document.getElementById('cs-city').value.trim(),
-    state:          document.getElementById('cs-state').value.trim(),
-    zip:            document.getElementById('cs-zip').value.trim(),
-    phone:          document.getElementById('cs-phone').value.trim(),
-    email:          document.getElementById('cs-email').value.trim(),
-    website:        document.getElementById('cs-website').value.trim(),
-    logo_url:       document.getElementById('cs-logo').value.trim(),
-    price_overrides: Object.keys(price_overrides).length ? price_overrides : null,
-    custom_styles:   custom_styles.length ? custom_styles : null,
-    updated_at:     new Date().toISOString(),
-  };
-  const { error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' });
-  const st = document.getElementById('cs-status');
-  if (error) { st.style.color = 'var(--danger)'; st.textContent = 'Error saving: ' + error.message; return; }
-  companyProfile = { ...companyProfile, ...profile };
-  st.style.color = 'var(--success)'; st.textContent = '✓ Saved!';
-  setTimeout(() => closeModal('modal-company-settings'), 900);
-}
-
 // ════════════════════════════
 // INVITE / RECOVERY FLOW
 // ════════════════════════════
@@ -6756,8 +6558,7 @@ document.addEventListener('keydown', e => {
     await Promise.all([loadProjects(), loadCompanyProfile()]);
     openProjectFromUrl();
     maybeStartTour();
-    if (!companyProfile.company_name) setTimeout(() => openCompanySettings(), 400);
-    if (urlType === 'invite' || urlType === 'recovery') {
+      if (urlType === 'invite' || urlType === 'recovery') {
       openModal('modal-set-password');
     }
   } else {
