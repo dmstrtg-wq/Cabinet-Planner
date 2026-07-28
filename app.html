@@ -2035,36 +2035,6 @@ const US_STATES = [
   ['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming'],['DC','Washington DC']
 ];
 
-// ════════════════════════════
-// PRICE TABLE (Forevermark MSRP — markup already included)
-// ════════════════════════════
-const PRICE_TABLE = {
-  base: { 9:227, 12:255, 15:267, 18:284, 21:308, 24:339, 27:356, 30:422, 33:442, 36:457 },
-  sink: { 24:317, 27:328, 30:339, 33:347, 36:356, 42:431 },
-  drawerBase: { 12:449, 15:461, 18:469, 21:477, 24:498, 30:789, 36:799 },
-  lazysusan:  { 33:575, 36:609 },
-  cornerBase: { 36:439, 39:447, 42:454 },
-  vanity:     { 24:274, 30:305, 36:379, 48:683, 60:914 },
-  wall: {
-     9: { 12:null, 30:156,  36:162,  42:177  },
-    12: { 12:85,   30:148,  36:179,  42:205  },
-    15: { 12:89,   30:167,  36:202,  42:226  },
-    18: { 12:101,  30:186,  36:228,  42:246  },
-    21: { 12:125,  30:226,  36:269,  42:298  },
-    24: { 12:148,  15:157,  18:168,  24:217,  30:241, 36:280, 42:311 },
-    27: { 12:170,  30:262,  36:326,  42:356  },
-    30: { 12:151,  15:189,  18:207,  24:253,  30:263, 36:338, 42:396 },
-    33: { 12:167,  15:215,  18:234,  24:298,  30:281, 36:359, 42:421 },
-    36: { 12:175,  15:190,  18:249,  24:275,  30:299, 36:376, 42:437 },
-  },
-  tall: {
-    15: { 84:649,  90:688,  96:729  },
-    18: { 84:716,  90:749,  96:798  },
-    24: { 84:839,  90:882,  96:963  },
-    30: { 84:1014, 90:1055, 96:1158 },
-  },
-};
-
 const APPLIANCES = {
   refrigerator:    { label:'Refrigerator',              widths:[30,33,36],    heights:[66,68,70,72], height:70,   depth:30, color:'#6B7280', abbr:'REF', wallMount:false, elevBottom:0  },
   range:           { label:'Range / Stove',             widths:[30,36],       height:36,             depth:25, color:'#374151', abbr:'RNG', wallMount:false, elevBottom:0  },
@@ -2222,26 +2192,30 @@ const fmtMoney = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 function getMarkup() { return (parseFloat(document.getElementById('markup-pct').value) || 0) / 100; }
 function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
 function pricingOn() { return document.getElementById('pricing-toggle').checked; }
+// Returns the price for this cabinet, or null if there's no price on file for its exact
+// size + finish combination. We never substitute a guessed/default price here — a company's
+// uploaded price sheet (or legacy manual $/in rate) is the only source of truth, so an
+// unpriced cabinet stays visibly unpriced instead of silently showing a wrong number.
 function cabinetPrice(cab) {
-  let base = 0;
-  // 1. Company price override ($/inch × width)
   const overrides = companyProfile.price_overrides;
-  if (overrides && overrides[cab.type] != null) {
-    base = parseFloat(overrides[cab.type]) * cab.width;
-  }
-  // 2. Fall back to hardcoded PRICE_TABLE (Forevermark/Matrix SKU prices)
-  if (!base) {
-    const prices = PRICE_TABLE[cab.type];
-    if (prices) {
-      if (cab.type === 'wall' || cab.type === 'tall') {
-        base = (prices[cab.width] && prices[cab.width][cab.height]) || 0;
-      } else {
-        base = prices[cab.width] || 0;
+  const ov = overrides && overrides[cab.type];
+  let base = null;
+  if (ov != null) {
+    if (typeof ov === 'object') {
+      // Per-size, per-finish table from an uploaded price sheet.
+      const sizeKey = (cab.type === 'wall' || cab.type === 'tall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
+      const bySize = ov[sizeKey];
+      if (bySize && typeof bySize === 'object') {
+        const styleCode = cab.styleOverride || activeProj()?.style || 'AW';
+        if (bySize[styleCode] != null) base = parseFloat(bySize[styleCode]);
       }
+    } else {
+      // Legacy flat $/inch rate (manual Company Settings entry, pre-price-sheet accounts) —
+      // doesn't vary by finish, since it predates finish-aware pricing.
+      base = parseFloat(ov) * cab.width;
     }
   }
-  // 3. Fall back to CATALOG formula
-  if (!base) { const cat = CATALOG[cab.type]; base = cat ? cat.basePrice(cab.width) : 0; }
+  if (base == null) return null;
   const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
   return (base + glassAddon) * (1 + getMarkup());
 }
@@ -3169,7 +3143,8 @@ function renderCabinetList() {
     html += '<div class="cab-wall-header">Cabinets</div>';
     html += wallCabs.map(c => {
       const cat   = CATALOG[c.type];
-      const price = pricingOn() ? `<div class="cab-price">${fmtMoney(cabinetPrice(c))}</div>` : '';
+      const cabPr = cabinetPrice(c);
+      const price = pricingOn() ? `<div class="cab-price">${cabPr != null ? fmtMoney(cabPr) : '<span style="color:#94a3b8;font-style:italic;">No price set</span>'}</div>` : '';
       return `<div class="cab-item">
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
@@ -4782,16 +4757,22 @@ function renderSummary(r) {
   const groups = {};
   r.cabinets.forEach(c => {
     const k = `${c.type}|${c.width}|${c.height}`;
-    if (!groups[k]) groups[k] = { type:c.type, width:c.width, height:c.height, count:0, totalPrice:0 };
-    groups[k].count++; groups[k].totalPrice += cabinetPrice(c);
+    if (!groups[k]) groups[k] = { type:c.type, width:c.width, height:c.height, count:0, totalPrice:0, unpriced:false };
+    groups[k].count++;
+    const pr = cabinetPrice(c);
+    if (pr != null) groups[k].totalPrice += pr; else groups[k].unpriced = true;
   });
-  const showPrice = pricingOn(); let subtotal = 0;
+  const showPrice = pricingOn(); let subtotal = 0; let anyUnpriced = false;
   const rows = Object.values(groups).map(g => {
     const cat = CATALOG[g.type]; subtotal += g.totalPrice;
+    if (g.unpriced) anyUnpriced = true;
+    const priceDisplay = g.unpriced
+      ? `<span style="color:#94a3b8;font-style:italic;">${g.totalPrice > 0 ? fmtMoney(g.totalPrice) + '*' : 'No price set'}</span>`
+      : fmtMoney(g.totalPrice);
     return `<div class="summary-row">
       <div class="summary-dot" style="background:${cat.color}"></div>
       <div class="summary-name">${cat.label} — ${g.width}"W × ${g.height}"H</div>
-      ${showPrice ? `<div class="summary-price">${fmtMoney(g.totalPrice)}</div>` : ''}
+      ${showPrice ? `<div class="summary-price">${priceDisplay}</div>` : ''}
       <div class="summary-count">×${g.count}</div>
     </div>`;
   }).join('');
@@ -4808,7 +4789,8 @@ function renderSummary(r) {
   el.innerHTML = `<h4>Summary (${totalCount} items)</h4>${rows}${appRows}
     ${showPrice ? `<div class="summary-total-row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>` : ''}
     ${showPrice && getTax()>0 ? `<div class="summary-total-row" style="font-size:12px;font-weight:600"><span>Tax (${(getTax()*100).toFixed(1)}%)</span><span>${fmtMoney(tax)}</span></div>` : ''}
-    ${showPrice ? `<div class="summary-total-row" style="font-size:15px"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div>` : ''}`;
+    ${showPrice ? `<div class="summary-total-row" style="font-size:15px"><span>Total</span><span style="color:var(--success)">${fmtMoney(total)}</span></div>` : ''}
+    ${showPrice && anyUnpriced ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ Some cabinets have no price set for their finish — the subtotal above doesn't include them.</div>` : ''}`;
 }
 
 // ════════════════════════════
@@ -4923,8 +4905,11 @@ function removeTrimRow(i) {
 function refreshQuoteTotals() {
   const p = activeProj(); if (!p) return;
   const tax = getTax();
-  let cabSubtotal = 0;
-  p.rooms.forEach(r => r.cabinets.forEach(c => { cabSubtotal += cabinetPrice(c); }));
+  let cabSubtotal = 0, unpricedCount = 0;
+  p.rooms.forEach(r => r.cabinets.forEach(c => {
+    const pr = cabinetPrice(c);
+    if (pr != null) cabSubtotal += pr; else unpricedCount++;
+  }));
   const jcTotal    = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
   const trimTotal  = (p.trimItems||[]).reduce((s,t) => s + (parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
   const beforeTax  = cabSubtotal + jcTotal + trimTotal;
@@ -4937,7 +4922,8 @@ function refreshQuoteTotals() {
     ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
     ${trimTotal>0?`<div class="qtp-row"><span>Trim &amp; Materials</span><span>${fmtMoney(trimTotal)}</span></div>`:''}
     ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
-    <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>`;
+    <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>
+    ${unpricedCount ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ ${unpricedCount} cabinet${unpricedCount===1?'':'s'} with no price set for their finish — not included above.</div>` : ''}`;
 }
 
 function checkCompanyProfile() {
@@ -4955,6 +4941,15 @@ function printQuote() {
   if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
   if (!checkCompanyProfile()) return;
   const p = activeProj(); if (!p) return;
+  const unpricedCabs = p.rooms.reduce((n, room) => n + room.cabinets.filter(c => cabinetPrice(c) == null).length, 0);
+  if (unpricedCabs > 0) {
+    const proceed = confirm(
+      `${unpricedCabs} cabinet${unpricedCabs === 1 ? '' : 's'} on this floor plan ${unpricedCabs === 1 ? "doesn't" : "don't"} have a price set for ` +
+      `${unpricedCabs === 1 ? 'its' : 'their'} finish.\n\nThey'll show as "N/A" on the quote and won't be included in the total. ` +
+      `Continue anyway, or cancel to go set their pricing first?`
+    );
+    if (!proceed) return;
+  }
   // Company name: quote modal field → project field → company profile → default
   const companyField = document.getElementById('quote-company-input');
   const companyName = (companyField?.value.trim()) || p.company || companyProfile.company_name || 'My Cabinet Planner';
@@ -4970,10 +4965,12 @@ function printQuote() {
     if (!room.cabinets.length) return;
     cabRows += `<tr class="room-hdr"><td colspan="5">${escHtml(room.name)}</td></tr>`;
     room.cabinets.forEach(c => {
-      const price = cabinetPrice(c); cabSubtotal += price;
+      const price = cabinetPrice(c);
+      if (price != null) cabSubtotal += price;
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
       const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
-      cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${fmtMoney(price)}</td></tr>`;
+      const priceCell = price != null ? fmtMoney(price) : '<span style="color:#94a3b8;font-style:italic;">N/A</span>';
+      cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
     });
   });
 
@@ -5544,6 +5541,15 @@ async function exportPDF(btn) {
   if (!checkCompanyProfile()) return;
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
+  const unpricedCabs = p.rooms.reduce((n, room) => n + room.cabinets.filter(c => cabinetPrice(c) == null).length, 0);
+  if (unpricedCabs > 0) {
+    const proceed = confirm(
+      `${unpricedCabs} cabinet${unpricedCabs === 1 ? '' : 's'} on this floor plan ${unpricedCabs === 1 ? "doesn't" : "don't"} have a price set for ` +
+      `${unpricedCabs === 1 ? 'its' : 'their'} finish.\n\nThey'll show as "N/A" on the export and won't be included in the total. ` +
+      `Continue anyway, or cancel to go set their pricing first?`
+    );
+    if (!proceed) return;
+  }
   const origText = btn.textContent;
   btn.textContent = '⏳ Generating…'; btn.disabled = true;
   try {
@@ -5695,13 +5701,14 @@ async function exportPDF(btn) {
     if (!room.cabinets.length) return;
     cabRows.push([{content:room.name,colSpan:4,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
     room.cabinets.forEach(c => {
-      const pr=cabinetPrice(c); cabSub+=pr;
+      const pr=cabinetPrice(c); if (pr!=null) cabSub+=pr;
       const cat=CATALOG[c.type];
       cabRows.push([
         (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
         `${c.width}"W × ${c.height}"H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
-        {content:'$'+pr.toFixed(2),styles:{halign:'right',fontStyle:'bold'}}
+        pr!=null ? {content:'$'+pr.toFixed(2),styles:{halign:'right',fontStyle:'bold'}}
+                 : {content:'N/A',styles:{halign:'right',fontStyle:'italic',textColor:[148,163,184]}}
       ]);
     });
   });
@@ -6286,18 +6293,24 @@ async function openCompanySettings(startTab) {
   document.getElementById('cs-logo').value    = f.logo_url     || '';
   document.getElementById('cs-status').textContent = '';
 
-  // Build pricing grid
+  // Build pricing grid — a type may hold a per-width table uploaded from a price sheet
+  // (an object) rather than a flat rate (a number); only show/edit the flat-rate case here.
   const overrides = f.price_overrides || {};
   const grid = document.getElementById('cs-pricing-grid');
-  grid.innerHTML = CS_PRICING_TYPES.map(t => `
+  grid.innerHTML = CS_PRICING_TYPES.map(t => {
+    const ov = overrides[t.key];
+    const isFlatRate = typeof ov === 'number';
+    const fromPriceSheet = ov && typeof ov === 'object';
+    return `
     <div class="cs-price-label">${t.label}</div>
     <div class="cs-price-input">
       <span>$/in</span>
       <input type="number" id="csp-${t.key}" class="cp-input" style="margin:0;width:90px;"
-        placeholder="e.g. 4.50" step="0.01" min="0"
-        value="${overrides[t.key] != null ? overrides[t.key] : ''}" autocomplete="off">
+        placeholder="${fromPriceSheet ? 'From price sheet' : 'e.g. 4.50'}" step="0.01" min="0"
+        value="${isFlatRate ? ov : ''}" autocomplete="off">
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   // Build styles list
   _renderCsStyles(f.custom_styles || []);
@@ -6344,8 +6357,10 @@ function addCsStyle() {
 }
 
 async function saveCompanySettings() {
-  // Collect price overrides — only include types where a value was entered
-  const price_overrides = {};
+  // Collect price overrides — start from what's already saved (may include per-width
+  // tables from an uploaded price sheet) and only touch types with a flat rate typed
+  // here, so saving this form can never silently wipe out an uploaded price sheet.
+  const price_overrides = { ...(companyProfile.price_overrides || {}) };
   CS_PRICING_TYPES.forEach(t => {
     const val = document.getElementById('csp-'+t.key)?.value.trim();
     if (val !== '' && !isNaN(parseFloat(val))) price_overrides[t.key] = parseFloat(val);

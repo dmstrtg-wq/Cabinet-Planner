@@ -511,14 +511,15 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
       <!-- FILES -->
       <div class="tab-panel" data-tab="files">
         <div class="tab-title">My Pricing</div>
-        <div class="tab-desc">Upload your supplier price sheets and we'll map them to your cabinet types so every quote uses your real numbers.</div>
+        <div class="tab-desc">Download our price sheet template, fill in what you charge for each size and finish, then upload it back — every quote will use your real numbers.</div>
 
         <div class="section">
           <div class="section-head">
             <div class="section-title">Price Sheets</div>
-            <div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="downloadPriceSheetTemplate()">Download Template</button>
               <input type="file" id="pricelist-file-input" accept=".csv,.xls,.xlsx" style="display:none;" onchange="handleFileUpload(event,'price_list')">
-              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Price Sheet</button>
+              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Completed Sheet</button>
             </div>
           </div>
           <div class="card">
@@ -700,28 +701,16 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
   </div>
 </div>
 
-<!-- PRICE LIST MAPPING MODAL -->
+<!-- PRICE SHEET UPLOAD MODAL -->
 <div class="modal-overlay" id="pricemap-modal-overlay">
-  <div class="modal-box" style="max-width:640px;max-height:85vh;overflow-y:auto;">
-    <h3>Match your price list</h3>
-    <p>We found <strong id="pricemap-row-count">0</strong> rows in <strong id="pricemap-filename"></strong>. Pick which column holds the price, then match each cabinet type to a row — leave any type as "Use Default" to skip it.</p>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
-      <div class="form-group" style="margin-bottom:0;">
-        <label>Label / Description Column</label>
-        <select id="pricemap-label-col"></select>
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label>Price Column</label>
-        <select id="pricemap-price-col"></select>
-      </div>
-    </div>
-
-    <div id="pricemap-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+  <div class="modal-box" style="max-width:520px;">
+    <h3>Apply your price sheet</h3>
+    <p><strong id="pricemap-filename"></strong></p>
+    <p id="pricemap-summary" style="color:var(--muted);font-size:13px;line-height:1.6;"></p>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closePriceMapModal()">Skip — Keep File Only</button>
-      <button class="btn btn-primary" onclick="applyPriceMapping()">Apply Pricing</button>
+      <button class="btn btn-primary" id="pricemap-apply-btn" onclick="applyPriceMapping()">Apply Pricing</button>
     </div>
   </div>
 </div>
@@ -1273,7 +1262,7 @@ async function handleFileUpload(e, category) {
   }
 }
 
-/* ── PRICE LIST PARSING (CSV / Excel → price_overrides) ── */
+/* ── PRICE SHEET TEMPLATE + PARSING (matrix CSV → price_overrides, finish-aware) ── */
 const CABINET_TYPES = [
   { key:'base',        label:'Base Cabinet' },
   { key:'wall',        label:'Wall Cabinet' },
@@ -1286,109 +1275,139 @@ const CABINET_TYPES = [
   { key:'diagWall',    label:'Diagonal Corner Wall' },
   { key:'fridgePanel', label:'Fridge End Panel' },
 ];
-const TYPE_HINTS = {
-  base:        [/\bbase\b/i],
-  wall:        [/\bwall\b/i],
-  drawerBase:  [/drawer/i],
-  sink:        [/\bsink\b/i],
-  cornerBase:  [/corner.*base|blind\s*corner/i, /\bcorner\b/i],
-  lazysusan:   [/lazy\s*susan/i],
-  vanity:      [/vanity/i],
-  tall:        [/\btall\b/i, /pantry/i],
-  diagWall:    [/diagonal/i, /diag.*wall/i],
-  fridgePanel: [/fridge/i, /refrigerator/i, /end\s*panel/i],
+// Valid widths/heights per cabinet type — mirrors CATALOG in app.html. Only Wall and Tall
+// vary by height there; these are two separate static files with no shared module system,
+// so keep this in sync by hand if CATALOG changes.
+const CABINET_WIDTHS = {
+  base:        [9,12,15,18,21,24,27,30,33,36],
+  wall:        [9,12,15,18,21,24,27,30,33,36],
+  drawerBase:  [12,15,18,21,24,30,36],
+  sink:        [24,27,30,33,36,42],
+  cornerBase:  [36,39,42],
+  lazysusan:   [33],
+  vanity:      [24,30,36,48,60],
+  tall:        [15,18,24,30],
+  diagWall:    [24,27],
+  fridgePanel: [0.75],
 };
+const CABINET_HEIGHTS = { wall: [12,15,18,30,36,42], tall: [84,90,96] }; // only types that vary by height
 
-let _priceMapDataRows = [];
-let _parsedRows = [];
+// Generic placeholder finishes — mirrors DEFAULT_STYLES in app.html. Used to build a
+// company's price sheet template when they haven't set up their own style list yet.
+const DEFAULT_STYLES = [
+  { code:'WS', name:'White Shaker' },
+  { code:'GS', name:'Grey Shaker' },
+  { code:'ES', name:'Espresso' },
+  { code:'NW', name:'Natural Wood' },
+];
+function companyStyles() {
+  const cs = companyProfile.custom_styles;
+  return (cs && Array.isArray(cs) && cs.length > 0) ? cs : DEFAULT_STYLES;
+}
 
 function isSpreadsheet(file) {
   const name = file.name.toLowerCase();
   return name.endsWith('.csv') || name.endsWith('.xls') || name.endsWith('.xlsx');
 }
 
-function guessRowForType(typeKey, rows) {
-  const hints = TYPE_HINTS[typeKey] || [];
-  for (const hint of hints) {
-    const idx = rows.findIndex(r => hint.test(r.label));
-    if (idx !== -1) return idx;
-  }
-  return -1;
+function csvField(v) {
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 
+// Generates a blank price sheet with one row per (type, width[, height]) the app actually
+// understands, and one column per this company's own finishes — so filling it in (by hand,
+// or by VLOOKUP against a supplier list) always produces something the upload can parse exactly.
+function downloadPriceSheetTemplate() {
+  const styles = companyStyles();
+  const header = ['Cabinet Type', 'Width (in)', 'Height (in)', ...styles.map(s => s.name), 'Your SKU / Notes (optional)'];
+  const rows = [header];
+
+  CABINET_TYPES.forEach(t => {
+    const widths = CABINET_WIDTHS[t.key] || [];
+    const heights = CABINET_HEIGHTS[t.key];
+    widths.forEach(w => {
+      (heights || ['—']).forEach(h => {
+        rows.push([t.label, w, h, ...styles.map(() => ''), '']);
+      });
+    });
+  });
+
+  const csv = rows.map(r => r.map(csvField).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'price-sheet-template.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+let _pendingPriceRows = []; // [{ type, sizeKey, styleCode, price }] staged from the last upload
+
+// Parsing is fully deterministic — we control the template's exact columns, so there's no
+// guessing involved. A file whose header doesn't match gets rejected with a clear message
+// rather than silently misread.
 async function tryOpenPriceMapping(file) {
-  if (typeof XLSX === 'undefined') return; // parsing library failed to load — fail silently, file is already saved
+  if (typeof XLSX === 'undefined') return; // parsing library failed to load — file is already saved as-is
   try {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array' });
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
       .filter(r => r.some(c => String(c).trim() !== ''));
-    if (grid.length < 2) { showToast("Couldn't find pricing rows in that file — saved it as a file only."); return; }
+    if (grid.length < 2) { showToast("Couldn't find any pricing rows in that file — saved it as a file only."); return; }
 
-    const headers = grid[0].map((h, i) => String(h).trim() || `Column ${i + 1}`);
-    const dataRows = grid.slice(1);
+    const headers = grid[0].map(h => String(h).trim());
+    if (headers[0] !== 'Cabinet Type' || headers[1] !== 'Width (in)' || headers[2] !== 'Height (in)') {
+      showToast("That doesn't look like our price sheet template — download the template below, fill it in, then upload that.");
+      return;
+    }
 
-    let labelColIdx = headers.findIndex(h => /desc|name|item|type|product|cabinet/i.test(h));
-    if (labelColIdx === -1) labelColIdx = 0;
-    let priceColIdx = headers.findIndex(h => /price|cost|rate|msrp|\$/i.test(h));
-    if (priceColIdx === -1) priceColIdx = headers.length - 1;
+    const typeByLabel = Object.fromEntries(CABINET_TYPES.map(t => [t.label, t.key]));
+    const styles = companyStyles();
+    const finishCols = [];
+    for (let i = 3; i < headers.length; i++) {
+      const h = headers[i];
+      if (!h || /notes|sku/i.test(h)) continue;
+      const style = styles.find(s => s.name.toLowerCase() === h.toLowerCase());
+      if (style) finishCols.push({ col: i, code: style.code, name: style.name });
+    }
+    if (!finishCols.length) {
+      showToast("None of the columns matched your current finish names — check Company Settings → Styles, then download a fresh template.");
+      return;
+    }
+
+    _pendingPriceRows = [];
+    grid.slice(1).forEach(r => {
+      const typeKey = typeByLabel[String(r[0] ?? '').trim()];
+      if (!typeKey) return;
+      const width = parseFloat(r[1]);
+      if (isNaN(width)) return;
+      const heightRaw = String(r[2] ?? '').trim();
+      const height = (heightRaw === '' || heightRaw === '—') ? null : parseFloat(heightRaw);
+      const sizeKey = CABINET_HEIGHTS[typeKey] ? `${width}x${height}` : `${width}`;
+      finishCols.forEach(fc => {
+        const raw = String(r[fc.col] ?? '').trim();
+        if (raw === '') return;
+        const price = parseFloat(raw.replace(/[^0-9.\-]/g, ''));
+        if (isNaN(price)) return;
+        _pendingPriceRows.push({ type: typeKey, sizeKey, styleCode: fc.code, price });
+      });
+    });
 
     document.getElementById('pricemap-filename').textContent = file.name;
-    const labelSel = document.getElementById('pricemap-label-col');
-    const priceSel = document.getElementById('pricemap-price-col');
-    const colOptions = headers.map((h, i) => `<option value="${i}">${esc(h)}</option>`).join('');
-    labelSel.innerHTML = colOptions;
-    priceSel.innerHTML = colOptions;
-    labelSel.value = String(labelColIdx);
-    priceSel.value = String(priceColIdx);
-
-    _priceMapDataRows = dataRows;
-    renderPriceMapRows(dataRows, labelColIdx, priceColIdx);
+    document.getElementById('pricemap-summary').textContent = _pendingPriceRows.length
+      ? `Found ${_pendingPriceRows.length} price${_pendingPriceRows.length === 1 ? '' : 's'} across ${finishCols.length} finish${finishCols.length === 1 ? '' : 'es'} (${finishCols.map(f => f.name).join(', ')}). Anything left blank stays unpriced — we never guess.`
+      : 'No filled-in prices were found in that file.';
+    document.getElementById('pricemap-apply-btn').disabled = !_pendingPriceRows.length;
     document.getElementById('pricemap-modal-overlay').classList.add('open');
   } catch (err) {
     console.warn('Price list parsing skipped:', err);
+    showToast('Could not read that file — make sure it matches our template.');
   }
-}
-
-function refreshPriceMapColumns() {
-  const labelColIdx = parseInt(document.getElementById('pricemap-label-col').value, 10);
-  const priceColIdx = parseInt(document.getElementById('pricemap-price-col').value, 10);
-  renderPriceMapRows(_priceMapDataRows, labelColIdx, priceColIdx);
-}
-document.getElementById('pricemap-label-col').addEventListener('change', refreshPriceMapColumns);
-document.getElementById('pricemap-price-col').addEventListener('change', refreshPriceMapColumns);
-
-function renderPriceMapRows(dataRows, labelColIdx, priceColIdx) {
-  _parsedRows = dataRows.map(r => {
-    const label = String(r[labelColIdx] ?? '').trim();
-    const rawPrice = String(r[priceColIdx] ?? '').replace(/[^0-9.\-]/g, '');
-    const price = parseFloat(rawPrice);
-    return { label, price: isNaN(price) ? null : price };
-  }).filter(r => r.label || r.price != null);
-
-  document.getElementById('pricemap-row-count').textContent = _parsedRows.length;
-
-  const rowOptions = _parsedRows.map((r, i) =>
-    `<option value="${i}">${esc(r.label || '(no label)')}${r.price != null ? ' — $' + r.price.toFixed(2) : ''}</option>`
-  ).join('');
-
-  document.getElementById('pricemap-rows').innerHTML = CABINET_TYPES.map(t => `
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:150px;font-size:13px;font-weight:600;flex-shrink:0;">${esc(t.label)}</div>
-      <select class="pricemap-type-select" data-type="${t.key}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);">
-        <option value="">— Use Default —</option>
-        ${rowOptions}
-      </select>
-    </div>`).join('');
-
-  CABINET_TYPES.forEach(t => {
-    const guessIdx = guessRowForType(t.key, _parsedRows);
-    if (guessIdx !== -1) {
-      const sel = document.querySelector(`.pricemap-type-select[data-type="${t.key}"]`);
-      if (sel) sel.value = String(guessIdx);
-    }
-  });
 }
 
 function closePriceMapModal() {
@@ -1396,20 +1415,20 @@ function closePriceMapModal() {
 }
 
 async function applyPriceMapping() {
-  if (!currentUser) return;
+  if (!currentUser || !_pendingPriceRows.length) { closePriceMapModal(); return; }
   const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', currentUser.id).single();
   const overrides = { ...(existing?.price_overrides || {}) };
-  let mappedCount = 0;
 
-  document.querySelectorAll('.pricemap-type-select').forEach(sel => {
-    const typeKey = sel.dataset.type;
-    const val = sel.value;
-    if (val === '') return; // left as "Use Default" — don't touch this type's existing value
-    const row = _parsedRows[parseInt(val, 10)];
-    if (row && row.price != null) { overrides[typeKey] = row.price; mappedCount++; }
+  _pendingPriceRows.forEach(({ type, sizeKey, styleCode, price }) => {
+    // A prior flat $/in rate (legacy manual entry) or a size-only price (from before finish
+    // pricing existed) gets replaced here, since real per-size-per-finish data is strictly
+    // more accurate than either.
+    const forType = (overrides[type] && typeof overrides[type] === 'object') ? { ...overrides[type] } : {};
+    const forSize = (forType[sizeKey] && typeof forType[sizeKey] === 'object') ? { ...forType[sizeKey] } : {};
+    forSize[styleCode] = price;
+    forType[sizeKey] = forSize;
+    overrides[type] = forType;
   });
-
-  if (!mappedCount) { closePriceMapModal(); return; }
 
   const { error } = await db.from('company_profiles').upsert({
     user_id: currentUser.id,
@@ -1418,8 +1437,9 @@ async function applyPriceMapping() {
   }, { onConflict: 'user_id' });
 
   if (error) { showToast('Could not save pricing: ' + error.message); return; }
+  companyProfile.price_overrides = overrides;
   closePriceMapModal();
-  showToast(`Updated pricing for ${mappedCount} cabinet type${mappedCount === 1 ? '' : 's'}.`);
+  showToast(`Updated ${_pendingPriceRows.length} price${_pendingPriceRows.length === 1 ? '' : 's'}.`);
 }
 
 async function downloadCompanyFile(path, name) {
