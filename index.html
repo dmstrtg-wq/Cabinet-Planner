@@ -12,20 +12,20 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Cabinet Planner — Design It. Price It. Close It.</title>
+<title>My Cabinet Planner — Design It. Quote It. Close It.</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<meta name="description" content="Cabinet design software built for independent cabinet sellers and installers. Floor plan, elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta name="description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mycabinetplanner.com/">
-<meta property="og:title" content="My Cabinet Planner — Design It. Price It. Close It.">
-<meta property="og:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor plan, elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta property="og:title" content="My Cabinet Planner — Design It. Quote It. Close It.">
+<meta property="og:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
 <meta property="og:image" content="https://mycabinetplanner.com/og-image.png">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://mycabinetplanner.com/">
-<meta name="twitter:title" content="My Cabinet Planner — Design It. Price It. Close It.">
-<meta name="twitter:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor plan, elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta name="twitter:title" content="My Cabinet Planner — Design It. Quote It. Close It.">
+<meta name="twitter:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
 <meta name="twitter:image" content="https://mycabinetplanner.com/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -288,6 +288,31 @@ nav{
 .mock-activity-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;}
 .mock-activity-item>div:last-child{font-size:11px;color:var(--ink);line-height:1.5;}
 .mock-activity-time{font-size:9.5px;color:var(--muted);margin-top:2px;display:block;}
+
+/* Looping carousel — Floor Plan / Elevation / 3D */
+.mock-carousel{width:100%;height:100%;position:relative;min-height:176px;}
+.mock-slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .6s ease;
+}
+.mock-slide.active{opacity:1;pointer-events:auto;}
+.mock-slide-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.mock-dots{position:absolute;left:0;right:0;bottom:-24px;display:flex;justify-content:center;gap:7px;}
+.mock-dot{width:6px;height:6px;border-radius:50%;background:var(--border);border:none;padding:0;cursor:pointer;transition:background .2s,transform .2s;}
+.mock-dot.active{background:var(--accent);transform:scale(1.3);}
+
+/* Elevation mockup: wall + base cabinets at their real vertical positions */
+.mock-elev{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:10px 10px 0;background:white;}
+.mock-elev-row{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.mock-elev-gap{height:20px;}
+.mock-elev-floor{height:3px;background:#334155;margin-top:10px;border-radius:2px;}
+
+/* 3D mockup: simple isometric boxes made from three flat faces */
+.mock-3d-scene{display:flex;align-items:flex-end;justify-content:center;gap:22px;padding:14px 0 24px;}
+.mock-3d-cab{position:relative;width:34px;}
+.mock-3d-cab .f-front{position:absolute;bottom:0;left:0;width:34px;background:#3B82F6;border-radius:2px;}
+.mock-3d-cab .f-top{position:absolute;top:-9px;left:5px;width:34px;height:13px;background:#93C5FD;transform:skewX(-40deg);border-radius:2px;}
+.mock-3d-cab .f-side{position:absolute;bottom:0;right:-11px;width:11px;background:#1D4ED8;transform:skewY(-45deg);border-radius:2px;}
 
 /* ── WHO IT'S FOR ── */
 .for-section{padding:100px 6%;background:var(--ink);}
@@ -558,7 +583,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   <div class="hero-left">
     <div class="hero-eyebrow">Cabinet design software built for the trade</div>
     <h1>Design it. Quote it.<br><em>Close it.</em></h1>
-    <p class="hero-sub">Floor plan, elevation, and 3D view in one browser tab. Set your own prices once, and every layout turns into a quote your customer can sign on the spot.</p>
+    <p class="hero-sub">Floor Plan, Elevation, and 3D view in one browser tab. Set your own prices once, and every layout turns into a quote your customer can sign on the spot.</p>
     <div class="hero-actions">
       <a href="/app?demo=1" class="btn-hero">Try It Free &rarr;</a>
       <a href="#pricing" class="btn-hero-ghost">See Pricing</a>
@@ -612,7 +637,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   </div>
   <div class="stat-item">
     <div class="stat-num"><em>3</em></div>
-    <div class="stat-label">Views: floor plan, elevation, 3D</div>
+    <div class="stat-label">Views: Floor Plan, Elevation, 3D</div>
   </div>
   <div class="stat-item">
     <div class="stat-num"><em>1</em></div>
@@ -671,23 +696,58 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   <div class="feature-row">
     <div class="feature-text">
       <div class="feature-tag">Design</div>
-      <h3>Floor plan, elevation, and 3D — live.</h3>
+      <h3>Floor Plan, Elevation, and 3D — live.</h3>
       <p>See the room from above and straight on simultaneously. Move any cabinet and every dimension updates instantly. Switch to 3D any time for a visual check of the full layout.</p>
     </div>
     <div class="feature-visual">
-      <div style="width:100%;display:flex;flex-direction:column;gap:8px;">
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">North Wall &middot; Floor Plan</div>
-        <div class="mock-floor" style="margin-bottom:6px;">
-          <div class="mock-cab">B36</div>
-          <div class="mock-cab" style="background:#06B6D4;">SB30</div>
-          <div class="mock-cab">B30</div>
-          <div class="mock-cab">B36</div>
+      <div class="mock-carousel" id="design-carousel">
+        <div class="mock-slide active" data-slide="0">
+          <div class="mock-slide-label">North Wall &middot; Floor Plan</div>
+          <div class="mock-floor" style="margin-bottom:6px;">
+            <div class="mock-cab">B36</div>
+            <div class="mock-cab" style="background:#06B6D4;">SB30</div>
+            <div class="mock-cab">B30</div>
+            <div class="mock-cab">B36</div>
+          </div>
+          <div class="mock-floor">
+            <div class="mock-cab wall">W36</div>
+            <div class="mock-cab wall">W30</div>
+            <div class="mock-cab wall">W30</div>
+            <div class="mock-cab wall">W36</div>
+          </div>
         </div>
-        <div class="mock-floor">
-          <div class="mock-cab wall">W36</div>
-          <div class="mock-cab wall">W30</div>
-          <div class="mock-cab wall">W30</div>
-          <div class="mock-cab wall">W36</div>
+        <div class="mock-slide" data-slide="1">
+          <div class="mock-slide-label">North Wall &middot; Elevation</div>
+          <div class="mock-elev">
+            <div class="mock-elev-row">
+              <div class="mock-cab wall">W36</div>
+              <div class="mock-cab wall">W30</div>
+              <div class="mock-cab wall">W30</div>
+              <div class="mock-cab wall">W36</div>
+            </div>
+            <div class="mock-elev-gap"></div>
+            <div class="mock-elev-row">
+              <div class="mock-cab">B36</div>
+              <div class="mock-cab" style="background:#06B6D4;">SB30</div>
+              <div class="mock-cab">B30</div>
+              <div class="mock-cab">B36</div>
+            </div>
+            <div class="mock-elev-floor"></div>
+          </div>
+        </div>
+        <div class="mock-slide" data-slide="2">
+          <div class="mock-slide-label">3D View</div>
+          <div class="mock-3d-scene">
+            <div class="mock-3d-cab" style="height:34px;"><div class="f-front" style="height:34px;"></div><div class="f-top"></div><div class="f-side" style="height:34px;"></div></div>
+            <div class="mock-3d-cab" style="height:34px;"><div class="f-front" style="height:34px;background:#06B6D4;"></div><div class="f-top" style="background:#67E8F9;"></div><div class="f-side" style="height:34px;background:#0891B2;"></div></div>
+            <div class="mock-3d-cab" style="height:60px;"><div class="f-front" style="height:60px;"></div><div class="f-top"></div><div class="f-side" style="height:60px;"></div></div>
+            <div class="mock-3d-cab" style="height:34px;"><div class="f-front" style="height:34px;"></div><div class="f-top"></div><div class="f-side" style="height:34px;"></div></div>
+          </div>
+        </div>
+        <div class="mock-dots">
+          <button class="mock-dot active" data-dot="0" aria-label="Show Floor Plan"></button>
+          <button class="mock-dot" data-dot="1" aria-label="Show Elevation"></button>
+          <button class="mock-dot" data-dot="2" aria-label="Show 3D"></button>
         </div>
       </div>
     </div>
@@ -789,7 +849,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <div class="plan-price">$0<span class="plan-period"> forever</span></div>
       <p class="plan-desc">No account needed. Open the planner and start designing right now.</p>
       <ul class="plan-list">
-        <li>Floor plan, elevation &amp; 3D view</li>
+        <li>Floor Plan, Elevation &amp; 3D view</li>
         <li>Full cabinet catalog (30+ types)</li>
         <li>Unlimited cabinets per design</li>
         <li>Saves locally in your browser</li>
@@ -1614,6 +1674,29 @@ document.getElementById('lp-contact-modal').addEventListener('click', function(e
       btn.href = `/profile?checkout=${plan}`;
     });
   }
+})();
+
+// Looping Floor Plan / Elevation / 3D carousel
+(function() {
+  const root = document.getElementById('design-carousel');
+  if (!root) return;
+  const slides = root.querySelectorAll('.mock-slide');
+  const dots = root.querySelectorAll('.mock-dot');
+  let i = 0, timer;
+
+  function show(n) {
+    i = n;
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+  }
+  function next() { show((i + 1) % slides.length); }
+  function start() { timer = setInterval(next, 3500); }
+  function stop() { clearInterval(timer); }
+
+  dots.forEach((d, idx) => d.addEventListener('click', () => { show(idx); stop(); start(); }));
+  root.addEventListener('mouseenter', stop);
+  root.addEventListener('mouseleave', start);
+  start();
 })();
 </script>
 </body>
