@@ -1141,24 +1141,18 @@ async function resolveTeamContext() {
   }
 }
 
-// Billing/Subscription: owner only. Company Settings/Files (pricing): owner + admin.
+// Billing, Subscription, Company Settings, and Files (pricing) are all owner-only —
+// no team member, including Admins, can view/change billing or pricing.
 // Hides the nav links; applyHashTab() also redirects away if one is opened directly by URL.
 function applyTeamRoleGates() {
-  const ownerOnly = ['subscription-nav-link', 'billing-nav-link', 'sidebar-cancel-link'];
-  const ownerOrAdmin = ['company-nav-link', 'files-nav-link'];
+  const ownerOnly = ['subscription-nav-link', 'billing-nav-link', 'sidebar-cancel-link', 'company-nav-link', 'files-nav-link'];
   ownerOnly.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = (myTeamRole === 'owner') ? '' : 'none';
   });
-  ownerOrAdmin.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = (myTeamRole === 'member') ? 'none' : '';
-  });
 }
 function tabRestrictedForRole(tab) {
-  if ((tab === 'subscription' || tab === 'billing') && myTeamRole !== 'owner') return true;
-  if ((tab === 'company' || tab === 'files') && myTeamRole === 'member') return true;
-  return false;
+  return ['subscription', 'billing', 'company', 'files'].includes(tab) && myTeamRole !== 'owner';
 }
 
 /* ── COMPANY SETTINGS (logo upload + inline edit) ── */
@@ -1270,9 +1264,9 @@ function addCpStyle() {
 async function saveCompanySettings() {
   if (!currentUser) return;
   const statusEl = document.getElementById('company-save-status');
-  if (myTeamRole === 'member') {
+  if (myTeamRole !== 'owner') {
     statusEl.style.color = '#b91c1c';
-    statusEl.textContent = 'Only the owner or an admin can edit company settings.';
+    statusEl.textContent = 'Only the account owner can edit company settings.';
     return;
   }
   statusEl.style.color = 'var(--muted)';
@@ -1322,8 +1316,8 @@ function applyFilesTabTierGating() {
 }
 
 async function triggerFileUpload(category) {
-  if (myTeamRole === 'member') {
-    showToast('Only the owner or an admin can manage price sheets.');
+  if (myTeamRole !== 'owner') {
+    showToast('Only the account owner can manage price sheets.');
     return;
   }
   if (!canAccess('silver')) {
@@ -1404,8 +1398,8 @@ async function handleFileUpload(e, category) {
   if (!file || !currentUser) return;
 
   // Role + tier gate — belt-and-suspenders check in case button gating was bypassed
-  if (myTeamRole === 'member') {
-    showToast('Only the owner or an admin can manage price sheets.');
+  if (myTeamRole !== 'owner') {
+    showToast('Only the account owner can manage price sheets.');
     return;
   }
   if (!canAccess('silver')) {
@@ -1604,7 +1598,7 @@ function closePriceMapModal() {
 
 async function applyPriceMapping() {
   if (!currentUser || !_pendingPriceRows.length) { closePriceMapModal(); return; }
-  if (myTeamRole === 'member') { showToast('Only the owner or an admin can manage price sheets.'); closePriceMapModal(); return; }
+  if (myTeamRole !== 'owner') { showToast('Only the account owner can manage price sheets.'); closePriceMapModal(); return; }
   const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', effectiveOwnerId).single();
   const overrides = { ...(existing?.price_overrides || {}) };
 

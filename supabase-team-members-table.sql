@@ -65,9 +65,10 @@ CREATE POLICY "team_member_access_projects" ON projects
   );
 
 -- 6. company_profiles — every active team member can READ (they need the
---    company's pricing/finishes to build accurate quotes), but only an
---    active ADMIN-role member can WRITE (company settings, pricing, styles,
---    billing fields stay owner/admin-only, matching the role model).
+--    company's pricing/finishes to build accurate quotes), but WRITE (company
+--    settings, pricing, styles, billing fields) stays owner-only — no team
+--    member, including Admins, can change pricing. The owner's own existing
+--    RLS already covers their own writes, so no write policy is added here.
 CREATE POLICY "team_member_view_company" ON company_profiles
   FOR SELECT
   TO authenticated
@@ -77,23 +78,9 @@ CREATE POLICY "team_member_view_company" ON company_profiles
       WHERE member_user_id = auth.uid() AND status = 'active'
     )
   );
-CREATE POLICY "team_admin_edit_company" ON company_profiles
-  FOR UPDATE
-  TO authenticated
-  USING (
-    user_id IN (
-      SELECT owner_id FROM team_members
-      WHERE member_user_id = auth.uid() AND status = 'active' AND role = 'admin'
-    )
-  )
-  WITH CHECK (
-    user_id IN (
-      SELECT owner_id FROM team_members
-      WHERE member_user_id = auth.uid() AND status = 'active' AND role = 'admin'
-    )
-  );
 
--- 7. company_files (uploaded price sheets) — same read-all / admin-write split.
+-- 7. company_files (uploaded price sheets) — read-only for team members, same
+--    owner-only-write rule as company_profiles above.
 CREATE POLICY "team_member_view_files" ON company_files
   FOR SELECT
   TO authenticated
@@ -101,20 +88,5 @@ CREATE POLICY "team_member_view_files" ON company_files
     user_id IN (
       SELECT owner_id FROM team_members
       WHERE member_user_id = auth.uid() AND status = 'active'
-    )
-  );
-CREATE POLICY "team_admin_manage_files" ON company_files
-  FOR ALL
-  TO authenticated
-  USING (
-    user_id IN (
-      SELECT owner_id FROM team_members
-      WHERE member_user_id = auth.uid() AND status = 'active' AND role = 'admin'
-    )
-  )
-  WITH CHECK (
-    user_id IN (
-      SELECT owner_id FROM team_members
-      WHERE member_user_id = auth.uid() AND status = 'active' AND role = 'admin'
     )
   );
