@@ -1634,6 +1634,7 @@ const SUPABASE_URL = 'https://ojlbxofgpucihqxgpxzz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
+let pendingAuthType = null; // 'invite' or 'recovery' if this session arrived via an email link
 
 // ════════════════════════════
 // CANVAS ZOOM / PAN
@@ -1841,6 +1842,7 @@ async function handleSignIn() {
       currentUser = data.user;
       btn.disabled = false;
       showApp();
+      await resolveTeamContext();
       await Promise.all([loadProjects(), loadCompanyProfile()]);
       maybeStartTour();
     } else {
@@ -1863,6 +1865,7 @@ async function handleSignIn() {
     return;
   }
   showApp();
+  await resolveTeamContext();
   await Promise.all([loadProjects(), loadCompanyProfile()]);
   openProjectFromUrl();
   maybeStartTour();
@@ -2029,7 +2032,7 @@ async function syncActiveProject() {
   }
   const { error } = await db.from('projects').upsert({
     id: p.id,
-    user_id: currentUser.id,
+    user_id: effectiveOwnerId,
     customer: p.customer,
     type: p.type,
     notes: p.notes || '',
@@ -6150,6 +6153,45 @@ function addActivityNote() {
 }
 
 // ════════════════════════════
+// TEAM CONTEXT — which account this session is acting under
+// ════════════════════════════
+// effectiveOwnerId is whose data (projects, company profile, pricing) we read/write —
+// either the logged-in user's own account, or the owner of a team they're an active
+// member of. myTeamRole is 'owner' (default) or the role ('admin'/'member') assigned
+// by that owner. Call resolveTeamContext() once per session, before loading anything
+// account-scoped.
+let effectiveOwnerId = null;
+let myTeamRole = 'owner';
+async function resolveTeamContext() {
+  effectiveOwnerId = currentUser.id;
+  myTeamRole = 'owner';
+  let { data } = await db.from('team_members')
+    .select('owner_id, role, status')
+    .eq('member_user_id', currentUser.id)
+    .order('invited_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (data && data.status === 'pending') {
+    // First time this membership is seen — activate it via the server function (never a
+    // direct client write to team_members beyond the owner's own row, so a member can't
+    // self-promote). Covers both a fresh invite-link arrival and an existing user who
+    // already had a password and just logged in normally.
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      await fetch('/.netlify/functions/accept-team-invite', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      data.status = 'active';
+    } catch (e) { console.warn('Accept invite error:', e); }
+  }
+  if (data && data.status === 'active') {
+    effectiveOwnerId = data.owner_id;
+    myTeamRole = data.role;
+  }
+}
+
+// ════════════════════════════
 // COMPANY SETTINGS
 // ════════════════════════════
 let companyProfile = {};
@@ -6164,7 +6206,7 @@ function canAccess(requiredTier) {
 
 async function loadCompanyProfile() {
   if (!currentUser) return;
-  const { data } = await db.from('company_profiles').select('*').eq('user_id', currentUser.id).single();
+  const { data } = await db.from('company_profiles').select('*').eq('user_id', effectiveOwnerId).single();
   if (data) companyProfile = data;
   applyTierGates();
 }
@@ -6222,8 +6264,16 @@ async function setNewPassword() {
   const btn = document.querySelector('#modal-set-password .btn-primary');
   btn.disabled = true; btn.textContent = 'Saving…';
   const { error } = await db.auth.updateUser({ password: pw });
+  if (error) { btn.disabled = false; btn.textContent = 'Set Password & Continue →'; err.textContent = error.message; return; }
+
+  // Team invite: resolveTeamContext() activates the pending membership and resolves
+  // which account we're now acting under, then reload their shared workspace.
+  if (pendingAuthType === 'invite') {
+    await resolveTeamContext();
+    await Promise.all([loadProjects(), loadCompanyProfile()]);
+  }
+
   btn.disabled = false; btn.textContent = 'Set Password & Continue →';
-  if (error) { err.textContent = error.message; return; }
   closeModal('modal-set-password');
   history.replaceState(null, '', window.location.pathname);
 }
@@ -6550,15 +6600,16 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  const urlType = getHashParam('type'); // 'invite' or 'recovery' if arriving via email link
+  pendingAuthType = getHashParam('type'); // 'invite' or 'recovery' if arriving via email link
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
     showApp();
+    await resolveTeamContext();
     await Promise.all([loadProjects(), loadCompanyProfile()]);
     openProjectFromUrl();
     maybeStartTour();
-      if (urlType === 'invite' || urlType === 'recovery') {
+      if (pendingAuthType === 'invite' || pendingAuthType === 'recovery') {
       openModal('modal-set-password');
     }
   } else {

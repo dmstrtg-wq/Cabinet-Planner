@@ -329,6 +329,18 @@ const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
 let projId, projData, currentUser;
+let effectiveOwnerId = null; // whose account this session is acting under — see app.html for the full explanation
+
+async function resolveTeamContext() {
+  effectiveOwnerId = currentUser.id;
+  const { data } = await db.from('team_members')
+    .select('owner_id')
+    .eq('member_user_id', currentUser.id)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (data) effectiveOwnerId = data.owner_id;
+}
 
 async function handleSignOut() {
   await db.auth.signOut();
@@ -609,12 +621,13 @@ async function init() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) { location.href = '/app'; return; }
   currentUser = session.user;
+  await resolveTeamContext();
 
   projId = new URLSearchParams(location.search).get('id');
   if (!projId) { showError(); return; }
 
   const { data, error } = await db.from('projects').select('*').eq('id', projId).single();
-  if (error || !data || data.user_id !== currentUser.id) { showError(); return; }
+  if (error || !data || data.user_id !== effectiveOwnerId) { showError(); return; }
   projData = data;
 
   document.getElementById('loading').style.display = 'none';

@@ -360,11 +360,11 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M2 5a1.3 1.3 0 0 1 1.3-1.3h2.4l1 1.2h6a1.3 1.3 0 0 1 1.3 1.3v5.5A1.3 1.3 0 0 1 12.7 13H3.3A1.3 1.3 0 0 1 2 11.7V5z"/></svg>
           Projects
         </a>
-        <a class="sidebar-link" href="#company" data-tab="company">
+        <a class="sidebar-link" href="#company" data-tab="company" id="company-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="2" width="10" height="12" rx="1"/><line x1="6" y1="5.5" x2="6.01" y2="5.5"/><line x1="10" y1="5.5" x2="10.01" y2="5.5"/><line x1="6" y1="8.5" x2="6.01" y2="8.5"/><line x1="10" y1="8.5" x2="10.01" y2="8.5"/></svg>
           Company Settings
         </a>
-        <a class="sidebar-link" href="#files" data-tab="files">
+        <a class="sidebar-link" href="#files" data-tab="files" id="files-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h5l3 3v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 2v3h3"/><line x1="5" y1="8.5" x2="9.5" y2="8.5"/><line x1="5" y1="11" x2="9.5" y2="11"/></svg>
           Files
         </a>
@@ -372,11 +372,11 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.2"/><path d="M2 14c0-2.4 1.8-4 4-4s4 1.6 4 4"/><circle cx="11.7" cy="6" r="1.7"/><path d="M9.8 8.6c.6-.3 1.2-.4 1.9-.4 2 0 3.7 1.4 3.7 3.8"/></svg>
           Team
         </a>
-        <a class="sidebar-link" href="#subscription" data-tab="subscription">
+        <a class="sidebar-link" href="#subscription" data-tab="subscription" id="subscription-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1.5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
           Subscription
         </a>
-        <a class="sidebar-link" href="#billing" data-tab="billing">
+        <a class="sidebar-link" href="#billing" data-tab="billing" id="billing-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h8v12l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1L4 14V2z"/><line x1="6" y1="5.5" x2="11" y2="5.5"/><line x1="6" y1="8" x2="11" y2="8"/></svg>
           Billing
         </a>
@@ -549,8 +549,8 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
         <div class="tab-desc">Everyone with access to your account.</div>
         <div class="section">
           <div class="section-head">
-            <div class="section-title">Team Members</div>
-            <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="openInviteModal()">＋ Invite Teammate</button>
+            <div class="section-title">Team Members <span id="team-seat-count" style="font-weight:400;color:var(--muted);font-size:12px;"></span></div>
+            <button class="btn btn-primary" id="invite-teammate-btn" style="font-size:12px;padding:7px 14px;" onclick="openInviteModal()">＋ Invite Teammate</button>
           </div>
           <div class="card">
             <table class="proj-table">
@@ -559,10 +559,11 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
-              <tbody id="team-body"></tbody>
+              <tbody id="team-body"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -701,13 +702,14 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
     <div class="form-group">
       <label>Role</label>
       <select id="invite-role">
-        <option>Member</option>
-        <option>Admin</option>
+        <option value="member">Member — projects &amp; quotes only</option>
+        <option value="admin">Admin — full access except billing</option>
       </select>
     </div>
+    <div id="invite-error" style="font-size:12px;color:#b91c1c;min-height:16px;margin-bottom:4px;"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="confirmInvite()">Send Invite</button>
+      <button class="btn btn-primary" id="invite-send-btn" onclick="confirmInvite()">Send Invite</button>
     </div>
   </div>
 </div>
@@ -752,7 +754,7 @@ function setActiveTab(tab) {
 function applyHashTab() {
   const tab = (location.hash || '#overview').slice(1);
   const valid = ['overview','projects','company','files','team','subscription','billing','leads'];
-  setActiveTab(valid.includes(tab) ? tab : 'overview');
+  setActiveTab((valid.includes(tab) && !tabRestrictedForRole(tab)) ? tab : 'overview');
 }
 window.addEventListener('hashchange', applyHashTab);
 
@@ -995,38 +997,168 @@ async function openBillingPortal() {
   }
 }
 
-/* ── TEAM (mock — seeded with the signed-in owner) ── */
+/* ── TEAM (Gold tier, real — invites go through invite-team-member / remove-team-member,
+   which verify the caller's session server-side and enforce the seat cap for real) ── */
+const TEAM_SEAT_CAP = 5;
 let teamMembers = [];
-function renderTeam() {
-  document.getElementById('team-body').innerHTML = teamMembers.map((m, i) => `
-    <tr>
-      <td class="proj-name">${esc(m.name)}</td>
-      <td style="color:var(--muted);">${esc(m.email)}</td>
-      <td><span class="role-badge role-${m.role}">${esc(m.role)}</span></td>
-      <td>${m.role === 'Owner' ? '' : `<a class="row-link" onclick="removeTeamMember(${i})">Remove</a>`}</td>
-    </tr>`).join('');
-}
-function removeTeamMember(i) {
-  teamMembers.splice(i, 1);
+
+async function loadTeamMembers() {
+  const { data } = await db.from('team_members')
+    .select('*')
+    .eq('owner_id', effectiveOwnerId)
+    .order('invited_at', { ascending: true });
+  teamMembers = data || [];
   renderTeam();
-  showToast('Teammate removed.');
 }
-function openInviteModal() { document.getElementById('invite-modal-overlay').classList.add('open'); }
+
+function renderTeam() {
+  const rows = [];
+  if (myTeamRole === 'owner') {
+    rows.push(`<tr>
+      <td class="proj-name">${esc(currentUser.email.split('@')[0])}</td>
+      <td style="color:var(--muted);">${esc(currentUser.email)}</td>
+      <td><span class="role-badge role-Owner">Owner</span></td>
+      <td style="color:var(--muted);">Active</td>
+      <td></td>
+    </tr>`);
+  }
+  rows.push(...teamMembers.map(m => {
+    const roleLabel = m.role === 'admin' ? 'Admin' : 'Member';
+    return `<tr>
+      <td class="proj-name">${esc(m.name || m.email)}</td>
+      <td style="color:var(--muted);">${esc(m.email)}</td>
+      <td><span class="role-badge role-${roleLabel}">${roleLabel}</span></td>
+      <td style="color:var(--muted);">${m.status === 'active' ? 'Active' : 'Invite sent'}</td>
+      <td>${myTeamRole === 'owner' ? `<a class="row-link" onclick="removeTeamMember('${m.id}')">Remove</a>` : ''}</td>
+    </tr>`;
+  }));
+  document.getElementById('team-body').innerHTML = rows.join('') ||
+    '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No team members yet.</td></tr>';
+
+  const seatEl = document.getElementById('team-seat-count');
+  if (seatEl) seatEl.textContent = `— ${teamMembers.length} of ${TEAM_SEAT_CAP} seats used`;
+
+  const inviteBtn = document.getElementById('invite-teammate-btn');
+  if (inviteBtn) inviteBtn.style.display = (myTeamRole === 'owner') ? '' : 'none';
+}
+
+function openInviteModal() {
+  if (myTeamRole !== 'owner') { showToast('Only the account owner can invite team members.'); return; }
+  if (!canAccess('gold')) { showToast('Team members are available on the Gold plan.'); return; }
+  if (teamMembers.length >= TEAM_SEAT_CAP) { showToast(`You've reached your ${TEAM_SEAT_CAP}-member limit.`); return; }
+  document.getElementById('invite-error').textContent = '';
+  document.getElementById('invite-modal-overlay').classList.add('open');
+}
 function closeInviteModal() {
   document.getElementById('invite-modal-overlay').classList.remove('open');
   document.getElementById('invite-name').value = '';
   document.getElementById('invite-email').value = '';
-  document.getElementById('invite-role').value = 'Member';
+  document.getElementById('invite-role').value = 'member';
+  document.getElementById('invite-error').textContent = '';
 }
-function confirmInvite() {
-  const name = document.getElementById('invite-name').value.trim();
+async function confirmInvite() {
+  const name  = document.getElementById('invite-name').value.trim();
   const email = document.getElementById('invite-email').value.trim();
-  const role = document.getElementById('invite-role').value;
-  if (!name || !email) { showToast('Add a name and email first.'); return; }
-  teamMembers.push({ name, email, role: 'Pending' === role ? 'Pending' : role });
-  renderTeam();
-  closeInviteModal();
-  showToast(`Invite sent to ${email}.`);
+  const role  = document.getElementById('invite-role').value;
+  const errEl = document.getElementById('invite-error');
+  errEl.textContent = '';
+  if (!name || !email) { errEl.textContent = 'Add a name and email first.'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Enter a valid email address.'; return; }
+  if (teamMembers.length >= TEAM_SEAT_CAP) { errEl.textContent = `You've reached your ${TEAM_SEAT_CAP}-member limit.`; return; }
+
+  const btn = document.getElementById('invite-send-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch('/.netlify/functions/invite-team-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ name, email, role }),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      errEl.textContent = result.error || 'Could not send the invite.';
+      btn.disabled = false; btn.textContent = 'Send Invite';
+      return;
+    }
+    await loadTeamMembers();
+    closeInviteModal();
+    showToast(`Invite sent to ${email}.`);
+  } catch (e) {
+    errEl.textContent = 'Network error — please try again.';
+  }
+  btn.disabled = false; btn.textContent = 'Send Invite';
+}
+async function removeTeamMember(id) {
+  if (!confirm('Remove this team member? They will immediately lose access.')) return;
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    const res = await fetch('/.netlify/functions/remove-team-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      showToast(result.error || 'Could not remove that member.');
+      return;
+    }
+    await loadTeamMembers();
+    showToast('Teammate removed.');
+  } catch (e) {
+    showToast('Network error — please try again.');
+  }
+}
+
+/* ── TEAM CONTEXT — which account this session is acting under (see app.html for the
+   full explanation; same mechanism, duplicated since these are separate static files) ── */
+let effectiveOwnerId = null;
+let myTeamRole = 'owner'; // 'owner' | 'admin' | 'member'
+async function resolveTeamContext() {
+  effectiveOwnerId = currentUser.id;
+  myTeamRole = 'owner';
+  let { data } = await db.from('team_members')
+    .select('owner_id, role, status')
+    .eq('member_user_id', currentUser.id)
+    .order('invited_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (data && data.status === 'pending') {
+    // Covers an existing user (already has a password) being invited — they never go
+    // through the set-password flow, so activate here on their next normal login instead.
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      await fetch('/.netlify/functions/accept-team-invite', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      data.status = 'active';
+    } catch (e) { console.warn('Accept invite error:', e); }
+  }
+  if (data && data.status === 'active') {
+    effectiveOwnerId = data.owner_id;
+    myTeamRole = data.role;
+  }
+}
+
+// Billing/Subscription: owner only. Company Settings/Files (pricing): owner + admin.
+// Hides the nav links; applyHashTab() also redirects away if one is opened directly by URL.
+function applyTeamRoleGates() {
+  const ownerOnly = ['subscription-nav-link', 'billing-nav-link', 'sidebar-cancel-link'];
+  const ownerOrAdmin = ['company-nav-link', 'files-nav-link'];
+  ownerOnly.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (myTeamRole === 'owner') ? '' : 'none';
+  });
+  ownerOrAdmin.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (myTeamRole === 'member') ? 'none' : '';
+  });
+}
+function tabRestrictedForRole(tab) {
+  if ((tab === 'subscription' || tab === 'billing') && myTeamRole !== 'owner') return true;
+  if ((tab === 'company' || tab === 'files') && myTeamRole === 'member') return true;
+  return false;
 }
 
 /* ── COMPANY SETTINGS (logo upload + inline edit) ── */
@@ -1138,11 +1270,16 @@ function addCpStyle() {
 async function saveCompanySettings() {
   if (!currentUser) return;
   const statusEl = document.getElementById('company-save-status');
+  if (myTeamRole === 'member') {
+    statusEl.style.color = '#b91c1c';
+    statusEl.textContent = 'Only the owner or an admin can edit company settings.';
+    return;
+  }
   statusEl.style.color = 'var(--muted)';
   statusEl.textContent = 'Saving…';
 
   const profile = {
-    user_id:      currentUser.id,
+    user_id:      effectiveOwnerId,
     company_name: document.getElementById('cp-name').value.trim(),
     tagline:      document.getElementById('cp-tagline').value.trim(),
     address:      document.getElementById('cp-address').value.trim(),
@@ -1185,6 +1322,10 @@ function applyFilesTabTierGating() {
 }
 
 async function triggerFileUpload(category) {
+  if (myTeamRole === 'member') {
+    showToast('Only the owner or an admin can manage price sheets.');
+    return;
+  }
   if (!canAccess('silver')) {
     alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
     return;
@@ -1193,7 +1334,7 @@ async function triggerFileUpload(category) {
   if (!canAccess('gold')) {
     const { count } = await db.from('company_files')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', currentUser.id)
+      .eq('user_id', effectiveOwnerId)
       .eq('category', 'price_list');
     if (count >= 1) {
       alert('Silver plan includes 1 price sheet.\n\nDelete your existing sheet to replace it, or upgrade to Gold for unlimited price sheets.');
@@ -1221,7 +1362,7 @@ async function loadCompanyFiles(category) {
   const tbody = document.getElementById('pricelist-body');
   const { data, error } = await db.from('company_files')
     .select('*')
-    .eq('user_id', currentUser.id)
+    .eq('user_id', effectiveOwnerId)
     .eq('category', category)
     .order('created_at', { ascending: false });
 
@@ -1262,7 +1403,11 @@ async function handleFileUpload(e, category) {
   e.target.value = '';
   if (!file || !currentUser) return;
 
-  // Tier gate — belt-and-suspenders check in case button gating was bypassed
+  // Role + tier gate — belt-and-suspenders check in case button gating was bypassed
+  if (myTeamRole === 'member') {
+    showToast('Only the owner or an admin can manage price sheets.');
+    return;
+  }
   if (!canAccess('silver')) {
     alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
     return;
@@ -1275,7 +1420,7 @@ async function handleFileUpload(e, category) {
 
   showToast('Uploading ' + file.name + '…');
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-  const path = `${currentUser.id}/${category}/${Date.now()}-${safeName}`;
+  const path = `${effectiveOwnerId}/${category}/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await db.storage.from(FILES_BUCKET).upload(path, file, {
     contentType: file.type || 'application/octet-stream'
@@ -1286,7 +1431,7 @@ async function handleFileUpload(e, category) {
   }
 
   const { error: insErr } = await db.from('company_files').insert({
-    user_id: currentUser.id,
+    user_id: effectiveOwnerId,
     category,
     file_name: file.name,
     storage_path: path,
@@ -1459,7 +1604,8 @@ function closePriceMapModal() {
 
 async function applyPriceMapping() {
   if (!currentUser || !_pendingPriceRows.length) { closePriceMapModal(); return; }
-  const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', currentUser.id).single();
+  if (myTeamRole === 'member') { showToast('Only the owner or an admin can manage price sheets.'); closePriceMapModal(); return; }
+  const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', effectiveOwnerId).single();
   const overrides = { ...(existing?.price_overrides || {}) };
 
   _pendingPriceRows.forEach(({ type, sizeKey, styleCode, price }) => {
@@ -1474,7 +1620,7 @@ async function applyPriceMapping() {
   });
 
   const { error } = await db.from('company_profiles').upsert({
-    user_id: currentUser.id,
+    user_id: effectiveOwnerId,
     price_overrides: overrides,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
@@ -1520,9 +1666,11 @@ async function init() {
   }
   const user = session.user;
   currentUser = user;
+  await resolveTeamContext();
 
-  // Load company profile
-  const { data: company } = await db.from('company_profiles').select('*').eq('user_id', user.id).single();
+  // Load company profile — effectiveOwnerId is the team owner's account if we're
+  // an active team member, otherwise it's just our own account
+  const { data: company } = await db.from('company_profiles').select('*').eq('user_id', effectiveOwnerId).single();
   companyProfile = company || {};
 
   // Load all projects
@@ -1536,9 +1684,7 @@ async function init() {
   document.getElementById('profile-name').textContent = name;
   document.getElementById('profile-email').textContent = user.email;
 
-  // Seed team with the signed-in user as Owner
-  teamMembers = [{ name: name, email: user.email, role: 'Owner' }];
-  renderTeam();
+  loadTeamMembers();
   renderSubscription();
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
@@ -1584,6 +1730,7 @@ async function init() {
     document.getElementById('leads-nav-link').style.display = '';
   }
 
+  applyTeamRoleGates();
   applyHashTab();
 
   // Auto-trigger checkout if redirected from a pricing plan link
