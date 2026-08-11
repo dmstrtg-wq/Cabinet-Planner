@@ -184,6 +184,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 
   /* Summary overlay not useful on phone */
   #summary-table { display: none !important; }
+  #cutlist-panel { display: none !important; }
 
   /* Project header: compact single row */
   .project-header { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
@@ -508,6 +509,15 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .summary-price { color: var(--success); font-weight: 700; font-size: 11px; min-width: 60px; text-align: right; }
 .summary-count { font-weight: 700; color: var(--text-muted); min-width: 28px; text-align: right; }
 .summary-total-row { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--border); font-weight: 700; font-size: 13px; }
+/* === CUT LIST PANEL === */
+#cutlist-panel { margin: 14px auto; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; display: none; max-width: 640px; }
+#cutlist-panel.cutlist-open { display: block; }
+#cutlist-panel h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 10px; }
+.cutlist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cutlist-table th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 4px 8px; border-bottom: 2px solid var(--border); }
+.cutlist-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cutlist-table tr:last-child td { border-bottom: none; }
+.cutlist-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #FFFBEB; border: 1.5px solid #B45309; color: #B45309; font-weight: 700; font-size: 11px; }
 #cabinet-panel { width: var(--panel-width); background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
 #cabinet-panel::-webkit-scrollbar { width: 4px; }
 #cabinet-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
@@ -868,7 +878,9 @@ body.free-tier #connect-pro-btn { display:block; }
             <div class="toolbar-divider"></div>
             <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()" style="margin-left:0;">Measure</button>
             <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">Clear</button>
-            <button id="dims-btn" class="toolbar-btn" onclick="toggleDimensions()">Dims</button>
+            <button id="dims-btn" class="toolbar-btn dims-btn" onclick="toggleDimensions()">Dims</button>
+            <button id="itemnum-btn" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()">⬡ Item #s</button>
+            <button id="cutlist-btn" class="toolbar-btn" onclick="toggleCutList()" style="margin-left:0;">Cut List</button>
             <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()">△ Triangle</button>
             <div class="toolbar-divider"></div>
             <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
@@ -901,6 +913,9 @@ body.free-tier #connect-pro-btn { display:block; }
               <button class="elev-wall-tab" data-wall="south" onclick="selectElevWall('south')">↓ South</button>
               <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
             </div>
+            <button id="dims-btn-elev" class="toolbar-btn dims-btn" onclick="toggleDimensions()" style="margin-left:8px;">Dims</button>
+            <button id="itemnum-btn-elev" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()">⬡ Item #s</button>
+            <button id="cutlist-btn-elev" class="toolbar-btn" onclick="toggleCutList()">Cut List</button>
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('elev')" title="Fit to view (F)">⊡ Fit</button>
               <button class="vp-btn" onclick="stepZoom('elev',-1)" title="Zoom out">−</button>
@@ -928,6 +943,8 @@ body.free-tier #connect-pro-btn { display:block; }
             <canvas id="iso-plan" role="img" aria-label="3D view of the kitchen — interactive graphical model." style="width:100%;height:600px;display:block;border-radius:8px;"></canvas>
           </div>
         </div>
+
+        <div id="cutlist-panel"></div>
       </div>
 
       <div id="cabinet-panel" role="complementary" aria-label="Cabinet controls panel">
@@ -1985,6 +2002,7 @@ const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'
 // STATE
 // ════════════════════════════
 let showDimensions = false;
+let showItemNumbers = false;
 let showWorkTriangle = false;
 
 let state = {
@@ -2553,6 +2571,13 @@ function onTypeChange() {
     gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
   }
 }
+// Next cut-list item number for this room — cabinets and appliances share one
+// sequence. Assigned once at creation and never reassigned, so numbers stay
+// stable on a printed schedule even after something is later deleted.
+function nextItemNum(r) {
+  const nums = [...r.cabinets, ...(r.appliances||[])].map(x => x.itemNum || 0);
+  return (nums.length ? Math.max(...nums) : 0) + 1;
+}
 function addCabinet() {
   const r = activeRoom(); if (!r) return;
   const type  = document.getElementById('cab-type').value;
@@ -2570,17 +2595,17 @@ function addCabinet() {
   const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
   const glassDoors    = (type === 'wall' || type === 'diagWall') && document.getElementById('cab-glass-doors').checked;
   const styleOverride = document.getElementById('cab-style-override').value || null;
-  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride });
+  r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride, itemNum: nextItemNum(r) });
   document.getElementById('cab-note-input').value    = '';
   document.getElementById('cab-offset-input').value  = '0';
   document.getElementById('cab-style-override').value = '';
-  persist(); renderCabinetList(); renderCanvas();
+  persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
 function removeCabinet(id) {
   const r = activeRoom(); if (!r) return;
   r.cabinets = r.cabinets.filter(c => c.id !== id);
-  persist(); renderCabinetList(); renderCanvas();
+  persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
 
@@ -2639,11 +2664,11 @@ function addAppliance() {
   const customElevBottom = (acat.elevBottomOptions && !es.classList.contains('hidden') && es.value)
     ? parseFloat(es.value) : null;
   if (!r.appliances) r.appliances = [];
-  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom, price });
+  r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom, price, itemNum: nextItemNum(r) });
   document.getElementById('app-note').value   = '';
   document.getElementById('app-offset').value = '0';
   document.getElementById('app-price').value  = '';
-  persist(); renderCabinetList(); renderCanvas();
+  persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
 function addIsland() {
@@ -2858,7 +2883,7 @@ function deleteFromEditModal() {
 function removeAppliance(id) {
   const r = activeRoom(); if (!r) return;
   r.appliances = (r.appliances || []).filter(a => a.id !== id);
-  persist(); renderCabinetList(); renderCanvas();
+  persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
 
@@ -2879,7 +2904,7 @@ function onPricingToggle(fromToolbar) {
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
-function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); }
+function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); }
 
 // ════════════════════════════
 // STYLE PANEL
@@ -4277,11 +4302,24 @@ function renderIsometric() {
 // ════════════════════════════
 // RENDER: ELEVATION
 // ════════════════════════════
+// Backfills itemNum on any cabinet/appliance that predates this feature (older
+// saved projects), so numbers appear the first time this room is opened —
+// without needing a one-time migration pass over every project in the database.
+function ensureItemNumbers(r) {
+  if (!r) return false;
+  let next = nextItemNum(r);
+  let changed = false;
+  [...r.cabinets, ...(r.appliances||[])].forEach(item => {
+    if (!item.itemNum) { item.itemNum = next++; changed = true; }
+  });
+  return changed;
+}
 function renderElevation() {
   const canvas = document.getElementById('elevation-plan');
   const ctx = canvas.getContext('2d');
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+  if (ensureItemNumbers(r)) persist();
   const wall = state.elevWall;
   const scale = ELEV_SCALE;
   const wallLength = r.walls[wall] || 120;
@@ -4289,7 +4327,7 @@ function renderElevation() {
   const p = activeProj();
   const styleInfo = getStyles().find(s => s.code === (p.style||getStyles()[0]?.code)) || getStyles()[0];
   const PDF = !!window._pdfMode;
-  const PAD = PDF ? 80 : 60;
+  const PAD = PDF ? 95 : (showDimensions ? 100 : 60);
   const canvasW = Math.max(wallLength*scale+PAD*2, 400);
   const canvasH = Math.max(ceiling*scale+PAD*2, 320);
   canvas.width = canvasW; canvas.height = canvasH;
@@ -4424,6 +4462,7 @@ function renderElevation() {
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
     }
     if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
+    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + (isCorner ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
   });
 
   wallCabs.filter(c=>['wall','diagWall'].includes(c.type)).forEach(cab => {
@@ -4466,6 +4505,7 @@ function renderElevation() {
       ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
     }
     if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
+    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + (cab.type==='diagWall' ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
@@ -4479,6 +4519,7 @@ function renderElevation() {
     ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
     ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
+    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
   });
 
   // ── Corner cabinet crossover: adjacent-wall corner cabs shown at elevation edges ──
@@ -4617,6 +4658,7 @@ function renderElevation() {
       ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
       ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
     }
+    if ((showItemNumbers || PDF) && app.itemNum) drawItemHexagon(ctx, x+aW/2, y, app.itemNum, PDF);
   });
 
   // PDF: dimension callout strings
@@ -4658,20 +4700,66 @@ function renderElevation() {
       .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: `${c.width}"` }))
       .sort((a,b) => a.x1-b.x1);
     if (baseDimItems.length) pdfDimString(baseDimItems, WY + WH + 22, false);
+
+    // Height chain (vertical) — counter height, then upper cabinet band — to the
+    // left of the wall. Same architectural tick style as pdfDimString, rotated.
+    function pdfDimStringV(items, dimX) {
+      ctx.save();
+      ctx.strokeStyle = '#1a1a1a'; ctx.fillStyle = '#1a1a1a'; ctx.lineWidth = 0.8; ctx.setLineDash([]);
+      items.forEach(({y1, y2, label}) => {
+        if (Math.abs(y2 - y1) < 6) return;
+        const midY = (y1+y2)/2;
+        const tickOuter = dimX - 10, tickInner = dimX + 2;
+        ctx.beginPath(); ctx.moveTo(tickOuter, y1); ctx.lineTo(tickInner, y1); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tickOuter, y2); ctx.lineTo(tickInner, y2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(dimX, y1); ctx.lineTo(dimX, y2); ctx.stroke();
+        const sl = 5;
+        ctx.beginPath(); ctx.moveTo(dimX-sl*0.6, y1+sl*0.5); ctx.lineTo(dimX+sl*0.6, y1-sl*0.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(dimX-sl*0.6, y2+sl*0.5); ctx.lineTo(dimX+sl*0.6, y2-sl*0.5); ctx.stroke();
+        const fs2 = Math.max(7, Math.min(10, Math.abs(y2-y1)*0.14));
+        ctx.save();
+        ctx.translate(dimX-13, midY); ctx.rotate(-Math.PI/2);
+        ctx.font = `700 ${fs2}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+    const counterInPdf = 36;
+    pdfDimStringV([{ y1: floorY, y2: floorY - counterInPdf*scale, label: counterInPdf+'"' }], WX - 16);
+
+    const wallCabsOnlyPdf = wallCabs.filter(c => ['wall','diagWall'].includes(c.type));
+    if (wallCabsOnlyPdf.length) {
+      const bottomInPdf = Math.min(...wallCabsOnlyPdf.map(c => c.wallBottom != null ? c.wallBottom : 54));
+      const repPdf = wallCabsOnlyPdf.find(c => (c.wallBottom != null ? c.wallBottom : 54) === bottomInPdf);
+      const catRPdf = CATALOG[repPdf.type];
+      const hInPdf = repPdf.height || catRPdf.heights?.[0] || 30;
+      const topInPdf = bottomInPdf + hInPdf;
+      pdfDimStringV([{ y1: floorY - bottomInPdf*scale, y2: floorY - topInPdf*scale, label: hInPdf+'"' }], WX - 34);
+    }
   }
 
-  // Rulers (app mode only — PDF uses dimension strings instead)
+  // Rulers (app mode only — PDF uses dimension strings instead). The Y-axis ruler is
+  // skipped when full dimensions are on, since the height chain below already shows
+  // the overall ceiling height (plus the breakdown the ruler alone doesn't have).
   if (!PDF) {
     drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
-    drawRuler(ctx, WX, WY, ceiling,    scale, true,  true);  // Y axis (height from floor)
+    if (!showDimensions) drawRuler(ctx, WX, WY, ceiling, scale, true, true); // Y axis (height from floor)
+  }
+
+  // Full dimension callouts (app mode, toggled by the Dims button) — individual
+  // cabinet widths + overall total along the bottom, and a floor→counter→upper
+  // cabinet band→ceiling height chain on the left.
+  if (!PDF && showDimensions) {
+    drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX);
   }
 
   ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
   ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
   ctx.fillStyle=PDF?'#1a1a1a':'#475569';
   const df=Math.max(10,scale*2.2); ctx.font=`700 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(PDF?55:20));
-  ctx.save(); ctx.translate(WX-28,WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
+  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(PDF?72:20));
+  ctx.save(); ctx.translate(PDF ? WX-52 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
   document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
   if (vpState.elev.zoom === 1 && vpState.elev.panX === 0 && vpState.elev.panY === 0) {
@@ -5092,10 +5180,68 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
 // ════════════════════════════
 function toggleDimensions() {
   showDimensions = !showDimensions;
-  const btn = document.getElementById('dims-btn');
-  if (showDimensions) { btn.style.background='#EFF6FF'; btn.style.color='#2563EB'; btn.style.borderColor='#2563EB'; }
-  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
-  renderCanvas();
+  document.querySelectorAll('.dims-btn').forEach(btn => {
+    if (showDimensions) { btn.style.background='#EFF6FF'; btn.style.color='#2563EB'; btn.style.borderColor='#2563EB'; }
+    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  });
+  renderAll();
+}
+
+function toggleItemNumbers() {
+  showItemNumbers = !showItemNumbers;
+  document.querySelectorAll('.itemnum-btn').forEach(btn => {
+    if (showItemNumbers) { btn.style.background='#FEF3C7'; btn.style.color='#B45309'; btn.style.borderColor='#B45309'; }
+    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  });
+  renderAll();
+  renderCutList();
+}
+
+// Small numbered hexagon tag, straddling the top edge of a cabinet/appliance —
+// matches the callout convention on a real cabinet shop drawing.
+function drawItemHexagon(ctx, cx, cy, num, PDF) {
+  const rad = PDF ? 8 : 10;
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const ang = Math.PI/180 * (60*i - 90);
+    const px = cx + rad*Math.cos(ang), py = cy + rad*Math.sin(ang);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = PDF ? '#FFFFFF' : '#FFFBEB';
+  ctx.fill();
+  ctx.strokeStyle = PDF ? '#1a1a1a' : '#B45309';
+  ctx.lineWidth = PDF ? 1.2 : 1.5;
+  ctx.stroke();
+  ctx.fillStyle = PDF ? '#1a1a1a' : '#B45309';
+  ctx.font = `700 ${PDF ? 9 : 10}px sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(String(num), cx, cy + 0.5);
+  ctx.restore();
+}
+
+// Shared by the floor plan and elevation dimension renderers — draws one blue
+// dimension line with tick marks and a labeled box at its midpoint.
+function drawDimLine(ctx, x1, y1, x2, y2, label, isH, aboveOrLeft) {
+  ctx.strokeStyle = '#1D4ED8'; ctx.fillStyle = '#1D4ED8';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  if (isH) {
+    ctx.beginPath(); ctx.moveTo(x1,y1-5); ctx.lineTo(x1,y1+5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2,y2-5); ctx.lineTo(x2,y2+5); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(x1-5,y1); ctx.lineTo(x1+5,y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2-5,y2); ctx.lineTo(x2+5,y2); ctx.stroke();
+  }
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  const bw=ctx.measureText(label).width+8, bh=14;
+  let bx, by;
+  if (isH) { bx=mx-bw/2; by=aboveOrLeft ? my-bh-3 : my+3; }
+  else      { bx=aboveOrLeft ? mx-bw-3 : mx+3; by=my-bh/2; }
+  ctx.fillStyle='#DBEAFE'; ctx.fillRect(bx,by,bw,bh);
+  ctx.strokeStyle='#1D4ED8'; ctx.strokeRect(bx,by,bw,bh);
+  ctx.fillStyle='#1D4ED8'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(label, bx+bw/2, by+bh/2);
 }
 
 function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
@@ -5104,27 +5250,6 @@ function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
   ctx.lineWidth = 1;
   ctx.font = '600 9px sans-serif';
   ctx.textBaseline = 'middle';
-
-  function drawDimLine(x1, y1, x2, y2, label, isH, aboveOrLeft) {
-    ctx.strokeStyle = '#1D4ED8'; ctx.fillStyle = '#1D4ED8';
-    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-    if (isH) {
-      ctx.beginPath(); ctx.moveTo(x1,y1-5); ctx.lineTo(x1,y1+5); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x2,y2-5); ctx.lineTo(x2,y2+5); ctx.stroke();
-    } else {
-      ctx.beginPath(); ctx.moveTo(x1-5,y1); ctx.lineTo(x1+5,y1); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x2-5,y2); ctx.lineTo(x2+5,y2); ctx.stroke();
-    }
-    const mx=(x1+x2)/2, my=(y1+y2)/2;
-    const bw=ctx.measureText(label).width+8, bh=14;
-    let bx, by;
-    if (isH) { bx=mx-bw/2; by=aboveOrLeft ? my-bh-3 : my+3; }
-    else      { bx=aboveOrLeft ? mx-bw-3 : mx+3; by=my-bh/2; }
-    ctx.fillStyle='#DBEAFE'; ctx.fillRect(bx,by,bw,bh);
-    ctx.strokeStyle='#1D4ED8'; ctx.strokeRect(bx,by,bw,bh);
-    ctx.fillStyle='#1D4ED8'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(label, bx+bw/2, by+bh/2);
-  }
 
   walls.forEach(wall => {
     const cabs = r.cabinets.filter(c=>c.wall===wall).sort((a,b)=>(a.offset||0)-(b.offset||0));
@@ -5150,12 +5275,66 @@ function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
     cabs.forEach(cab => {
       const off=(cab.offset||0)*scale, cW=cab.width*scale;
       if (isH) {
-        drawDimLine(baseX+off, dimY, baseX+off+cW, dimY, cab.width+'"', true, aboveOrLeft);
+        drawDimLine(ctx, baseX+off, dimY, baseX+off+cW, dimY, cab.width+'"', true, aboveOrLeft);
       } else {
-        drawDimLine(dimX, baseY+off, dimX, baseY+off+cW, cab.width+'"', false, aboveOrLeft);
+        drawDimLine(ctx, dimX, baseY+off, dimX, baseY+off+cW, cab.width+'"', false, aboveOrLeft);
       }
     });
   });
+  ctx.restore();
+}
+
+// Elevation dimensions: individual base cabinet widths + one overall total along
+// the bottom, and a floor→counter→upper-cabinet-band→ceiling height chain on the
+// left — same visual language as a real cabinet shop drawing.
+function drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX) {
+  const wallCabs = r.cabinets.filter(c => c.wall === wall);
+  if (!wallCabs.length) return;
+
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.font = '600 9px sans-serif';
+  ctx.textBaseline = 'middle';
+
+  // ── Horizontal: individual base cabinet widths, just under the floor line ──
+  const baseCabs = wallCabs
+    .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type))
+    .sort((a,b) => (a.offset||0)-(b.offset||0));
+  const hY = floorY + 14;
+  baseCabs.forEach(cab => {
+    const x = eX(cab.offset||0, cab.width), w = cab.width*scale;
+    drawDimLine(ctx, x, hY, x+w, hY, cab.width+'"', true, false);
+  });
+
+  // ── Horizontal: overall total across the occupied run, further below ──
+  if (baseCabs.length) {
+    const first = baseCabs[0], last = baseCabs[baseCabs.length-1];
+    const firstOff = first.offset||0, lastEnd = (last.offset||0)+last.width;
+    const x1 = eX(firstOff, 0), x2 = eX(lastEnd, 0);
+    const lo = Math.min(x1,x2), hi = Math.max(x1,x2);
+    const totalIn = Math.round((lastEnd - firstOff) * 100) / 100;
+    drawDimLine(ctx, lo, hY+28, hi, hY+28, totalIn+'"', true, false);
+  }
+
+  // ── Vertical: floor → counter height, on the left ──
+  const counterIn = 36;
+  drawDimLine(ctx, WX-16, floorY, WX-16, floorY-counterIn*scale, counterIn+'"', false, true);
+
+  // ── Vertical: floor → bottom of the lowest-hanging upper cabinet → its top ──
+  const wallCabsOnly = wallCabs.filter(c => ['wall','diagWall'].includes(c.type));
+  if (wallCabsOnly.length) {
+    const bottomIn = Math.min(...wallCabsOnly.map(c => c.wallBottom != null ? c.wallBottom : 54));
+    const rep = wallCabsOnly.find(c => (c.wallBottom != null ? c.wallBottom : 54) === bottomIn);
+    const cat = CATALOG[rep.type];
+    const hIn = rep.height || cat.heights?.[0] || 30;
+    const topIn = bottomIn + hIn;
+    drawDimLine(ctx, WX-34, floorY-bottomIn*scale, WX-34, floorY-topIn*scale, hIn+'"', false, true);
+  }
+
+  // ── Vertical: overall ceiling height, outermost ──
+  const ceiling = r.ceilingHeight || 96;
+  drawDimLine(ctx, WX-52, floorY, WX-52, WY, ceiling+'"', false, true);
+
   ctx.restore();
 }
 
@@ -5176,6 +5355,60 @@ function toggleSummary() {
   const btn = document.getElementById('summary-toggle-btn');
   if (open) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
   else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+}
+
+// ════════════════════════════
+// CUT LIST PANEL
+// ════════════════════════════
+function toggleCutList() {
+  const el = document.getElementById('cutlist-panel');
+  const open = el.classList.toggle('cutlist-open');
+  document.querySelectorAll('#cutlist-btn, #cutlist-btn-elev').forEach(btn => {
+    if (open) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
+    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  });
+  if (open) renderCutList();
+}
+
+// Live-updating schedule mapping each item number to its cabinet/appliance —
+// the companion to the hexagon tags drawn on the elevation. No-ops when the
+// panel is closed so it's cheap to call from every add/remove/render path.
+function renderCutList() {
+  const el = document.getElementById('cutlist-panel');
+  if (!el || !el.classList.contains('cutlist-open')) return;
+  const r = activeRoom();
+  if (!r) { el.innerHTML = ''; return; }
+  ensureItemNumbers(r);
+
+  const items = [
+    ...r.cabinets.map(c => ({ ...c, kind: 'cabinet' })),
+    ...(r.appliances||[]).map(a => ({ ...a, kind: 'appliance' })),
+  ].filter(i => i.itemNum).sort((a,b) => a.itemNum - b.itemNum);
+
+  if (!items.length) {
+    el.innerHTML = `<h4>Cut List — ${escHtml(r.name)}</h4><p style="font-size:12px;color:var(--text-muted);">No cabinets or appliances yet.</p>`;
+    return;
+  }
+
+  const rows = items.map(item => {
+    const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
+    const label = cat ? cat.label : item.type;
+    const depth = item.depth || (cat && cat.depth) || '—';
+    const wallLabel = item.wall ? item.wall.charAt(0).toUpperCase()+item.wall.slice(1) : '—';
+    return `<tr>
+      <td><span class="cutlist-num">${item.itemNum}</span></td>
+      <td>${escHtml(label)}</td>
+      <td>${item.width}"W × ${item.height}"H × ${depth}"D</td>
+      <td>${escHtml(wallLabel)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <h4>Cut List — ${escHtml(r.name)} (${items.length} item${items.length===1?'':'s'})</h4>
+    <table class="cutlist-table">
+      <thead><tr><th>#</th><th>Item</th><th>Size</th><th>Wall</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
 
 function toggleWorkTriangle() {
@@ -5463,6 +5696,42 @@ async function printFloorPlan(btn) {
     renderElevation();
   }
 
+  // ── Last page: Cut List — every numbered item, matching the hexagon tags
+  // on the elevation drawings, grouped by room ─────────────────────────
+  const roomsWithItems = p.rooms.filter(room => {
+    ensureItemNumbers(room);
+    return room.cabinets.length || (room.appliances||[]).length;
+  });
+  if (roomsWithItems.length) {
+    doc.addPage(); pg++;
+    let cy = titleBlock('Cut List', 'Cut List', pg);
+    roomsWithItems.forEach(room => {
+      const items = [
+        ...room.cabinets.map(c => ({ ...c, kind: 'cabinet' })),
+        ...(room.appliances||[]).map(a => ({ ...a, kind: 'appliance' })),
+      ].filter(i => i.itemNum).sort((a,b) => a.itemNum - b.itemNum);
+      if (!items.length) return;
+      if (cy > PH - 40) { doc.addPage(); pg++; cy = titleBlock('Cut List', 'Cut List', pg); }
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+      doc.text(room.name, MAR, cy); cy += 3;
+      const rows = items.map(item => {
+        const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
+        const label = cat ? cat.label : item.type;
+        const depth = item.depth || (cat && cat.depth) || '—';
+        return [String(item.itemNum), label, `${item.width}"W × ${item.height}"H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
+      });
+      doc.autoTable({ startY: cy, margin:{left:MAR,right:MAR},
+        head:[['#','Item','Size','Wall']],
+        body: rows,
+        styles:{fontSize:7.5,cellPadding:2},
+        headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+        columnStyles:{0:{cellWidth:14,halign:'center',fontStyle:'bold'}},
+        theme:'grid',
+      });
+      cy = doc.lastAutoTable.finalY + 8;
+    });
+  }
+
   const filename = `${(p.customer||'floor-plan').replace(/[^a-z0-9]/gi,'_').toLowerCase()}_plans.pdf`;
   doc.save(filename);
   btn.textContent = origText; btn.disabled = false;
@@ -5613,6 +5882,43 @@ async function exportPDF(btn) {
     window._pdfMode = false;
     state.elevWall = savedWall;
     renderElevation();
+  }
+
+  // ── Cut List — every numbered item, matching the hexagon tags on the
+  // elevation drawings, grouped by room ─────────────────────────────
+  const roomsWithItems = p.rooms.filter(room => {
+    ensureItemNumbers(room);
+    return room.cabinets.length || (room.appliances||[]).length;
+  });
+  if (roomsWithItems.length) {
+    doc.addPage(); pg++;
+    hdr('Cut List', pg); ftr();
+    let cy = 14;
+    roomsWithItems.forEach(room => {
+      const items = [
+        ...room.cabinets.map(c => ({ ...c, kind: 'cabinet' })),
+        ...(room.appliances||[]).map(a => ({ ...a, kind: 'appliance' })),
+      ].filter(i => i.itemNum).sort((a,b) => a.itemNum - b.itemNum);
+      if (!items.length) return;
+      if (cy > PH - 40) { doc.addPage(); pg++; hdr('Cut List', pg); ftr(); cy = 14; }
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
+      doc.text(room.name, MAR, cy); cy += 3;
+      const rows = items.map(item => {
+        const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
+        const label = cat ? cat.label : item.type;
+        const depth = item.depth || (cat && cat.depth) || '—';
+        return [String(item.itemNum), label, `${item.width}"W × ${item.height}"H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
+      });
+      doc.autoTable({ startY: cy, margin:{left:MAR,right:MAR},
+        head:[['#','Item','Size','Wall']],
+        body: rows,
+        styles:{fontSize:7.5,cellPadding:2},
+        headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
+        columnStyles:{0:{cellWidth:14,halign:'center',fontStyle:'bold'}},
+        theme:'grid',
+      });
+      cy = doc.lastAutoTable.finalY + 8;
+    });
   }
 
   // ── Last page: Quote ─────────────────────────────────────────────
