@@ -1987,6 +1987,53 @@ function getStyles() {
 }
 
 // ════════════════════════════
+// DOOR CONSTRUCTION PROFILES — per Matrix Cabinets spec sheets (2025 catalog).
+// 'flat'   = Recessed Square, plain center panel (standard Shaker + Petit/Micro Shaker lines)
+// 'raised' = Raised Square / "reversed raised" center panel (Gramercy, Uptown, Signature,
+//            Blaze Black, Midtown, Nova, Townplace) — drawn with a beveled inner panel.
+// frame: 'narrow' = the Petit/Micro Shaker line — visibly slimmer stile/rail than standard
+// Shaker, per company naming ("Petit"). Not to exact scale — no published width in the
+// manufacturer spec sheet, just deliberately narrower.
+// ════════════════════════════
+const DOOR_PROFILE = {
+  AW:{panel:'flat',frame:'std'},    AP:{panel:'flat',frame:'std'},
+  PW:{panel:'flat',frame:'narrow'}, PR:{panel:'flat',frame:'narrow'},
+  PS:{panel:'flat',frame:'narrow'}, PD:{panel:'flat',frame:'narrow'}, PH:{panel:'flat',frame:'narrow'},
+  AH:{panel:'flat',frame:'std'},    AZ:{panel:'flat',frame:'std'},
+  AB:{panel:'flat',frame:'std'},    AR:{panel:'flat',frame:'std'},
+  AG:{panel:'flat',frame:'std'},    AX:{panel:'flat',frame:'std'},    TS:{panel:'flat',frame:'std'},
+  GW:{panel:'raised',frame:'std'},  TW:{panel:'raised',frame:'std'},  SL:{panel:'raised',frame:'std'},
+  AA:{panel:'raised',frame:'std'},  TG:{panel:'raised',frame:'std'},
+  AN:{panel:'raised',frame:'std'},  TQ:{panel:'raised',frame:'std'},
+};
+function getDoorProfile(code) { return DOOR_PROFILE[code] || {panel:'flat', frame:'std'}; }
+
+// Draws one door/drawer-front panel, frame proportioned to the style's real door
+// construction instead of a fixed 4px inset for every style.
+function drawDoorPanel(ctx, x, y, w, h, code, scale, PDF) {
+  const profile = getDoorProfile(code);
+  const frameIn = profile.frame === 'narrow' ? 1.1 : 2.1;
+  const f = Math.max(2, Math.min(frameIn * scale, w * 0.28, h * 0.28));
+  ctx.strokeStyle = PDF ? '#333333' : '#475569';
+  ctx.lineWidth = PDF ? 1.2 : 1;
+  ctx.strokeRect(x + f, y + f, w - 2*f, h - 2*f);
+  if (profile.panel === 'raised') {
+    const b = Math.max(2, Math.min(f * 0.6, (w - 2*f) * 0.3, (h - 2*f) * 0.3));
+    const ix = x+f+b, iy = y+f+b, iw = w-2*f-2*b, ih = h-2*f-2*b;
+    if (iw > 2 && ih > 2) {
+      ctx.strokeStyle = PDF ? '#666666' : '#94A3B8'; ctx.lineWidth = PDF ? 0.8 : 0.7;
+      ctx.strokeRect(ix, iy, iw, ih);
+      ctx.beginPath();
+      ctx.moveTo(x+f, y+f);       ctx.lineTo(ix, iy);
+      ctx.moveTo(x+w-f, y+f);     ctx.lineTo(ix+iw, iy);
+      ctx.moveTo(x+f, y+h-f);     ctx.lineTo(ix, iy+ih);
+      ctx.moveTo(x+w-f, y+h-f);   ctx.lineTo(ix+iw, iy+ih);
+      ctx.stroke();
+    }
+  }
+}
+
+// ════════════════════════════
 // US STATE SALES TAX RATES (base state rate %)
 // ════════════════════════════
 const STATE_TAX = {
@@ -4474,7 +4521,7 @@ function renderElevation() {
         ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(midX, y+cH*0.55, 3, 0, Math.PI*2); ctx.fill();
       } else {
-        ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=PDF?1.2:1; ctx.strokeRect(x+4,y+4,cW-8,cH-12);
+        drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
         ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
       }
       ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
@@ -4513,7 +4560,7 @@ function renderElevation() {
     } else {
       ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
       ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-      ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8; ctx.strokeRect(x+3,y+3,cW-6,cH-9);
+      drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
       ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
       ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
@@ -4535,8 +4582,9 @@ function renderElevation() {
     const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
     ctx.fillStyle=PDF?'#FFFFFF':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5;
     ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-    const mid=y+cH/2; ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
-    ctx.strokeRect(x+4,y+4,cW-8,cH/2-8); ctx.strokeRect(x+4,mid+4,cW-8,cH/2-8);
+    const mid=y+cH/2;
+    drawDoorPanel(ctx, x, y, cW, cH/2, si.code, scale, PDF);
+    drawDoorPanel(ctx, x, mid, cW, cH/2, si.code, scale, PDF);
     ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
     ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
