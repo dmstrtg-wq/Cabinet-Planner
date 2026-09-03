@@ -312,10 +312,19 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 #style-container { margin-top: 8px; }
 
 /* Canvas toolbar grouping */
-.toolbar-divider { width: 1px; height: 22px; background: var(--border); margin: 0 10px; flex-shrink: 0; }
-.toolbar-btn { margin-left: 8px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-weight: 600; background: white; cursor: pointer; color: var(--text-muted); transition: border-color 0.12s, color 0.12s; }
-.toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
-.toolbar-pricing { display: flex; align-items: center; gap: 6px; margin-left: 8px; }
+.toolbar-divider { width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+.tb-group { display: flex; align-items: center; gap: 4px; padding: 3px; border-radius: 9px; background: var(--bg); }
+.toolbar-btn { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid transparent; border-radius: 6px; font-size: 12px; font-weight: 600; background: transparent; cursor: pointer; color: var(--text-muted); transition: border-color 0.12s, color 0.12s, background 0.12s; }
+.toolbar-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+.toolbar-btn.active { background: var(--accent-light); color: var(--accent-hover); border-color: var(--accent); }
+.toolbar-btn svg { flex-shrink: 0; }
+.toolbar-btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1px solid var(--accent); border-radius: 6px; font-size: 12px; font-weight: 700; background: var(--accent); color: #fff; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+.toolbar-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.tb-more { position: relative; }
+.tb-more-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 6px 18px rgba(15,23,42,0.14); padding: 6px; display: flex; flex-direction: column; gap: 2px; min-width: 150px; }
+.tb-more-menu.hidden { display: none; }
+.tb-more-menu .toolbar-btn { width: 100%; justify-content: flex-start; margin: 0; }
+.toolbar-pricing { display: flex; align-items: center; gap: 6px; }
 /* Demo mode: hide all pricing & export UI */
 body.demo-mode .toolbar-pricing,
 body.demo-mode #pdf-export-btn,
@@ -865,28 +874,41 @@ body.free-tier #connect-pro-btn { display:block; }
       <div id="canvas-area">
         <div id="view-floor">
           <div class="canvas-toolbar">
-            <label>Show:</label>
-            <select id="view-sel" onchange="renderCanvas()">
-              <option value="all">All Cabinets</option>
-              <option value="base">Base Only</option>
-              <option value="wall">Wall Only</option>
-            </select>
-            <div class="toolbar-pricing">
-              <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
-              <span class="toggle-label">Pricing</span>
+            <div class="tb-group">
+              <label>Show:</label>
+              <select id="view-sel" onchange="renderCanvas()">
+                <option value="all">All Cabinets</option>
+                <option value="base">Base Only</option>
+                <option value="wall">Wall Only</option>
+              </select>
+              <div class="toolbar-pricing">
+                <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
+                <span class="toggle-label">Pricing</span>
+              </div>
             </div>
-            <div class="toolbar-divider"></div>
-            <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()" style="margin-left:0;">Measure</button>
-            <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">Clear</button>
-            <button id="dims-btn" class="toolbar-btn dims-btn" onclick="toggleDimensions()">Dims</button>
-            <button id="itemnum-btn" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()">⬡ Item #s</button>
-            <button id="cutlist-btn" class="toolbar-btn" onclick="toggleCutList()" style="margin-left:0;">Cut List</button>
-            <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()">△ Triangle</button>
-            <div class="toolbar-divider"></div>
-            <button class="toolbar-btn" onclick="openRoomShapeModal()" style="margin-left:0;">⬡ Room Shape</button>
-            <button id="floor-plan-print-btn" onclick="printFloorPlan(this)" style="margin-left:8px;padding:5px 12px;border:1px solid #6366f1;border-radius:6px;font-size:12px;font-weight:600;background:#eef2ff;cursor:pointer;color:#4f46e5;">Print Plans</button>
-            <button id="pdf-export-btn" onclick="exportPDF(this)" style="margin-left:4px;padding:5px 12px;border:1px solid #16a34a;border-radius:6px;font-size:12px;font-weight:600;background:#f0fdf4;cursor:pointer;color:#16a34a;">Export PDF</button>
-            <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()" style="margin-left:0;">Summary</button>
+
+            <div class="tb-group">
+              <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11l3-3M5 8l6-6M11 2l3 3-9 9-3-3 9-9z"/></svg>Measure</button>
+              <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">Clear</button>
+              <button id="dims-btn" class="toolbar-btn dims-btn" onclick="toggleDimensions()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4v8M14 4v8M2 8h12"/></svg>Dims</button>
+              <button id="itemnum-btn" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.5l6 3.5v6l-6 3.5-6-3.5v-6z"/></svg>Item #s</button>
+              <button id="cutlist-btn" class="toolbar-btn" onclick="toggleCutList()"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2.2" rx="0.5"/><rect x="2" y="7" width="12" height="2.2" rx="0.5"/><rect x="2" y="11" width="8" height="2.2" rx="0.5"/></svg>Cut List</button>
+
+              <div class="tb-more" id="tb-more-wrap">
+                <button class="toolbar-btn" onclick="toggleMoreTools()">⋯ More</button>
+                <div class="tb-more-menu hidden" id="tb-more-menu">
+                  <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 2.5l6 11h-12z"/></svg>Triangle</button>
+                  <button class="toolbar-btn" onclick="openRoomShapeModal()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 2.5h7v5h4v6h-11v-11z"/></svg>Room Shape</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tb-group">
+              <button id="floor-plan-print-btn" class="toolbar-btn" onclick="printFloorPlan(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6V2.5h8V6M4 11h8v3H4v-3zM2.5 6h11v5h-2"/></svg>Print Plans</button>
+              <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h6l2 2v9h-8v-11z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>Summary</button>
+              <button id="pdf-export-btn" class="toolbar-btn-primary" onclick="exportPDF(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export PDF</button>
+            </div>
+
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('floor')" title="Fit to view (F)">⊡ Fit</button>
               <button class="vp-btn" onclick="stepZoom('floor',-1)" title="Zoom out">−</button>
@@ -913,9 +935,11 @@ body.free-tier #connect-pro-btn { display:block; }
               <button class="elev-wall-tab" data-wall="south" onclick="selectElevWall('south')">↓ South</button>
               <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
             </div>
-            <button id="dims-btn-elev" class="toolbar-btn dims-btn" onclick="toggleDimensions()" style="margin-left:8px;">Dims</button>
-            <button id="itemnum-btn-elev" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()">⬡ Item #s</button>
-            <button id="cutlist-btn-elev" class="toolbar-btn" onclick="toggleCutList()">Cut List</button>
+            <div class="tb-group">
+              <button id="dims-btn-elev" class="toolbar-btn dims-btn" onclick="toggleDimensions()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4v8M14 4v8M2 8h12"/></svg>Dims</button>
+              <button id="itemnum-btn-elev" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.5l6 3.5v6l-6 3.5-6-3.5v-6z"/></svg>Item #s</button>
+              <button id="cutlist-btn-elev" class="toolbar-btn" onclick="toggleCutList()"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2.2" rx="0.5"/><rect x="2" y="7" width="12" height="2.2" rx="0.5"/><rect x="2" y="11" width="8" height="2.2" rx="0.5"/></svg>Cut List</button>
+            </div>
             <div class="vp-controls">
               <button class="vp-btn" onclick="fitView('elev')" title="Fit to view (F)">⊡ Fit</button>
               <button class="vp-btn" onclick="stepZoom('elev',-1)" title="Zoom out">−</button>
@@ -3214,10 +3238,7 @@ function toggleMeasure() {
   measureState.active = !measureState.active;
   measureState.pending = null;
   measureState.hoverPt = null;
-  const btn = document.getElementById('measure-btn');
-  btn.style.background  = measureState.active ? '#1e40af' : 'white';
-  btn.style.color       = measureState.active ? '#fff'    : 'var(--text-muted)';
-  btn.style.borderColor = measureState.active ? '#1e40af' : 'var(--border)';
+  document.getElementById('measure-btn').classList.toggle('active', measureState.active);
   const canvas = document.getElementById('floor-plan');
   canvas.style.cursor = measureState.active ? 'crosshair' : 'default';
   renderCanvas();
@@ -5180,19 +5201,13 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
 // ════════════════════════════
 function toggleDimensions() {
   showDimensions = !showDimensions;
-  document.querySelectorAll('.dims-btn').forEach(btn => {
-    if (showDimensions) { btn.style.background='#EFF6FF'; btn.style.color='#2563EB'; btn.style.borderColor='#2563EB'; }
-    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
-  });
+  document.querySelectorAll('.dims-btn').forEach(btn => btn.classList.toggle('active', showDimensions));
   renderAll();
 }
 
 function toggleItemNumbers() {
   showItemNumbers = !showItemNumbers;
-  document.querySelectorAll('.itemnum-btn').forEach(btn => {
-    if (showItemNumbers) { btn.style.background='#FEF3C7'; btn.style.color='#B45309'; btn.style.borderColor='#B45309'; }
-    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
-  });
+  document.querySelectorAll('.itemnum-btn').forEach(btn => btn.classList.toggle('active', showItemNumbers));
   renderAll();
   renderCutList();
 }
@@ -5352,9 +5367,7 @@ function togglePanel() {
 function toggleSummary() {
   const el = document.getElementById('summary-table');
   const open = el.classList.toggle('summary-open');
-  const btn = document.getElementById('summary-toggle-btn');
-  if (open) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
-  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  document.getElementById('summary-toggle-btn').classList.toggle('active', open);
 }
 
 // ════════════════════════════
@@ -5363,10 +5376,7 @@ function toggleSummary() {
 function toggleCutList() {
   const el = document.getElementById('cutlist-panel');
   const open = el.classList.toggle('cutlist-open');
-  document.querySelectorAll('#cutlist-btn, #cutlist-btn-elev').forEach(btn => {
-    if (open) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
-    else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
-  });
+  document.querySelectorAll('#cutlist-btn, #cutlist-btn-elev').forEach(btn => btn.classList.toggle('active', open));
   if (open) renderCutList();
 }
 
@@ -5413,11 +5423,20 @@ function renderCutList() {
 
 function toggleWorkTriangle() {
   showWorkTriangle = !showWorkTriangle;
-  const btn = document.getElementById('tri-btn');
-  if (showWorkTriangle) { btn.style.background='#F0FDF4'; btn.style.color='#16A34A'; btn.style.borderColor='#16A34A'; }
-  else { btn.style.background='white'; btn.style.color='var(--text-muted)'; btn.style.borderColor='var(--border)'; }
+  document.getElementById('tri-btn').classList.toggle('active', showWorkTriangle);
   renderCanvas();
 }
+
+function toggleMoreTools() {
+  document.getElementById('tb-more-menu').classList.toggle('hidden');
+}
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('tb-more-wrap');
+  const menu = document.getElementById('tb-more-menu');
+  if (wrap && menu && !menu.classList.contains('hidden') && !wrap.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
 
 function getItemCentroid(item, wall, scale, RX, RY, RW, RH, depthIn) {
   const off=(item.offset||0)*scale, w=item.width*scale, d=depthIn*scale;
