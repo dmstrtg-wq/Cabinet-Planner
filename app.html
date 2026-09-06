@@ -978,8 +978,8 @@ body.free-tier #connect-pro-btn { display:block; }
           <div class="style-current" id="style-current" onclick="toggleStylePicker()">
             <div class="style-current-swatch" id="style-current-swatch"></div>
             <div class="style-current-text">
-              <div class="style-current-code" id="style-current-code">AW</div>
-              <div class="style-current-name" id="style-current-name">Ice White Shaker</div>
+              <div class="style-current-code" id="style-current-code"></div>
+              <div class="style-current-name" id="style-current-name">Loading…</div>
             </div>
             <div class="style-current-action" id="style-current-action">Change ▾</div>
           </div>
@@ -1980,10 +1980,17 @@ const DEFAULT_STYLES = [
   {code:'ES', name:'Espresso',       swatch:'#3B2314'},
   {code:'NW', name:'Natural Wood',   swatch:'#C9A96D'},
 ];
+// Real supplier catalog stays visible only to these two accounts (matches OWNER_USER_IDS
+// in netlify/functions/stripe-webhook.js) — every other account, including new signups
+// who haven't set up their own styles yet, gets the generic DEFAULT_STYLES instead.
+const OWNER_USER_IDS = [
+  'f464edfb-8f74-49b7-b366-79b89605bbb7', // Dan
+  'd7620158-9fbd-44de-9770-2f00bdabe71c', // Sister
+];
 function getStyles() {
   const cs = companyProfile.custom_styles;
   if (cs && Array.isArray(cs) && cs.length > 0) return cs;
-  return STYLES;
+  return OWNER_USER_IDS.includes(effectiveOwnerId) ? STYLES : DEFAULT_STYLES;
 }
 
 // ════════════════════════════
