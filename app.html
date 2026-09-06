@@ -6116,17 +6116,14 @@ async function exportPDF(btn) {
   });
   qy=sigY+60;
 
-  // Terms & Conditions
-  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
-  doc.text('TERMS & CONDITIONS', MAR, qy); qy+=4;
-  doc.setFont('helvetica','normal'); doc.setTextColor(110,110,110); doc.setFontSize(7.5);
-  [
-    'All sales are FINAL. Cabinets are built to dimensions provided by the customer per the approved floor plan.',
-    'Lead time: approximately 1–4 weeks from order. Shipping delays are beyond our control; no monetary compensation is provided.',
-    'We strongly advise waiting until cabinets are received before demolishing your existing kitchen or work site.',
-    'Inspect shipment upon delivery. Report visible damage on the bill of lading. Concealed damage must be reported within 5 days. Factory defects within 14 days.',
-    'Payment in full is required before order fulfillment. $100 fee for returned checks. We appreciate your business!',
-  ].forEach(t => { const lines=doc.splitTextToSize(t,CW-6); doc.text(lines,MAR+3,qy); qy+=lines.length*3.8+2; });
+  // Terms & Conditions — the company's own profile terms, same as Print Quote. No text is shown if they haven't set any; we don't impose a default legal policy on their customers.
+  if (cp.terms_and_conditions) {
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
+    doc.text('TERMS & CONDITIONS', MAR, qy); qy+=4;
+    doc.setFont('helvetica','normal'); doc.setTextColor(110,110,110); doc.setFontSize(7.5);
+    const lines = doc.splitTextToSize(cp.terms_and_conditions, CW-6);
+    doc.text(lines, MAR+3, qy); qy += lines.length*3.8+2;
+  }
 
   const fname=(p.customer||'quote').replace(/[^a-z0-9]/gi,'_')+'_cabinet_plan.pdf';
   doc.save(fname);
