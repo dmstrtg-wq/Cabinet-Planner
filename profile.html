@@ -612,7 +612,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                   <div class="payment-sub" id="billing-card-sub">Update payment method, download invoices, or cancel — all in Stripe's secure portal.</div>
                 </div>
               </div>
-              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openBillingPortal()" id="billing-portal-btn">Open Billing Portal</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openBillingPortal(this)" id="billing-portal-btn">Open Billing Portal</button>
             </div>
           </div>
         </div>
@@ -678,10 +678,10 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
 <div class="modal-overlay" id="cancel-modal-overlay">
   <div class="modal-box">
     <h3>Cancel your subscription?</h3>
-    <p>You'll keep full access through the end of your current billing period. After that, quoting, PDF export, job tracking, and team access will be turned off — your projects stay saved.</p>
+    <p>You'll keep full access through the end of your current billing period. After that, quoting, PDF export, job tracking, and team access will be turned off — your projects stay saved. You'll finish canceling in Stripe's secure billing portal.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeCancelModal()">Keep Subscription</button>
-      <button class="btn btn-danger-solid" onclick="confirmCancelSubscription()">Cancel Subscription</button>
+      <button class="btn btn-danger-solid" onclick="closeCancelModal(); openBillingPortal();">Continue to Cancel →</button>
     </div>
   </div>
 </div>
@@ -899,17 +899,6 @@ function renderSubscription() {
 
 function openCancelModal() { document.getElementById('cancel-modal-overlay').classList.add('open'); }
 function closeCancelModal() { document.getElementById('cancel-modal-overlay').classList.remove('open'); }
-function confirmCancelSubscription() {
-  subscription.status = 'canceling';
-  renderSubscription();
-  closeCancelModal();
-  showToast('Subscription set to cancel at the end of the billing period.');
-}
-function resumeSubscription() {
-  subscription.status = 'active';
-  renderSubscription();
-  showToast('Subscription resumed.');
-}
 document.getElementById('sidebar-cancel-link').addEventListener('click', () => {
   setTimeout(openCancelModal, 50);
 });
@@ -965,13 +954,13 @@ async function renderBilling() {
   }
 }
 
-async function openBillingPortal() {
+async function openBillingPortal(btn) {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return;
 
-  const btn = document.getElementById('billing-portal-btn');
-  btn.disabled = true;
-  btn.textContent = 'Opening…';
+  btn = btn || document.getElementById('billing-portal-btn');
+  const origText = btn ? btn.textContent : 'Open Billing Portal';
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
 
   try {
     const res = await fetch('/.netlify/functions/stripe-portal', {
@@ -987,13 +976,11 @@ async function openBillingPortal() {
       window.location.href = data.url;
     } else {
       showToast(data.error || 'No billing account found. Subscribe first.');
-      btn.disabled = false;
-      btn.textContent = 'Open Billing Portal';
+      if (btn) { btn.disabled = false; btn.textContent = origText; }
     }
   } catch (err) {
     showToast('Could not open billing portal. Try again.');
-    btn.disabled = false;
-    btn.textContent = 'Open Billing Portal';
+    if (btn) { btn.disabled = false; btn.textContent = origText; }
   }
 }
 
