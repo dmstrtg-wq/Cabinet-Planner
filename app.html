@@ -24,9 +24,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<!-- data-categories="essential" tells Termly's cookie auto-blocker these are app code, not
+     trackers. Without it, declining the cookie banner blocked OrbitControls (unpkg was
+     "unclassified") and the 3D view threw "THREE.OrbitControls is not a constructor". -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" data-categories="essential"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" data-categories="essential"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js" data-categories="essential"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -167,8 +170,6 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   .canvas-toolbar { flex-wrap: wrap; gap: 4px 8px; }
   /* Right panel slightly narrower */
   #cabinet-panel { width: 240px; }
-  /* 3D canvas a touch shorter so buttons stay in view */
-  #iso-plan { height: 480px !important; }
 }
 
 /* ── PHONE (≤767px) ────────────────────────────────────────────────────────── */
@@ -212,12 +213,10 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   /* Floor plan fills full canvas-area */
   #view-floor, #view-elev { height: 100%; display: flex; flex-direction: column; }
   #floor-plan-wrapper, #elevation-wrapper { flex: 1; min-height: 0; }
-  .fp-viewport { height: 100%; }
 
-  /* 3D view: no wrapper padding, fills area */
+  /* 3D view: no wrapper chrome, fills area */
   #view-3d { height: 100%; }
-  #iso-wrapper { max-width: 100%; height: 100%; margin: 0; padding: 8px; border-radius: 0; border: none; box-shadow: none; }
-  #iso-plan { height: 100% !important; }
+  #iso-wrapper { border-radius: 0; border: none; }
 
   /* Phone-only elements (hidden on desktop) */
   #phone-bottomnav { display: flex !important; }
@@ -486,6 +485,16 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 .fp-viewport { flex: 1; overflow: hidden; position: relative; cursor: grab; user-select: none; }
 .fp-viewport.panning { cursor: grabbing; }
 .fp-zoom-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
+/* Screen-pinned rulers: fixed strips over the top/left edges of the viewport, drawn by drawViewportRulers() */
+.vp-ruler { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 3; }
+.vp-ruler-h { height: 24px; width: 100%; }
+.vp-ruler-v { width: 24px; height: 100%; }
+/* View title sits in a slim bar above the viewport, not floating over the drawing */
+.plan-title-bar { margin: 0; padding: 7px 14px; background: white; border-bottom: 1px solid var(--border); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 3D view fills the workspace like the other two views */
+#view-3d { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+#iso-wrapper { flex: 1; min-height: 0; display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--border); background: white; overflow: hidden; }
+#iso-plan { flex: 1; min-height: 0; width: 100%; display: block; }
 .vp-controls { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .vp-btn { padding: 4px 9px; border: 1px solid var(--border); border-radius: 5px; background: white; font-size: 13px; font-weight: 700; cursor: pointer; line-height: 1; color: var(--text); transition: background 0.1s; }
 .vp-btn:hover { background: var(--bg); }
@@ -947,11 +956,13 @@ body.free-tier #connect-pro-btn { display:block; }
             </div>
           </div>
           <div id="floor-plan-wrapper">
-            <div class="plan-title" id="plan-title" style="position:absolute;top:10px;left:14px;z-index:2;pointer-events:none;">Floor Plan</div>
+            <div class="plan-title plan-title-bar" id="plan-title">Floor Plan</div>
             <div class="fp-viewport" id="fp-viewport">
               <div class="fp-zoom-layer" id="fp-zoom-layer">
                 <canvas id="floor-plan" role="img" aria-label="Kitchen floor plan — graphical view. Use the cabinet list on the right to manage cabinets."></canvas>
               </div>
+              <canvas class="vp-ruler vp-ruler-v" id="fp-ruler-v" aria-hidden="true"></canvas>
+              <canvas class="vp-ruler vp-ruler-h" id="fp-ruler-h" aria-hidden="true"></canvas>
             </div>
           </div>
           <div id="summary-table"></div>
@@ -978,11 +989,13 @@ body.free-tier #connect-pro-btn { display:block; }
             </div>
           </div>
           <div id="elevation-wrapper">
-            <div class="plan-title" id="elev-title" style="position:absolute;top:10px;left:14px;z-index:2;pointer-events:none;">Front Elevation — North Wall</div>
+            <div class="plan-title plan-title-bar" id="elev-title">Front Elevation — North Wall</div>
             <div class="fp-viewport" id="elev-viewport">
               <div class="fp-zoom-layer" id="elev-zoom-layer">
                 <canvas id="elevation-plan" role="img" aria-label="Wall elevation view — graphical representation of wall cabinets."></canvas>
               </div>
+              <canvas class="vp-ruler vp-ruler-v" id="elev-ruler-v" aria-hidden="true"></canvas>
+              <canvas class="vp-ruler vp-ruler-h" id="elev-ruler-h" aria-hidden="true"></canvas>
             </div>
           </div>
         </div>
@@ -992,9 +1005,9 @@ body.free-tier #connect-pro-btn { display:block; }
             <span style="font-size:12px;color:var(--text-muted);">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan</span>
             <button class="toolbar-btn" onclick="resetIso3DView()">Reset View</button>
           </div>
-          <div id="iso-wrapper" style="background:white;border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-left:auto;margin-right:auto;width:100%;max-width:1000px;">
-            <div class="plan-title">3D View</div>
-            <canvas id="iso-plan" role="img" aria-label="3D view of the kitchen — interactive graphical model." style="width:100%;height:600px;display:block;border-radius:8px;"></canvas>
+          <div id="iso-wrapper">
+            <div class="plan-title plan-title-bar">3D View</div>
+            <canvas id="iso-plan" role="img" aria-label="3D view of the kitchen — interactive graphical model."></canvas>
           </div>
         </div>
 
@@ -1712,33 +1725,61 @@ let pendingAuthType = null; // 'invite' or 'recovery' if this session arrived vi
 // ════════════════════════════
 const CANVAS_SCALE = 6;  // px/inch — fixed internal floor plan resolution
 const ELEV_SCALE   = 5;  // px/inch — fixed internal elevation resolution
+const RULER_PX     = 24; // thickness of the screen-pinned rulers along the top/left of each viewport
 const vpState = {
   floor: { zoom: 1, panX: 0, panY: 0 },
   elev:  { zoom: 1, panX: 0, panY: 0 },
 };
+// What the on-screen rulers need to know about each drawing, published by
+// renderCanvas()/renderElevation(): where inch 0 sits on the internal canvas, the
+// drawing's extent in inches, and whether the vertical axis counts upward
+// (elevation: height above the floor) or downward (plan: distance from the north wall).
+const vpGeom   = { floor: null, elev: null };
+const vpCursor = { floor: null, elev: null }; // last mouse position over each viewport, for the ruler cursor marks
 const ZOOM_STEPS = [0.08,0.1,0.15,0.2,0.25,0.33,0.5,0.67,0.75,1,1.25,1.5,2,2.5,3,4];
+const ZOOM_MIN = 0.08, ZOOM_MAX = 4;
 
-function applyVpTransform(view) {
-  const layerId = view === 'floor' ? 'fp-zoom-layer' : 'elev-zoom-layer';
-  const pctId   = view === 'floor' ? 'fp-zoom-pct'   : 'elev-zoom-pct';
-  const st = vpState[view];
-  const el = document.getElementById(layerId);
-  if (el) el.style.transform = `translate(${st.panX}px,${st.panY}px) scale(${st.zoom})`;
-  const pct = document.getElementById(pctId);
-  if (pct) pct.textContent = Math.round(st.zoom * 100) + '%';
+function _vpIds(view) {
+  return view === 'floor'
+    ? { vp:'fp-viewport',   layer:'fp-zoom-layer',   pct:'fp-zoom-pct',   canvas:'floor-plan',     rulerH:'fp-ruler-h',   rulerV:'fp-ruler-v'   }
+    : { vp:'elev-viewport', layer:'elev-zoom-layer', pct:'elev-zoom-pct', canvas:'elevation-plan', rulerH:'elev-ruler-h', rulerV:'elev-ruler-v' };
 }
 
+function applyVpTransform(view) {
+  const ids = _vpIds(view);
+  const st = vpState[view];
+  const el = document.getElementById(ids.layer);
+  if (el) el.style.transform = `translate(${st.panX}px,${st.panY}px) scale(${st.zoom})`;
+  const pct = document.getElementById(ids.pct);
+  if (pct) pct.textContent = Math.round(st.zoom * 100) + '%';
+  drawViewportRulers(view);
+}
+
+// Fit the whole drawing inside the viewport (minus the ruler strips) and center it.
 function fitView(view) {
-  const canvasId = view === 'floor' ? 'floor-plan' : 'elevation-plan';
-  const vpId     = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
-  const canvas   = document.getElementById(canvasId);
-  const vp       = document.getElementById(vpId);
+  const ids    = _vpIds(view);
+  const canvas = document.getElementById(ids.canvas);
+  const vp     = document.getElementById(ids.vp);
   if (!canvas || !vp || !canvas.width || !canvas.height) return;
   const vpW = vp.clientWidth, vpH = vp.clientHeight;
-  const zoom = Math.min(vpW / canvas.width, vpH / canvas.height) * 0.94;
-  vpState[view].zoom = Math.max(0.08, Math.min(4, zoom));
-  vpState[view].panX = Math.round((vpW - canvas.width  * vpState[view].zoom) / 2);
-  vpState[view].panY = Math.round((vpH - canvas.height * vpState[view].zoom) / 2);
+  if (!vpW || !vpH) return; // viewport is hidden — leave state alone so the next visible render fits
+  const availW = vpW - RULER_PX, availH = vpH - RULER_PX;
+  const zoom = Math.min(availW / canvas.width, availH / canvas.height) * 0.94;
+  const st = vpState[view];
+  st.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom));
+  st.panX = RULER_PX + Math.round((availW - canvas.width  * st.zoom) / 2);
+  st.panY = RULER_PX + Math.round((availH - canvas.height * st.zoom) / 2);
+  applyVpTransform(view);
+}
+
+// Zoom to newZoom keeping the viewport point (cx, cy) fixed on the same spot of the drawing.
+function zoomAt(view, newZoom, cx, cy) {
+  const st = vpState[view];
+  newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+  if (newZoom === st.zoom) return;
+  st.panX = cx - (cx - st.panX) * (newZoom / st.zoom);
+  st.panY = cy - (cy - st.panY) * (newZoom / st.zoom);
+  st.zoom = newZoom;
   applyVpTransform(view);
 }
 
@@ -1748,21 +1789,137 @@ function stepZoom(view, dir) {
   if (idx < 0) idx = ZOOM_STEPS.length - 1;
   if (dir > 0 && ZOOM_STEPS[idx] <= cur + 0.001) idx = Math.min(idx + 1, ZOOM_STEPS.length - 1);
   else if (dir < 0) idx = Math.max(idx - 1, 0);
-  const vpId = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
-  const vp = document.getElementById(vpId);
-  const vpCx = vp ? vp.clientWidth  / 2 : 0;
-  const vpCy = vp ? vp.clientHeight / 2 : 0;
-  const st = vpState[view];
-  const newZoom = ZOOM_STEPS[idx];
-  st.panX = vpCx - (vpCx - st.panX) * (newZoom / st.zoom);
-  st.panY = vpCy - (vpCy - st.panY) * (newZoom / st.zoom);
-  st.zoom = newZoom;
-  applyVpTransform(view);
+  const vp = document.getElementById(_vpIds(view).vp);
+  // Zoom about the center of the drawing area (the part of the viewport not covered by rulers)
+  const cx = vp ? RULER_PX + (vp.clientWidth  - RULER_PX) / 2 : 0;
+  const cy = vp ? RULER_PX + (vp.clientHeight - RULER_PX) / 2 : 0;
+  zoomAt(view, ZOOM_STEPS[idx], cx, cy);
+}
+
+// Wheel → zoom multiplier. Proportional to how far the wheel/trackpad actually moved,
+// instead of a fixed 10% per event: a trackpad fires dozens of tiny events per swipe,
+// which used to compound into a huge jump. Trackpad pinch arrives as a ctrlKey wheel
+// with very small deltas, so it gets a larger coefficient.
+function wheelZoomFactor(e) {
+  let dy = e.deltaY;
+  if (e.deltaMode === 1) dy *= 16;        // lines → px
+  else if (e.deltaMode === 2) dy *= 120;  // pages → px
+  dy = Math.max(-120, Math.min(120, dy));
+  const k = e.ctrlKey ? 0.01 : 0.0008;    // 120px mouse notch ≈ ×1.10, a gentle trackpad swipe ≈ ×1.2–1.3
+  return Math.exp(-dy * k);
+}
+
+// ── Screen-pinned rulers ─────────────────────────────────────────────────────
+// Drawn on two thin canvases that sit over the top and left edges of the viewport,
+// in *screen* space — so they stay put and stay readable no matter how far the
+// drawing is zoomed or panned, and the tick spacing adapts to the zoom level.
+function fmtRulerIn(i) {
+  const a = Math.abs(i), ft = Math.floor(a / 12), inn = a % 12;
+  if (a === 0) return '0';
+  const s = inn === 0 ? `${ft}'` : ft === 0 ? `${inn}"` : `${ft}'${inn}"`;
+  return (i < 0 ? '-' : '') + s;
+}
+
+function drawViewportRulers(view) {
+  const ids = _vpIds(view);
+  const vp = document.getElementById(ids.vp);
+  const rh = document.getElementById(ids.rulerH);
+  const rv = document.getElementById(ids.rulerV);
+  if (!vp || !rh || !rv) return;
+  const vpW = vp.clientWidth, vpH = vp.clientHeight;
+  if (!vpW || !vpH) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const setup = (c, w, h) => {
+    const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
+    c.style.width = w + 'px'; c.style.height = h + 'px';
+    const x = c.getContext('2d');
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return x;
+  };
+  const hx = setup(rh, vpW, RULER_PX);
+  const vx = setup(rv, RULER_PX, vpH);
+  const BG = '#f8fafc', BAND = '#ffffff', LINE = '#cbd5e1', MAJOR = '#475569', MINOR = '#94a3b8', OUTSIDE = '#d6dde6', TEXT = '#334155', CURSOR = '#0d9488';
+  const FONT = '600 10px Inter, "Segoe UI", -apple-system, sans-serif';
+
+  hx.fillStyle = BG; hx.fillRect(0, 0, vpW, RULER_PX);
+  vx.fillStyle = BG; vx.fillRect(0, 0, RULER_PX, vpH);
+
+  const g = vpGeom[view], st = vpState[view];
+  if (g) {
+    const ppi = g.scale * st.zoom;                 // screen px per inch
+    const ox  = st.panX + g.originX * st.zoom;     // screen x of inch 0
+    const oy  = st.panY + g.originY * st.zoom;     // screen y of inch 0
+    const dirY = g.vertUp ? -1 : 1;                // which way inches grow on screen
+
+    // Tick spacing: labels ≥ 56px apart, minor ticks ≥ 8px apart, minor divides major.
+    const STEPS = [1, 2, 3, 6, 12, 24, 36, 48, 96, 120, 240, 480];
+    const major = STEPS.find(s => s * ppi >= 56) || 480;
+    const minor = STEPS.find(s => s * ppi >= 8 && major % s === 0) || major;
+    const mid   = (major % 2 === 0 && (major / 2) % minor === 0) ? major / 2 : null;
+
+    // Light band marking the extent of the room/wall on each ruler
+    hx.fillStyle = BAND; hx.fillRect(ox, 0, g.wIn * ppi, RULER_PX);
+    vx.fillStyle = BAND; vx.fillRect(0, g.vertUp ? oy - g.hIn * ppi : oy, RULER_PX, g.hIn * ppi);
+
+    hx.font = FONT; vx.font = FONT; hx.lineWidth = 1; vx.lineWidth = 1;
+
+    // Horizontal ruler (inches along the top edge)
+    let i0 = Math.floor((RULER_PX - ox) / ppi / minor) * minor;
+    let i1 = Math.ceil((vpW - ox) / ppi / minor) * minor;
+    for (let i = i0; i <= i1; i += minor) {
+      const x = Math.round(ox + i * ppi) + 0.5;
+      if (x < RULER_PX) continue;
+      const inside = i >= 0 && i <= g.wIn;
+      const isMajor = i % major === 0, isMid = mid !== null && i % mid === 0;
+      const len = isMajor ? 12 : isMid ? 8 : 4;
+      hx.strokeStyle = !inside ? OUTSIDE : isMajor ? MAJOR : MINOR;
+      hx.beginPath(); hx.moveTo(x, RULER_PX); hx.lineTo(x, RULER_PX - len); hx.stroke();
+      if (isMajor && inside) {
+        hx.fillStyle = TEXT; hx.textAlign = 'left'; hx.textBaseline = 'top';
+        hx.fillText(fmtRulerIn(i), x + 3, 3);
+      }
+    }
+
+    // Vertical ruler (inches down the left edge; upward from the floor in elevation)
+    const sy = i => oy + dirY * i * ppi;
+    let j0 = Math.floor(Math.min((RULER_PX - oy) * dirY, (vpH - oy) * dirY) / ppi / minor) * minor;
+    let j1 = Math.ceil (Math.max((RULER_PX - oy) * dirY, (vpH - oy) * dirY) / ppi / minor) * minor;
+    for (let i = j0; i <= j1; i += minor) {
+      const y = Math.round(sy(i)) + 0.5;
+      if (y < RULER_PX) continue;
+      const inside = i >= 0 && i <= g.hIn;
+      const isMajor = i % major === 0, isMid = mid !== null && i % mid === 0;
+      const len = isMajor ? 12 : isMid ? 8 : 4;
+      vx.strokeStyle = !inside ? OUTSIDE : isMajor ? MAJOR : MINOR;
+      vx.beginPath(); vx.moveTo(RULER_PX, y); vx.lineTo(RULER_PX - len, y); vx.stroke();
+      if (isMajor && inside) {
+        // Rotated to read bottom-to-top, placed on the increasing side of the tick
+        vx.save(); vx.translate(0, y); vx.rotate(-Math.PI / 2);
+        vx.fillStyle = TEXT; vx.textBaseline = 'top';
+        if (g.vertUp) { vx.textAlign = 'left';  vx.fillText(fmtRulerIn(i),  3, 3); }
+        else          { vx.textAlign = 'right'; vx.fillText(fmtRulerIn(i), -3, 3); }
+        vx.restore();
+      }
+    }
+
+    // Cursor position marks
+    const cur = vpCursor[view];
+    if (cur) {
+      hx.fillStyle = CURSOR; hx.fillRect(Math.round(cur.x), 0, 1, RULER_PX);
+      vx.fillStyle = CURSOR; vx.fillRect(0, Math.round(cur.y), RULER_PX, 1);
+    }
+  }
+
+  // Edge lines and the corner square where the two rulers meet
+  hx.fillStyle = LINE; hx.fillRect(0, RULER_PX - 1, vpW, 1);
+  vx.fillStyle = LINE; vx.fillRect(RULER_PX - 1, 0, 1, vpH);
+  hx.fillStyle = '#f1f5f9'; hx.fillRect(0, 0, RULER_PX, RULER_PX);
+  hx.fillStyle = LINE; hx.fillRect(RULER_PX - 1, 0, 1, RULER_PX); hx.fillRect(0, RULER_PX - 1, RULER_PX, 1);
 }
 
 function _initVpEvents(view) {
-  const vpId     = view === 'floor' ? 'fp-viewport' : 'elev-viewport';
-  const vp       = document.getElementById(vpId);
+  const vp = document.getElementById(_vpIds(view).vp);
   if (!vp) return;
   let panStart = null;
 
@@ -1770,15 +1927,7 @@ function _initVpEvents(view) {
   vp.addEventListener('wheel', e => {
     e.preventDefault();
     const rect = vp.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    const st = vpState[view];
-    const newZoom = Math.max(0.08, Math.min(4, st.zoom * factor));
-    st.panX = mx - (mx - st.panX) * (newZoom / st.zoom);
-    st.panY = my - (my - st.panY) * (newZoom / st.zoom);
-    st.zoom = newZoom;
-    applyVpTransform(view);
+    zoomAt(view, vpState[view].zoom * wheelZoomFactor(e), e.clientX - rect.left, e.clientY - rect.top);
   }, { passive: false });
 
   // Drag on empty space to pan
@@ -1787,13 +1936,21 @@ function _initVpEvents(view) {
     if (e.button === 1) { e.preventDefault(); panStart = { x: e.clientX, y: e.clientY, px: vpState[view].panX, py: vpState[view].panY }; vp.classList.add('panning'); }
   });
   vp.addEventListener('mousemove', e => {
-    if (!panStart) return;
-    vpState[view].panX = panStart.px + (e.clientX - panStart.x);
-    vpState[view].panY = panStart.py + (e.clientY - panStart.y);
-    applyVpTransform(view);
+    const rect = vp.getBoundingClientRect();
+    vpCursor[view] = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    if (panStart) {
+      vpState[view].panX = panStart.px + (e.clientX - panStart.x);
+      vpState[view].panY = panStart.py + (e.clientY - panStart.y);
+      applyVpTransform(view);
+    } else {
+      drawViewportRulers(view);
+    }
   });
   vp.addEventListener('mouseup', () => { panStart = null; vp.classList.remove('panning'); });
-  vp.addEventListener('mouseleave', () => { panStart = null; vp.classList.remove('panning'); });
+  vp.addEventListener('mouseleave', () => { panStart = null; vp.classList.remove('panning'); vpCursor[view] = null; drawViewportRulers(view); });
+
+  // Rulers are sized to the viewport, so redraw them whenever it changes size
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => drawViewportRulers(view)).observe(vp);
 
   // Touch: pinch to zoom
   let touches = {};
@@ -1810,14 +1967,8 @@ function _initVpEvents(view) {
     if (e.touches.length === 2 && lastDist) {
       e.preventDefault();
       const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      const factor = dist / lastDist;
-      const st = vpState[view];
-      const newZoom = Math.max(0.08, Math.min(4, st.zoom * factor));
-      st.panX = touches.cx - (touches.cx - st.panX) * (newZoom / st.zoom);
-      st.panY = touches.cy - (touches.cy - st.panY) * (newZoom / st.zoom);
-      st.zoom = newZoom;
+      zoomAt(view, vpState[view].zoom * (dist / lastDist), touches.cx, touches.cy);
       lastDist = dist;
-      applyVpTransform(view);
     }
   }, { passive: false });
   vp.addEventListener('touchend', () => { lastDist = null; });
@@ -2299,9 +2450,11 @@ function setViewMode(m) {
   document.getElementById('vt-floor').classList.toggle('active', m === 'floor');
   document.getElementById('vt-elev').classList.toggle('active', m === 'elevation');
   document.getElementById('vt-3d').classList.toggle('active', m === '3d');
-  if (m === 'elevation') renderElevation();
-  else if (m === '3d') renderIsometric();
-  else renderCanvas();
+  // Re-frame on every switch: the view that was hidden couldn't be fitted while it
+  // had no size, and the user expects to land on the whole drawing, centered.
+  if (m === 'elevation') { renderElevation(); fitView('elev'); }
+  else if (m === '3d')   { renderIsometric(); resetIso3DView(); }
+  else                   { renderCanvas(); fitView('floor'); }
 }
 
 // ════════════════════════════
@@ -2606,6 +2759,7 @@ function selectElevWall(wall) {
   state.elevWall = wall;
   document.querySelectorAll('.elev-wall-tab').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
   renderElevation();
+  fitView('elev'); // walls differ in length — re-center the new one
 }
 function selectOpeningType(type) {
   state.activeOpeningType = type;
@@ -3492,10 +3646,12 @@ function renderCanvas() {
   const viewMode = document.getElementById('view-sel').value;
   const roomW = Math.max(r.walls.north, r.walls.south, 48);
   const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const PDF = !!window._pdfMode; // true only while exportPDF/printFloorPlan capture this canvas
   const PAD = 68;
   canvas.width  = Math.max(roomW * scale + PAD*2, 380);
   canvas.height = Math.max(roomH * scale + PAD*2, 280);
   const RX = PAD, RY = PAD, RW = roomW*scale, RH = roomH*scale;
+  vpGeom.floor = { originX: RX, originY: RY, wIn: roomW, hIn: roomH, scale, vertUp: false };
 
   // Canvas background
   ctx.fillStyle = '#F1F5F9'; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -3924,9 +4080,12 @@ function renderCanvas() {
     ctx.save(); ctx.translate(RX-36, RY+RH/2); ctx.rotate(-Math.PI/2); if (r.walls.west>0) ctx.fillText(fmtIn(r.walls.west),0,0); ctx.restore();
     ctx.save(); ctx.translate(RX+RW+36, RY+RH/2); ctx.rotate(Math.PI/2); if (r.walls.east>0) ctx.fillText(fmtIn(r.walls.east),0,0); ctx.restore();
   }
-  // Rulers
-  drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
-  drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
+  // Rulers baked into the canvas only for PDF output — on screen they live on the
+  // viewport edges (drawViewportRulers) so they stay readable at any zoom.
+  if (PDF) {
+    drawRuler(ctx, RX, RY, roomW, scale, false, false); // X axis (top)
+    drawRuler(ctx, RX, RY, roomH, scale, true,  false); // Y axis (left)
+  }
 
   ctx.fillStyle = '#94A3B8'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
   // Shape tag if L-shape
@@ -4078,6 +4237,7 @@ function initIso3D() {
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = false;
+  controls.zoomSpeed = 0.6;   // default 1.0 felt too fast
   controls.maxPolarAngle = Math.PI/2 - 0.04; // don't dip below the floor
   controls.minDistance = 30;
   controls.maxDistance = 3000;
@@ -4459,6 +4619,7 @@ function renderElevation() {
   const wallCabs     = r.cabinets.filter(c => c.wall === wall);
   const wallOpenings = (r.openings||[]).filter(o => o.wall === wall);
   const floorY = WY+WH;
+  if (!PDF) vpGeom.elev = { originX: WX, originY: floorY, wIn: wallLength, hIn: ceiling, scale, vertUp: true };
 
   // PDF: soffit band — dark fill from ceiling down to top of upper cabinets
   if (PDF) {
@@ -4845,13 +5006,8 @@ function renderElevation() {
     }
   }
 
-  // Rulers (app mode only — PDF uses dimension strings instead). The Y-axis ruler is
-  // skipped when full dimensions are on, since the height chain below already shows
-  // the overall ceiling height (plus the breakdown the ruler alone doesn't have).
-  if (!PDF) {
-    drawRuler(ctx, WX, WY, wallLength, scale, false, false); // X axis (inches along wall)
-    if (!showDimensions) drawRuler(ctx, WX, WY, ceiling, scale, true, true); // Y axis (height from floor)
-  }
+  // On screen, rulers are drawn on the viewport edges (drawViewportRulers); the PDF
+  // uses dimension strings instead.
 
   // Full dimension callouts (app mode, toggled by the Dims button) — individual
   // cabinet widths + overall total along the bottom, and a floor→counter→upper
@@ -5738,10 +5894,12 @@ async function printFloorPlan(btn) {
   let y = titleBlock(roomLabel + ' — Floor Plan', 'Floor Plan', pg);
 
   const fpCv = document.getElementById('floor-plan');
+  window._pdfMode = true; renderCanvas(); // bake rulers into the canvas for print
   if (fpCv && fpCv.width>0) {
     const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-12);
     doc.addImage(fpCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y, w, h);
   }
+  window._pdfMode = false; renderCanvas();
 
   // Room dimensions at page bottom
   if (r) {
@@ -5936,10 +6094,12 @@ async function exportPDF(btn) {
   doc.text(p.customer||'—', MAR, y); doc.text(`${p.type||'—'}  ·  Style: ${p.style||'—'}`, PW/2, y); y+=5;
   doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(MAR,y,PW-MAR,y); y+=4;
   const fpCv = document.getElementById('floor-plan');
+  window._pdfMode = true; renderCanvas(); // bake rulers into the canvas for print
   if (fpCv && fpCv.width) {
     const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-8);
     doc.addImage(fpCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, y, w, h);
   }
+  window._pdfMode = false; renderCanvas();
 
   // ── Pages 2-N: Wall elevations ─────────────────────────────────
   const r = activeRoom();
