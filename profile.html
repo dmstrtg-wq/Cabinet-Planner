@@ -446,7 +446,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h8v12l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1L4 14V2z"/><line x1="6" y1="5.5" x2="11" y2="5.5"/><line x1="6" y1="8" x2="11" y2="8"/></svg>
           Billing
         </a>
-        <a class="sidebar-link" href="#leads" data-tab="leads" id="leads-nav-link" style="display:none;">
+        <a class="sidebar-link" href="#leads" data-tab="leads" id="leads-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2.5"/><path d="M1 14c0-2.5 2-4 5-4s5 1.5 5 4"/><line x1="12" y1="4" x2="15" y2="4"/><line x1="13.5" y1="2.5" x2="13.5" y2="5.5"/></svg>
           Leads
         </a>
@@ -609,6 +609,45 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
 
         <div class="section">
           <div class="section-head">
+            <div class="section-title">Find a Pro Listing</div>
+            <span id="pl-save-status" style="font-size:12px;font-weight:600;"></span>
+          </div>
+          <div class="card" style="padding:24px;">
+            <div id="pl-locked" style="display:none;font-size:13px;color:var(--muted);line-height:1.6;">
+              Get found by homeowners in your area. Listing your company in <strong>Find a Pro</strong> and receiving their quote requests is included with the Silver and Gold plans.
+              <div style="margin-top:12px;"><a href="#subscription" class="btn btn-primary" style="font-size:12px;padding:7px 14px;">See Plans</a></div>
+            </div>
+            <div id="pl-form">
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:6px;">
+                <input type="checkbox" id="pl-listed" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+                <span style="font-size:14px;font-weight:700;">List my company in Find a Pro</span>
+              </label>
+              <div id="pl-status" style="font-size:12px;color:var(--muted);margin:0 0 18px 30px;"></div>
+              <div class="form-grid-2">
+                <div class="form-group" style="grid-column:1/-1;">
+                  <label>About your company <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);">(shown to homeowners)</span></label>
+                  <textarea id="pl-blurb" rows="3" maxlength="300" placeholder="Family-owned shop specializing in custom kitchens and baths. Free in-home measure and design." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);resize:vertical;line-height:1.6;"></textarea>
+                  <div style="font-size:11px;color:var(--muted);margin-top:5px;"><span id="pl-blurb-count">0</span>/300</div>
+                </div>
+                <div class="form-group"><label>Service area ZIP <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);">(where you're based)</span></label><input type="text" id="pl-zip" placeholder="80202" maxlength="10" inputmode="numeric"></div>
+                <div class="form-group"><label>Travel radius</label>
+                  <select id="pl-radius">
+                    <option value="10">10 miles</option>
+                    <option value="25" selected>25 miles</option>
+                    <option value="50">50 miles</option>
+                    <option value="100">100 miles</option>
+                    <option value="250">Statewide (250 miles)</option>
+                  </select>
+                </div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Your company name, logo, phone, email, website, and city are pulled from Company Info above each time you save, so keep those current. Pricing and quotes are never shown publicly.</div>
+              <button class="btn btn-primary" onclick="saveProListing()">Save Listing</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
             <div class="section-title">Door Styles / Finishes</div>
           </div>
           <div class="card" style="padding:24px;">
@@ -744,12 +783,12 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
       <!-- LEADS (admin only — Dan's view) -->
       <div class="tab-panel" data-tab="leads">
         <div class="tab-title">Leads</div>
-        <div class="tab-desc">Homeowners who requested a connection to a cabinet pro.</div>
+        <div class="tab-desc" id="leads-desc">Homeowners near you who asked for a quote through Find a Pro.</div>
         <div class="section">
-          <div class="section-head"><div class="section-title">All Leads</div></div>
+          <div class="section-head"><div class="section-title" id="leads-section-title">Your Leads</div></div>
           <div class="card" style="padding:0;overflow:hidden;">
             <div id="leads-loading" style="padding:24px;text-align:center;color:var(--muted);font-size:14px;">Loading leads…</div>
-            <div id="leads-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;">No leads yet — they'll appear here when homeowners submit the Connect with a Pro form.</div>
+            <div id="leads-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6;">No leads yet — they'll appear here when homeowners submit the Connect with a Pro form.</div>
             <div id="leads-table-wrap" style="display:none;overflow-x:auto;">
               <table class="proj-table" style="min-width:720px;">
                 <thead>
@@ -761,6 +800,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                     <th>ZIP</th>
                     <th>Plan Summary</th>
                     <th>Floor Plan</th>
+                    <th class="leads-admin-col">Assigned to</th>
                     <th style="text-align:center;">Contacted</th>
                   </tr>
                 </thead>
@@ -1208,10 +1248,27 @@ function leadsEsc(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+const LEADS_ADMIN_EMAIL = 'dmstrtg@gmail.com'; // matches the leads_admin_* RLS policies
+let isLeadsAdmin = false, listedPros = [];
+
 async function loadLeads() {
-  const { data, error } = await db.from('leads').select('*').order('created_at', { ascending: false });
-  document.getElementById('leads-loading').style.display = 'none';
   const emptyEl = document.getElementById('leads-empty');
+  const loadingEl = document.getElementById('leads-loading');
+  // A free account can't be listed, so it can't receive leads — show the upsell, not an empty table
+  if (!isLeadsAdmin && !canAccess('silver')) {
+    loadingEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    emptyEl.innerHTML = 'Leads from homeowners in your area come with a <strong>Find a Pro</strong> listing, included on Silver and Gold.<div style="margin-top:12px;"><a href="#subscription" class="btn btn-primary" style="font-size:12px;padding:7px 14px;">See Plans</a></div>';
+    return;
+  }
+  // The admin sees every lead (leads_admin_select); a company only sees rows routed to it (leads_company_select)
+  const [{ data, error }, prosRes] = await Promise.all([
+    db.from('leads').select('*').order('created_at', { ascending: false }),
+    isLeadsAdmin ? db.from('pro_listings').select('user_id, company_name, city, state').eq('listed', true).order('company_name') : Promise.resolve({ data: [] }),
+  ]);
+  listedPros = prosRes.data || [];
+  loadingEl.style.display = 'none';
+  document.querySelectorAll('.leads-admin-col').forEach(el => el.style.display = isLeadsAdmin ? '' : 'none');
   if (error) {
     // A failed query must not look like "no leads" — say what broke.
     console.error('Leads load error:', error);
@@ -1222,6 +1279,11 @@ async function loadLeads() {
   }
   if (!data || data.length === 0) {
     emptyEl.style.display = 'block';
+    emptyEl.textContent = isLeadsAdmin
+      ? 'No leads yet — they\'ll appear here when homeowners submit the Connect with a Pro form.'
+      : (proListing?.listed
+          ? 'No leads yet. Homeowners near ' + (proListing.service_zip || 'you') + ' will land here when they ask for a quote.'
+          : 'No leads yet. Turn on your Find a Pro listing in Company Settings to start receiving quote requests from homeowners near you.');
     return;
   }
   const tbody = document.getElementById('leads-tbody');
@@ -1230,14 +1292,21 @@ async function loadLeads() {
     const thumb = lead.floor_plan_dataurl
       ? `<img src="${lead.floor_plan_dataurl}" style="width:80px;height:auto;border-radius:4px;border:1px solid #e2e8f0;" alt="Floor plan thumbnail">`
       : '—';
+    const assign = isLeadsAdmin ? `<td class="leads-admin-col">
+        <select onchange="assignLead('${lead.id}', this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:${lead.company_id ? '#f0fdfa' : '#fff'};max-width:180px;">
+          <option value="">— Unassigned —</option>
+          ${listedPros.map(p => `<option value="${p.user_id}" ${p.user_id === lead.company_id ? 'selected' : ''}>${leadsEsc(p.company_name)}${p.city ? ' · ' + leadsEsc(p.city) : ''}</option>`).join('')}
+          ${lead.company_id && !listedPros.some(p => p.user_id === lead.company_id) ? `<option value="${lead.company_id}" selected>(unlisted company)</option>` : ''}
+        </select></td>` : '';
     return `<tr>
       <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${date}</td>
       <td style="font-weight:600;">${leadsEsc(lead.name)}</td>
       <td><a href="mailto:${leadsEsc(lead.email)}" style="color:var(--accent);">${leadsEsc(lead.email)}</a>${lead.note ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${leadsEsc(lead.note)}</div>` : ''}</td>
-      <td>${leadsEsc(lead.phone) || '—'}</td>
+      <td>${lead.phone ? `<a href="tel:${leadsEsc(String(lead.phone).replace(/[^\d+]/g,''))}" style="color:var(--accent);">${leadsEsc(lead.phone)}</a>` : '—'}</td>
       <td>${leadsEsc(lead.zip) || '—'}</td>
       <td style="font-size:12px;color:var(--muted);max-width:180px;">${leadsEsc(lead.plan_summary) || '—'}</td>
       <td>${thumb}</td>
+      ${assign}
       <td style="text-align:center;">
         <input type="checkbox" ${lead.contacted ? 'checked' : ''} onchange="toggleContacted('${lead.id}', this.checked)"
           style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer;" title="Mark as contacted">
@@ -1248,8 +1317,86 @@ async function loadLeads() {
 }
 
 async function toggleContacted(id, value) {
-  await db.from('leads').update({ contacted: value }).eq('id', id);
+  const { error } = await db.from('leads').update({ contacted: value }).eq('id', id);
+  if (error) showToast('Couldn\'t update: ' + error.message);
 }
+
+// Admin only: route a lead to a listed company. It shows up in that company's Leads tab.
+async function assignLead(id, companyId) {
+  const { error } = await db.from('leads').update({ company_id: companyId || null }).eq('id', id);
+  if (error) { showToast('Couldn\'t assign: ' + error.message); return; }
+  const pro = listedPros.find(p => p.user_id === companyId);
+  showToast(pro ? `Sent to ${pro.company_name}.` : 'Lead unassigned.');
+}
+
+/* ── FIND A PRO LISTING (Company Settings) ── */
+let proListing = null;
+
+async function loadProListing() {
+  const { data, error } = await db.from('pro_listings').select('*').eq('user_id', effectiveOwnerId).maybeSingle();
+  if (error) console.warn('Listing load error:', error);
+  proListing = data || null;
+  renderProListing();
+}
+
+function renderProListing() {
+  const locked = !canAccess('silver');
+  document.getElementById('pl-locked').style.display = locked ? '' : 'none';
+  document.getElementById('pl-form').style.display   = locked ? 'none' : '';
+  if (locked) return;
+  const l = proListing || {};
+  document.getElementById('pl-listed').checked = !!l.listed;
+  document.getElementById('pl-blurb').value    = l.blurb || '';
+  document.getElementById('pl-zip').value      = l.service_zip || companyProfile.zip || '';
+  document.getElementById('pl-radius').value   = String(l.service_radius_miles || 25);
+  document.getElementById('pl-blurb-count').textContent = (l.blurb || '').length;
+  const st = document.getElementById('pl-status');
+  st.innerHTML = l.listed
+    ? `<span style="color:#15803d;font-weight:700;">● Listed</span> — homeowners within ${l.service_radius_miles || 25} miles of ${leadsEsc(l.service_zip || '')} can find you and request a quote.`
+    : 'Not listed — homeowners can\'t find you yet.';
+}
+
+async function saveProListing() {
+  const statusEl = document.getElementById('pl-save-status');
+  if (myTeamRole !== 'owner') { statusEl.style.color = '#b91c1c'; statusEl.textContent = 'Only the account owner can change the listing.'; return; }
+  if (!canAccess('silver')) { showToast('Find a Pro listings are available on the Silver plan and above.'); return; }
+  const listed = document.getElementById('pl-listed').checked;
+  const zip    = document.getElementById('pl-zip').value.trim();
+  const blurb  = document.getElementById('pl-blurb').value.trim();
+  const radius = parseInt(document.getElementById('pl-radius').value, 10) || 25;
+  const name   = (document.getElementById('cp-name').value || companyProfile.company_name || '').trim();
+  statusEl.style.color = '#b91c1c';
+  if (!name) { statusEl.textContent = 'Add your company name in Company Info first.'; return; }
+  if (listed && !/^\d{5}(-\d{4})?$/.test(zip)) { statusEl.textContent = 'Enter a valid 5-digit ZIP to be listed.'; return; }
+  if (listed && (!companyProfile.phone && !companyProfile.email)) { statusEl.textContent = 'Add a phone or email in Company Info so homeowners can reach you, then save that first.'; return; }
+  statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Saving…';
+  // Public fields are copied from the (saved) company profile so nothing private leaks
+  const row = {
+    user_id: effectiveOwnerId, listed, blurb: blurb || null,
+    company_name: name,
+    phone:    companyProfile.phone   || null,
+    email:    companyProfile.email   || null,
+    website:  companyProfile.website || null,
+    logo_url: companyProfile.logo_url || null,
+    city:     companyProfile.city    || null,
+    state:    companyProfile.state   || null,
+    service_zip: zip || null, service_radius_miles: radius,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await db.from('pro_listings').upsert(row, { onConflict: 'user_id' }).select().single();
+  if (error) {
+    statusEl.style.color = '#b91c1c';
+    statusEl.textContent = /relation .* does not exist|schema cache/i.test(error.message || '')
+      ? 'Listing table isn\'t set up yet — run supabase-pro-listings-and-company-leads.sql in Supabase.'
+      : 'Error: ' + error.message;
+    return;
+  }
+  proListing = data;
+  statusEl.style.color = '#15803d'; statusEl.textContent = listed ? '✓ Saved — you\'re listed' : '✓ Saved — not listed';
+  setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  renderProListing();
+}
+document.addEventListener('input', e => { if (e.target.id === 'pl-blurb') document.getElementById('pl-blurb-count').textContent = e.target.value.length; });
 
 /* ── TOAST ── */
 let toastTimer = null;
@@ -1735,10 +1882,12 @@ async function saveCompanySettings() {
     return;
   }
   pendingLogoDataUrl = null;
+  companyProfile = data; // keep in sync — the Find a Pro listing copies public fields from here
   statusEl.style.color = '#15803d';
   statusEl.textContent = '✓ Saved';
   setTimeout(() => { statusEl.textContent = ''; }, 2500);
   applyCompanyData(data);
+  renderProListing();
 }
 
 /* ── MY PRICING / PRICE SHEETS ── */
@@ -2160,10 +2309,14 @@ async function init() {
     }).join('');
   }
 
-  // Show Leads tab for admin only
-  if (user.email === 'dmstrtg@gmail.com') {
-    document.getElementById('leads-nav-link').style.display = '';
+  // Leads tab is for everyone now (companies see leads routed to them); the admin
+  // additionally sees every lead and can assign them.
+  isLeadsAdmin = user.email === LEADS_ADMIN_EMAIL;
+  if (isLeadsAdmin) {
+    document.getElementById('leads-desc').textContent = 'Every quote request from homeowners. Assign each one to a listed company and it appears in their Leads tab.';
+    document.getElementById('leads-section-title').textContent = 'All Leads';
   }
+  loadProListing();
 
   applyTeamRoleGates();
   applyHashTab();
