@@ -14,18 +14,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Cabinet Planner — Design It. Quote It. Close It.</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<meta name="description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta name="description" content="Cabinet design software for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D in one browser tab, quotes with your own prices, plus a job pipeline, calendar, and homeowner leads.">
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mycabinetplanner.com/">
 <meta property="og:title" content="My Cabinet Planner — Design It. Quote It. Close It.">
-<meta property="og:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta property="og:description" content="Cabinet design software for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D in one browser tab, quotes with your own prices, plus a job pipeline, calendar, and homeowner leads.">
 <meta property="og:image" content="https://mycabinetplanner.com/og-image.png">
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://mycabinetplanner.com/">
 <meta name="twitter:title" content="My Cabinet Planner — Design It. Quote It. Close It.">
-<meta name="twitter:description" content="Cabinet design software built for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D view in one browser tab — quote ready before you leave the job site.">
+<meta name="twitter:description" content="Cabinet design software for independent cabinet sellers and installers. Floor Plan, Elevation, and 3D in one browser tab, quotes with your own prices, plus a job pipeline, calendar, and homeowner leads.">
 <meta name="twitter:image" content="https://mycabinetplanner.com/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -255,6 +255,27 @@ nav{
   overflow:hidden;position:relative;
 }
 /* Visual mock elements */
+.mock-cal{width:100%;background:white;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.mock-cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:#f9fafb;border-bottom:1px solid var(--border);}
+.mock-cal-head span{padding:5px 0;text-align:center;font-size:8.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+.mock-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.mock-cal-day{min-height:46px;padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-width:0;}
+.mock-cal-day:nth-child(7n){border-right:none;}
+.mock-cal-day:nth-last-child(-n+7){border-bottom:none;}
+.mock-cal-num{font-size:9px;font-weight:700;color:var(--ink);margin-bottom:3px;display:inline-flex;width:15px;height:15px;align-items:center;justify-content:center;border-radius:50%;}
+.mock-cal-day.today .mock-cal-num{background:var(--accent);color:white;}
+.mock-cal-chip{display:block;font-size:8px;font-weight:600;padding:2px 4px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid;}
+.mock-cal-card{position:absolute;right:18px;bottom:16px;background:white;border:1px solid var(--border);border-radius:8px;padding:10px 12px;box-shadow:0 8px 24px rgba(15,23,42,0.14);width:210px;}
+.mock-cal-card-title{font-size:11px;font-weight:800;color:var(--ink);}
+.mock-cal-card-sub{font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.55;}
+.mock-lead{width:100%;background:white;border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;gap:14px;align-items:flex-start;}
+.mock-lead-avatar{width:36px;height:36px;border-radius:50%;background:#ccfbf1;color:#0f766e;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mock-lead-name{font-size:12px;font-weight:800;color:var(--ink);}
+.mock-lead-meta{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.6;}
+.mock-lead-badge{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:3px 8px;border-radius:999px;background:#ccfbf1;color:#0f766e;flex-shrink:0;white-space:nowrap;}
+.mock-lead-plan{margin-top:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:120px;}
+.mock-lead-plan span{height:12px;border-radius:2px;background:#3B82F6;}
+.mock-lead-route{margin-top:10px;font-size:10px;font-weight:700;color:var(--accent);}
 .mock-floor{
   display:grid;grid-template-columns:repeat(4,1fr);gap:3px;width:100%;
 }
@@ -583,7 +604,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
   <div class="hero-left">
     <div class="hero-eyebrow">Cabinet design software built for the trade</div>
     <h1>Design it. Quote it.<br><em>Close it.</em></h1>
-    <p class="hero-sub">Floor Plan, Elevation, and 3D view in one browser tab. Set your own prices once, and every layout turns into a quote your customer can sign on the spot.</p>
+    <p class="hero-sub">Floor Plan, Elevation, and 3D view in one browser tab. Set your own prices once, and every layout turns into a quote your customer can sign on the spot. Then run the job from the same login — pipeline, calendar, and activity log.</p>
     <div class="hero-actions">
       <a href="/app?demo=1" class="btn-hero">Try It Free &rarr;</a>
       <a href="#pricing" class="btn-hero-ghost">See Pricing</a>
@@ -680,7 +701,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <div class="platform-card">
       <div class="platform-num">Track</div>
       <h3>Every job from first call to install.</h3>
-      <p>Move jobs through your pipeline with one click. Every status change, note, and quote revision is logged automatically — no chasing texts to find where a job stands.</p>
+      <p>Move jobs through your pipeline with one click. Every status change, note, and quote revision is logged automatically. Put the install on the calendar, and the customer's address and phone are one tap away.</p>
     </div>
   </div>
 </section>
@@ -802,6 +823,59 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     </div>
   </div>
 
+  <div class="feature-row flip">
+    <div class="feature-text">
+      <div class="feature-tag">Calendar</div>
+      <h3>Every install, measure, and delivery on one calendar.</h3>
+      <p>Schedule jobs and to-dos on a calendar your whole team sees, color-coded however you like. Tap any entry and the customer's name, address, phone, and job status are right there — no digging through texts in the driveway.</p>
+    </div>
+    <div class="feature-visual" style="align-items:flex-start;">
+      <div class="mock-cal">
+        <div class="mock-cal-head"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+        <div class="mock-cal-grid">
+          <div class="mock-cal-day"><div class="mock-cal-num">6</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">7</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">8</div><span class="mock-cal-chip" style="background:#f3e8ff;color:#7e22ce;border-color:#a855f7;">Measure — Reyes</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">9</div><span class="mock-cal-chip" style="background:#ffedd5;color:#c2410c;border-color:#f97316;">Pick up hardware</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">10</div></div>
+          <div class="mock-cal-day today"><div class="mock-cal-num">11</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0d9488;">Install — Anderson</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">12</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0d9488;">Install — Anderson</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">13</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">14</div><span class="mock-cal-chip" style="background:#fef9c3;color:#a16207;border-color:#eab308;">Delivery — Miller</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">15</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">16</div><span class="mock-cal-chip" style="background:#dbeafe;color:#1d4ed8;border-color:#3b82f6;">Site visit — Lopez</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">17</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">18</div></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">19</div></div>
+        </div>
+      </div>
+      <div class="mock-cal-card">
+        <div class="mock-cal-card-title">Install — Anderson</div>
+        <div class="mock-cal-card-sub">Fri, Sep 11 &middot; 8 AM – 4 PM<br>412 Maple Ct, Littleton &middot; (303) 555-0142<br><span style="color:#7e22ce;font-weight:700;">● Installing</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-row">
+    <div class="feature-text">
+      <div class="feature-tag">Leads</div>
+      <h3>Homeowners design it. You get the call.</h3>
+      <p>Homeowners can lay out their own kitchen in the free planner and ask to be connected with a pro. List your company, set your service area, and quote requests from homeowners near you land in your Leads tab — with their floor plan attached, so you know what you're walking into.</p>
+    </div>
+    <div class="feature-visual">
+      <div class="mock-lead">
+        <div class="mock-lead-avatar">ML</div>
+        <div style="min-width:0;flex:1;">
+          <div class="mock-lead-name">Maria Lopez</div>
+          <div class="mock-lead-meta">Aurora, CO 80014 &middot; (720) 555-0133<br>Kitchen &middot; 12 cabinets &middot; "Galley kitchen, want shaker white"</div>
+          <div class="mock-lead-plan" aria-hidden="true"><span></span><span style="background:#06B6D4;"></span><span></span><span style="background:#6B7280;"></span><span></span><span style="background:#93C5FD;"></span><span style="background:#93C5FD;"></span><span style="background:#93C5FD;"></span><span style="background:#93C5FD;"></span><span style="background:#93C5FD;"></span></div>
+          <div class="mock-lead-route">&#10003; Routed to Dan's Doors &middot; 6 miles away</div>
+        </div>
+        <span class="mock-lead-badge">New lead</span>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <!-- WHO IT'S FOR -->
@@ -820,6 +894,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Show the kitchen in 3D before anyone has to imagine it</li>
         <li>Track every job from first call to final install in one place</li>
         <li>Enter your prices once — every layout prices itself from there</li>
+        <li>Get quote requests from homeowners in your area, floor plan included</li>
       </ul>
     </div>
     <div class="for-card">
@@ -862,7 +937,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     <div class="pricing-card tier-silver">
       <div class="plan-name">Silver</div>
       <div class="plan-price">$39<span class="plan-period"> / mo</span></div>
-      <p class="plan-desc">Everything you need to quote jobs and track them from lead to install.</p>
+      <p class="plan-desc">Everything you need to quote jobs, schedule them, and track them from lead to install.</p>
       <ul class="plan-list">
         <li>Everything in Free Demo</li>
         <li>Cloud save — your projects follow you to every job</li>
@@ -872,6 +947,8 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Set your own pricing — every quote uses your real numbers</li>
         <li>Job pipeline: Lead → Quoted → Ordered → Installing → Complete</li>
         <li>Activity log — every note and status change, logged automatically</li>
+        <li>Calendar — installs, measures, and to-dos with customer info one tap away</li>
+        <li>Find a Pro listing — homeowner quote requests routed to your Leads tab</li>
       </ul>
       <a href="/app?plan=silver" class="plan-cta ghost" data-plan="silver" style="margin-top:auto;">Get Started &rarr;</a>
     </div>
@@ -886,6 +963,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         <li>Quote versioning — every revision tracked automatically</li>
         <li>Change-order log with dollar delta between versions</li>
         <li>Team member access — invite and manage staff</li>
+        <li>Shared calendar and leads for your whole team</li>
         <li>Keep unlimited price sheet files on file</li>
         <li>Priority support</li>
       </ul>
