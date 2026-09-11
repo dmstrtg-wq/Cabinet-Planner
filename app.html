@@ -4443,7 +4443,7 @@ function renderIsometric() {
 
   function addBox(x0, y0, z0, w, h, d, color, opts={}) {
     if (w<=0 || h<=0 || d<=0) return null;
-    const mat = new THREE.MeshStandardMaterial({
+    const mat = opts.materials || new THREE.MeshStandardMaterial({
       color,
       roughness: opts.roughness ?? 0.65,
       metalness: opts.metalness ?? 0.05
@@ -4541,9 +4541,36 @@ function renderIsometric() {
     const baseY = app.customElevBottom != null ? app.customElevBottom : (acat.elevBottom || 0);
     const pos  = cabPos(app.wall, off, app.width, dep);
 
-    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, acat.color || '#9CA3AF', { metalness:0.3, roughness:0.4 });
+    // A cooktop's burners sit on its top surface; every other appliance shows its face front-on
+    const mats = app.type === 'cooktop'
+      ? applianceMaterials(app, acat, app.width, dep, app.wall, { top: true })
+      : applianceMaterials(app, acat, app.width, h,   app.wall);
+    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, acat.color || '#9CA3AF', { materials: mats });
     addLabel(acat.abbr || '', pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
+
+  // Six materials for an appliance box — flat colour all round, except the room-facing
+  // side, which gets the same front-face drawing the elevation view uses (knobs, oven
+  // window, fridge handle, …) painted on as a texture.
+  function applianceMaterials(app, acat, faceW, faceH, wall, opts = {}) {
+    const PX = 8; // texture px per inch
+    const c = document.createElement('canvas');
+    c.width = Math.max(2, Math.round(faceW*PX)); c.height = Math.max(2, Math.round(faceH*PX));
+    drawApplianceFace(c.getContext('2d'), app, acat, 0, 0, c.width, c.height, PX, { label:false });
+    const tex = new THREE.CanvasTexture(c);
+    tex.minFilter = THREE.LinearFilter;
+    const flat = () => new THREE.MeshStandardMaterial({ color: acat.color || '#9CA3AF', metalness:0.3, roughness:0.4 });
+    const mats = [flat(), flat(), flat(), flat(), flat(), flat()]; // BoxGeometry order: +x, -x, +y, -y, +z, -z
+    // Which side faces into the room (step walls map to whichever main direction they face)
+    let dir = wall;
+    if (wall === 'step1' || wall === 'step2') {
+      const sw = ld && ld[wall];
+      dir = !sw ? 'north' : sw.isVertical ? (sw.depthRight ? 'east' : 'west') : (sw.depthDown ? 'south' : 'north');
+    }
+    const idx = opts.top ? 2 : { west:0, east:1, north:4, south:5 }[dir];
+    if (idx != null) { mats[idx].dispose(); mats[idx] = new THREE.MeshStandardMaterial({ map: tex, metalness:0.3, roughness:0.4 }); }
+    return mats;
+  }
 
   // ── Islands ──
   (r.islands||[]).forEach(isl => {
@@ -4562,6 +4589,82 @@ function renderIsometric() {
     iso3D.initedCamera = true;
   }
   resizeIso3D();
+}
+
+// Appliance front face. Shared by the elevation view and the 3D view (which paints this
+// same drawing onto the room-facing side of the appliance box), so the two always match.
+// `scale` is px per inch; fixed pixel insets are scaled relative to the elevation's
+// resolution so the proportions hold at any texture size.
+function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
+  const k = scale / ELEV_SCALE;
+  const botY = y + aH;
+  ctx.fillStyle = acat.color;
+  ctx.fillRect(x, y, aW, aH);
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5*k; ctx.strokeRect(x, y, aW, aH);
+
+  if (app.type === 'refrigerator') {
+    // Freezer / fridge split at 60% up from bottom
+    const splitY = botY - aH * 0.6;
+    ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 1*k;
+    ctx.beginPath(); ctx.moveTo(x, splitY); ctx.lineTo(x+aW, splitY); ctx.stroke();
+    // Handle (vertical bar near right edge)
+    ctx.fillStyle = '#D1D5DB'; ctx.fillRect(x+aW*0.82, y+aH*0.15, aW*0.05, aH*0.3);
+    ctx.fillRect(x+aW*0.82, botY-aH*0.45, aW*0.05, aH*0.25);
+  } else if (app.type === 'range') {
+    // Oven door panel
+    ctx.strokeStyle = '#6B7280'; ctx.lineWidth = 1*k;
+    ctx.strokeRect(x+4*k, y+aH*0.25, aW-8*k, aH*0.65);
+    // Window in door
+    ctx.fillStyle = '#1F2937'; ctx.fillRect(x+8*k, y+aH*0.3, aW-16*k, aH*0.25);
+    // Knobs row at top
+    const knobY = y + aH*0.1;
+    [0.2,0.4,0.6,0.8].forEach(fx => {
+      ctx.beginPath(); ctx.arc(x+aW*fx, knobY, aW*0.04, 0, Math.PI*2);
+      ctx.fillStyle='#9CA3AF'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.5*k; ctx.stroke();
+    });
+  } else if (app.type === 'dishwasher') {
+    // Control panel strip at top
+    ctx.fillStyle = '#4B5563'; ctx.fillRect(x+2*k, y+2*k, aW-4*k, aH*0.15);
+    // Inner door panel
+    ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 0.8*k;
+    ctx.strokeRect(x+5*k, y+aH*0.2, aW-10*k, aH*0.72);
+  } else if (app.type === 'microwave') {
+    // Vent grille lines on left
+    for (let i=1; i<=3; i++) {
+      ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8*k;
+      ctx.beginPath(); ctx.moveTo(x+2*k, y+aH*(i/4)); ctx.lineTo(x+aW*0.35, y+aH*(i/4)); ctx.stroke();
+    }
+    // Control panel on right
+    ctx.fillStyle='#374151'; ctx.fillRect(x+aW*0.6, y+2*k, aW*0.35, aH-4*k);
+  } else if (app.type === 'cooktop') {
+    // 4 burner circles across the thin rect
+    [0.15,0.38,0.62,0.85].forEach(fx => {
+      ctx.beginPath(); ctx.arc(x+aW*fx, y+aH/2, Math.min(aH*0.35, aW*0.1), 0, Math.PI*2);
+      ctx.fillStyle='#374151'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.6*k; ctx.stroke();
+    });
+  } else if (app.type === 'hood') {
+    // Tapered trapezoid shape (wider at bottom)
+    const taper = aW * 0.12;
+    ctx.fillStyle = acat.color;
+    ctx.beginPath();
+    ctx.moveTo(x,        y+aH);
+    ctx.lineTo(x+aW,     y+aH);
+    ctx.lineTo(x+aW-taper, y);
+    ctx.lineTo(x+taper,  y);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1*k; ctx.stroke();
+    // Vent slots
+    ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8*k;
+    [0.3,0.5,0.7].forEach(fy => {
+      ctx.beginPath(); ctx.moveTo(x+aW*0.2, y+aH*fy); ctx.lineTo(x+aW*0.8, y+aH*fy); ctx.stroke();
+    });
+  }
+
+  if (opts.label !== false) {
+    ctx.fillStyle='#F9FAFB'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(acat.abbr, x+aW/2, y+aH/2);
+  }
 }
 
 // ════════════════════════════
@@ -4738,23 +4841,29 @@ function renderElevation() {
     const x=eX(cab.offset||0, cab.width);
     const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
     if (cab.type === 'diagWall') {
-      // Diagonal corner wall cabinet: rectangle with diagonal cut in top-left corner
-      const cutW=cW*0.3, cutH=cH*0.15;
-      ctx.fillStyle=PDF?'#F8F8F8':si.swatch;
-      ctx.beginPath();
-      ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH);
-      ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cutH); ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5; ctx.stroke();
-      // Diagonal cut line
-      ctx.beginPath(); ctx.moveTo(x,y+cutH); ctx.lineTo(x+cutW,y); ctx.stroke();
-      // Door inset
-      ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
-      ctx.strokeRect(x+cutW+3, y+5, cW-cutW-7, cH-14);
-      // Knob
-      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.6-6,y+cH-12,12,4,2); ctx.fill();
+      // Diagonal corner wall cabinet. Seen straight-on from this wall it reads as a plain
+      // full-height rectangle: the half nearest the corner is the finished end of the leg
+      // that runs down the adjacent wall, the other half is the 45° door, foreshortened.
+      // (It used to be drawn with a chamfer clipped off the top corner, which looked like
+      // a damaged cabinet rather than a corner unit.)
+      ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
+      ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
+      const nearLeft  = (x - WX) <= scale + 0.5;
+      const nearRight = (WX + WW - (x + cW)) <= scale + 0.5;
+      if (nearLeft || nearRight) {
+        const half = cW/2, doorX = nearLeft ? x + half : x;
+        drawDoorPanel(ctx, doorX, y, half, cH, si.code, scale, PDF);
+        // Seam between the door and the end panel
+        ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
+        ctx.beginPath(); ctx.moveTo(x+half, y); ctx.lineTo(x+half, y+cH); ctx.stroke();
+        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(doorX+half/2-6,y+cH-12,12,4,2); ctx.fill();
+      } else {
+        // Not actually in a corner (odd placement) — show it like a standard wall cabinet
+        drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
+        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
+      }
       ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs2=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(`DCW${cab.width}`, x+cW*0.6, y+cH/2);
+      ctx.fillText(`DCW${cab.width}`, x+cW/2, y+cH/2);
     } else {
       ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
       ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
@@ -4771,7 +4880,7 @@ function renderElevation() {
       ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
     }
     if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
-    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + (cab.type==='diagWall' ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
+    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
@@ -4855,72 +4964,7 @@ function renderElevation() {
     const botY = floorY - (app.customElevBottom != null ? app.customElevBottom : acat.elevBottom) * scale; // bottom edge Y
     const y    = botY - aH;                        // top edge Y
 
-    ctx.fillStyle = acat.color;
-    ctx.fillRect(x, y, aW, aH);
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, aW, aH);
-
-    if (app.type === 'refrigerator') {
-      // Freezer / fridge split at 60% up from bottom
-      const splitY = botY - aH * 0.6;
-      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x, splitY); ctx.lineTo(x+aW, splitY); ctx.stroke();
-      // Handle (vertical bar near right edge)
-      ctx.fillStyle = '#D1D5DB'; ctx.fillRect(x+aW*0.82, y+aH*0.15, aW*0.05, aH*0.3);
-      ctx.fillRect(x+aW*0.82, botY-aH*0.45, aW*0.05, aH*0.25);
-    } else if (app.type === 'range') {
-      // Oven door panel
-      ctx.strokeStyle = '#6B7280'; ctx.lineWidth = 1;
-      ctx.strokeRect(x+4, y+aH*0.25, aW-8, aH*0.65);
-      // Window in door
-      ctx.fillStyle = '#1F2937'; ctx.fillRect(x+8, y+aH*0.3, aW-16, aH*0.25);
-      // Knobs row at top
-      const knobY = y + aH*0.1;
-      [0.2,0.4,0.6,0.8].forEach(fx => {
-        ctx.beginPath(); ctx.arc(x+aW*fx, knobY, aW*0.04, 0, Math.PI*2);
-        ctx.fillStyle='#9CA3AF'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.5; ctx.stroke();
-      });
-    } else if (app.type === 'dishwasher') {
-      // Control panel strip at top
-      ctx.fillStyle = '#4B5563'; ctx.fillRect(x+2, y+2, aW-4, aH*0.15);
-      // Inner door panel
-      ctx.strokeStyle = '#9CA3AF'; ctx.lineWidth = 0.8;
-      ctx.strokeRect(x+5, y+aH*0.2, aW-10, aH*0.72);
-    } else if (app.type === 'microwave') {
-      // Vent grille lines on left
-      for (let i=1; i<=3; i++) {
-        ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
-        ctx.beginPath(); ctx.moveTo(x+2, y+aH*(i/4)); ctx.lineTo(x+aW*0.35, y+aH*(i/4)); ctx.stroke();
-      }
-      // Control panel on right
-      ctx.fillStyle='#374151'; ctx.fillRect(x+aW*0.6, y+2, aW*0.35, aH-4);
-    } else if (app.type === 'cooktop') {
-      // 4 burner circles across the thin rect
-      [0.15,0.38,0.62,0.85].forEach(fx => {
-        ctx.beginPath(); ctx.arc(x+aW*fx, y+aH/2, aH*0.35, 0, Math.PI*2);
-        ctx.fillStyle='#374151'; ctx.fill(); ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.6; ctx.stroke();
-      });
-    } else if (app.type === 'hood') {
-      // Tapered trapezoid shape (wider at bottom)
-      const taper = aW * 0.12;
-      ctx.fillStyle = acat.color;
-      ctx.beginPath();
-      ctx.moveTo(x,        y+aH);
-      ctx.lineTo(x+aW,     y+aH);
-      ctx.lineTo(x+aW-taper, y);
-      ctx.lineTo(x+taper,  y);
-      ctx.closePath(); ctx.fill();
-      ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1; ctx.stroke();
-      // Vent slots
-      ctx.strokeStyle='#6B7280'; ctx.lineWidth=0.8;
-      [0.3,0.5,0.7].forEach(fy => {
-        ctx.beginPath(); ctx.moveTo(x+aW*0.2, y+aH*fy); ctx.lineTo(x+aW*0.8, y+aH*fy); ctx.stroke();
-      });
-    }
-
-    // Label
-    ctx.fillStyle='#F9FAFB'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(acat.abbr, x+aW/2, y+aH/2);
+    drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale);
     if (app.note) {
       ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
       ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
