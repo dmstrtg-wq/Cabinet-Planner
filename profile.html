@@ -1211,8 +1211,17 @@ function leadsEsc(str) {
 async function loadLeads() {
   const { data, error } = await db.from('leads').select('*').order('created_at', { ascending: false });
   document.getElementById('leads-loading').style.display = 'none';
-  if (error || !data || data.length === 0) {
-    document.getElementById('leads-empty').style.display = 'block';
+  const emptyEl = document.getElementById('leads-empty');
+  if (error) {
+    // A failed query must not look like "no leads" — say what broke.
+    console.error('Leads load error:', error);
+    emptyEl.style.display = 'block';
+    emptyEl.style.color = '#b91c1c';
+    emptyEl.textContent = `Couldn't load leads: ${error.message || 'unknown error'}`;
+    return;
+  }
+  if (!data || data.length === 0) {
+    emptyEl.style.display = 'block';
     return;
   }
   const tbody = document.getElementById('leads-tbody');

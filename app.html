@@ -7369,9 +7369,12 @@ async function submitProLead() {
     }
   } catch(e) {}
 
+  // Two independent channels; the lead counts as delivered if either one lands.
+  let emailSent = false, saved = false;
+
   // Netlify Forms — sends email notification to site owner
   try {
-    await fetch('/', {
+    const res = await fetch('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -7380,16 +7383,28 @@ async function submitProLead() {
         plan_summary: planSummary
       }).toString()
     });
+    emailSent = res.ok;
+    if (!res.ok) console.warn('Lead Netlify submit failed:', res.status);
   } catch(e) { console.warn('Lead Netlify submit error:', e); }
 
   // Supabase — stores lead for the admin Leads view in profile.html
+  // (supabase-js reports failures via the returned error, it doesn't throw)
   try {
-    await db.from('leads').insert({
+    const { error } = await db.from('leads').insert({
       name, email, phone, zip, note,
       plan_summary: planSummary,
       floor_plan_dataurl: floorPlanDataUrl
     });
+    if (error) console.warn('Lead Supabase insert error:', error); else saved = true;
   } catch(e) { console.warn('Lead Supabase insert error:', e); }
+
+  if (!emailSent && !saved) {
+    // Nothing got through — don't pretend it did. Keep the form filled so they can retry.
+    errEl.textContent = "We couldn't send your info just now. Please try again in a moment.";
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Send My Info';
+    return;
+  }
 
   // Reset + close
   ['lead-name','lead-email','lead-phone','lead-zip','lead-note'].forEach(id => {
