@@ -34,7 +34,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --ink:#0f172a;
-  --accent:#0d9488;
+  --accent:#0f766e;
   --accent-light:#5eead4;
   --bg:#f8fafc;
   --border:#e2e8f0;
@@ -54,13 +54,13 @@ nav{
 .nav-logo{display:flex;align-items:center;gap:10px;}
 .nav-logo-text{font-size:12px;font-weight:700;color:white;letter-spacing:0;font-family:'Unbounded',sans-serif;}
 .nav-links{display:flex;align-items:center;gap:32px;}
-.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.45);transition:color 0.12s;}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.7);transition:color 0.12s;}
 .nav-links a:hover{color:white;}
 .nav-cta{display:flex;gap:10px;align-items:center;}
-.nav-signin{font-size:13px;font-weight:600;color:rgba(255,255,255,0.5);padding:7px 14px;transition:color 0.12s;}
+.nav-signin{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);padding:7px 14px;transition:color 0.12s;}
 .nav-signin:hover{color:white;}
 .nav-trial{padding:8px 18px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;}
-.nav-trial:hover{background:#0f766e;}
+.nav-trial:hover{background:#115e59;}
 
 /* ── HERO ── */
 .hero{
@@ -76,7 +76,7 @@ nav{
 .hero-left{position:relative;z-index:1;}
 .hero-eyebrow{
   font-size:11px;font-weight:700;letter-spacing:0.14em;
-  text-transform:uppercase;color:var(--accent);
+  text-transform:uppercase;color:var(--accent-light);
   margin-bottom:28px;
   display:flex;align-items:center;gap:10px;
 }
@@ -88,9 +88,9 @@ nav{
   line-height:1.1;letter-spacing:-1px;
   margin-bottom:28px;
 }
-.hero h1 em{font-style:normal;color:var(--accent);}
+.hero h1 em{font-style:normal;color:var(--accent-light);}
 .hero-sub{
-  font-size:17px;color:rgba(255,255,255,0.45);
+  font-size:17px;color:rgba(255,255,255,0.7);
   line-height:1.75;max-width:420px;margin-bottom:44px;
 }
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
@@ -100,7 +100,7 @@ nav{
   cursor:pointer;transition:background 0.15s;
   display:inline-flex;align-items:center;gap:8px;
 }
-.btn-hero:hover{background:#0f766e;}
+.btn-hero:hover{background:#115e59;}
 .btn-hero-ghost{
   padding:14px 28px;background:transparent;
   color:rgba(255,255,255,0.55);
@@ -109,7 +109,7 @@ nav{
   transition:all 0.15s;
 }
 .btn-hero-ghost:hover{color:white;border-color:rgba(255,255,255,0.45);}
-.hero-note{font-size:12px;color:rgba(255,255,255,0.25);margin-top:16px;}
+.hero-note{font-size:12px;color:rgba(255,255,255,0.6);margin-top:16px;}
 .hero-right{position:relative;z-index:1;}
 
 /* App window in hero */
@@ -123,10 +123,10 @@ nav{
 }
 .win-dot{width:10px;height:10px;border-radius:50%;}
 .app-window-bar-title{
-  margin-left:10px;font-size:11px;color:rgba(255,255,255,0.3);flex:1;
+  margin-left:10px;font-size:11px;color:rgba(255,255,255,0.6);flex:1;
 }
 .app-view-btns{display:flex;gap:3px;background:rgba(255,255,255,0.06);border-radius:6px;padding:3px;}
-.pvb{padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.3);}
+.pvb{padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.65);}
 .pvb.active{background:white;color:var(--accent);}
 .app-window-body{display:flex;height:340px;}
 .win-sidebar{
@@ -160,8 +160,8 @@ nav{
   font-size:36px;font-weight:900;color:white;
   letter-spacing:-1px;line-height:1;margin-bottom:8px;
 }
-.stat-num em{font-style:normal;color:var(--accent);}
-.stat-label{font-size:12px;color:rgba(255,255,255,0.35);font-weight:500;letter-spacing:0.04em;}
+.stat-num em{font-style:normal;color:var(--accent-light);}
+.stat-label{font-size:12px;color:rgba(255,255,255,0.6);font-weight:500;letter-spacing:0.04em;}
 
 /* ── SHARED SECTION PARTS ── */
 .section-eyebrow{
@@ -282,14 +282,14 @@ nav{
 .mock-cab{
   background:#3B82F6;border-radius:3px;height:32px;
   display:flex;align-items:center;justify-content:center;
-  font-size:9px;font-weight:700;color:white;
+  font-size:9px;font-weight:700;color:#0f172a;
 }
 .mock-cab.wall{background:#93C5FD;height:22px;}
 .mock-room{border:2px solid #334155;padding:10px;border-radius:4px;width:100%;}
 .mock-quote-lines{width:100%;display:flex;flex-direction:column;gap:8px;}
 .mock-ql{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:white;border-radius:6px;border:1px solid var(--border);}
 .mock-ql-name{font-size:11px;color:var(--ink);font-weight:500;}
-.mock-ql-price{font-size:11px;color:#16a34a;font-weight:700;}
+.mock-ql-price{font-size:11px;color:#15803d;font-weight:700;}
 .mock-ql.total{background:var(--ink);}
 .mock-ql.total .mock-ql-name,.mock-ql.total .mock-ql-price{color:white;font-weight:800;font-size:13px;}
 .mock-cloud{
@@ -317,7 +317,7 @@ nav{
   opacity:0;pointer-events:none;transition:opacity .6s ease;
 }
 .mock-slide.active{opacity:1;pointer-events:auto;}
-.mock-slide-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.mock-slide-label{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
 .mock-dots{position:absolute;left:0;right:0;bottom:-24px;display:flex;justify-content:center;gap:7px;}
 .mock-dot{width:6px;height:6px;border-radius:50%;background:var(--border);border:none;padding:0;cursor:pointer;transition:background .2s,transform .2s;}
 .mock-dot.active{background:var(--accent);transform:scale(1.3);}
@@ -348,7 +348,7 @@ nav{
 .for-card:last-child{border-right:none;}
 .for-audience{
   font-size:11px;font-weight:700;letter-spacing:0.12em;
-  text-transform:uppercase;color:var(--accent);margin-bottom:18px;
+  text-transform:uppercase;color:var(--accent-light);margin-bottom:18px;
 }
 .for-card h3{
   font-family:'Unbounded',sans-serif;
@@ -357,11 +357,11 @@ nav{
 }
 .for-card ul{list-style:none;display:flex;flex-direction:column;gap:12px;}
 .for-card ul li{
-  font-size:14px;color:rgba(255,255,255,0.45);
+  font-size:14px;color:rgba(255,255,255,0.7);
   padding-left:18px;position:relative;line-height:1.55;
 }
 .for-card ul li::before{
-  content:'—';position:absolute;left:0;color:var(--accent);font-weight:700;
+  content:'—';position:absolute;left:0;color:var(--accent-light);font-weight:700;
 }
 
 /* ── COMPARE (one platform vs three tools) ── */
@@ -409,9 +409,9 @@ nav{
   letter-spacing:-2px;line-height:1;margin-bottom:6px;
 }
 .plan-period{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:0;}
-.tier-gold .plan-period{color:rgba(255,255,255,0.4);}
+.tier-gold .plan-period{color:rgba(255,255,255,0.6);}
 .plan-desc{font-size:14px;color:var(--muted);margin:18px 0 28px;line-height:1.6;}
-.tier-gold .plan-desc{color:rgba(255,255,255,0.45);}
+.tier-gold .plan-desc{color:rgba(255,255,255,0.7);}
 .plan-list{list-style:none;margin-bottom:36px;display:flex;flex-direction:column;gap:12px;}
 .plan-list li{
   font-size:14px;color:var(--muted);
@@ -471,7 +471,7 @@ nav{
   border:none;border-radius:9px;font-size:15px;font-weight:700;
   cursor:pointer;transition:background 0.15s;margin-top:8px;
 }
-.demo-submit:hover{background:#0f766e;}
+.demo-submit:hover{background:#115e59;}
 .demo-submit:disabled{opacity:0.5;cursor:not-allowed;}
 #demo-success{display:none;text-align:center;padding:40px 20px;}
 #demo-success h3{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:8px;}
@@ -486,9 +486,9 @@ footer{
 .footer-brand{display:flex;align-items:center;gap:10px;}
 .footer-brand span{font-size:14px;font-weight:700;color:white;}
 .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
-.footer-links a{font-size:13px;color:rgba(255,255,255,0.3);transition:color 0.12s;}
-.footer-links a:hover{color:rgba(255,255,255,0.7);}
-.footer-copy{font-size:12px;color:rgba(255,255,255,0.18);}
+.footer-links a{font-size:13px;color:rgba(255,255,255,0.6);transition:color 0.12s;}
+.footer-links a:hover{color:rgba(255,255,255,0.9);}
+.footer-copy{font-size:12px;color:rgba(255,255,255,0.55);}
 
 /* ── CONTACT MODAL ── */
 .lp-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -505,11 +505,11 @@ footer{
 .lp-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}
 .lp-btn-secondary{background:var(--bg);color:var(--muted);}
 .lp-btn-primary{background:var(--accent);color:white;}
-.lp-btn-primary:hover{background:#0f766e;}
+.lp-btn-primary:hover{background:#115e59;}
 
 /* ── A11Y WIDGET ── */
 #a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
-#a11y-btn:hover{background:#0f766e;}
+#a11y-btn:hover{background:#115e59;}
 #a11y-btn svg{width:24px;height:24px;}
 #a11y-panel{position:fixed;bottom:76px;right:16px;z-index:9100;background:white;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:16px;width:220px;display:none;}
 #a11y-panel.open{display:block;}
@@ -624,12 +624,12 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
           <div class="pvb" id="pvb-elev">Elevation</div>
           <div class="pvb" id="pvb-3d">3D</div>
         </div>
-        <div id="pvb-quote" style="margin-left:8px;background:#16a34a;color:white;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;">Quote</div>
+        <div id="pvb-quote" style="margin-left:8px;background:#15803d;color:white;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;">Quote</div>
       </div>
       <div class="app-window-body">
         <div class="win-sidebar">
-          <div style="height:26px;background:rgba(200,168,130,0.12);border-radius:5px;margin-bottom:8px;display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;font-weight:700;color:rgba(200,168,130,0.45);">+ New Project</span></div>
-          <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">Projects</div>
+          <div style="height:26px;background:rgba(200,168,130,0.12);border-radius:5px;margin-bottom:8px;display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;font-weight:700;color:rgba(200,168,130,0.95);">+ New Project</span></div>
+          <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">Projects</div>
           <div style="background:rgba(13,148,136,0.3);border-radius:5px;padding:7px 8px;margin-bottom:3px;"><div style="height:6px;width:80%;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:3px;"></div><div style="height:4px;width:50%;background:rgba(255,255,255,0.2);border-radius:2px;"></div></div>
           <div style="padding:7px 8px;margin-bottom:3px;"><div style="height:6px;width:70%;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div><div style="height:4px;width:40%;background:rgba(255,255,255,0.06);border-radius:2px;"></div></div>
           <div style="padding:7px 8px;"><div style="height:6px;width:60%;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div><div style="height:4px;width:35%;background:rgba(255,255,255,0.06);border-radius:2px;"></div></div>
@@ -638,11 +638,11 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
           <canvas id="demo-canvas"></canvas>
         </div>
         <div class="win-panel" id="pvp-add">
-          <div style="font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;">Add Cabinet</div>
+          <div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;">Add Cabinet</div>
           <div style="height:22px;background:#f8fafc;border-radius:4px;margin-bottom:4px;border:1px solid #e2e8f0;"></div>
           <div style="height:22px;background:#f8fafc;border-radius:4px;margin-bottom:8px;border:1px solid #e2e8f0;"></div>
           <div style="height:1px;background:#e2e8f0;margin-bottom:8px;"></div>
-          <div style="font-size:8px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;" id="pvp-wall-label">North Wall</div>
+          <div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;" id="pvp-wall-label">North Wall</div>
           <div id="pvp-cab-list"></div>
         </div>
       </div>
@@ -798,7 +798,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
       <p>With My Cabinet Planner's tracking features, you can keep tabs on multiple jobs at once. Job Status and time-stamped activity logs help you stay on top of your work and never miss a detail.</p>
     </div>
     <div class="feature-visual" style="flex-direction:column;gap:14px;">
-      <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;align-self:flex-start;">Job Status</div>
+      <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;align-self:flex-start;">Job Status</div>
       <div class="mock-pipeline">
         <div class="mock-stage">Lead</div>
         <div class="mock-stage">Quoted</div>
@@ -838,8 +838,8 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
           <div class="mock-cal-day"><div class="mock-cal-num">8</div><span class="mock-cal-chip" style="background:#f3e8ff;color:#7e22ce;border-color:#a855f7;">Measure — Reyes</span></div>
           <div class="mock-cal-day"><div class="mock-cal-num">9</div><span class="mock-cal-chip" style="background:#ffedd5;color:#c2410c;border-color:#f97316;">Pick up hardware</span></div>
           <div class="mock-cal-day"><div class="mock-cal-num">10</div></div>
-          <div class="mock-cal-day today"><div class="mock-cal-num">11</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0d9488;">Install — Anderson</span></div>
-          <div class="mock-cal-day"><div class="mock-cal-num">12</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0d9488;">Install — Anderson</span></div>
+          <div class="mock-cal-day today"><div class="mock-cal-num">11</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0f766e;">Install — Anderson</span></div>
+          <div class="mock-cal-day"><div class="mock-cal-num">12</div><span class="mock-cal-chip" style="background:#ccfbf1;color:#0f766e;border-color:#0f766e;">Install — Anderson</span></div>
           <div class="mock-cal-day"><div class="mock-cal-num">13</div></div>
           <div class="mock-cal-day"><div class="mock-cal-num">14</div><span class="mock-cal-chip" style="background:#fef9c3;color:#a16207;border-color:#eab308;">Delivery — Miller</span></div>
           <div class="mock-cal-day"><div class="mock-cal-num">15</div></div>
@@ -881,7 +881,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
 <!-- WHO IT'S FOR -->
 <section class="for-section" id="who">
   <div class="for-header">
-    <div class="section-eyebrow" style="color:var(--accent);">Who It's For</div>
+    <div class="section-eyebrow" style="color:var(--accent-light);">Who It's For</div>
     <h2 class="section-title">Built for independent<br>cabinet sellers and installers.</h2>
     <p style="font-size:16px;color:rgba(255,255,255,0.55);line-height:1.8;margin-top:16px;max-width:580px;">Whether it's just you working out of your truck or a small shop with a few installers, this tool was built around how you actually sell and quote jobs.</p>
   </div>
@@ -1396,7 +1396,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     isoBox(19,wY,0, 5,wH,2, '#93C5FD','#60A5FA','#BFDBFE');
 
     // West wall: Range + Base36
-    isoBox(0,0,5, 4,bH,5, '#0d9488','#0f766e','#D97706');
+    isoBox(0,0,5, 4,bH,5, '#0f766e','#115e59','#D97706');
     isoBox(0,0,10,4,bH,6, '#1D4ED8','#1E40AF','#2563EB');
 
     // Island
@@ -1499,11 +1499,11 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
     const qt=document.getElementById('pvb-quote');
     if(!fl) return;
     [fl,el,td].forEach(b=>{if(b)b.classList.remove('active');});
-    if(qt){qt.style.background='#16a34a'; qt.style.opacity='1';}
+    if(qt){qt.style.background='#15803d'; qt.style.opacity='1';}
     if(phase==='floor') fl.classList.add('active');
     else if(phase==='elev') el.classList.add('active');
     else if(phase==='iso'){if(td)td.classList.add('active');}
-    else{el.classList.add('active'); if(qt)qt.style.background='#0d9488';}
+    else{el.classList.add('active'); if(qt)qt.style.background='#0f766e';}
 
     const list=document.getElementById('pvp-cab-list');
     const lbl=document.getElementById('pvp-wall-label');
@@ -1517,7 +1517,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         {col:'#7C3AED',name:'Island 48"×30"',   sub:'36"H counter'},
       ].map(c=>`<div style="background:#f8fafc;border-radius:4px;padding:5px;margin-bottom:3px;border:1px solid #e2e8f0;display:flex;gap:4px;align-items:center;">
         <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
-        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#94a3b8;">${c.sub}</div></div>
+        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#64748b;">${c.sub}</div></div>
       </div>`).join('');
     } else if(phase==='iso'){
       if(lbl) lbl.textContent='3D Objects';
@@ -1528,7 +1528,7 @@ body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-mot
         {col:'#F59E0B',name:'Range Base 30"',   sub:'West wall'},
       ].map(c=>`<div style="background:#f8fafc;border-radius:4px;padding:5px;margin-bottom:3px;border:1px solid #e2e8f0;display:flex;gap:4px;align-items:center;">
         <div style="width:7px;height:7px;background:${c.col};border-radius:2px;flex-shrink:0;"></div>
-        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#94a3b8;">${c.sub}</div></div>
+        <div><div style="font-size:8px;font-weight:600;color:#334155;">${c.name}</div><div style="font-size:7px;color:#64748b;">${c.sub}</div></div>
       </div>`).join('');
     }
   }

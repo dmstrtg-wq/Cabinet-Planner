@@ -19,7 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent: #0d9488; --accent-hover: #0f766e;
+    --accent: #0f766e; --accent-hover: #115e59;
     --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
     --surface: #fff; --bg: #f8fafc; --hover: #f5f0eb;
   }
@@ -133,7 +133,7 @@
   .al-feed { display: flex; flex-direction: column; gap: 0; }
   .al-entry { display: flex; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
   .al-entry:last-child { border-bottom: none; }
-  .al-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#5eead4,#0f766e); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+  .al-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#0f766e,#115e59); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
   .al-avatar.status-change { background: linear-gradient(135deg,#93c5fd,#3b82f6); }
   .al-body { flex: 1; }
   .al-meta { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
@@ -167,7 +167,7 @@
 
 /* ── A11Y WIDGET ── */
 #a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
-#a11y-btn:hover{background:#0f766e;}
+#a11y-btn:hover{background:#115e59;}
 #a11y-btn svg{width:24px;height:24px;}
 #a11y-panel{position:fixed;bottom:76px;right:16px;z-index:9100;background:white;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:16px;width:220px;display:none;}
 #a11y-panel.open{display:block;}

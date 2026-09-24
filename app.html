@@ -36,17 +36,17 @@
 :root {
   --sidebar-bg: #1e293b;
   --sidebar-width: 260px;
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
   --accent-light: #ccfbf1;
   --bg: #f8fafc;
   --surface: #ffffff;
   --border: #e2e8f0;
   --text: #1e293b;
   --text-muted: #64748b;
-  --danger: #ef4444;
-  --success: #16a34a;
-  --warning: #d97706;
+  --danger: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
   --panel-width: 290px;
 }
 
@@ -119,7 +119,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
   margin-top: 8px; text-align: center;
 }
 .login-tagline {
-  font-size: 13px; color: rgba(255,255,255,0.38);
+  font-size: 13px; color: rgba(255,255,255,0.7);
   margin-top: 14px; text-align: center; line-height: 1.65;
   max-width: 260px;
 }
@@ -130,7 +130,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 }
 .login-domain {
   position: absolute; bottom: 20px;
-  font-size: 10px; color: rgba(255,255,255,0.2);
+  font-size: 10px; color: rgba(255,255,255,0.6);
   letter-spacing: 0.08em; text-transform: lowercase;
 }
 .login-right {
@@ -146,7 +146,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .login-field label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
 .login-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: white; transition: border-color 0.12s, box-shadow 0.12s; }
 .login-field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(13,148,136,0.1); }
-.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#5eead4,#0f766e); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
+.login-btn { width: 100%; padding: 13px; background: linear-gradient(135deg,#0f766e,#115e59); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.15s, transform 0.1s; margin-top: 8px; letter-spacing: 0.01em; }
 .login-btn:hover { opacity: 0.92; transform: translateY(-1px); }
 .login-btn:active { transform: translateY(0); }
 .login-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
@@ -233,13 +233,13 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .pnav-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px; border: none; background: none; cursor: pointer;
-  font-size: 10px; font-weight: 600; color: #9ca3af;
+  font-size: 10px; font-weight: 600; color:#6b7280;
   letter-spacing: 0.02em; padding: 0; touch-action: manipulation;
   transition: color 0.12s;
 }
 .pnav-btn svg { flex-shrink: 0; }
-.pnav-btn.active { color: #0d9488; }
-.pnav-btn.active svg { stroke: #0d9488; }
+.pnav-btn.active { color: #0f766e; }
+.pnav-btn.active svg { stroke: #0f766e; }
 
 /* ── PHONE QUOTE PANEL STYLES ───── */
 #phone-quote-panel {
@@ -273,14 +273,14 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .sidebar-actions { padding: 10px; }
 #new-project-btn {
   width: 100%; padding: 9px 12px;
-  background: linear-gradient(135deg,#5eead4,#0f766e);
+  background: linear-gradient(135deg,#0f766e,#115e59);
   color: white; border: none; border-radius: 8px;
   font-size: 13px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: all 0.15s; box-shadow: 0 2px 8px rgba(15,23,42,0.25);
 }
-#new-project-btn:hover { background: linear-gradient(135deg,#14b8a6,#0f766e); }
-.sidebar-label { padding: 6px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
+#new-project-btn:hover { background: linear-gradient(135deg,#115e59,#134e4a); }
+.sidebar-label { padding: 6px 14px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.65); }
 #project-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
 #project-list::-webkit-scrollbar { width: 3px; }
 #project-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -288,11 +288,11 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 .project-item:hover { background: rgba(255,255,255,0.06); }
 .project-item.active { background: rgba(13,148,136,0.3); }
 .project-item-name { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 22px; }
-.project-item-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
-.project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
+.project-item-meta { font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 1px; }
+.project-item-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 16px; line-height: 1; display: none; }
 .project-item:hover .project-item-del { display: block; }
 .project-item-del:hover { color: #ef4444; background: rgba(239,68,68,0.15); }
-.project-item-menu-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 18px; line-height: 1; display: none; letter-spacing: 1px; }
+.project-item-menu-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 18px; line-height: 1; display: none; letter-spacing: 1px; }
 .project-item:hover .project-item-menu-btn { display: block; }
 .project-item-menu-btn:hover { color: #fff; background: rgba(255,255,255,0.12); }
 .project-ctx-menu { position: fixed; background: #1e1e2e; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 9999; min-width: 130px; overflow: hidden; }
@@ -339,10 +339,10 @@ body.pricing-locked .cp-section:has(#pricing-toggle) { display: none !important;
 body.demo-mode #floor-plan-print-btn,
 body.free-tier #floor-plan-print-btn { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
-.empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.25); font-size: 12px; line-height: 1.6; }
+.empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.65); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
-.sidebar-user { font-size: 10px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
-.signout-btn { width: 100%; padding: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: rgba(255,255,255,0.4); font-size: 11px; cursor: pointer; transition: all 0.12s; }
+.sidebar-user { font-size: 10px; color: rgba(255,255,255,0.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+.signout-btn { width: 100%; padding: 6px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: rgba(255,255,255,0.7); font-size: 11px; cursor: pointer; transition: all 0.12s; }
 .signout-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
 .sync-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #16a34a; margin-right: 5px; vertical-align: middle; }
 .sync-dot.saving { background: #f59e0b; animation: pulse-dot 1s infinite; }
@@ -389,7 +389,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 #app-footer { flex-shrink: 0; padding: 6px 20px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
 #app-footer a { color: var(--text-muted); text-decoration: none; }
 #app-footer a:hover { color: var(--accent); text-decoration: underline; }
-.footer-sep { opacity: 0.4; }
+.footer-sep { color: #64748b; }
 #welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 #project-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .project-header { padding: 12px 18px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
@@ -445,7 +445,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
   display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border);
 }
 .al-entry:last-child { border-bottom: none; }
-.al-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#5eead4,#0f766e); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
+.al-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#0f766e,#115e59); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; }
 .al-body { flex: 1; }
 .al-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
 .al-text { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
@@ -507,7 +507,7 @@ body.a11y-reduce-motion *, body.a11y-reduce-motion *::before, body.a11y-reduce-m
 /* === SIDEBAR COLLAPSE === */
 #sidebar { transition: width 0.22s ease; }
 body.sb-collapsed #sidebar { width: 0 !important; overflow: hidden; }
-.sb-collapse-btn { background: none; border: none; color: rgba(255,255,255,0.35); cursor: pointer; font-size: 18px; font-weight: 700; padding: 0 4px; line-height: 1; margin-left: auto; flex-shrink: 0; transition: color 0.1s; }
+.sb-collapse-btn { background: none; border: none; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 18px; font-weight: 700; padding: 0 4px; line-height: 1; margin-left: auto; flex-shrink: 0; transition: color 0.1s; }
 .sb-collapse-btn:hover { color: rgba(255,255,255,0.8); }
 .sb-expand-tab { display: none; position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 400; width: 18px; height: 52px; background: var(--surface); border: 1px solid var(--border); border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; align-items: center; justify-content: center; font-size: 13px; color: var(--text-muted); box-shadow: 2px 0 8px rgba(0,0,0,0.10); transition: background 0.1s; }
 .sb-expand-tab:hover { background: var(--bg); }
@@ -566,8 +566,8 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .cp-select:focus { outline: none; border-color: var(--accent); }
 .cp-input { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; font-size: 12px; background: white; margin-bottom: 6px; font-family: inherit; }
 .cp-input:focus { outline: none; border-color: var(--accent); }
-.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#5eead4,#0f766e); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(15,23,42,0.2); }
-.add-cab-btn:hover { background: linear-gradient(135deg,#14b8a6,#0f766e); }
+.add-cab-btn { width: 100%; padding: 8px; background: linear-gradient(135deg,#0f766e,#115e59); color: white; border: none; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.12s; box-shadow:0 2px 6px rgba(15,23,42,0.2); }
+.add-cab-btn:hover { background: linear-gradient(135deg,#115e59,#134e4a); }
 #cabinet-list { padding: 8px; }
 .cab-item { display: flex; align-items: flex-start; gap: 7px; padding: 8px 9px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 5px; background: white; transition: border-color 0.12s; }
 .cab-item:hover { border-color: #94a3b8; }
@@ -583,7 +583,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .opening-item-icon { font-size: 13px; }
 .opening-item-info { flex: 1; font-weight: 600; color: #0f766e; }
 .opening-item-dim { color: #a16207; }
-.opening-remove { background: none; border: none; color: #d97706; cursor: pointer; font-size: 14px; }
+.opening-remove { background: none; border: none; color:#b45309; cursor: pointer; font-size: 14px; }
 .opening-remove:hover { color: var(--danger); }
 .no-cabs { padding: 14px 8px; text-align: center; font-size: 12px; color: var(--text-muted); }
 .cab-wall-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 6px 2px 3px; }
@@ -658,10 +658,10 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .tour-dot { width:7px;height:7px;border-radius:50%;background:#e2d5c8; }
 .tour-dot.active { background:var(--accent); }
 .tour-row { display:flex;justify-content:space-between;align-items:center; }
-.tour-skip { font-size:12px;color:#94a3b8;cursor:pointer;background:none;border:none;padding:0;font-weight:600; }
+.tour-skip { font-size:12px;color:#64748b;cursor:pointer;background:none;border:none;padding:0;font-weight:600; }
 .tour-skip:hover { color:#6b7280; }
 .tour-next { padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer; }
-.tour-next:hover { background:#0f766e; }
+.tour-next:hover { background:#115e59; }
 
 /* ── FAQ modal ── */
 .faq-section { border-bottom:1px solid var(--border); }
@@ -672,7 +672,7 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
   align-items:center;color:#1e293b;gap:8px;
 }
 .faq-q:hover { color:var(--accent); }
-.faq-q .faq-arrow { font-size:12px;color:#94a3b8;transition:transform 0.15s;flex-shrink:0; }
+.faq-q .faq-arrow { font-size:12px;color:#64748b;transition:transform 0.15s;flex-shrink:0; }
 .faq-q.open .faq-arrow { transform:rotate(180deg); }
 .faq-a { font-size:12.5px;color:#6b7280;line-height:1.75;padding-bottom:14px;display:none; }
 .faq-a.open { display:block; }
@@ -764,7 +764,7 @@ body.free-tier #connect-pro-btn { display:block; }
         <div style="background:#fdf8f3;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:20px;text-align:left;">
           Click the link in the email to activate your account, then come back here and sign in. Check your spam folder if you don't see it in a minute or two.
         </div>
-        <button onclick="showSignInAfterConfirm()" style="width:100%;padding:13px;background:linear-gradient(135deg,#5eead4,#0f766e);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Sign In →</button>
+        <button onclick="showSignInAfterConfirm()" style="width:100%;padding:13px;background:linear-gradient(135deg,#0f766e,#115e59);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">Go to Sign In →</button>
         <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">Wrong email? <button onclick="showSignUpForm()" style="background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600;font-family:inherit;padding:0;">Start over</button></div>
       </div>
     </div>
@@ -785,9 +785,9 @@ body.free-tier #connect-pro-btn { display:block; }
 </div>
 
 <!-- Demo mode banner — only shown when ?demo=1 -->
-<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#0d9488;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
+<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#0f766e;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
   Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
-  <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;opacity:0.7;line-height:1;">&#x2715;</button>
+  <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
 </div>
 
 <aside id="sidebar">
@@ -818,7 +818,7 @@ body.free-tier #connect-pro-btn { display:block; }
       </svg>
       <div>
         <div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.3px;line-height:1.2;">My Cabinet Planner</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:1px;">Cabinet Planner</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.7);margin-top:1px;">Cabinet Planner</div>
       </div>
       </a>
       <button class="sb-collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar" aria-label="Collapse sidebar">‹</button>
@@ -833,13 +833,13 @@ body.free-tier #connect-pro-btn { display:block; }
     <div class="sidebar-user" id="user-email"></div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <span class="sync-dot" id="sync-dot"></span>
-      <span style="font-size:10px;color:rgba(255,255,255,0.3);" id="sync-label">Saved</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.65);" id="sync-label">Saved</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
       <button class="signout-btn" style="flex:1;" onclick="location.href='/profile#company'">Company</button>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
-    <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(13,148,136,0.25);">Connect with a Pro</button>
+    <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#0f766e,#0f766e);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(13,148,136,0.25);">Connect with a Pro</button>
     <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">My Profile</a>
   </div>
 </aside>
@@ -876,7 +876,7 @@ body.free-tier #connect-pro-btn { display:block; }
       </svg>
       <h2 style="font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-0.5px;margin-bottom:8px;">My Cabinet Planner</h2>
       <p style="font-size:13px;color:#64748b;margin-bottom:4px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">Professional Cabinet Planning</p>
-      <p style="font-size:14px;color:#a07850;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
+      <p style="font-size:14px;color:#8a6440;margin:16px 0 28px;line-height:1.6;">Design beautiful cabinet layouts, generate professional quotes, and impress your customers — all in one place.</p>
       <button class="btn btn-primary" onclick="openNewProjectModal()" style="padding:12px 28px;font-size:14px;border-radius:10px;">＋ Create Your First Project</button>
     </div>
   </div>
@@ -928,7 +928,7 @@ body.free-tier #connect-pro-btn { display:block; }
 
             <div class="tb-group">
               <button id="measure-btn" class="toolbar-btn" onclick="toggleMeasure()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11l3-3M5 8l6-6M11 2l3 3-9 9-3-3 9-9z"/></svg>Measure</button>
-              <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #ef4444;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#ef4444;">Clear</button>
+              <button id="measure-clear-btn" onclick="clearMeasurements()" style="display:none;padding:5px 10px;border:1px solid #dc2626;border-radius:6px;font-size:12px;font-weight:600;background:white;cursor:pointer;color:#dc2626;">Clear</button>
               <button id="dims-btn" class="toolbar-btn dims-btn" onclick="toggleDimensions()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4v8M14 4v8M2 8h12"/></svg>Dims</button>
               <button id="itemnum-btn" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.5l6 3.5v6l-6 3.5-6-3.5v-6z"/></svg>Item #s</button>
               <button id="cutlist-btn" class="toolbar-btn" onclick="toggleCutList()"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2.2" rx="0.5"/><rect x="2" y="7" width="12" height="2.2" rx="0.5"/><rect x="2" y="11" width="8" height="2.2" rx="0.5"/></svg>Cut List</button>
@@ -1036,7 +1036,7 @@ body.free-tier #connect-pro-btn { display:block; }
           </div>
           <div id="pricing-opts" class="hidden">
             <div class="markup-row"><label for="markup-pct">Additional Markup %</label><input type="number" id="markup-pct" value="0" min="0" max="500" step="1" onchange="renderAll()" style="width:70px;"></div>
-            <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;">Prices are Forevermark MSRP. Use markup for additional margin.</div>
+            <div style="font-size:10px;color:#64748b;margin-bottom:6px;">Prices are Forevermark MSRP. Use markup for additional margin.</div>
             <div class="markup-row"><label for="tax-pct">Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
           </div>
         </div>
@@ -1066,14 +1066,14 @@ body.free-tier #connect-pro-btn { display:block; }
           <div class="opening-inputs" id="sill-height-row" style="margin-bottom:5px;display:none;">
             <label style="font-size:11px;white-space:nowrap;">Sill ht:</label>
             <input type="number" id="opening-sill" aria-label="Sill height from floor (inches)" placeholder='36"' min="0" value="36" style="width:52px;">
-            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in. from floor</span>
+            <span style="font-size:10px;color:#64748b;white-space:nowrap;">in. from floor</span>
           </div>
           <div class="opening-inputs" style="margin-bottom:4px;">
             <label style="font-size:11px;white-space:nowrap;">From left:</label>
             <input type="number" id="opening-offset" aria-label="Opening distance from left (inches)" placeholder='0"' min="0" value="0" style="width:52px;">
             <button class="btn btn-secondary" style="padding:5px 9px;font-size:11px;flex-shrink:0" onclick="addOpening()">＋ Add</button>
           </div>
-          <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Inches from left edge of wall</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px;">Inches from left edge of wall</div>
         </div>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label" id="wall-add-label">Add Cabinet — North</div>
@@ -1101,17 +1101,17 @@ body.free-tier #connect-pro-btn { display:block; }
           <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
             <input type="number" id="cab-wall-bottom" aria-label="Bottom of wall cabinet from floor (inches)" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
-            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">in.</span>
+            <span style="font-size:10px;color:#64748b;white-space:nowrap;">in.</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
             <input type="number" id="cab-offset-input" aria-label="Cabinet distance from left wall (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
-            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
+            <span style="font-size:10px;color:#64748b;white-space:nowrap;">inches</span>
           </div>
           <div id="glass-door-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
             <input type="checkbox" id="cab-glass-doors" style="width:auto;accent-color:var(--accent);">
             <label for="cab-glass-doors" style="font-size:12px;color:var(--text);margin:0;font-weight:600;">Add Glass Doors</label>
-            <span style="font-size:10px;color:#94a3b8;">(+58% of cabinet price)</span>
+            <span style="font-size:10px;color:#64748b;">(+58% of cabinet price)</span>
           </div>
           <select id="cab-style-override" class="cp-select">
             <option value="">— Door Style: Use Project Default —</option>
@@ -1139,7 +1139,7 @@ body.free-tier #connect-pro-btn { display:block; }
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
             <input type="number" id="app-offset" aria-label="Appliance distance from left (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
-            <span style="font-size:10px;color:#94a3b8;white-space:nowrap;">inches</span>
+            <span style="font-size:10px;color:#64748b;white-space:nowrap;">inches</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Price ($):</label>
@@ -1154,12 +1154,12 @@ body.free-tier #connect-pro-btn { display:block; }
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Width:</label>
             <input type="number" id="island-width" aria-label="Island width (inches)" class="cp-input" placeholder='36"' min="12" value="36" style="margin-bottom:0;flex:1;">
-            <span style="font-size:10px;color:#94a3b8;">in</span>
+            <span style="font-size:10px;color:#64748b;">in</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Depth:</label>
             <input type="number" id="island-depth" aria-label="Island depth (inches)" class="cp-input" placeholder='24"' min="12" value="24" style="margin-bottom:0;flex:1;">
-            <span style="font-size:10px;color:#94a3b8;">in</span>
+            <span style="font-size:10px;color:#64748b;">in</span>
           </div>
           <input type="text" id="island-label" class="cp-input" placeholder="Label (optional)" autocomplete="off">
           <button class="add-cab-btn" onclick="addIsland()" style="background:linear-gradient(135deg,#0f766e,#0f766e);box-shadow:0 2px 6px rgba(13,148,136,0.3);">＋ Add Island</button>
@@ -1265,7 +1265,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <div style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="edit-cab-glass" style="width:auto;accent-color:var(--accent);">
         <label for="edit-cab-glass" style="margin:0;font-weight:600;">Glass Doors</label>
-        <span style="font-size:10px;color:#94a3b8;">(+58%)</span>
+        <span style="font-size:10px;color:#64748b;">(+58%)</span>
       </div>
     </div>
     <div class="form-group">
@@ -1279,7 +1279,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <input type="text" id="edit-cab-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">Delete</button>
+      <button class="btn" style="background:#dc2626;color:#fff;font-weight:600;" onclick="deleteFromEditModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-cabinet')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditModal()">Save Changes</button>
@@ -1306,7 +1306,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">Delete</button>
+      <button class="btn" style="background:#dc2626;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-island')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditIslandModal()">Save Changes</button>
@@ -1344,7 +1344,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <input type="text" id="edit-app-note" class="cp-input" placeholder="Optional notes" autocomplete="off">
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button class="btn" style="background:#ef4444;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">Delete</button>
+      <button class="btn" style="background:#dc2626;color:#fff;font-weight:600;" onclick="deleteFromEditApplianceModal()">Delete</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="closeModal('modal-edit-appliance')">Cancel</button>
         <button class="btn btn-primary" onclick="saveEditApplianceModal()">Save Changes</button>
@@ -1359,10 +1359,10 @@ body.free-tier #connect-pro-btn { display:block; }
     <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder=""></div>
     <div class="form-row">
       <div class="form-group"><label>Customer Phone</label><input type="tel" id="np-phone" placeholder="(555) 000-0000"></div>
-      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(on quote)</span></label><input type="text" id="np-company" placeholder=""></div>
+      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(on quote)</span></label><input type="text" id="np-company" placeholder=""></div>
     </div>
     <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
-    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
+    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
     <div class="form-row">
       <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder=""></div>
       <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
@@ -1391,7 +1391,7 @@ body.free-tier #connect-pro-btn { display:block; }
     <div class="form-group"><label>Customer Name</label><input type="text" id="ep-customer"></div>
     <div class="form-row">
       <div class="form-group"><label>Customer Phone</label><input type="tel" id="ep-phone" placeholder="(555) 000-0000"></div>
-      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(on quote)</span></label><input type="text" id="ep-company" placeholder=""></div>
+      <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(on quote)</span></label><input type="text" id="ep-company" placeholder=""></div>
     </div>
     <div class="form-group"><label>Project Type</label><select id="ep-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group"><label>Street Address</label><input type="text" id="ep-address" placeholder=""></div>
@@ -1505,15 +1505,15 @@ body.free-tier #connect-pro-btn { display:block; }
 <div id="modal-upgrade" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Upgrade to Pro">
   <div class="modal" style="width:480px;text-align:center;padding:40px 36px;">
     <div style="width:56px;height:56px;background:#ccfbf1;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     </div>
     <h3 id="upgrade-modal-title" style="font-size:20px;font-weight:800;margin-bottom:10px;letter-spacing:-0.3px;">This is a Pro feature</h3>
     <p id="upgrade-modal-body" style="font-size:14px;color:var(--text-muted);line-height:1.7;margin-bottom:28px;">You're in demo mode. Pricing and quote export are available on a Pro subscription — sign up to unlock them and save your designs.</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
-      <a href="/#pricing" target="_blank" style="display:block;padding:13px 24px;background:#0d9488;color:white;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0d9488'">View Pricing &amp; Subscribe &rarr;</a>
+      <a href="/#pricing" target="_blank" style="display:block;padding:13px 24px;background:#0f766e;color:white;border-radius:9px;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.15s;" onmouseover="this.style.background='#0f766e'" onmouseout="this.style.background='#0f766e'">View Pricing &amp; Subscribe &rarr;</a>
       <button onclick="closeModal('modal-upgrade')" style="padding:11px 24px;background:var(--bg);border:1px solid var(--border);border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text-muted);">Continue in Demo</button>
     </div>
-    <p style="font-size:11px;color:var(--text-muted);margin-top:18px;opacity:0.7;">Already subscribed? <a href="/app" style="color:var(--accent);font-weight:600;">Sign in here</a></p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:18px;">Already subscribed? <a href="/app" style="color:var(--accent);font-weight:600;">Sign in here</a></p>
   </div>
 </div>
 
@@ -1526,7 +1526,7 @@ body.free-tier #connect-pro-btn { display:block; }
 
     <!-- Company Name -->
     <div style="margin-bottom:18px;">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#94a3b8;">(prints on quote)</span></div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(prints on quote)</span></div>
       <input type="text" id="quote-company-input" aria-label="Company name on quote" class="cp-input" placeholder="" style="margin-bottom:0;" oninput="updateQuoteCompany(this.value)" autocomplete="off">
     </div>
 
@@ -1585,7 +1585,7 @@ body.free-tier #connect-pro-btn { display:block; }
   <div class="modal" style="max-width:480px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
       <h3 style="margin:0;">Contact Us</h3>
-      <button onclick="closeModal('modal-contact')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+      <button onclick="closeModal('modal-contact')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">✕</button>
     </div>
     <p style="color:var(--text-muted);font-size:13px;margin-bottom:18px;">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
     <div class="form-group">
@@ -1644,7 +1644,7 @@ body.free-tier #connect-pro-btn { display:block; }
       <h3 style="margin:0;">Help & FAQ</h3>
       <div style="display:flex;gap:10px;align-items:center;">
         <button onclick="startTour()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">↺ Replay Tips Tour</button>
-        <button onclick="closeModal('modal-faq')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+        <button onclick="closeModal('modal-faq')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">✕</button>
       </div>
     </div>
     <div class="faq-section">
@@ -1839,7 +1839,7 @@ function drawViewportRulers(view) {
   };
   const hx = setup(rh, vpW, RULER_PX);
   const vx = setup(rv, RULER_PX, vpH);
-  const BG = '#f8fafc', BAND = '#ffffff', LINE = '#cbd5e1', MAJOR = '#475569', MINOR = '#94a3b8', OUTSIDE = '#d6dde6', TEXT = '#334155', CURSOR = '#0d9488';
+  const BG = '#f8fafc', BAND = '#ffffff', LINE = '#cbd5e1', MAJOR = '#475569', MINOR = '#94a3b8', OUTSIDE = '#d6dde6', TEXT = '#334155', CURSOR = '#0f766e';
   const FONT = '600 10px Inter, "Segoe UI", -apple-system, sans-serif';
 
   hx.fillStyle = BG; hx.fillRect(0, 0, vpW, RULER_PX);
@@ -2095,7 +2095,7 @@ async function handleSignIn() {
 async function handleForgotPassword() {
   const email = document.getElementById('login-email').value.trim();
   const err   = document.getElementById('login-error');
-  if (!email) { err.style.color='#0d9488'; err.textContent = 'Enter your email address above first.'; return; }
+  if (!email) { err.style.color='#0f766e'; err.textContent = 'Enter your email address above first.'; return; }
   err.textContent = '';
   const { error } = await db.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://mycabinetplanner.com'
@@ -3364,7 +3364,7 @@ function renderCabinetList() {
     html += wallCabs.map(c => {
       const cat   = CATALOG[c.type];
       const cabPr = cabinetPrice(c);
-      const price = pricingOn() ? `<div class="cab-price">${cabPr != null ? fmtMoney(cabPr) : '<span style="color:#94a3b8;font-style:italic;">No price set</span>'}</div>` : '';
+      const price = pricingOn() ? `<div class="cab-price">${cabPr != null ? fmtMoney(cabPr) : '<span style="color:#64748b;font-style:italic;">No price set</span>'}</div>` : '';
       return `<div class="cab-item">
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
@@ -4035,7 +4035,7 @@ function renderCanvas() {
     }
     if (seg) {
       ctx.save();
-      ctx.strokeStyle = '#0d9488';
+      ctx.strokeStyle = '#0f766e';
       ctx.lineWidth = 5;
       ctx.lineCap = 'round';
       ctx.shadowColor = 'rgba(13,148,136,0.4)';
@@ -5094,7 +5094,7 @@ function renderSummary(r) {
     const cat = CATALOG[g.type]; subtotal += g.totalPrice;
     if (g.unpriced) anyUnpriced = true;
     const priceDisplay = g.unpriced
-      ? `<span style="color:#94a3b8;font-style:italic;">${g.totalPrice > 0 ? fmtMoney(g.totalPrice) + '*' : 'No price set'}</span>`
+      ? `<span style="color:#64748b;font-style:italic;">${g.totalPrice > 0 ? fmtMoney(g.totalPrice) + '*' : 'No price set'}</span>`
       : fmtMoney(g.totalPrice);
     return `<div class="summary-row">
       <div class="summary-dot" style="background:${cat.color}"></div>
@@ -5296,7 +5296,7 @@ function printQuote() {
       if (price != null) cabSubtotal += price;
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
       const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
-      const priceCell = price != null ? fmtMoney(price) : '<span style="color:#94a3b8;font-style:italic;">N/A</span>';
+      const priceCell = price != null ? fmtMoney(price) : '<span style="color:#64748b;font-style:italic;">N/A</span>';
       cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
     });
   });
@@ -5308,7 +5308,7 @@ function printQuote() {
       const ac = APPLIANCES[a.type];
       const hasPrice = a.price != null && a.price > 0;
       if (hasPrice) appSubtotal += a.price;
-      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#94a3b8;font-style:italic;">N/A</span>'}</td></tr>`;
+      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`;
     });
   });
 
@@ -5362,13 +5362,13 @@ function printQuote() {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,'Helvetica Neue',sans-serif;color:#1a1a1a;padding:48px;max-width:860px;margin:0 auto;font-size:12px;}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #0d9488;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #0f766e;}
 .co-name{font-size:26px;font-weight:800;color:#1e293b;letter-spacing:-.5px;}
 .co-sub{font-size:11px;color:#64748b;margin-top:3px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
 .co-info{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.6;}
-.q-title{font-size:22px;font-weight:800;color:#0d9488;text-align:right;}
+.q-title{font-size:22px;font-weight:800;color:#0f766e;text-align:right;}
 .q-meta{font-size:11px;color:#6b7280;text-align:right;margin-top:6px;line-height:1.8;}
-.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#f8fafc;padding:14px 18px;border-radius:8px;border-left:4px solid #0d9488;margin-bottom:22px;}
+.cust-bar{display:flex;gap:28px;flex-wrap:wrap;background:#f8fafc;padding:14px 18px;border-radius:8px;border-left:4px solid #0f766e;margin-bottom:22px;}
 .ci label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;display:block;margin-bottom:2px;}
 .ci span{font-size:13px;font-weight:700;color:#1e293b;}
 .ci small{font-size:10px;color:#6b7280;display:block;margin-top:2px;}
@@ -5392,7 +5392,7 @@ tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color
 .sb{flex:1;}
 .sl{border-bottom:1px solid #374151;height:36px;margin-bottom:5px;}
 .slb{font-size:10px;color:#6b7280;font-weight:600;}
-.foot{margin-top:24px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px;}
+.foot{margin-top:24px;text-align:center;font-size:9px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:12px;}
 @media print{body{padding:24px;}@page{margin:.75in;size:letter;}}
 </style></head>
 <body onload="window.print()">
@@ -5409,8 +5409,8 @@ tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color
     </div>
   </div>
   <div>
-    <div class="q-title" style="${revision > 1 ? 'color:#d97706;' : ''}">${revision > 1 ? `REVISION ${revision}` : 'QUOTE'}</div>
-    <div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}${revision > 1 ? `<br><span style="color:#d97706;font-weight:700;">Revised Quote</span>` : ''}</div>
+    <div class="q-title" style="${revision > 1 ? 'color:#b45309;' : ''}">${revision > 1 ? `REVISION ${revision}` : 'QUOTE'}</div>
+    <div class="q-meta">Quote #: ${quoteNum}<br>Date: ${today}<br>Valid Through: ${validThru}${revision > 1 ? `<br><span style="color:#b45309;font-weight:700;">Revised Quote</span>` : ''}</div>
   </div>
 </div>
 ${revision > 1 ? `
@@ -5436,7 +5436,7 @@ ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th col
   ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
   ${trimTotal>0?`<div class="tr"><span class="tl">Trim &amp; Materials</span><span class="ta">${fmtMoney(trimTotal)}</span></div>`:''}
   ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
-  <div class="tr"><span>TOTAL</span><span class="ta" style="color:#16a34a;">${fmtMoney(total)}</span></div>
+  <div class="tr"><span>TOTAL</span><span class="ta" style="color:#15803d;">${fmtMoney(total)}</span></div>
 </div>
 ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><p style="white-space:pre-wrap;">${escHtml(cp.terms_and_conditions)}</p></div>` : ''}
 <div class="sigs">
@@ -6730,11 +6730,11 @@ function renderActivityFeed() {
     const isQuote  = e.type === 'quote';
     const initials = (e.user || 'You').split('@')[0].slice(0,2).toUpperCase();
     const avatarStyle = isStatus ? 'background:linear-gradient(135deg,#3b82f6,#1d4ed8);'
-                      : isQuote  ? 'background:linear-gradient(135deg,#0d9488,#0f766e);'
+                      : isQuote  ? 'background:linear-gradient(135deg,#0f766e,#0f766e);'
                       : '';
     const avatarIcon = isStatus ? '⟳' : isQuote ? '📄' : initials;
     const textStyle  = isStatus ? 'color:var(--text-muted);font-style:italic;'
-                     : isQuote  ? 'color:#0d9488;font-weight:600;'
+                     : isQuote  ? 'color:#0f766e;font-weight:600;'
                      : '';
     return `
       <div class="al-entry">
@@ -7107,7 +7107,7 @@ function phoneTab(tab) {
     if (btn) {
       btn.classList.toggle('active', t === tab);
       const svg = btn.querySelector('svg');
-      if (svg) svg.style.stroke = t === tab ? '#0d9488' : '#9ca3af';
+      if (svg) svg.style.stroke = t === tab ? '#0f766e' : '#6b7280';
     }
   });
 
@@ -7171,7 +7171,7 @@ function renderPhoneQuote() {
         <strong style="color:#0f172a;">${all.length}</strong>
       </div>
     </div>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;line-height:1.6;">
+    <p style="font-size:12px;color:#6b7280;text-align:center;line-height:1.6;">
       Pricing &amp; full PDF export available on desktop or tablet.
     </p>
   `;
@@ -7455,8 +7455,8 @@ async function submitProLead() {
       <label for="lead-note">About your project</label>
       <textarea id="lead-note" class="cp-input" rows="3" placeholder="e.g. Full kitchen remodel, ~$15k budget, looking to start in the fall…" style="resize:vertical;font-family:inherit;"></textarea>
     </div>
-    <p style="font-size:11px;color:#94a3b8;margin:0 0 12px;line-height:1.5;">By submitting, you agree to be contacted by a cabinet professional in our network. We don't sell your information to third parties.</p>
-    <div id="lead-error" style="color:#ef4444;font-size:12px;margin-bottom:8px;display:none;"></div>
+    <p style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.5;">By submitting, you agree to be contacted by a cabinet professional in our network. We don't sell your information to third parties.</p>
+    <div id="lead-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;display:none;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-pro-lead')">Cancel</button>
       <button class="btn btn-primary" onclick="submitProLead()" id="lead-submit-btn">Send My Info</button>
