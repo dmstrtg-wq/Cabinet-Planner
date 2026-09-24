@@ -672,3 +672,12 @@ body.free-tier #connect-pro-btn { display:block; }
 .palette-empty { grid-column: 1 / -1; font-size: 12px; color: var(--text-muted); padding: 6px 2px; }
 .palette-drag-chip { position: fixed; z-index: 9300; pointer-events: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 6px; box-shadow: 0 4px 14px rgba(15,23,42,.25); white-space: nowrap; }
 .palette-drag-chip.bad { background: #b91c1c; }
+
+/* Undo / redo / shortcuts (2.5) */
+.undo-group { display: inline-flex; gap: 2px; margin-right: 4px; }
+.undo-btn { min-width: 34px; height: 30px; padding: 0 8px !important; font-size: 15px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.undo-btn:disabled { opacity: .4; cursor: default; }
+.shortcut-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0 4px; }
+.shortcut-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.shortcut-table td:first-child { width: 42%; white-space: nowrap; }
+.shortcut-table kbd { font-family: inherit; font-size: 12px; font-weight: 700; background: #f1f5f9; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }

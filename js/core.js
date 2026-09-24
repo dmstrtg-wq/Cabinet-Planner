@@ -668,6 +668,7 @@ function persist() {
   clearTimeout(saveTimer);
   setSyncStatus('saving');
   saveTimer = setTimeout(syncActiveProject, 1000);
+  if (typeof historyNoteChange === 'function') historyNoteChange(); // undo/redo (history.js)
 }
 // Demo and Free accounts keep projects in this browser only; Silver+ saves to Supabase.
 // Load and save must make the same choice, or a Free user's work vanishes on reload.

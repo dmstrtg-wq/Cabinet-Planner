@@ -245,6 +245,11 @@
           <button class="view-toggle-btn" id="vt-3d" onclick="setViewMode('3d')">3D View</button>
         </div>
         <div class="header-actions">
+          <div class="undo-group" role="group" aria-label="Undo and redo">
+            <button id="undo-btn" class="btn btn-secondary undo-btn" onclick="undoDesign()" title="Undo (Ctrl/⌘ Z)" aria-label="Undo" disabled>↶</button>
+            <button id="redo-btn" class="btn btn-secondary undo-btn" onclick="redoDesign()" title="Redo (Shift Ctrl/⌘ Z)" aria-label="Redo" disabled>↷</button>
+            <button class="btn btn-secondary undo-btn" onclick="showShortcutSheet()" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">⌨</button>
+          </div>
           <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
           <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
           <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
@@ -1103,6 +1108,8 @@
 <script src="/js/selection.js" data-categories="essential"></script>
 <script src="/js/palette.js" data-categories="essential"></script>
 <script src="/js/gaps.js" data-categories="essential"></script>
+<script src="/js/history.js" data-categories="essential"></script>
+<script src="/js/shortcuts.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

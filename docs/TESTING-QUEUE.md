@@ -94,3 +94,13 @@ Claude checked the numbers on the sample kitchen (e.g. the east wall's 26 1/4" o
 - [ ] **While dragging** (a placed cabinet or a palette tile), the numbers update live.
 - [ ] **Dims button on,** nothing selected: every wall shows its open space (floor plan) and the elevation shows open space for both the base and upper rows.
 - [ ] **Printed floor plan / PDF:** none of these live measurements appear on the printout.
+
+### 2.5 Shortcuts + undo/redo (built 2026-09-24)
+Claude tested locally: 6 different edit types (add, nudge burst, room resize, door style, delete, island move) undo back to the exact original and redo forward exactly; business records (status, activity log) are untouched by undo; a new edit clears redo; 100 steps kept. Try on the live demo (a desktop browser, since shortcuts need a keyboard):
+- [ ] **↶ / ↷ buttons** next to Log. Greyed out until there's something to undo or redo.
+- [ ] **⌘Z / Shift⌘Z** (Ctrl on Windows) undo and redo: adding, moving, deleting, resizing the room (Room Settings), changing door style, moving the island. A whole drag counts as one undo.
+- [ ] Undo does **not** change the job status, the activity log, or quote revisions.
+- [ ] **Delete / Backspace** removes the selected item. **⌘D** duplicates it (the browser's bookmark box doesn't pop up).
+- [ ] **B / W / T / C / F / A** jump to that catalog category with the cursor in the search box. Type "36" right after pressing B.
+- [ ] **?** or the ⌨ button shows the shortcut list.
+- [ ] Shortcuts don't fire while typing in a box. ⌘Z inside a text box undoes the typing, not the design.
