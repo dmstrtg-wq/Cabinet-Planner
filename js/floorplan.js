@@ -675,7 +675,7 @@ function renderCanvas() {
     if (!PDF) ctx.fillText(`⚠ ${_flagRects.length} item${_flagRects.length === 1 ? " doesn't" : "s don't"} fit — see list`, RX + RW, RY - 28);
     ctx.restore();
   }
-  if (!PDF) drawFloorSelection(ctx, r, scale, RX, RY);
+  if (!PDF) { drawFloorSelection(ctx, r, scale, RX, RY); drawFloorGhost(ctx, r, scale, RX, RY); }
   renderSummary(r);
   // Auto-fit only on first render of a project (zoom resets to 1 signal)
   if (vpState.floor.zoom === 1 && vpState.floor.panX === 0 && vpState.floor.panY === 0) {

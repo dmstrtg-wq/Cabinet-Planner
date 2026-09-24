@@ -376,6 +376,20 @@
           </div>
           <div id="style-container" class="hidden"></div>
         </div>
+        <div class="cp-section" id="palette-section" style="flex-shrink:0">
+          <div class="cp-label">Catalog <span class="palette-hint">drag onto a wall · click to add at the end</span></div>
+          <input type="search" id="palette-search" class="cp-input" placeholder='Search — e.g. "B36", "sink", "30"' aria-label="Search catalog" autocomplete="off">
+          <div id="palette-cats" class="palette-cats" role="group" aria-label="Catalog categories">
+            <button type="button" data-cat="all" class="active" onclick="setPaletteCategory('all')">All</button>
+            <button type="button" data-cat="base" onclick="setPaletteCategory('base')">Base</button>
+            <button type="button" data-cat="wall" onclick="setPaletteCategory('wall')">Wall</button>
+            <button type="button" data-cat="tall" onclick="setPaletteCategory('tall')">Tall</button>
+            <button type="button" data-cat="corner" onclick="setPaletteCategory('corner')">Corner</button>
+            <button type="button" data-cat="fill" onclick="setPaletteCategory('fill')">Fillers &amp; Panels</button>
+            <button type="button" data-cat="app" onclick="setPaletteCategory('app')">Appliances</button>
+          </div>
+          <div id="palette-items" class="palette-items"></div>
+        </div>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Pricing</div>
           <div class="price-toggle-row">
@@ -1087,6 +1101,7 @@
 <script src="/js/account.js" data-categories="essential"></script>
 <script src="/js/drag-elevation.js" data-categories="essential"></script>
 <script src="/js/selection.js" data-categories="essential"></script>
+<script src="/js/palette.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

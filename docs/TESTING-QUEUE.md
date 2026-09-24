@@ -63,3 +63,15 @@ Claude tested locally in demo mode: selection syncs across all three views + sid
 - [ ] **With "Dims" on:** clicking and dragging cabinets in the Elevation still lands on the right cabinet (this used to be off by about an inch-and-a-half of screen space).
 - [ ] **Layer filter:** set the floor plan dropdown to "Wall Only". Clicking where an upper sits over a base now selects the upper.
 - [ ] **Phone/tablet:** tap selects, double-tap opens the popover.
+
+### 2.2 Catalog palette + drag onto walls (built 2026-09-24)
+Claude tested locally with simulated drags: a full wall built by dragging only, uppers built in the elevation, click-to-add, search/categories, red rejections. **Not yet tried with a real mouse.** Please do that first (live demo, no login needed, desktop browser).
+- [ ] **Real mouse drag:** in the right panel's new **Catalog** section, press on a tile (e.g. B36), drag it onto the floor plan near a wall, and let go. A teal ghost follows the wall while you drag, and the cabinet lands where the ghost was.
+- [ ] **Snapping:** drop roughly next to an existing cabinet. It butts up against it with no gap. Drop near a wall end and it sits flush to the end.
+- [ ] **Red = rejected:** drag over a spot that overlaps a cabinet, runs past the wall end, sits in a corner already taken by the next wall's run, or covers a door. The ghost turns red with the reason, and letting go adds nothing.
+- [ ] **Elevation:** switch to Elevation and drag uppers (W30…) onto the wall shown.
+- [ ] **Click a tile** (no drag): it's added at the end of the active wall's run and skips past a filled corner.
+- [ ] **Search + chips:** type "B3", "sink" or "30"; tap Base / Wall / Tall / Corner / Fillers & Panels / Appliances.
+- [ ] **Esc while dragging** cancels.
+- [ ] **Tablet (touch):** drag a tile with your finger onto the plan.
+- [ ] The old "Add Cabinet" form below the palette still works as before.

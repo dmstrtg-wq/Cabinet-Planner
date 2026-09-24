@@ -186,12 +186,8 @@ function duplicateItem(item) {
 // Where a copy should go: right after the original if that's open, else the first gap
 // on the wall it fits in, else the end of the run (it'll be flagged if that's past the wall).
 function freeSpotFor(r, copy, original) {
-  const len = wallLength(r, copy.wall), vr = itemVerticalRange(copy);
-  // Also check the footprint against the neighbouring walls' runs, so a copy never lands
-  // in a corner that's already filled by the other run's depth.
-  const others = roomItems(r).filter(i => i.wall && i.wall !== copy.wall && rangesOverlap(itemVerticalRange(i), vr)).map(i => itemRect(r, i)).filter(Boolean);
-  const hitsCorner = off => { const a = itemRect(r, { ...copy, offset: off }); return a && others.some(b => a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01); };
-  const fits = off => off >= 0 && off + copy.width <= len + 0.01 && !overlappingItems(r, copy.wall, vr, off, copy.width, copy.id).length && !hitsCorner(off);
+  const vr = itemVerticalRange(copy);
+  const fits = off => !placementIssue(r, { ...copy, offset: off });
   const after = (original.offset || 0) + original.width;
   if (fits(after)) return after;
   const candidates = [0, ...wallItems(r, copy.wall).filter(i => rangesOverlap(itemVerticalRange(i), vr)).map(i => (i.offset || 0) + i.width)].sort((a, b) => a - b);
