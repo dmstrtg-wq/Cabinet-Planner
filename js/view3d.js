@@ -394,7 +394,8 @@ function renderIsometric() {
     const pos = cabPos(cab.wall, off, cab.width, dep);
     const baseCol = _styleHex;
 
-    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
+    const _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
+    if (_m) _m.userData.itemId = cab.id; // for selection highlight
     if (cab.type !== 'cornerBase') {
       addFrontPanel(pos, baseY, h, cab.wall, baseCol, cab.glassDoors);
     }
@@ -414,7 +415,8 @@ function renderIsometric() {
     const mats = app.type === 'cooktop'
       ? applianceMaterials(app, acat, app.width, dep, app.wall, { top: true })
       : applianceMaterials(app, acat, app.width, h,   app.wall);
-    addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, acat.color || '#9CA3AF', { materials: mats });
+    const _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, acat.color || '#9CA3AF', { materials: mats });
+    if (_m) _m.userData.itemId = app.id;
     addLabel(acat.abbr || '', pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 
@@ -444,7 +446,8 @@ function renderIsometric() {
   // ── Islands ──
   (r.islands||[]).forEach(isl => {
     const h = 34.5; // standard counter height
-    addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, _styleHex);
+    const _m = addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, _styleHex);
+    if (_m) _m.userData.itemId = isl.id;
     addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
 
@@ -458,6 +461,7 @@ function renderIsometric() {
     iso3D.initedCamera = true;
   }
   resizeIso3D();
+  highlight3DSelection();
 }
 
 // Appliance front face. Shared by the elevation view and the 3D view (which paints this

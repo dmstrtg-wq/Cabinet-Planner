@@ -17,7 +17,7 @@
   }
   function hitTestCab(mx,my,info) {
     const {scale,RX,RY,RW,RH,r} = info;
-    const vm = state.viewMode || 'base';
+    const vm = document.getElementById('view-sel')?.value || 'all'; // respect the Base/Wall-only layer filter
     const wallTypes = ['wall','diagWall'];
     const baseTypes = ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'];
     for (const cab of r.cabinets) {
@@ -78,9 +78,8 @@
     const hit  = hitTestCab((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, info);
     if (!hit) return;
     e.preventDefault();
-    if (hit.isIsland)                    openEditIslandModal(hit.cab);
-    else if (CATALOG[hit.cab.type])      openEditModal(hit.cab);
-    else if (APPLIANCES[hit.cab.type])   openEditApplianceModal(hit.cab);
+    if (hit.isIsland) openEditIslandModal(hit.cab);
+    else openItemPopover(hit.cab, e.clientX, e.clientY);
   });
 
   canvas.addEventListener('mousedown', e => {
@@ -95,13 +94,16 @@
       if (vp && e.button === 0) {
         const st = vpState.floor;
         const panStart = { x: e.clientX, y: e.clientY, px: st.panX, py: st.panY };
+        let panned = false;
         vp.classList.add('panning');
         function onMove(ev) {
+          if (Math.abs(ev.clientX - panStart.x) + Math.abs(ev.clientY - panStart.y) > 3) panned = true;
           st.panX = panStart.px + (ev.clientX - panStart.x);
           st.panY = panStart.py + (ev.clientY - panStart.y);
           applyVpTransform('floor');
         }
         function onUp() {
+          if (!panned && selectedItemId) selectItem(null); // plain click on empty space clears the selection
           vp.classList.remove('panning');
           window.removeEventListener('mousemove', onMove);
           window.removeEventListener('mouseup', onUp);
@@ -112,6 +114,7 @@
       return;
     }
     e.preventDefault();
+    if (selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
     // Scale is in internal px/inch; need to divide visual delta by cssZoom to get internal delta
     const effectiveScale = info.scale * vpState.floor.zoom;
     if (hit.isIsland) {
@@ -181,16 +184,19 @@
         if (!vp) return;
         const st = vpState.floor;
         const panStart = { x: t.clientX, y: t.clientY, px: st.panX, py: st.panY };
+        let panned = false;
         vp.classList.add('panning');
         function onPanMove(ev) {
           if (ev.touches.length !== 1) return;
           const tt = ev.touches[0];
+          if (Math.abs(tt.clientX - panStart.x) + Math.abs(tt.clientY - panStart.y) > 6) panned = true;
           st.panX = panStart.px + (tt.clientX - panStart.x);
           st.panY = panStart.py + (tt.clientY - panStart.y);
           applyVpTransform('floor');
           ev.preventDefault();
         }
         function onPanEnd() {
+          if (!panned && selectedItemId) selectItem(null);
           vp.classList.remove('panning');
           window.removeEventListener('touchmove', onPanMove);
           window.removeEventListener('touchend', onPanEnd);
@@ -204,12 +210,13 @@
       const now = Date.now();
       if (now - fpLastTapTime < 350 && fpLastTapId === hit.cab.id) {
         fpLastTapTime = 0; fpLastTapId = null;
-        if (hit.isIsland)                   openEditIslandModal(hit.cab);
-        else if (CATALOG[hit.cab.type])      openEditModal(hit.cab);
-        else if (APPLIANCES[hit.cab.type])   openEditApplianceModal(hit.cab);
+        if (hit.isIsland) openEditIslandModal(hit.cab);
+        else openItemPopover(hit.cab, t.clientX, t.clientY);
+        e.preventDefault();
         return;
       }
       fpLastTapTime = now; fpLastTapId = hit.cab.id;
+      if (selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
 
       // Phone is view-only — no dragging
       if (window.innerWidth <= 767) return;

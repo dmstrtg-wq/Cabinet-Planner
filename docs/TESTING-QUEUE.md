@@ -31,7 +31,7 @@ Claude can't sign in or create accounts, so these checks wait for Dan. Work top 
 
 ### Phase 0.3 + Phase 1 (built 2026-09-24, needs push, then these checks)
 Claude already tested all of this locally in demo mode. These confirm it on the live site and with real logins.
-- [ ] **Sample kitchen (1.1):** open mycabinetplanner.com/app?demo=1 in a private/incognito window. It opens straight to "Sample Kitchen" in 3D (L-shaped run + island, White Shaker).
+- [x] **Sample kitchen (1.1):** ✅ Claude verified live 2026-09-24. open mycabinetplanner.com/app?demo=1 in a private/incognito window. It opens straight to "Sample Kitchen" in 3D (L-shaped run + island, White Shaker).
 - [ ] **Reset demo (1.1):** make a change, click "Reset demo" in the green banner, confirm. The sample comes back and your changes are gone.
 - [ ] **Banner (1.6):** Floor Plan / Elevation / 3D tabs are fully visible and clickable under the banner. Close it with ✕. It stays closed after a page refresh (until the tab is closed).
 - [ ] **New Project defaults (1.2):** New Project shows real numbers 120 / 120 / 96 / 96 / 96 (dark text, not grey hints). Leave them and create: the room is 120 × 96. Clear the East field and try again: red "East wall is blank" message, no project created.
@@ -50,5 +50,16 @@ Claude tested this locally with fake data: identical drawings old vs. new (35 re
 
 ### Code split into files (option b, built 2026-09-24)
 Claude verified locally: all 37 drawings identical, identical page layout and styles in all three views (1280px), quote print + 10-page PDF export work, login screen loads, no console errors. Claude can check the first item below on the live site right after the push (no login needed).
-- [ ] **Declined cookies:** in a private window, open mycabinetplanner.com/app?demo=1, click **Decline** on the cookie banner, reload. The sample kitchen appears and the 3D view works. (Declining cookies is what broke 3D once before.)
+- [x] **Declined cookies:** ✅ Claude verified live 2026-09-24. in a private window, open mycabinetplanner.com/app?demo=1, click **Decline** on the cookie banner, reload. The sample kitchen appears and the 3D view works. (Declining cookies is what broke 3D once before.)
 - [ ] **Logged in:** open a real project and click through Floor Plan / Elevation / 3D / Quote / PDF export once.
+
+### 2.1 Selection + edit popover (built 2026-09-24)
+Claude tested locally in demo mode: selection syncs across all three views + side list, popover edits/duplicate/delete, Esc, empty-click clears, no console errors. Easy to check on the live demo (no login needed).
+- [ ] **Select in floor plan:** click the range. It gets a teal outline with corner handles, the side panel switches to that wall with the row highlighted, and switching to Elevation and 3D shows it highlighted there too.
+- [ ] **Select in elevation:** click an upper. The selection moves, and the floor plan and side list follow.
+- [ ] **Click empty floor / Esc:** the selection clears.
+- [ ] **Double-click → popover:** a small box opens by the pointer (Type, Width, Height, Door style, Notes, Duplicate, More…, Delete). Changing Width updates all views immediately. "More…" opens the full edit dialog.
+- [ ] **Duplicate:** the copy goes right after the original if there's room, otherwise into the first gap that fits, never into a corner. If the wall is full it lands at the end with a red "doesn't fit" flag.
+- [ ] **With "Dims" on:** clicking and dragging cabinets in the Elevation still lands on the right cabinet (this used to be off by about an inch-and-a-half of screen space).
+- [ ] **Layer filter:** set the floor plan dropdown to "Wall Only". Clicking where an upper sits over a base now selects the upper.
+- [ ] **Phone/tablet:** tap selects, double-tap opens the popover.

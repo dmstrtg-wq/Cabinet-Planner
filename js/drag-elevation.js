@@ -15,9 +15,12 @@
     const wall = state.elevWall;
     const wallLength = r.walls[wall] || 120;
     const ceiling = r.ceilingHeight || 96;
-    const PAD = 60;
-    const WW = wallLength*scale;
-    return { scale, WX: PAD, WY: PAD, WW, WH: ceiling*scale, r, wall, ceiling, wallLength };
+    const WW = wallLength*scale, WH = ceiling*scale;
+    // Use the renderer's actual origin — its padding grows when Dims is on (was a fixed 60,
+    // which made clicks land 40px off with dimensions showing).
+    const g = vpGeom.elev;
+    const WX = g ? g.originX : 60, WY = g ? g.originY - WH : 60;
+    return { scale, WX, WY, WW, WH, r, wall, ceiling, wallLength };
   }
 
   function hitTestElevCab(mx, my, info) {
@@ -53,8 +56,7 @@
     const hit  = hitTestElevCab((e.clientX-rect.left)/ze, (e.clientY-rect.top)/ze, info);
     if (!hit) return;
     e.preventDefault();
-    if (CATALOG[hit.type])    openEditModal(hit);
-    else if (APPLIANCES[hit.type]) openEditApplianceModal(hit);
+    openItemPopover(hit, e.clientX, e.clientY);
   });
 
   let elevPan = null;
@@ -70,11 +72,12 @@
       const vp = document.getElementById('elev-viewport');
       if (!vp) return;
       const st = vpState.elev;
-      elevPan = { startX: e.clientX, startY: e.clientY, px: st.panX, py: st.panY };
+      elevPan = { startX: e.clientX, startY: e.clientY, px: st.panX, py: st.panY, moved: false };
       vp.classList.add('panning');
       return;
     }
     e.preventDefault();
+    if (selectedItemId !== cab.id) selectItem(cab.id);
     const effectiveElevScale = info.scale * vpState.elev.zoom;
     elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: effectiveElevScale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
     canvas.style.cursor = 'grabbing';
@@ -90,6 +93,7 @@
     const hx = mx/ze, hy = my/ze;
 
     if (elevPan) {
+      if (Math.abs(e.clientX - elevPan.startX) + Math.abs(e.clientY - elevPan.startY) > 3) elevPan.moved = true;
       vpState.elev.panX = elevPan.px + (e.clientX - elevPan.startX);
       vpState.elev.panY = elevPan.py + (e.clientY - elevPan.startY);
       applyVpTransform('elev');
@@ -127,6 +131,7 @@
 
   window.addEventListener('mouseup', () => {
     if (elevPan) {
+      if (!elevPan.moved && selectedItemId) selectItem(null); // plain click on empty space
       elevPan = null;
       const vp = document.getElementById('elev-viewport');
       if (vp) vp.classList.remove('panning');
@@ -178,11 +183,12 @@
       const now = Date.now();
       if (now - elvLastTapTime < 350 && elvLastTapId === cab.id) {
         elvLastTapTime = 0; elvLastTapId = null;
-        if (CATALOG[cab.type])         openEditModal(cab);
-        else if (APPLIANCES[cab.type]) openEditApplianceModal(cab);
+        openItemPopover(cab, t.clientX, t.clientY);
+        e.preventDefault();
         return;
       }
       elvLastTapTime = now; elvLastTapId = cab.id;
+      if (selectedItemId !== cab.id) selectItem(cab.id);
 
       // Phone is view-only
       if (window.innerWidth <= 767) return;

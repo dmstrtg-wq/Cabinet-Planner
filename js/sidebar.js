@@ -151,7 +151,7 @@ function renderCabinetList() {
       const cat   = CATALOG[c.type];
       const cabPr = cabinetPrice(c);
       const price = pricingOn() ? `<div class="cab-price">${cabPr != null ? fmtMoney(cabPr) : '<span style="color:#64748b;font-style:italic;">No price set</span>'}</div>` : '';
-      return `<div class="cab-item">
+      return `<div class="cab-item${c.id === selectedItemId ? ' selected' : ''}" onclick="selectItem('${c.id}')" style="cursor:pointer;">
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
           <div class="cab-name">${cat.label}</div>
@@ -160,7 +160,7 @@ function renderCabinetList() {
           ${fitTag(c.id)}
           ${price}
         </div>
-        <button class="cab-remove" onclick="removeCabinet('${c.id}')" aria-label="Remove cabinet">×</button>
+        <button class="cab-remove" onclick="event.stopPropagation(); removeCabinet('${c.id}')" aria-label="Remove cabinet">×</button>
       </div>`;
     }).join('');
   }
@@ -169,7 +169,7 @@ function renderCabinetList() {
     html += '<div class="cab-wall-header">Appliances</div>';
     html += wallApps.map(a => {
       const acat = APPLIANCES[a.type];
-      return `<div class="cab-item">
+      return `<div class="cab-item${a.id === selectedItemId ? ' selected' : ''}" onclick="selectItem('${a.id}')" style="cursor:pointer;">
         <div class="cab-color" style="background:${acat.color}"></div>
         <div class="cab-info">
           <div class="cab-name">${acat.label}</div>
@@ -177,7 +177,7 @@ function renderCabinetList() {
           ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
           ${fitTag(a.id)}
         </div>
-        <button class="cab-remove" onclick="removeAppliance('${a.id}')" aria-label="Remove appliance">×</button>
+        <button class="cab-remove" onclick="event.stopPropagation(); removeAppliance('${a.id}')" aria-label="Remove appliance">×</button>
       </div>`;
     }).join('');
   }

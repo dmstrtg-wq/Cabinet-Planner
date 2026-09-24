@@ -408,6 +408,7 @@ function renderElevation() {
     });
   }
 
+  if (!PDF) drawElevSelection(ctx, r, wall, scale, floorY, eX);
   ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
   ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
   ctx.fillStyle=PDF?'#1a1a1a':'#475569';

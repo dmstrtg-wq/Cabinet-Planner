@@ -894,6 +894,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 // ════════════════════════════
 function setViewMode(m) {
   state.viewMode = m;
+  if (typeof closeItemPopover === 'function') closeItemPopover();
   document.getElementById('view-floor').classList.toggle('hidden', m !== 'floor');
   document.getElementById('view-elev').classList.toggle('hidden', m !== 'elevation');
   document.getElementById('view-3d').classList.toggle('hidden', m !== '3d');
