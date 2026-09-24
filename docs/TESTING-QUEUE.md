@@ -47,3 +47,8 @@ Claude tested this locally with fake data: identical drawings old vs. new (35 re
 - [ ] **Your real projects still open:** after the push, log in to your real Gold account and open 3–4 existing projects (include an L-shaped one if you have one). Each looks exactly as before, and the quote total matches what it was.
 - [ ] **Edit + reload:** change one thing on a real project (e.g., a note), wait for "Saved", reload. The change is there, and so are job costs and trim items.
 - [ ] **Free account:** repeat on the Free test account (projects still there after logging out and back in).
+
+### Code split into files (option b, built 2026-09-24)
+Claude verified locally: all 37 drawings identical, identical page layout and styles in all three views (1280px), quote print + 10-page PDF export work, login screen loads, no console errors. Claude can check the first item below on the live site right after the push (no login needed).
+- [ ] **Declined cookies:** in a private window, open mycabinetplanner.com/app?demo=1, click **Decline** on the cookie banner, reload. The sample kitchen appears and the 3D view works. (Declining cookies is what broke 3D once before.)
+- [ ] **Logged in:** open a real project and click through Floor Plan / Elevation / 3D / Quote / PDF export once.

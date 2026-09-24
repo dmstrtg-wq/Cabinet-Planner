@@ -20,10 +20,34 @@ MCP is a set of static HTML files served by Netlify. There's no build step: ever
 
 External libraries (all in `<head>` of `app.html`, lines 30–32): supabase-js v2, Three.js r128, OrbitControls. All three carry `data-categories="essential"` so the Termly cookie blocker leaves them alone.
 
-### How `app.html` is laid out
+### How the planner is laid out (split into files 2026-09-24, Build Plan option b)
 
-| Lines | Block |
+`app.html` is now just the page: the `<head>` (Termly, analytics, libraries), the HTML for the sidebar, toolbar, viewports, panels and ~20 modals, and at the bottom a list of `<script>` tags. The code lives in:
+
+| File | What's in it |
 |---|---|
+| `css/app.css` | All planner styles (was the inline `<style>` block) |
+| `js/core.js` | Supabase client, zoom/pan + rulers, demo mode + sample kitchen, auth, `CATALOG`/styles/tax, `state`, saving/loading (`projectToRow`, `rowToProject`, `migrateProject`), helpers, modals, `setViewMode` |
+| `js/rooms.js` | Projects, rooms, L-shapes, **wall geometry (`wallFrame`, `itemRect`)**, openings, cabinet/appliance/island forms, placement (`nextFreeOffset`, overlap checks), room fit checks, style panel |
+| `js/sidebar.js` | Sidebar, project header, room tabs, cabinet list |
+| `js/floorplan.js` | Floor plan drawing (`renderCanvas`), print ruler, measure tool, island clearance |
+| `js/view3d.js` | 3D view (`renderIsometric`, camera, walls) |
+| `js/elevation.js` | Wall elevations (`renderElevation`) |
+| `js/quote.js` | Summary table, quote modal, job costs/trim, `printQuote` + revisions |
+| `js/tools.js` | Dimension callouts, item tags, work triangle, cut list, room templates |
+| `js/pdf.js` | Floor plan print + `exportPDF` |
+| `js/drag-floor.js` | Floor plan mouse/touch (drag, pan, double-click edit) |
+| `js/account.js` | Job status + activity log, team context, company profile + tier gating (`canAccess`), invite/recovery |
+| `js/drag-elevation.js` | Elevation mouse/touch |
+| `js/shell.js` | Phone mode, **boot sequence**, tour, contact, FAQ, Connect with a Pro |
+
+**How the files work together:** they are *classic* scripts (not ES modules), so they share one global scope exactly like the old single `<script>`. Inline `onclick="…"` handlers and cross-file function calls work unchanged. Two rules:
+1. **Load order matters.** Code that runs *while a file loads* (top-level statements, IIFEs) can only use things from files above it in the list. Code inside functions/event handlers can use anything, because it runs after everything has loaded. Boot lives in the last file for this reason.
+2. **Every `<script>` tag needs `data-categories="essential"`,** or Termly's cookie auto-blocker may block it when a visitor declines cookies (this happened to 3D before).
+
+Line numbers elsewhere in this doc refer to the old single-file `app.html`. Search by function name instead.
+
+---|---|
 | 1–32 | `<head>`: Termly, Google Analytics, libraries |
 | 33–686 | CSS (sidebar, toolbar, modals, phone/tablet breakpoints, demo-mode hiding rules) |
 | 687–1712 | HTML: login screen, demo banner (788), sidebar, main toolbar, the three viewports, side panel forms, ~20 modals |

@@ -82,6 +82,8 @@ Confirm each of these against the repo in Phase 0. Don't assume.
 
 Recommend (b) unless there's a strong reason otherwise. Watch out for two things with (b): inline `onclick="fn()"` handlers need the functions on `window`, and Termly's blocker has to allow the module files. Do not change the build approach without Dan's approval.
 
+**Decided 2026-09-24: (b), done as classic `<script src>` files (not `type="module"`).** Classic scripts share one global scope, so the ~hundreds of inline handlers and cross-file calls keep working with zero rewiring. Individual files can move to ES modules later if ever worth it. File map: `docs/ARCHITECTURE.md` §1.
+
 ---
 
 ## 3. Guardrails for every task
