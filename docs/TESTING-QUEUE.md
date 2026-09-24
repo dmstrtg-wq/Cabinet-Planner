@@ -41,3 +41,9 @@ Claude already tested all of this locally in demo mode. These confirm it on the 
 - [ ] **Room Settings (1.3):** the toolbar button now says "Room Settings". Change the North and South walls from 120 to 90. The floor plan, elevation, and 3D all resize, and the B24 at 72" is outlined in red with a warning. Nothing is deleted.
 - [ ] **Logged-in, same checks:** repeat 1.2–1.5 on your Gold test account. Also confirm a quote total on an existing real project matches what it was before the push.
 - [ ] **New project style:** on a non-owner account (e.g., the Free test account), a new project's header shows a real style name (e.g., "WS – White Shaker"), not blank.
+
+### 0.4 Schema groundwork (built 2026-09-24, push separately from Phase 1)
+Claude tested this locally with fake data: identical drawings old vs. new (35 renders), identical save/reload, identical quote totals, old saved projects load fine. These checks confirm it with real saved data.
+- [ ] **Your real projects still open:** after the push, log in to your real Gold account and open 3–4 existing projects (include an L-shaped one if you have one). Each looks exactly as before, and the quote total matches what it was.
+- [ ] **Edit + reload:** change one thing on a real project (e.g., a note), wait for "Saved", reload. The change is there, and so are job costs and trim items.
+- [ ] **Free account:** repeat on the Free test account (projects still there after logging out and back in).

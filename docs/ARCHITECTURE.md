@@ -71,7 +71,7 @@ Key points:
 - **There's no "level" field.** Base vs. upper is implied by `type` (`wall`/`diagWall` are uppers).
 - **Islands are plain rectangles** with x/y from the NW corner. They hold no cabinets and **aren't priced**.
 - **`itemNum`** is the number in the hexagon tag. It's assigned once and never reused, and `ensureItemNumbers()` (4676) backfills old projects.
-- **No `schemaVersion`, no `migrateProject()`.** Old projects are patched up on the fly in scattered places: `openProject()` (3278) adds missing `openings`/`appliances`/`jobCosts`, `ensureItemNumbers()` adds item numbers, and `r.shape` missing = rect.
+- **Versioning (added 0.4):** every project carries `schemaVersion` (currently 2). `migrateProject()` runs on every load, cloud and browser. It only fills in missing lists and defaults and never changes entered numbers, so it's safe to run repeatedly. A project with a *higher* version than the running code is flagged `_newerSchema` and refused for cloud saving, so older code can't strip fields a newer version added.
 
 ### 2.2 Where it's stored
 
@@ -85,7 +85,7 @@ The same project object goes to one of two places, depending on the account (`sy
 
 **Supabase `projects` row:** `id`, `user_id` (= `effectiveOwnerId`, the team owner), `customer`, `type`, `notes`, `style`, `data` (JSON), `created_at`, `updated_at`. Everything else lives in `data`: `rooms, status, activityLog, phone, company, address, city, state, jobCosts, trimItems, quoteLocked, lockedQuote, quoteHistory`.
 
-⚠ **The save list is hand-written in two places** (upsert at 2310–2324, read-back at 2345–2365). Any new top-level project field must be added to **both** or it silently disappears for paid users. This is exactly how the old `jobCosts`/`trimItems` bug happened. A `migrateProject()` plus a single serializer would remove this trap.
+**One serializer (added 0.4):** `projectToRow()` / `rowToProject()` are the only code that knows the column/`data` split. Every field other than the columns goes into `data` automatically, and fields starting with `_` are never saved. The old hand-written field lists (and the class of bug that lost `jobCosts`/`trimItems`) are gone.
 
 **Save timing:** every edit calls `persist()` (2288). It writes UI state (`cp_ui`: active project/room/wall/view) to localStorage right away and debounces the project save by 1 second. Only the *active* project is upserted. Deleting a project calls Supabase directly (2541).
 
@@ -286,5 +286,5 @@ All paid features are checked in the browser against `company_profiles.subscript
 - **Phase 2** starts from working drag + snap. It needs selection, collision, wall-end limits and neighbor snapping, not drag from scratch.
 - **4.4 Room templates** already exist in name. What's missing is the starter cabinet layout.
 - **4.2 Islands** exist as plain boxes. What's missing is cabinets on them, pricing, and seating overhangs.
-- **The `if north/south/east/west` block copied four-plus times** is the main thing 0.4 and Phase 2 have to replace with one "where is this item" function.
+- ✅ **0.4:** the copied `if north/south/east/west` blocks for floor plan drawing, click targeting, 3D placement and the work triangle now all go through `wallFrame(r, wall)` / `itemRect(r, item)`, next to `getLShapeData`. Still separate: elevation mirroring (`eX`), the 3D front-panel facing, and dimension-line placement.
 - **The two-place save list (§2.2)** should become one serializer inside `migrateProject()` in 0.4.

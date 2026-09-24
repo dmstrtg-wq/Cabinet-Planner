@@ -2409,7 +2409,7 @@ function readLocalProjects() {
   // demo key. Free accounts only (never uploaded to a paid account, since that key can
   // also hold anonymous demo projects), and only if this account has never had a key.
   if (saved === null && key !== 'cp_demo_projects' && isLocalOnly()) saved = localStorage.getItem('cp_demo_projects');
-  try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
+  try { return saved ? JSON.parse(saved).map(migrateProject) : []; } catch (e) { return []; }
 }
 function writeLocalProjects(projects) {
   localStorage.setItem(localProjectsKey(), JSON.stringify(projects));
@@ -2425,23 +2425,72 @@ async function syncActiveProject() {
   const { error } = await upsertProjectRow(p);
   setSyncStatus(error ? 'error' : 'saved');
   if (error) console.error('Sync error:', error);
+  if (p._newerSchema && !p._newerSchemaWarned) { p._newerSchemaWarned = true; alert(error.message); }
 }
-function upsertProjectRow(p) {
-  return db.from('projects').upsert({
+// ── Project save format ─────────────────────────────────────────────────────
+// A Supabase row keeps a few fields in their own columns and everything else in `data`.
+// projectToRow / rowToProject are the ONLY places that know this split, and `data` gets
+// every other field automatically — so a new project field can't be silently dropped.
+const PROJECT_SCHEMA_VERSION = 2;
+const PROJECT_COLUMN_FIELDS = ['id', 'customer', 'type', 'notes', 'style', 'createdAt'];
+function projectToRow(p) {
+  const data = {};
+  Object.keys(p).forEach(k => { if (!PROJECT_COLUMN_FIELDS.includes(k) && !k.startsWith('_')) data[k] = p[k]; });
+  return {
     id: p.id,
     user_id: effectiveOwnerId,
     customer: p.customer,
     type: p.type,
     notes: p.notes || '',
     style: p.style || 'AW',
-    data: { rooms: p.rooms, status: p.status || 'Lead', activityLog: p.activityLog || [],
-            phone: p.phone || '', company: p.company || '',
-            address: p.address || '', city: p.city || '', state: p.state || '',
-            jobCosts: p.jobCosts || [], trimItems: p.trimItems || [],
-            quoteLocked: p.quoteLocked || false, lockedQuote: p.lockedQuote || null,
-            quoteHistory: p.quoteHistory || [], lastQuotedAt: p.lastQuotedAt || null },
+    data,
     updated_at: new Date().toISOString()
-  }, { onConflict: 'id' });
+  };
+}
+function rowToProject(row) {
+  const d = row.data || {};
+  return migrateProject({
+    ...d,
+    jobCosts: d.jobCosts || [],  // cloud projects have always loaded with an empty list here
+    id: row.id,
+    customer: row.customer,
+    type: row.type,
+    notes: row.notes || '',
+    style: row.style || 'AW',
+    createdAt: new Date(row.created_at).getTime(),
+  });
+}
+// Brings any saved project (cloud or browser, any age) up to the current shape. Only
+// fills in what's missing — never changes a number the user entered — so running it
+// twice, or on an already-current project, changes nothing.
+function migrateProject(p) {
+  if (!p || typeof p !== 'object') return p;
+  const v = p.schemaVersion || 1;
+  if (v > PROJECT_SCHEMA_VERSION) { p._newerSchema = true; return p; } // saved by newer code: leave untouched
+  // v1 → v2: fill defaults that used to be patched in scattered places
+  if (!p.status) p.status = 'Lead';
+  ['activityLog', 'trimItems', 'quoteHistory'].forEach(k => { if (!Array.isArray(p[k])) p[k] = []; });
+  ['phone', 'company', 'address', 'city', 'state', 'notes'].forEach(k => { if (p[k] == null) p[k] = ''; });
+  if (p.quoteLocked == null) p.quoteLocked = false;
+  if (p.lockedQuote === undefined) p.lockedQuote = null;
+  if (p.lastQuotedAt === undefined) p.lastQuotedAt = null;
+  if (!Array.isArray(p.rooms)) p.rooms = [];
+  p.rooms.forEach(r => {
+    ['cabinets', 'openings', 'appliances', 'islands'].forEach(k => { if (!Array.isArray(r[k])) r[k] = []; });
+    if (!r.walls) r.walls = { north: 0, south: 0, east: 0, west: 0 };
+    if (!r.shape) r.shape = r.lCut ? 'L' : 'rect';
+    if (!r.ceilingHeight) r.ceilingHeight = 96;
+    ensureItemNumbers(r);
+  });
+  p.schemaVersion = PROJECT_SCHEMA_VERSION;
+  return p;
+}
+function upsertProjectRow(p) {
+  if (p._newerSchema) {
+    // Saving with older code would drop whatever the newer version added.
+    return Promise.resolve({ error: { message: 'This project was saved by a newer version of My Cabinet Planner — reload the page to update before editing.' } });
+  }
+  return db.from('projects').upsert(projectToRow(p), { onConflict: 'id' });
 }
 function loadProjectsFromLocal() {
   state.projects = readLocalProjects();
@@ -2459,28 +2508,7 @@ function loadProjectsFromLocal() {
 async function loadProjects() {
   const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
   if (error) { console.error(error); if (!isLocalOnly()) return; }
-  const cloud = (data || []).map(row => ({
-    id: row.id,
-    customer: row.customer,
-    type: row.type,
-    notes: row.notes || '',
-    style: row.style || 'AW',
-    createdAt: new Date(row.created_at).getTime(),
-    rooms: (row.data && row.data.rooms) || [],
-    status: (row.data && row.data.status) || 'Lead',
-    activityLog: (row.data && row.data.activityLog) || [],
-    phone:   (row.data && row.data.phone)   || '',
-    company: (row.data && row.data.company) || '',
-    address: (row.data && row.data.address) || '',
-    city:    (row.data && row.data.city)    || '',
-    state:   (row.data && row.data.state)   || '',
-    jobCosts:     (row.data && row.data.jobCosts)     || [],
-    trimItems:    (row.data && row.data.trimItems)    || [],
-    quoteLocked:  (row.data && row.data.quoteLocked)  || false,
-    lockedQuote:  (row.data && row.data.lockedQuote)  || null,
-    quoteHistory: (row.data && row.data.quoteHistory) || [],
-    lastQuotedAt: (row.data && row.data.lastQuotedAt) || null
-  }));
+  const cloud = (data || []).map(rowToProject);
   const local = readLocalProjects();
   if (isLocalOnly()) {
     // Free (incl. lapsed subscribers): cloud projects saved while paid stay visible, and
@@ -2849,6 +2877,50 @@ function getLShapeData(r) {
     };
     default: return null;
   }
+}
+
+// ════════════════════════════
+// WALL GEOMETRY — the one place that knows where a wall is and where an item on it sits
+// ════════════════════════════
+// Room coordinates are inches with (0,0) at the north-west corner, x to the east and
+// y to the south (same as the floor plan; 3D uses the same numbers as x and z).
+// A wall is: where its "from left" 0 is, which way offsets run along it, and which way
+// is into the room. Every view positions items through wallFrame/itemRect, so adding
+// new wall kinds later (angled walls, Phase 4) only means teaching wallFrame about them.
+function roomSize(r) {
+  return { w: Math.max(r.walls.north, r.walls.south, 48), h: Math.max(r.walls.east, r.walls.west, 48) };
+}
+function wallFrame(r, wall) {
+  const { w: W, h: H } = roomSize(r);
+  switch (wall) {
+    case 'north': return { start: [0, 0], dir: [1, 0], inward: [0, 1],  length: r.walls.north };
+    case 'south': return { start: [0, H], dir: [1, 0], inward: [0, -1], length: r.walls.south };
+    case 'west':  return { start: [0, 0], dir: [0, 1], inward: [1, 0],  length: r.walls.west };
+    case 'east':  return { start: [W, 0], dir: [0, 1], inward: [-1, 0], length: r.walls.east };
+    case 'step1': case 'step2': {
+      const ld = getLShapeData(r); if (!ld) return null;
+      const sw = ld[wall];
+      return sw.isVertical
+        ? { start: [sw.x, sw.startY], dir: [0, 1], inward: [sw.depthRight ? 1 : -1, 0], length: sw.length }
+        : { start: [sw.startX, sw.y], dir: [1, 0], inward: [0, sw.depthDown ? 1 : -1], length: sw.length };
+    }
+    default: return null;
+  }
+}
+function itemDepth(item) {
+  if (CATALOG[item.type]) return item.depth || CATALOG[item.type].depth;
+  return APPLIANCES[item.type]?.depth || 24;
+}
+// Axis-aligned footprint of a wall item in room inches: { x, y, w, h }.
+function itemRect(r, item, depth = itemDepth(item)) {
+  const f = wallFrame(r, item.wall); if (!f) return null;
+  const off = item.offset || 0;
+  const ax = f.start[0] + f.dir[0] * off, ay = f.start[1] + f.dir[1] * off;          // start along wall
+  const bx = ax + f.dir[0] * item.width, by = ay + f.dir[1] * item.width;             // end along wall
+  const cx = ax + f.inward[0] * depth,   cy = ay + f.inward[1] * depth;               // pushed into room
+  const xs = [ax, bx, cx], ys = [ay, by, cy];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
 }
 
 function renderWallButtons() {
@@ -4022,26 +4094,8 @@ function renderCanvas() {
     const isLazySusan = cab.type === 'lazysusan';
     const isDiagWall = cab.type === 'diagWall';
     const effD = cD; // always use actual depth (24")
-    let x,y,w,h;
-    if      (wall==='north') { x=RX+cabOff; y=RY;         w=cW;  h=cD; }
-    else if (wall==='south') { x=RX+cabOff; y=RY+RH-cD;   w=cW;  h=cD; }
-    else if (wall==='west')  { x=RX;        y=RY+cabOff;   w=cD;  h=cW; }
-    else if (wall==='east')  { x=RX+RW-cD;  y=RY+cabOff;   w=cD;  h=cW; }
-    else if (wall==='step1'||wall==='step2') {
-      const _ldC = getLShapeData(r); if (!_ldC) return;
-      const _sw = _ldC[wall];
-      if (_sw.isVertical) {
-        const _wx = RX + _sw.x * scale;
-        x = _sw.depthRight ? _wx : _wx - cD;
-        y = RY + _sw.startY * scale + cabOff;
-        w = cD; h = cW;
-      } else {
-        const _wy = RY + _sw.y * scale;
-        x = RX + _sw.startX * scale + cabOff;
-        y = _sw.depthDown ? _wy : _wy - cD;
-        w = cW; h = cD;
-      }
-    } else { return; }
+    const _rc = itemRect(r, { ...cab, wall }, cab.depth); if (!_rc) return;
+    const x = RX + _rc.x*scale, y = RY + _rc.y*scale, w = _rc.w*scale, h = _rc.h*scale;
     if (_fitIds.has(cab.id)) _flagRects.push({x, y, w, h});
 
     if (isCorner) {
@@ -4171,26 +4225,8 @@ function renderCanvas() {
   function drawAppOnFloor(app, wall) {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const aW = app.width*scale, aD = acat.depth*scale, aOff = (app.offset||0)*scale;
-    let x,y,w,h;
-    if      (wall==='north') { x=RX+aOff; y=RY;       w=aW; h=aD; }
-    else if (wall==='south') { x=RX+aOff; y=RY+RH-aD; w=aW; h=aD; }
-    else if (wall==='west')  { x=RX;       y=RY+aOff;  w=aD; h=aW; }
-    else if (wall==='east')  { x=RX+RW-aD; y=RY+aOff;  w=aD; h=aW; }
-    else if (wall==='step1'||wall==='step2') {
-      const _ldA = getLShapeData(r); if (!_ldA) return;
-      const _sw = _ldA[wall];
-      if (_sw.isVertical) {
-        const _wx = RX + _sw.x * scale;
-        x = _sw.depthRight ? _wx : _wx - aD;
-        y = RY + _sw.startY * scale + aOff;
-        w = aD; h = aW;
-      } else {
-        const _wy = RY + _sw.y * scale;
-        x = RX + _sw.startX * scale + aOff;
-        y = _sw.depthDown ? _wy : _wy - aD;
-        w = aW; h = aD;
-      }
-    } else { return; }
+    const _ra = itemRect(r, { ...app, wall }, acat.depth); if (!_ra) return;
+    const x = RX + _ra.x*scale, y = RY + _ra.y*scale, w = _ra.w*scale, h = _ra.h*scale;
     if (_fitIds.has(app.id)) _flagRects.push({x, y, w, h});
     ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
     ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
@@ -4728,31 +4764,9 @@ function renderIsometric() {
 
   // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
   function cabPos(wall, offset, width, depth) {
-    switch(wall) {
-      case 'north': return { x0: offset,      z0: 0,           w: width, d: depth };
-      case 'south': return { x0: offset,      z0: roomD-depth, w: width, d: depth };
-      case 'west':  return { x0: 0,           z0: offset,      w: depth, d: width };
-      case 'east':  return { x0: roomW-depth, z0: offset,      w: depth, d: width };
-      case 'step1': {
-        if (!ld) return { x0: offset, z0: 0, w: width, d: depth };
-        const sw = ld.step1;
-        if (sw.isVertical)
-          return sw.depthRight ? { x0: sw.x, z0: sw.startY+offset, w: depth, d: width }
-                               : { x0: sw.x-depth, z0: sw.startY+offset, w: depth, d: width };
-        return sw.depthDown ? { x0: sw.startX+offset, z0: sw.y, w: width, d: depth }
-                            : { x0: sw.startX+offset, z0: sw.y-depth, w: width, d: depth };
-      }
-      case 'step2': {
-        if (!ld) return { x0: offset, z0: 0, w: width, d: depth };
-        const sw = ld.step2;
-        if (sw.isVertical)
-          return sw.depthRight ? { x0: sw.x, z0: sw.startY+offset, w: depth, d: width }
-                               : { x0: sw.x-depth, z0: sw.startY+offset, w: depth, d: width };
-        return sw.depthDown ? { x0: sw.startX+offset, z0: sw.y, w: width, d: depth }
-                            : { x0: sw.startX+offset, z0: sw.y-depth, w: width, d: depth };
-      }
-      default:      return { x0: offset,      z0: 0,           w: width, d: depth };
-    }
+    const rc = itemRect(r, { wall, offset, width }, depth);
+    if (!rc) return { x0: offset, z0: 0, w: width, d: depth };
+    return { x0: rc.x, z0: rc.y, w: rc.w, d: rc.h };
   }
 
   function addBox(x0, y0, z0, w, h, d, color, opts={}) {
@@ -6077,12 +6091,9 @@ document.addEventListener('click', function(e) {
 });
 
 function getItemCentroid(item, wall, scale, RX, RY, RW, RH, depthIn) {
-  const off=(item.offset||0)*scale, w=item.width*scale, d=depthIn*scale;
-  if (wall==='north')      return {x:RX+off+w/2, y:RY+d/2};
-  if (wall==='south')      return {x:RX+off+w/2, y:RY+RH-d/2};
-  if (wall==='west')       return {x:RX+d/2,     y:RY+off+w/2};
-  if (wall==='east')       return {x:RX+RW-d/2,  y:RY+off+w/2};
-  return null;
+  const r = activeRoom(); if (!r) return null;
+  const rc = itemRect(r, { ...item, wall }, depthIn); if (!rc) return null;
+  return { x: RX + (rc.x + rc.w/2)*scale, y: RY + (rc.y + rc.h/2)*scale };
 }
 
 function drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH) {
@@ -6743,44 +6754,14 @@ async function exportPDF(btn) {
       // Skip types hidden in the current view mode to avoid cross-layer false hits
       if (vm === 'wall' && !wallTypes.includes(cab.type)) continue;
       if (vm === 'base' && !baseTypes.includes(cab.type)) continue;
-      const cW=cab.width*scale, cD=cab.depth*scale, off=(cab.offset||0)*scale;
-      let x,y,w,h;
-      if      (cab.wall==='north') { x=RX+off; y=RY;        w=cW; h=cD; }
-      else if (cab.wall==='south') { x=RX+off; y=RY+RH-cD;  w=cW; h=cD; }
-      else if (cab.wall==='west')  { x=RX;      y=RY+off;   w=cD; h=cW; }
-      else if (cab.wall==='east')  { x=RX+RW-cD; y=RY+off;  w=cD; h=cW; }
-      else if (cab.wall==='step1'||cab.wall==='step2') {
-        const _ldH = getLShapeData(r); if (!_ldH) continue;
-        const _sw = _ldH[cab.wall];
-        if (_sw.isVertical) {
-          const _wx = RX+_sw.x*scale;
-          x=_sw.depthRight?_wx:_wx-cD; y=RY+_sw.startY*scale+off; w=cD; h=cW;
-        } else {
-          const _wy = RY+_sw.y*scale;
-          x=RX+_sw.startX*scale+off; y=_sw.depthDown?_wy:_wy-cD; w=cW; h=cD;
-        }
-      } else { continue; }
+      const _rc = itemRect(r, cab, cab.depth); if (!_rc) continue;
+      const x=RX+_rc.x*scale, y=RY+_rc.y*scale, w=_rc.w*scale, h=_rc.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
     }
     for (const app of (r.appliances||[])) {
       const acat=APPLIANCES[app.type]; if(!acat) continue;
-      const aW=app.width*scale, aD=acat.depth*scale, off=(app.offset||0)*scale;
-      let x,y,w,h;
-      if      (app.wall==='north') { x=RX+off; y=RY;        w=aW; h=aD; }
-      else if (app.wall==='south') { x=RX+off; y=RY+RH-aD;  w=aW; h=aD; }
-      else if (app.wall==='west')  { x=RX;      y=RY+off;   w=aD; h=aW; }
-      else if (app.wall==='east')  { x=RX+RW-aD; y=RY+off;  w=aD; h=aW; }
-      else if (app.wall==='step1'||app.wall==='step2') {
-        const _ldH2 = getLShapeData(r); if (!_ldH2) continue;
-        const _sw = _ldH2[app.wall];
-        if (_sw.isVertical) {
-          const _wx = RX+_sw.x*scale;
-          x=_sw.depthRight?_wx:_wx-aD; y=RY+_sw.startY*scale+off; w=aD; h=aW;
-        } else {
-          const _wy = RY+_sw.y*scale;
-          x=RX+_sw.startX*scale+off; y=_sw.depthDown?_wy:_wy-aD; w=aW; h=aD;
-        }
-      } else { continue; }
+      const _ra = itemRect(r, app, acat.depth); if (!_ra) continue;
+      const x=RX+_ra.x*scale, y=RY+_ra.y*scale, w=_ra.w*scale, h=_ra.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }
     for (const isl of (r.islands||[])) {
