@@ -2065,7 +2065,7 @@ async function handleSignIn() {
       btn.disabled = false;
       showApp();
       await resolveTeamContext();
-      await Promise.all([loadProjects(), loadCompanyProfile()]);
+      await loadAccountData();
       maybeStartTour();
     } else {
       // Email confirmation required — show confirmation panel
@@ -2088,7 +2088,7 @@ async function handleSignIn() {
   }
   showApp();
   await resolveTeamContext();
-  await Promise.all([loadProjects(), loadCompanyProfile()]);
+  await loadAccountData();
   openProjectFromUrl();
   maybeStartTour();
 }
@@ -2298,16 +2298,40 @@ function persist() {
   setSyncStatus('saving');
   saveTimer = setTimeout(syncActiveProject, 1000);
 }
+// Demo and Free accounts keep projects in this browser only; Silver+ saves to Supabase.
+// Load and save must make the same choice, or a Free user's work vanishes on reload.
+function isLocalOnly() { return IS_DEMO || !currentUser || !canAccess('silver'); }
+// Each signed-in account gets its own key so two logins on one browser never share
+// projects. Anonymous demo keeps the original key.
+function localProjectsKey() {
+  return (IS_DEMO || !currentUser) ? 'cp_demo_projects' : 'cp_projects_' + currentUser.id;
+}
+function readLocalProjects() {
+  const key = localProjectsKey();
+  let saved = localStorage.getItem(key);
+  // One-time carry-over: before per-account keys, signed-in Free users saved under the
+  // demo key. Free accounts only (never uploaded to a paid account, since that key can
+  // also hold anonymous demo projects), and only if this account has never had a key.
+  if (saved === null && key !== 'cp_demo_projects' && isLocalOnly()) saved = localStorage.getItem('cp_demo_projects');
+  try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
+}
+function writeLocalProjects(projects) {
+  localStorage.setItem(localProjectsKey(), JSON.stringify(projects));
+}
 async function syncActiveProject() {
   const p = activeProj();
   if (!p) return;
-  // Demo mode or Free tier: persist to localStorage only
-  if (IS_DEMO || !currentUser || !canAccess('silver')) {
-    localStorage.setItem('cp_demo_projects', JSON.stringify(state.projects));
+  if (isLocalOnly()) {
+    writeLocalProjects(state.projects);
     setSyncStatus('saved');
     return;
   }
-  const { error } = await db.from('projects').upsert({
+  const { error } = await upsertProjectRow(p);
+  setSyncStatus(error ? 'error' : 'saved');
+  if (error) console.error('Sync error:', error);
+}
+function upsertProjectRow(p) {
+  return db.from('projects').upsert({
     id: p.id,
     user_id: effectiveOwnerId,
     customer: p.customer,
@@ -2319,15 +2343,12 @@ async function syncActiveProject() {
             address: p.address || '', city: p.city || '', state: p.state || '',
             jobCosts: p.jobCosts || [], trimItems: p.trimItems || [],
             quoteLocked: p.quoteLocked || false, lockedQuote: p.lockedQuote || null,
-            quoteHistory: p.quoteHistory || [] },
+            quoteHistory: p.quoteHistory || [], lastQuotedAt: p.lastQuotedAt || null },
     updated_at: new Date().toISOString()
   }, { onConflict: 'id' });
-  setSyncStatus(error ? 'error' : 'saved');
-  if (error) console.error('Sync error:', error);
 }
 function loadProjectsFromLocal() {
-  const saved = localStorage.getItem('cp_demo_projects');
-  state.projects = saved ? JSON.parse(saved) : [];
+  state.projects = readLocalProjects();
   renderSidebar();
   const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
   if (ui.activeProjectId && getProj(ui.activeProjectId)) {
@@ -2341,8 +2362,8 @@ function loadProjectsFromLocal() {
 }
 async function loadProjects() {
   const { data, error } = await db.from('projects').select('*').order('created_at', { ascending: false });
-  if (error) { console.error(error); return; }
-  state.projects = data.map(row => ({
+  if (error) { console.error(error); if (!isLocalOnly()) return; }
+  const cloud = (data || []).map(row => ({
     id: row.id,
     customer: row.customer,
     type: row.type,
@@ -2361,8 +2382,33 @@ async function loadProjects() {
     trimItems:    (row.data && row.data.trimItems)    || [],
     quoteLocked:  (row.data && row.data.quoteLocked)  || false,
     lockedQuote:  (row.data && row.data.lockedQuote)  || null,
-    quoteHistory: (row.data && row.data.quoteHistory) || []
+    quoteHistory: (row.data && row.data.quoteHistory) || [],
+    lastQuotedAt: (row.data && row.data.lastQuotedAt) || null
   }));
+  const local = readLocalProjects();
+  if (isLocalOnly()) {
+    // Free (incl. lapsed subscribers): cloud projects saved while paid stay visible, and
+    // this browser's copy wins for the same id because that's where Free edits are saved.
+    const byId = new Map(cloud.map(p => [p.id, p]));
+    local.forEach(p => byId.set(p.id, p));
+    state.projects = [...byId.values()].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } else {
+    // Silver+: anything created while on Free is only in this browser — copy it up once.
+    const cloudIds = new Set(cloud.map(p => p.id));
+    const localOnly = local.filter(p => !cloudIds.has(p.id));
+    let uploadFailed = false;
+    for (const p of localOnly) {
+      const { error: upErr } = await upsertProjectRow(p);
+      if (upErr) { console.error('Upload of local project failed:', upErr); uploadFailed = true; }
+    }
+    state.projects = [...localOnly, ...cloud].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    restoreActiveProject();
+    if (uploadFailed) setSyncStatus('error');
+    return;
+  }
+  restoreActiveProject();
+}
+function restoreActiveProject() {
   renderSidebar();
   const ui = JSON.parse(localStorage.getItem('cp_ui') || '{}');
   if (ui.activeProjectId && getProj(ui.activeProjectId)) {
@@ -2373,6 +2419,11 @@ async function loadProjects() {
     openProject(ui.activeProjectId, ui.activeRoomId);
   }
   setSyncStatus('saved');
+}
+// Tier decides where projects load from, so the company profile must load first.
+async function loadAccountData() {
+  await loadCompanyProfile();
+  await loadProjects();
 }
 
 // ════════════════════════════
@@ -2538,7 +2589,9 @@ function deleteProject(id, e) {
   e.stopPropagation();
   if (!confirm('Delete this project?')) return;
   state.projects = state.projects.filter(p => p.id !== id);
-  db.from('projects').delete().eq('id', id); // fire and forget
+  if (currentUser) db.from('projects').delete().eq('id', id); // fire and forget
+  // Also drop it from this browser's copy, or it would come back on the next load.
+  writeLocalProjects(readLocalProjects().filter(p => p.id !== id));
   if (state.activeProjectId === id) { state.activeProjectId = null; state.activeRoomId = null; showWelcome(); }
   renderSidebar();
 }
@@ -5263,6 +5316,19 @@ function checkCompanyProfile() {
   );
 }
 
+// Fingerprint of everything that shows on a quote, so a reprint with no changes can be
+// told apart from a real revision even when two edits happen to cancel out in the total.
+function quoteSignature(p, total) {
+  const items = p.rooms.map(r => [
+    r.name,
+    r.cabinets.map(c => [c.type, c.width, c.height, c.depth, c.styleOverride || '', !!c.glassDoors, c.note || '']),
+    (r.appliances || []).map(a => [a.type, a.width, a.price ?? null, a.note || '']),
+  ]);
+  const str = JSON.stringify([p.style, items, p.jobCosts || [], p.trimItems || [], Math.round(total * 100)]);
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(36); // short hash — kept on every history entry, so don't store the full string
+}
 function printQuote() {
   if (!demoGate('quote')) return;
   if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
@@ -5283,7 +5349,7 @@ function printQuote() {
   const cp = companyProfile;
   const today     = new Date().toLocaleDateString();
   const validThru = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString();
-  const quoteNum  = 'CD-' + Date.now().toString(36).toUpperCase().slice(-6);
+  let   quoteNum  = 'CD-' + Date.now().toString(36).toUpperCase().slice(-6);
   const tax       = getTax();
   let cabSubtotal = 0;
 
@@ -5330,15 +5396,25 @@ function printQuote() {
   let prevTotal = null;
   let delta = null;
 
-  if (isGold && p.quoteLocked) {
-    // Case B: already sent to customer — every subsequent print is a tracked revision
-    const last = p.quoteHistory[p.quoteHistory.length - 1];
+  const sig = quoteSignature(p, total);
+  const last = p.quoteHistory[p.quoteHistory.length - 1];
+  // Same line items and total as the last recorded version → it's a reprint, not a revision.
+  const isReprint = !!last && Math.abs((last.total || 0) - total) < 0.005 && (!last.sig || last.sig === sig);
+
+  if (isGold && p.quoteLocked && isReprint) {
+    // Case C: nothing changed since the last version — reprint it under the same number
+    revision = last.revision || p.quoteHistory.length;
+    quoteNum = last.quoteNum || quoteNum;
+    const prior = p.quoteHistory[p.quoteHistory.length - 2];
+    if (prior) { prevTotal = prior.total; delta = total - prevTotal; }
+  } else if (isGold && p.quoteLocked) {
+    // Case B: already sent to customer and something changed — record a tracked revision
     if (last) { prevTotal = last.total; delta = total - prevTotal; }
     revision = p.quoteHistory.length + 1;
     p.quoteHistory.push({
       revision, quoteNum,
       date: new Date().toISOString(),
-      total,
+      total, sig,
       breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt }
     });
     if (!p.activityLog) p.activityLog = [];
@@ -5355,6 +5431,10 @@ function printQuote() {
 
   const deltaStr   = delta != null ? `${delta >= 0 ? '+' : '-'}${fmtMoney(Math.abs(delta))}` : '';
   const deltaColor = delta != null ? (delta >= 0 ? '#16a34a' : '#dc2626') : '';
+
+  // Any printed quote counts as "quoted" for the status warning — Silver never locks quotes.
+  p.lastQuotedAt = new Date().toISOString();
+  persist();
 
   const win = window.open('', '_blank', 'width=920,height=750');
   win.document.write(`<!DOCTYPE html><html><head>
@@ -5463,7 +5543,7 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
       );
       if (doLock) {
         p.quoteLocked  = true;
-        p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total,
+        p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total, sig,
                            breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt } };
         if (!p.quoteHistory) p.quoteHistory = [];
         p.quoteHistory.push(p.lockedQuote);
@@ -6368,6 +6448,8 @@ async function exportPDF(btn) {
 
   const fname=(p.customer||'quote').replace(/[^a-z0-9]/gi,'_')+'_cabinet_plan.pdf';
   doc.save(fname);
+  p.lastQuotedAt = new Date().toISOString(); // counts as "quoted" for the status warning
+  persist();
   btn.textContent = origText; btn.disabled = false;
 }
 
@@ -6682,7 +6764,7 @@ function setProjectStatus(status) {
   const p = activeProj(); if (!p) return;
   const prev = p.status || 'Lead';
   const needsQuote = ['Ordered', 'Installing', 'Complete'].includes(status);
-  if (needsQuote && !p.quoteLocked) {
+  if (needsQuote && !p.quoteLocked && !p.lastQuotedAt) {
     const proceed = confirm(
       `This project hasn't had a quote sent yet — advance to "${status}" anyway?`
     );
@@ -6881,7 +6963,7 @@ async function setNewPassword() {
   // which account we're now acting under, then reload their shared workspace.
   if (pendingAuthType === 'invite') {
     await resolveTeamContext();
-    await Promise.all([loadProjects(), loadCompanyProfile()]);
+    await loadAccountData();
   }
 
   btn.disabled = false; btn.textContent = 'Set Password & Continue →';
@@ -7217,7 +7299,7 @@ document.addEventListener('keydown', e => {
     currentUser = session.user;
     showApp();
     await resolveTeamContext();
-    await Promise.all([loadProjects(), loadCompanyProfile()]);
+    await loadAccountData();
     openProjectFromUrl();
     maybeStartTour();
       if (pendingAuthType === 'invite' || pendingAuthType === 'recovery') {

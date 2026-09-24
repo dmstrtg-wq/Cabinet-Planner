@@ -80,7 +80,7 @@ The same project object goes to one of two places, depending on the account (`sy
 | Who | Saved to | Loaded from |
 |---|---|---|
 | Demo (`?demo=1`) | `localStorage.cp_demo_projects` (whole array) | `loadProjectsFromLocal()` (2328) |
-| Logged-in **Free** | `localStorage.cp_demo_projects` | **`loadProjects()` from Supabase** ⚠ see §8.1 |
+| Logged-in **Free** | `localStorage.cp_projects_<userId>` | Same key, merged with any cloud rows from when they were paid (fixed 0.2, see §8.1) |
 | Silver / Gold | Supabase `projects` row | `loadProjects()` (2342) |
 
 **Supabase `projects` row:** `id`, `user_id` (= `effectiveOwnerId`, the team owner), `customer`, `type`, `notes`, `style`, `data` (JSON), `created_at`, `updated_at`. Everything else lives in `data`: `rooms, status, activityLog, phone, company, address, city, state, jobCosts, trimItems, quoteLocked, lockedQuote, quoteHistory`.
@@ -256,10 +256,10 @@ Where the tier comes from: `stripe-webhook.js` writes `subscription_tier` using 
 
 These go beyond the Build Plan's lists. The first two matter most.
 
-### 8.1 ⚠ Logged-in Free users probably lose their projects on reload
+### 8.1 ✅ FIXED in 0.2: Logged-in Free users lost their projects on reload
 Free accounts **save** to browser storage (2305), but at login the app **loads** from Supabase (7220 → `loadProjects`), which has nothing for them. The projects are still in the browser, but the app never reads them back. A free signup who designs a kitchen, closes the tab, and logs in again would see an empty sidebar. This hurts the funnel exactly where it matters. **Needs a live test with a free test account to confirm** before fixing. The likely fix is a one-line load choice matching the save choice, plus a one-time "copy to cloud" when a user upgrades.
 
-### 8.2 ⚠ Can a user make themselves Gold?
+### 8.2 ⚠ Can a user make themselves Gold? (guard written in 0.2: `supabase-protect-billing-columns.sql`, Dan to run)
 All paid features are checked in the browser against `company_profiles.subscription_tier`, and users can write their own `company_profiles` row (profile.html 1878). If the Supabase policy on that table lets users update *any* column of their own row, someone could set `subscription_tier = 'gold'` from the browser console. **Check in the Supabase dashboard:** column-level protection or a trigger that blocks client changes to `subscription_tier` (the webhook uses the server key, so it's unaffected). The SQL for this table isn't in the repo.
 
 ### 8.3 Quote numbers can disagree
