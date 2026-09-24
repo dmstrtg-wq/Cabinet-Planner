@@ -75,3 +75,14 @@ Claude tested locally with simulated drags: a full wall built by dragging only, 
 - [ ] **Esc while dragging** cancels.
 - [ ] **Tablet (touch):** drag a tile with your finger onto the plan.
 - [ ] The old "Add Cabinet" form below the palette still works as before.
+
+### 2.3 Move + nudge (built 2026-09-24)
+Claude tested locally with simulated drags and key presses: stops flush against neighbours and wall ends, hops over into open space, arrow/Shift/Alt steps, mirrored elevation direction, typing in a field doesn't nudge, and moves save. Try it by hand on the live demo:
+- [ ] **Drag into a neighbour:** drag a cabinet toward the one next to it. It stops flush (0" gap) and never overlaps. Keep dragging past it into open space and it hops over.
+- [ ] **Drag to the wall end:** it stops flush at the end.
+- [ ] **Arrow keys:** click a cabinet, then press ← / → (1" per press). Shift+arrow = 1/8". Option/Alt+arrow = 3". The tooltip shows the position with fractions, e.g. "96 3/8" from left".
+- [ ] **Blocked nudge:** hold Option+→ toward a neighbour. It ends exactly flush, then shows "Can't move: overlaps B18" in red.
+- [ ] **East/West walls in the floor plan:** use ↑ / ↓ (they run top-to-bottom on screen).
+- [ ] **Elevation:** ← / → move the cabinet the way you see it, including on the South/West walls.
+- [ ] **Island:** click it and use the arrows. It moves in all four directions and stays inside the room.
+- [ ] Arrow keys do nothing while you're typing in a box (search, notes, etc.).

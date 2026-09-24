@@ -40,7 +40,6 @@
     }
     return null;
   }
-  function snap(val) { return Math.round(val/3)*3; }
   const canvas  = document.getElementById('floor-plan');
   const tooltip = document.getElementById('drag-tooltip');
   // Measure tool: click to set points
@@ -149,9 +148,12 @@
         }
       } else {
         const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
-        const newOffset = Math.max(0, snap(drag.startOffset + delta/drag.scale));
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
-        if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+        if (cab) {
+          const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta/drag.scale);
+          if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderCanvas(); renderCabinetList(); }
+          tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
+        }
       }
     } else if (!measureState.active) {
       const hit = hitTestCab(hx,hy,info);
@@ -249,9 +251,12 @@
         }
       } else {
         const delta = drag.isNS ? (t.clientX-rect.left-drag.startMX) : (t.clientY-rect.top-drag.startMY);
-        const newOffset = Math.max(0, snap(drag.startOffset + delta / drag.scale));
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
-        if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderCanvas(); renderCabinetList(); }
+        if (cab) {
+          const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta / drag.scale);
+          if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderCanvas(); renderCabinetList(); }
+          tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
+        }
       }
       e.preventDefault();
     }, { passive: false });

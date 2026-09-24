@@ -104,13 +104,12 @@
       const delta = mx - elevDrag.startMX;
       const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
       const raw   = elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale;
-      const newOffset = Math.max(0, Math.min(Math.round(raw / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
       const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
       if (cab) {
-        cab.offset = newOffset;
+        const newOffset = resolveMoveOffset(info.r, cab, raw);
+        if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
         tooltip.style.display = 'block';
-        tooltip.textContent = `${newOffset}" from left`;
-        persist(); renderElevation(); renderCanvas(); renderCabinetList();
+        tooltip.textContent = `${fmtFrac(newOffset)} from left`;
       }
     } else {
       const cab = hitTestElevCab(hx, hy, info);
@@ -205,9 +204,12 @@
       const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
       const delta = t.clientX - rect.left - elevDrag.startMX;
       const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
-      const newOffset = Math.max(0, Math.min(Math.round((elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale) / 3) * 3, elevDrag.wallLength - elevDrag.cabWidth));
       const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId) || (info.r.appliances||[]).find(a => a.id === elevDrag.cabId);
-      if (cab) { cab.offset=newOffset; tooltip.style.display='block'; tooltip.textContent=`${newOffset}" from left`; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+      if (cab) {
+        const newOffset = resolveMoveOffset(info.r, cab, elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale);
+        if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+        tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
+      }
       e.preventDefault();
     }, { passive: false });
 

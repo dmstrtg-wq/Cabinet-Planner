@@ -64,6 +64,94 @@ function snapPlacementOffset(r, item, off) {
   return open.length ? open[0] : snapped;
 }
 
+const lcFirst = t => t.charAt(0).toLowerCase() + t.slice(1); // "Overlaps B18" → "overlaps B18"
+
+// Inches as a tape-measure string: 12, 12 3/8, 0 1/8 (nearest 1/8")
+function fmtFrac(v) {
+  const neg = v < 0; v = Math.round(Math.abs(v) * 8) / 8;
+  const whole = Math.floor(v), eighths = Math.round((v - whole) * 8);
+  const frac = eighths ? (eighths % 4 === 0 ? '1/2' : eighths % 2 === 0 ? (eighths / 2) + '/4' : eighths + '/8') : '';
+  return (neg ? '-' : '') + (whole || !frac ? whole : '') + (whole && frac ? ' ' : '') + frac + '"';
+}
+
+// ════════════════════════════
+// MOVING PLACED ITEMS (Build Plan 2.3)
+// ════════════════════════════
+// Where a dragged item should go for a pointer position `raw` (inches along its wall).
+// Snaps to neighbours/wall ends within 3", otherwise whole inches. If that spot is taken it
+// stops flush against whatever is in the way (it never overlaps); drag past the obstacle
+// into open space and it hops over. Items already sitting somewhere invalid (older
+// projects) move freely so they can be fixed.
+function resolveMoveOffset(r, item, raw) {
+  const cur = item.offset || 0;
+  const ok = off => !placementIssue(r, { ...item, offset: off });
+  const cands = snapCandidates(r, item);
+  const near = cands.filter(c => Math.abs(c - raw) <= 3).sort((a, b) => Math.abs(a - raw) - Math.abs(b - raw))[0];
+  const target = near != null ? near : Math.round(raw);
+  if (!ok(cur) || ok(target)) return target;
+  const lo = Math.min(cur, target), hi = Math.max(cur, target);
+  const stops = cands.filter(c => c >= lo - 0.01 && c <= hi + 0.01 && ok(c));
+  stops.push(cur);
+  return stops.sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
+}
+function showMoveTip(text, bad) {
+  const t = document.getElementById('drag-tooltip'); if (!t) return;
+  t.textContent = text; t.style.display = 'block'; t.style.background = bad ? '#b91c1c' : '#1e293b';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.style.display = 'none'; t.style.background = '#1e293b'; }, 1400);
+}
+
+// Arrow keys nudge the selected item: 1", Shift = 1/8", Alt/Option = 3".
+// Arrows follow what you see: in the floor plan an item on the east wall moves with
+// Up/Down; in a mirrored elevation (south/west) Right still moves it to the right on screen.
+function nudgeSelected(key, shift, alt) {
+  const r = activeRoom(), it = getSelectedItem(); if (!r || !it) return false;
+  const step = alt ? 3 : shift ? 0.125 : 1;
+  const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[key];
+  if (r.islands && r.islands.includes(it)) {            // islands move freely inside the room
+    if (state.viewMode !== 'floor') return false;
+    const { w, h } = roomSize(r);
+    it.x = Math.max(0, Math.min(w - it.width, it.x + v[0] * step));
+    it.y = Math.max(0, Math.min(h - it.depth, it.y + v[1] * step));
+    persist(); renderCanvas(); renderCabinetList();
+    showMoveTip(`${it.label || 'Island'} · ${fmtFrac(it.x)}, ${fmtFrac(it.y)} from NW`);
+    return true;
+  }
+  let sign = 0;
+  if (state.viewMode === 'elevation') {
+    if (it.wall !== state.elevWall) return false;
+    sign = v[0] * ((it.wall === 'south' || it.wall === 'west') ? -1 : 1);
+  } else if (state.viewMode === 'floor') {
+    const f = wallFrame(r, it.wall); if (!f) return false;
+    sign = v[0] * f.dir[0] + v[1] * f.dir[1];
+  }
+  if (!sign) return false;                               // arrow across the wall: nothing to do
+  const cur = it.offset || 0;
+  let next = Math.round((cur + sign * step) * 8) / 8;
+  const issue = placementIssue(r, { ...it, offset: next });
+  if (issue && !placementIssue(r, it)) {
+    // Step would collide: go as far as possible — flush against the wall end or neighbour
+    const lo = Math.min(cur, next), hi = Math.max(cur, next);
+    const stop = snapCandidates(r, it).filter(c => c > lo - 0.001 && c < hi + 0.001 && Math.abs(c - cur) > 0.001 && !placementIssue(r, { ...it, offset: c }))
+      .sort((a, b) => Math.abs(a - next) - Math.abs(b - next))[0];
+    if (stop == null) { showMoveTip(`Can't move: ${lcFirst(issue)}`, true); return true; }
+    next = stop;
+  }
+  it.offset = next;
+  persist(); renderCanvas(); renderCabinetList();
+  if (state.viewMode === 'elevation') renderElevation();
+  showMoveTip(`${itemLabel(it)} · ${fmtFrac(next)} from left`);
+  return true;
+}
+document.addEventListener('keydown', e => {
+  if (!e.key.startsWith('Arrow') || !selectedItemId) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+  if (document.querySelector('.modal-overlay:not(.hidden)') || document.getElementById('item-popover')) return;
+  if (e.metaKey || e.ctrlKey) return;
+  if (nudgeSelected(e.key, e.shiftKey, e.altKey)) e.preventDefault();
+});
+
 // ════════════════════════════
 // PALETTE
 // ════════════════════════════
@@ -141,7 +229,7 @@ function paletteQuickAdd(entry) {
     if (spot != null) item.offset = spot;
   }
   const issue = placementIssue(r, item);
-  if (issue) { paletteToast(`${entry.code} doesn't fit at the end of this wall: ${issue.toLowerCase()}. Drag it to a spot instead.`, true); return; }
+  if (issue) { paletteToast(`${entry.code} doesn't fit at the end of this wall: ${lcFirst(issue)}. Drag it to a spot instead.`, true); return; }
   commitPaletteItem(item);
 }
 
@@ -228,7 +316,7 @@ function _paletteUp(e) {
   const g = placementAt(d.entry, e.clientX, e.clientY);
   placementGhost = null;
   if (g && !g.issue) commitPaletteItem(g.item);
-  else { redrawForGhost(); if (g) paletteToast(`Can't place ${d.entry.code} there: ${g.issue.toLowerCase()}.`, true); }
+  else { redrawForGhost(); if (g) paletteToast(`Can't place ${d.entry.code} there: ${lcFirst(g.issue)}.`, true); }
 }
 function cancelPaletteDrag() {
   if (!_pDrag) return;
