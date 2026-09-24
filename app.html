@@ -176,6 +176,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 @media (max-width: 767px) {
   /* Full-viewport height respecting browser chrome on iOS/Android */
   #app-root { height: 100dvh; }
+  /* Demo banner sits in the page flow above the app, so give the app the rest of the screen */
+  body.demo-banner-on #app-root { height: calc(100dvh - var(--demo-banner-h, 0px)); }
 
   /* Always collapse sidebar and right panel — hidden entirely on phone */
   #sidebar, .sb-expand-tab,
@@ -773,6 +775,12 @@ body.free-tier #connect-pro-btn { display:block; }
 </div>
 
 <!-- ═══ APP ROOT ═══ -->
+<!-- Demo mode banner — only shown when ?demo=1 -->
+<div id="demo-banner" style="display:none;position:relative;flex-shrink:0;z-index:9050;background:#0f766e;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
+  Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
+  <span aria-hidden="true" style="opacity:.7;margin:0 6px;">·</span><button onclick="resetDemo()" style="background:none;border:none;color:white;text-decoration:underline;font:inherit;cursor:pointer;padding:0;">Reset demo</button>
+  <button onclick="dismissDemoBanner()" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
+</div>
 <div id="app-root" class="hidden">
 
 <!-- Status dropdown (absolute-positioned, shown near pill) -->
@@ -784,11 +792,6 @@ body.free-tier #connect-pro-btn { display:block; }
   <button class="status-menu-opt" onclick="setProjectStatus('Complete')"><span class="dot dot-Complete"></span>Complete</button>
 </div>
 
-<!-- Demo mode banner — only shown when ?demo=1 -->
-<div id="demo-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9050;background:#0f766e;color:white;padding:9px 20px;font-size:13px;font-weight:600;text-align:center;letter-spacing:0.01em;">
-  Demo Mode — build freely, then <a href="/#pricing" style="color:white;text-decoration:underline;font-weight:700;">subscribe to unlock pricing &amp; PDF export</a>
-  <button onclick="document.getElementById('demo-banner').style.display='none'" aria-label="Dismiss banner" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:none;border:none;color:white;font-size:18px;cursor:pointer;line-height:1;">&#x2715;</button>
-</div>
 
 <aside id="sidebar">
   <div class="sidebar-brand">
@@ -937,7 +940,7 @@ body.free-tier #connect-pro-btn { display:block; }
                 <button class="toolbar-btn" onclick="toggleMoreTools()">⋯ More</button>
                 <div class="tb-more-menu hidden" id="tb-more-menu">
                   <button id="tri-btn" class="toolbar-btn" onclick="toggleWorkTriangle()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 2.5l6 11h-12z"/></svg>Triangle</button>
-                  <button class="toolbar-btn" onclick="openRoomShapeModal()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 2.5h7v5h4v6h-11v-11z"/></svg>Room Shape</button>
+                  <button class="toolbar-btn" onclick="openRoomShapeModal()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2.5 2.5h7v5h4v6h-11v-11z"/></svg>Room Settings</button>
                 </div>
               </div>
             </div>
@@ -1370,14 +1373,15 @@ body.free-tier #connect-pro-btn { display:block; }
     <div class="form-group"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
     <div class="section-divider">First Room Dimensions</div>
     <div class="form-row">
-      <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" placeholder="120" min="0"></div>
-      <div class="form-group"><label>South Wall (in)</label><input type="number" id="np-south" placeholder="120" min="0"></div>
+      <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" value="120" min="12" max="1200"></div>
+      <div class="form-group"><label>South Wall (in)</label><input type="number" id="np-south" value="120" min="12" max="1200"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>East Wall (in)</label><input type="number" id="np-east" placeholder="96" min="0"></div>
-      <div class="form-group"><label>West Wall (in)</label><input type="number" id="np-west" placeholder="96" min="0"></div>
+      <div class="form-group"><label>East Wall (in)</label><input type="number" id="np-east" value="96" min="12" max="1200"></div>
+      <div class="form-group"><label>West Wall (in)</label><input type="number" id="np-west" value="96" min="12" max="1200"></div>
     </div>
-    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="np-ceiling" value="96" min="84"><div class="form-hint">Typical: 96" (8 ft) or 108" (9 ft)</div></div>
+    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="np-ceiling" value="96" min="72" max="180"><div class="form-hint">Typical: 96" (8 ft) or 108" (9 ft)</div></div>
+    <div id="np-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-new-project')">Cancel</button>
       <button class="btn btn-primary" onclick="createProject()">Create Project</button>
@@ -1423,14 +1427,15 @@ body.free-tier #connect-pro-btn { display:block; }
     <h3>Add Room</h3>
     <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder=""></div>
     <div class="form-row">
-      <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" placeholder="120"></div>
-      <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" placeholder="120"></div>
+      <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" value="120" min="12" max="1200"></div>
+      <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" value="120" min="12" max="1200"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>East Wall (in)</label><input type="number" id="ar-east" placeholder="96"></div>
-      <div class="form-group"><label>West Wall (in)</label><input type="number" id="ar-west" placeholder="96"></div>
+      <div class="form-group"><label>East Wall (in)</label><input type="number" id="ar-east" value="96" min="12" max="1200"></div>
+      <div class="form-group"><label>West Wall (in)</label><input type="number" id="ar-west" value="96" min="12" max="1200"></div>
     </div>
-    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="ar-ceiling" value="96"></div>
+    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="ar-ceiling" value="96" min="72" max="180"></div>
+    <div id="ar-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
     <div class="form-group">
       <label>Room Shape</label>
       <div style="display:flex;gap:14px;margin-top:6px">
@@ -1465,9 +1470,21 @@ body.free-tier #connect-pro-btn { display:block; }
   </div>
 </div>
 
-<div id="modal-room-shape" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Room Shape">
+<div id="modal-room-shape" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Room Settings">
   <div class="modal">
-    <h3>Room Shape</h3>
+    <h3>Room Settings</h3>
+    <div class="form-group"><label>Room Name</label><input type="text" id="rs-name"></div>
+    <div class="form-row">
+      <div class="form-group"><label>North Wall (in)</label><input type="number" id="rs-north" min="12" max="1200"></div>
+      <div class="form-group"><label>South Wall (in)</label><input type="number" id="rs-south" min="12" max="1200"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>East Wall (in)</label><input type="number" id="rs-east" min="12" max="1200"></div>
+      <div class="form-group"><label>West Wall (in)</label><input type="number" id="rs-west" min="12" max="1200"></div>
+    </div>
+    <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="rs-ceiling" min="72" max="180"></div>
+    <div id="rs-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
+    <div class="form-hint" style="margin-bottom:10px;">Shrinking a wall never deletes cabinets. Anything that no longer fits is outlined in red so you can move or resize it.</div>
     <div class="form-group">
       <label>Shape</label>
       <div style="display:flex;gap:14px;margin-top:6px">
@@ -1497,7 +1514,7 @@ body.free-tier #connect-pro-btn { display:block; }
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-room-shape')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRoomShape()">Apply Shape</button>
+      <button class="btn btn-primary" onclick="saveRoomShape()">Save Room</button>
     </div>
   </div>
 </div>
@@ -1985,6 +2002,69 @@ function demoGate(action) {
   return false;
 }
 
+// A finished sample kitchen every first-time demo visitor lands on: an L run with a
+// corner, sink base under a window, dishwasher, range with hood, fridge with end panel,
+// uppers, and an island with 42" aisles. White Shaker. Lives only in this browser.
+const DEMO_SAMPLE_ID = 'demo-sample-kitchen';
+function buildDemoSampleProject() {
+  let n = 0;
+  const cab = (type, wall, width, offset, extra = {}) => ({
+    id: uid(), type, wall, width, offset, height: CATALOG[type].heights[0], depth: CATALOG[type].depth,
+    note: '', wallBottom: null, glassDoors: false, styleOverride: null, itemNum: ++n, ...extra });
+  const upper = (wall, width, offset, height = 30, wallBottom = 54) =>
+    cab('wall', wall, width, offset, { height, depth: 12, wallBottom });
+  const app = (type, wall, width, offset, extra = {}) => ({
+    id: uid(), type, wall, width, offset, height: APPLIANCES[type].height, note: '',
+    customElevBottom: null, price: null, itemNum: ++n, ...extra });
+  const room = {
+    id: 'demo-sample-room', name: 'Kitchen', shape: 'rect',
+    walls: { north: 168, south: 168, east: 144, west: 144 }, ceilingHeight: 96,
+    cabinets: [
+      // North wall run (from the west end): drawers, dishwasher, sink under the window, blind corner at the east end
+      cab('base', 'north', 24, 0), cab('base', 'north', 30, 24), cab('sink', 'north', 36, 78),
+      cab('drawerBase', 'north', 18, 114), cab('cornerBase', 'north', 36, 132),
+      upper('north', 24, 0), upper('north', 30, 24), upper('north', 24, 54), upper('north', 18, 114), upper('north', 36, 132),
+      // East wall run (from the north corner, starting past the corner cabinet's depth)
+      cab('base', 'east', 15, 24), cab('base', 'east', 12, 69), cab('fridgePanel', 'east', 0.75, 81, { height: 84 }),
+      upper('east', 15, 24), upper('east', 12, 69), upper('east', 36, 81.75, 12, 72),
+    ],
+    appliances: [
+      app('dishwasher', 'north', 24, 54),
+      app('range', 'east', 30, 39), app('hood', 'east', 30, 39),
+      app('refrigerator', 'east', 36, 81.75),
+    ],
+    openings: [
+      { id: uid(), type: 'window', wall: 'north', width: 36, height: 40, offset: 78, sillHeight: 42 },
+      { id: uid(), type: 'door',   wall: 'south', width: 36, height: 80, offset: 30, sillHeight: 0 },
+    ],
+    islands: [{ id: uid(), width: 54, depth: 36, x: 42, y: 66, label: 'Island' }],
+  };
+  return {
+    id: DEMO_SAMPLE_ID, customer: 'Sample Kitchen', phone: '', company: '', type: 'Kitchen',
+    notes: 'A finished example — change anything you like, or use Reset demo to start over.',
+    address: '', city: '', state: '', style: 'WS', createdAt: Date.now(), rooms: [room],
+    status: 'Lead', activityLog: [], jobCosts: [], trimItems: [],
+    quoteLocked: false, lockedQuote: null, quoteHistory: [],
+  };
+}
+function openDemoSampleOnLoad() {
+  localStorage.setItem('cp_ui', JSON.stringify({ activeProjectId: DEMO_SAMPLE_ID, activeRoomId: 'demo-sample-room',
+    activeWall: 'north', elevWall: 'north', viewMode: '3d', activeOpeningType: 'door' }));
+}
+// First visit only (no demo projects saved yet) — returning visitors keep their work.
+function seedDemoIfFirstVisit() {
+  if (!IS_DEMO || localStorage.getItem('cp_demo_projects') !== null) return;
+  localStorage.setItem('cp_demo_projects', JSON.stringify([buildDemoSampleProject()]));
+  openDemoSampleOnLoad();
+}
+function resetDemo() {
+  if (!IS_DEMO) return;
+  if (!confirm('Reset the demo? This clears everything you made here and brings back the sample kitchen.')) return;
+  localStorage.setItem('cp_demo_projects', JSON.stringify([buildDemoSampleProject()]));
+  openDemoSampleOnLoad();
+  location.reload();
+}
+
 // ════════════════════════════
 // AUTH
 // ════════════════════════════
@@ -2043,9 +2123,25 @@ function showApp() {
   document.getElementById('app-root').classList.remove('hidden');
   document.getElementById('user-email').textContent = currentUser ? currentUser.email : 'demo@mycabinetplanner.com';
   if (IS_DEMO) {
-    document.getElementById('demo-banner').style.display = 'block';
     document.body.classList.add('demo-mode');
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem('cp_demo_banner_dismissed') === '1'; } catch (e) {}
+    if (!dismissed) {
+      const banner = document.getElementById('demo-banner');
+      banner.style.display = 'block';
+      document.body.classList.add('demo-banner-on');
+      document.body.style.setProperty('--demo-banner-h', banner.offsetHeight + 'px');
+    }
   }
+}
+// The banner is part of the page layout (pushes the app down instead of covering the
+// header). Dismissing it gives the space back and keeps it hidden for this browser tab.
+function dismissDemoBanner() {
+  document.getElementById('demo-banner').style.display = 'none';
+  document.body.classList.remove('demo-banner-on');
+  try { sessionStorage.setItem('cp_demo_banner_dismissed', '1'); } catch (e) {}
+  if (typeof fitView === 'function' && state.activeProjectId) fitView(state.viewMode === 'elevation' ? 'elev' : 'floor');
+  if (state.viewMode === '3d' && typeof resizeIso3D === 'function') resizeIso3D();
 }
 async function handleSignIn() {
   const email    = document.getElementById('login-email').value.trim();
@@ -2511,9 +2607,40 @@ function setViewMode(m) {
 // ════════════════════════════
 // PROJECT CRUD
 // ════════════════════════════
+// Room dimension fields: always pre-filled with real numbers, validated on submit.
+// A blank or out-of-range field shows an error instead of quietly becoming 0 (which
+// used to draw as a 48" room).
+const ROOM_DIM_DEFAULTS = { north:120, south:120, east:96, west:96, ceiling:96 };
+const ROOM_WALL_MIN = 12, ROOM_WALL_MAX = 1200, CEILING_MIN = 72, CEILING_MAX = 180;
+function setRoomDimFields(prefix, d) {
+  ['north','south','east','west','ceiling'].forEach(k => { document.getElementById(`${prefix}-${k}`).value = d[k]; });
+  const err = document.getElementById(`${prefix}-dim-error`);
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+}
+function readRoomDimFields(prefix) {
+  const err = document.getElementById(`${prefix}-dim-error`);
+  const labels = { north:'North wall', south:'South wall', east:'East wall', west:'West wall', ceiling:'Ceiling height' };
+  const out = {}; let problem = null, badEl = null;
+  for (const k of ['north','south','east','west','ceiling']) {
+    const el = document.getElementById(`${prefix}-${k}`);
+    const v = parseFloat(el.value);
+    const [lo, hi] = k === 'ceiling' ? [CEILING_MIN, CEILING_MAX] : [ROOM_WALL_MIN, ROOM_WALL_MAX];
+    if (el.value.trim() === '' || isNaN(v)) problem = `${labels[k]} is blank — enter a length in inches.`;
+    else if (v < lo || v > hi) problem = `${labels[k]} must be between ${lo}" and ${hi}".`;
+    if (problem) { badEl = el; break; }
+    out[k] = Math.round(v * 8) / 8; // keep eighths, never silently round a real measurement to 0
+  }
+  if (problem) {
+    if (err) { err.textContent = problem; err.style.display = 'block'; }
+    badEl.focus();
+    return null;
+  }
+  if (err) err.style.display = 'none';
+  return { walls: { north: out.north, south: out.south, east: out.east, west: out.west }, ceilingHeight: out.ceiling };
+}
 function openNewProjectModal() {
-  ['np-customer','np-phone','np-company','np-notes','np-address','np-city','np-north','np-south','np-east','np-west'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('np-ceiling').value = '96';
+  ['np-customer','np-phone','np-company','np-notes','np-address','np-city'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  setRoomDimFields('np', ROOM_DIM_DEFAULTS);
   document.getElementById('np-type').value = 'Kitchen';
   // Populate state dropdown if empty
   const sel = document.getElementById('np-state');
@@ -2527,15 +2654,11 @@ function openNewProjectModal() {
 function createProject() {
   const customer = document.getElementById('np-customer').value.trim();
   if (!customer) { document.getElementById('np-customer').focus(); return; }
+  const dims = readRoomDimFields('np'); if (!dims) return;
   const room = {
     id: uid(), name: document.getElementById('np-type').value,
-    walls: {
-      north: parseInt(document.getElementById('np-north').value) || 0,
-      south: parseInt(document.getElementById('np-south').value) || 0,
-      east:  parseInt(document.getElementById('np-east').value)  || 0,
-      west:  parseInt(document.getElementById('np-west').value)  || 0,
-    },
-    ceilingHeight: parseInt(document.getElementById('np-ceiling').value) || 96,
+    walls: dims.walls,
+    ceilingHeight: dims.ceilingHeight,
     cabinets: [], openings: []
   };
   const proj = {
@@ -2547,7 +2670,7 @@ function createProject() {
     address: document.getElementById('np-address').value.trim(),
     city:    document.getElementById('np-city').value.trim(),
     state:   document.getElementById('np-state').value,
-    style: 'AW', createdAt: Date.now(), rooms: [room],
+    style: getStyles()[0]?.code || 'AW', createdAt: Date.now(), rooms: [room],
     status: 'Lead', activityLog: [],
     quoteLocked: false, lockedQuote: null, quoteHistory: []
   };
@@ -2639,24 +2762,20 @@ function renameProject(id) {
 // ROOM
 // ════════════════════════════
 function openAddRoomModal() {
-  ['ar-name','ar-north','ar-south','ar-east','ar-west'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('ar-ceiling').value = '96';
+  document.getElementById('ar-name').value = '';
+  setRoomDimFields('ar', ROOM_DIM_DEFAULTS);
   openModal('modal-add-room');
   setTimeout(() => document.getElementById('ar-name').focus(), 50);
 }
 function addRoom() {
   const p = activeProj(); if (!p) return;
   const arShape = document.querySelector('input[name="ar-shape"]:checked')?.value || 'rect';
+  const dims = readRoomDimFields('ar'); if (!dims) return;
   const room = {
     id: uid(), name: document.getElementById('ar-name').value.trim() || 'Room',
     shape: arShape,
-    walls: {
-      north: parseInt(document.getElementById('ar-north').value) || 0,
-      south: parseInt(document.getElementById('ar-south').value) || 0,
-      east:  parseInt(document.getElementById('ar-east').value)  || 0,
-      west:  parseInt(document.getElementById('ar-west').value)  || 0,
-    },
-    ceilingHeight: parseInt(document.getElementById('ar-ceiling').value) || 96,
+    walls: dims.walls,
+    ceilingHeight: dims.ceilingHeight,
     cabinets: [], openings: []
   };
   if (arShape === 'L') {
@@ -2689,6 +2808,7 @@ function switchRoom(roomId) {
   if (nr && !getLShapeData(nr) && (state.activeWall==='step1'||state.activeWall==='step2')) {
     state.activeWall = 'north';
   }
+  refreshPlacementOffsets();
   renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
 }
 
@@ -2768,11 +2888,18 @@ function openRoomShapeModal() {
   document.getElementById('rs-cut-width').value = r.lCut?.width  || Math.round(roomW / 2);
   document.getElementById('rs-cut-depth').value = r.lCut?.depth  || Math.round(roomH / 2);
   document.getElementById('rs-lcut-fields').style.display = isL ? '' : 'none';
+  document.getElementById('rs-name').value = r.name || '';
+  setRoomDimFields('rs', { ...r.walls, ceiling: r.ceilingHeight || 96 });
   openModal('modal-room-shape');
 }
 
 function saveRoomShape() {
   const r = activeRoom(); if (!r) return;
+  const dims = readRoomDimFields('rs'); if (!dims) return;
+  const before = new Set(roomFitProblems(r).map(x => x.item.id));
+  r.walls = dims.walls;
+  r.ceilingHeight = dims.ceilingHeight;
+  r.name = document.getElementById('rs-name').value.trim() || r.name;
   const isL = document.querySelector('input[name="rs-shape"]:checked')?.value === 'L';
   r.shape = isL ? 'L' : 'rect';
   if (isL) {
@@ -2788,7 +2915,41 @@ function saveRoomShape() {
     state.activeWall = 'north';
   }
   persist(); closeModal('modal-room-shape');
-  renderWallButtons(); renderCabinetList(); renderCanvas();
+  // Room size changed: every view and the quote redraw from the new numbers
+  vpState.floor = { zoom: 1, panX: 0, panY: 0 }; vpState.elev = { zoom: 1, panX: 0, panY: 0 };
+  if (iso3D) iso3D.initedCamera = false;
+  renderRoomTabs(); renderWallButtons(); refreshPlacementOffsets(); renderAll();
+  if (state.viewMode === '3d') resetIso3DView();
+  const newProblems = roomFitProblems(r).filter(x => !before.has(x.item.id));
+  if (newProblems.length) {
+    alert(`${newProblems.length} item${newProblems.length === 1 ? '' : 's'} no longer fit${newProblems.length === 1 ? 's' : ''} and ${newProblems.length === 1 ? 'is' : 'are'} outlined in red:\n\n` +
+      newProblems.map(x => `• #${x.item.itemNum || '?'} ${itemLabel(x.item)} on ${wallName(r, x.item.wall)}: ${x.reason}`).join('\n') +
+      `\n\nNothing was deleted. Move, resize, or remove them when you're ready.`);
+  }
+}
+function wallName(r, wall) {
+  const ld = getLShapeData(r);
+  if (wall === 'step1' || wall === 'step2') return ld ? ld[wall].label + ' wall' : 'inner wall';
+  return wall.charAt(0).toUpperCase() + wall.slice(1) + ' wall';
+}
+function wallLength(r, wall) {
+  if (wall === 'step1' || wall === 'step2') { const ld = getLShapeData(r); return ld ? ld[wall].length : 0; }
+  return r.walls[wall] || 0;
+}
+// Items that don't fit the room as currently sized: past the end of their wall, or
+// taller than the ceiling. Used to flag them (never to delete them).
+function roomFitProblems(r) {
+  if (!r) return [];
+  const ceiling = r.ceilingHeight || 96;
+  const out = [];
+  [...r.cabinets, ...(r.appliances || [])].forEach(item => {
+    const len = wallLength(r, item.wall);
+    const end = (item.offset || 0) + item.width;
+    if (end > len + 0.01) { out.push({ item, reason: `ends at ${end}" but the wall is ${len}"` }); return; }
+    const top = itemVerticalRange(item)[1];
+    if (top > ceiling + 0.01) out.push({ item, reason: `top is ${top}" but the ceiling is ${ceiling}"` });
+  });
+  return out;
 }
 
 // ════════════════════════════
@@ -2806,6 +2967,7 @@ function selectWall(wall) {
   document.querySelectorAll('.wall-btn').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
   document.getElementById('wall-list-label').textContent = lbl;
   document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + lbl;
+  refreshPlacementOffsets();
   renderCabinetList(); renderCanvas();
 }
 function selectElevWall(wall) {
@@ -2868,7 +3030,9 @@ function onTypeChange() {
       o.textContent = `${h}" tall  (${(h/12).toFixed(1)}')`;
       hs.appendChild(o);
     });
+    hs.value = defaultCabHeight(type, activeRoom());
   }
+  refreshPlacementOffsets(); // uppers and bases run independently
   // Show bottom-from-floor + depth selectors for wall cabinets
   const wbr = document.getElementById('wall-bottom-row');
   const ds  = document.getElementById('cab-depth-sel');
@@ -2889,6 +3053,74 @@ function onTypeChange() {
 // Next cut-list item number for this room — cabinets and appliances share one
 // sequence. Assigned once at creation and never reassigned, so numbers stay
 // stable on a printed schedule even after something is later deleted.
+// Uppers hang at 54" and their height follows the ceiling: 8' → 30", 9' → 36", 10' → 42".
+// Tall cabinets and fridge panels line up with the top of those uppers (84/90/96").
+function defaultCabHeight(type, r) {
+  const cat = CATALOG[type];
+  const ceiling = (r && r.ceilingHeight) || 96;
+  const upper = ceiling >= 120 ? 42 : ceiling >= 108 ? 36 : 30;
+  let want = cat.heights[0];
+  if (type === 'wall' || type === 'diagWall') want = upper;
+  else if (type === 'tall' || type === 'fridgePanel') want = 54 + upper;
+  return cat.heights.includes(want) ? want : cat.heights[0];
+}
+// Height band an item fills on its wall, in inches from the floor. Two items only
+// collide if they overlap along the wall AND in height — so an upper over the fridge,
+// or a hood over the range, is fine.
+function itemVerticalRange(item) {
+  if (CATALOG[item.type]) {
+    if (item.type === 'wall' || item.type === 'diagWall') { const b = item.wallBottom ?? 54; return [b, b + item.height]; }
+    return [0, item.height];
+  }
+  const acat = APPLIANCES[item.type] || {};
+  const b = item.customElevBottom ?? acat.elevBottom ?? 0;
+  return [b, b + (item.height || acat.height || 0)];
+}
+// 'upper' or 'base' — which run a new piece of this type belongs to
+function itemLevel(item) {
+  if (item.type === 'wall' || item.type === 'diagWall') return 'upper';
+  const acat = APPLIANCES[item.type];
+  return acat && acat.wallMount ? 'upper' : 'base';
+}
+const LEVEL_BANDS = { base: [0, 34.5], upper: [54, 84] };
+const rangesOverlap = (a, b) => a[0] < b[1] - 0.01 && b[0] < a[1] - 0.01;
+function wallItems(r, wall) { return [...r.cabinets, ...(r.appliances||[])].filter(i => i.wall === wall); }
+// Right edge of the run on this wall at this level — where the next piece should go.
+// Bases and uppers are separate runs; a tall piece (fridge, pantry) sitting right where
+// the run would continue is stepped over, since nothing at that level fits there.
+function nextFreeOffset(r, wall, level) {
+  const items = wallItems(r, wall);
+  const end = i => (i.offset || 0) + i.width;
+  const sameLevel = items.filter(i => itemLevel(i) === level);
+  let pos = sameLevel.length ? Math.max(...sameLevel.map(end)) : 0;
+  const band = LEVEL_BANDS[level] || LEVEL_BANDS.base;
+  const blockers = items.filter(i => rangesOverlap(itemVerticalRange(i), band));
+  for (let moved = true; moved; ) {
+    moved = false;
+    for (const b of blockers) if ((b.offset || 0) <= pos + 0.01 && end(b) > pos + 0.01) { pos = end(b); moved = true; }
+  }
+  return pos;
+}
+function overlappingItems(r, wall, vRange, offset, width, ignoreId) {
+  return wallItems(r, wall).filter(i => i.id !== ignoreId && rangesOverlap(itemVerticalRange(i), vRange)
+    && offset < (i.offset||0) + i.width - 0.01 && (i.offset||0) < offset + width - 0.01);
+}
+function itemLabel(i) { return (CATALOG[i.type]?.abbr || APPLIANCES[i.type]?.abbr || i.type) + (i.width >= 1 ? i.width : ''); }
+// Keep both "From left" boxes pointed at the end of the current run.
+function refreshPlacementOffsets() {
+  const r = activeRoom(); if (!r) return;
+  const cabType = document.getElementById('cab-type')?.value;
+  const cabLevel = cabType ? itemLevel({ type: cabType }) : 'base';
+  const appType = document.getElementById('app-type')?.value;
+  const appLevel = appType ? itemLevel({ type: appType }) : 'base';
+  const co = document.getElementById('cab-offset-input'); if (co) co.value = nextFreeOffset(r, state.activeWall, cabLevel);
+  const ao = document.getElementById('app-offset');       if (ao) ao.value = nextFreeOffset(r, state.activeWall, appLevel);
+}
+function confirmNoOverlap(r, item, offset, width) {
+  const hits = overlappingItems(r, state.activeWall, itemVerticalRange(item), offset, width);
+  if (!hits.length) return true;
+  return confirm(`This overlaps ${hits.map(itemLabel).join(', ')} on this wall (${offset}" to ${offset + width}" from left).\n\nAdd it anyway?`);
+}
 function nextItemNum(r) {
   const nums = [...r.cabinets, ...(r.appliances||[])].map(x => x.itemNum || 0);
   return (nums.length ? Math.max(...nums) : 0) + 1;
@@ -2900,7 +3132,7 @@ function addCabinet() {
   if (!type || !width) { alert('Select cabinet type and width.'); return; }
   const cat = CATALOG[type];
   const hs  = document.getElementById('cab-height-sel');
-  const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || cat.heights[0]);
+  const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || defaultCabHeight(type, r));
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
   const depthSel    = document.getElementById('cab-depth-sel');
@@ -2910,10 +3142,11 @@ function addCabinet() {
   const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
   const glassDoors    = (type === 'wall' || type === 'diagWall') && document.getElementById('cab-glass-doors').checked;
   const styleOverride = document.getElementById('cab-style-override').value || null;
+  if (!confirmNoOverlap(r, { type, height, wallBottom }, cabOffset, width)) return;
   r.cabinets.push({ id: uid(), type, wall: state.activeWall, width, height, depth, note, offset: cabOffset, wallBottom, glassDoors, styleOverride, itemNum: nextItemNum(r) });
   document.getElementById('cab-note-input').value    = '';
-  document.getElementById('cab-offset-input').value  = '0';
   document.getElementById('cab-style-override').value = '';
+  refreshPlacementOffsets();
   persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
@@ -2961,6 +3194,7 @@ function onAppTypeChange() {
       es.appendChild(o);
     });
   }
+  refreshPlacementOffsets();
 }
 function addAppliance() {
   const r = activeRoom(); if (!r) return;
@@ -2979,10 +3213,11 @@ function addAppliance() {
   const customElevBottom = (acat.elevBottomOptions && !es.classList.contains('hidden') && es.value)
     ? parseFloat(es.value) : null;
   if (!r.appliances) r.appliances = [];
+  if (!confirmNoOverlap(r, { type, height: appHeight, customElevBottom }, offset, width)) return;
   r.appliances.push({ id: uid(), type, wall: state.activeWall, width, height: appHeight, note, offset, customElevBottom, price, itemNum: nextItemNum(r) });
   document.getElementById('app-note').value   = '';
-  document.getElementById('app-offset').value = '0';
   document.getElementById('app-price').value  = '';
+  refreshPlacementOffsets();
   persist(); renderCabinetList(); renderCanvas(); renderCutList();
   if (state.viewMode === 'elevation') renderElevation();
 }
@@ -3402,7 +3637,16 @@ function renderCabinetList() {
   if (!r) { list.innerHTML = ''; return; }
   const wallCabs     = r.cabinets.filter(c => c.wall === state.activeWall);
   const wallOpenings = (r.openings || []).filter(o => o.wall === state.activeWall);
+  const fit = roomFitProblems(r);
+  const fitById = new Map(fit.map(x => [x.item.id, x.reason]));
+  const fitTag = id => fitById.has(id) ? `<div class="cab-note" style="color:var(--danger);font-weight:600;">⚠ Doesn't fit: ${fitById.get(id)}</div>` : '';
   let html = '';
+  if (fit.length) {
+    html += `<div role="alert" style="border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px;line-height:1.45;">
+      <strong>⚠ ${fit.length} item${fit.length === 1 ? " doesn't" : "s don't"} fit this room</strong><br>
+      ${fit.map(x => `#${x.item.itemNum || '?'} ${escHtml(itemLabel(x.item))} — ${escHtml(wallName(r, x.item.wall))}`).join('<br>')}
+    </div>`;
+  }
   if (wallOpenings.length) {
     html += '<div class="cab-wall-header">Openings</div>';
     html += wallOpenings.map(o => `
@@ -3422,8 +3666,9 @@ function renderCabinetList() {
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
           <div class="cab-name">${cat.label}</div>
-          <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D</div>
+          <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D · ${c.offset||0}" from left</div>
           ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
+          ${fitTag(c.id)}
           ${price}
         </div>
         <button class="cab-remove" onclick="removeCabinet('${c.id}')" aria-label="Remove cabinet">×</button>
@@ -3441,6 +3686,7 @@ function renderCabinetList() {
           <div class="cab-name">${acat.label}</div>
           <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
           ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
+          ${fitTag(a.id)}
         </div>
         <button class="cab-remove" onclick="removeAppliance('${a.id}')" aria-label="Remove appliance">×</button>
       </div>`;
@@ -3761,6 +4007,8 @@ function renderCanvas() {
   for (let y = RY; y <= RY+RH; y += GRID12) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
   ctx.restore();
 
+  const _fitIds = new Set(roomFitProblems(r).map(x => x.item.id));
+  const _flagRects = [];
   let cabs = r.cabinets;
   if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type));
   if (viewMode === 'wall') cabs = cabs.filter(c => ['wall','diagWall'].includes(c.type));
@@ -3794,6 +4042,7 @@ function renderCanvas() {
         w = cW; h = cD;
       }
     } else { return; }
+    if (_fitIds.has(cab.id)) _flagRects.push({x, y, w, h});
 
     if (isCorner) {
       ctx.globalAlpha = 0.88; ctx.fillStyle = cat.color;
@@ -3942,6 +4191,7 @@ function renderCanvas() {
         w = aW; h = aD;
       }
     } else { return; }
+    if (_fitIds.has(app.id)) _flagRects.push({x, y, w, h});
     ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
     ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
     // Burner circles for range/cooktop
@@ -4158,6 +4408,14 @@ function renderCanvas() {
   ctx.fillText('24"', bx+barPx/2, by+5);
   if (showDimensions) drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld);
   if (showWorkTriangle) drawWorkTriangle(ctx, r, scale, RX, RY, RW, RH);
+  // Items that don't fit the room (wall shrunk, ceiling lowered): red dashed outline
+  if (_flagRects.length) {
+    ctx.save(); ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3; ctx.setLineDash([6,4]);
+    _flagRects.forEach(f => ctx.strokeRect(f.x - 2, f.y - 2, f.w + 4, f.h + 4));
+    ctx.setLineDash([]); ctx.fillStyle = '#dc2626'; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    if (!PDF) ctx.fillText(`⚠ ${_flagRects.length} item${_flagRects.length === 1 ? " doesn't" : "s don't"} fit — see list`, RX + RW, RY - 28);
+    ctx.restore();
+  }
   renderSummary(r);
   // Auto-fit only on first render of a project (zoom resets to 1 signal)
   if (vpState.floor.zoom === 1 && vpState.floor.panX === 0 && vpState.floor.panY === 0) {
@@ -4390,7 +4648,10 @@ function renderIsometric() {
   // Camera sits at SW corner looking NE, so south+west walls block the view most.
   const allWallItems = [...r.cabinets, ...(r.appliances||[])];
   const wallEmpty = name => !allWallItems.some(c => c.wall === name);
-  const openWall = ['south','west','east','north'].find(w => wallEmpty(w)) || null;
+  // The camera sits south-west of the room, so an empty south or west wall only blocks
+  // the view — hide all of those. If both have cabinets, fall back to hiding one empty wall.
+  const camSideEmpty = ['south','west'].filter(w => wallEmpty(w));
+  const openWalls = new Set(camSideEmpty.length ? camSideEmpty : [['east','north'].find(w => wallEmpty(w))].filter(Boolean));
 
   // ── Wall color map ──
   const wallColors = { north:0xF8FAFC, south:0xF1F5F9, east:0xEFF3F7, west:0xF0F4F8, step1:0xF4F6F8, step2:0xF4F6F8 };
@@ -4425,7 +4686,7 @@ function renderIsometric() {
   const WT = 3.5;
 
   function addWall3D(wallName, length, posX, posZ, rotY) {
-    if (wallName === openWall) return;
+    if (openWalls.has(wallName)) return;
     const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName] || 0xF4F6F8);
     if (rotY) mesh.rotation.y = rotY;
     mesh.position.set(posX, 0, posZ);
@@ -4442,7 +4703,7 @@ function renderIsometric() {
       const wallName = horiz
         ? (az < 0.1 ? 'north' : Math.abs(az-roomD)<0.1 ? 'south' : 'step2')
         : (ax < 0.1 ? 'west'  : Math.abs(ax-roomW)<0.1 ? 'east'  : 'step1');
-      if (wallName === openWall) continue;
+      if (openWalls.has(wallName)) continue;
       const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName]||0xF4F6F8);
       if (horiz) {
         // Natural position: interior face sits exactly at the polygon edge z-value.
@@ -5111,6 +5372,18 @@ function renderElevation() {
   // cabinet band→ceiling height chain on the left.
   if (!PDF && showDimensions) {
     drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX);
+  }
+
+  // Items that don't fit the room on this wall: red dashed outline (screen only)
+  if (!PDF) {
+    const fitIds = new Set(roomFitProblems(r).map(x => x.item.id));
+    [...r.cabinets, ...(r.appliances || [])].filter(i => i.wall === wall && fitIds.has(i.id)).forEach(i => {
+      const [bottom, top] = itemVerticalRange(i);
+      const h = top - bottom;
+      ctx.save(); ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3; ctx.setLineDash([6,4]);
+      ctx.strokeRect(eX(i.offset || 0, i.width) - 2, floorY - (bottom + h) * scale - 2, i.width * scale + 4, h * scale + 4);
+      ctx.restore();
+    });
   }
 
   ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
@@ -5930,12 +6203,8 @@ function closeRoomTemplates() {
 function applyTemplate(tId) {
   const t = ROOM_TEMPLATES.find(x=>x.id===tId); if (!t) return;
   closeRoomTemplates();
-  ['ar-name','ar-north','ar-south','ar-east','ar-west'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('ar-ceiling').value = t.ceiling;
-  if (t.north) document.getElementById('ar-north').value = t.north;
-  if (t.south) document.getElementById('ar-south').value = t.south;
-  if (t.east)  document.getElementById('ar-east').value  = t.east;
-  if (t.west)  document.getElementById('ar-west').value  = t.west;
+  document.getElementById('ar-name').value = '';
+  setRoomDimFields('ar', t.north ? t : { ...ROOM_DIM_DEFAULTS, ceiling: t.ceiling });
   const isL = t.shape === 'L';
   document.getElementById('ar-shape-rect').checked = !isL;
   document.getElementById('ar-shape-L').checked    = isL;
@@ -7289,6 +7558,7 @@ document.addEventListener('keydown', e => {
   if (IS_DEMO) {
     currentUser = null;
     showApp();
+    seedDemoIfFirstVisit();
     loadProjectsFromLocal();
     return;
   }

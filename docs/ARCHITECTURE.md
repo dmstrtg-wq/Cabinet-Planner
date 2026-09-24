@@ -270,17 +270,17 @@ All paid features are checked in the browser against `company_profiles.subscript
 ### 8.4 New projects default to style code `'AW'` (a Forevermark code) for every account
 `createProject` (2499) and the Supabase save (2316) default `style` to `'AW'`. For non-owner accounts `'AW'` isn't in their styles, so the UI falls back to the first style for display, but **price lookups still use `'AW'`**. A company with its own price sheet may see "No price set" everywhere until they pick a style. It's also a Forevermark code stored on their data.
 
-### 8.5 Probable causes for the Build Plan 0.3 demo issues (0.3 will confirm by reproducing)
-| # | Issue | Likely cause |
-|---|---|---|
-| 1 | Blank East/West → 48"-deep room | Blank fields become `0` (2484). Every renderer uses `max(east, west, 48)`, so 0 shows as 48. |
-| 2 | Can't edit room size | Edit Project modal (2508) has no dimension fields. The room-shape modal (2707) only edits the L cut. |
-| 3 | "From left" doesn't advance | `addCabinet` resets the offset box to `0` (2862) |
-| 4 | Upper with no height ≈ 12" tall | If no height is chosen it falls back to `cat.heights[0]`, which for wall cabinets is **12** (2850, 2122) |
-| 5 | "Shared demo account" | Not shared. Browser-local. See Build Plan 0.3 #5. |
-| 6 | Banner overlaps header | Banner is `position:fixed` with a high z-index (788) and nothing pushes the page down |
-| 7a | 3D camera behind a wall | Camera always sits at the SW corner, and only an *empty* wall is hidden, so a full U/4-wall layout hides nothing (4336, 4283) |
-| 7b | Door style not visible in 3D | 3D uses only the style's color on a flat slab (4514–4532) |
+### 8.5 Build Plan 0.3: demo issues, reproduced locally 2026-09-24 (demo mode, 1280px)
+| # | Issue | Reproduced? | Cause |
+|---|---|---|---|
+| 1 | Blank East/West → 48"-deep room | ✅ Fields are empty with grey placeholders "120/120/96/96". Saved walls `east:0, west:0`, drawn as 120" × **48"** | Blank → `0` (`createProject`), and every renderer uses `max(east, west, 48)` |
+| 2 | Can't edit room size after creation | ✅ Edit Project modal has no dimension or ceiling fields | Room-shape modal only edits the L cut |
+| 3 | "From left" doesn't advance | ✅ Stays at 0 after adding. **Worse:** B36 then B24 both saved at offset 0, **stacked on top of each other with no warning** | `addCabinet` resets the box to `0`, and there's no overlap check |
+| 4 | Upper with no height ≈ 12" | ✅ Height select is blank, saved height **12** | Falls back to `CATALOG.wall.heights[0]` = 12 |
+| 5 | "Shared demo account" | ❌ Not shared. Browser-local storage (see Build Plan 0.3 #5) | — |
+| 6 | Banner overlaps header | ✅ At 1280px the 34px banner covers Floor Plan / Elevation / 3D View tabs, Lead pill, Log, Edit, Tips | `position:fixed` banner, nothing pushes the layout down |
+| 7a | 3D camera behind a wall | ✅ by code: camera always at the SW corner; only an *empty* wall is hidden, so a job with cabinets on all four walls hides nothing | `setIso3DCamera`, open-wall pick in `renderIsometric` |
+| 7b | Door style not visible in 3D | ✅ by code: one flat slab per cabinet in the style's color; no rails/stiles, drawers or hardware | `addFrontPanel` |
 
 ### 8.6 What this means for the Build Plan
 - **Phase 2** starts from working drag + snap. It needs selection, collision, wall-end limits and neighbor snapping, not drag from scratch.
