@@ -86,3 +86,11 @@ Claude tested locally with simulated drags and key presses: stops flush against 
 - [ ] **Elevation:** ← / → move the cabinet the way you see it, including on the South/West walls.
 - [ ] **Island:** click it and use the arrows. It moves in all four directions and stays inside the room.
 - [ ] Arrow keys do nothing while you're typing in a box (search, notes, etc.).
+
+### 2.4 Live gap dimensions (built 2026-09-24)
+Claude checked the numbers on the sample kitchen (e.g. the east wall's 26 1/4" open after the fridge, 1" / 2" gaps beside a moved B9) and that nothing extra prints on PDFs. Try it on the live demo:
+- [ ] **Select a cabinet:** bold teal measurements appear on each side showing the exact gap to the next cabinet, wall end, door/window, or the face of the run on the next wall (e.g. `2 1/4"`). No line appears on a side that's flush.
+- [ ] **Open space:** the rest of that wall shows grey dashed "open 26 1/4"" labels wherever there's room.
+- [ ] **While dragging** (a placed cabinet or a palette tile), the numbers update live.
+- [ ] **Dims button on,** nothing selected: every wall shows its open space (floor plan) and the elevation shows open space for both the base and upper rows.
+- [ ] **Printed floor plan / PDF:** none of these live measurements appear on the printout.
