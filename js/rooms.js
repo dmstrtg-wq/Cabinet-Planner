@@ -977,8 +977,21 @@ function selectStyle(code) {
   const action = document.getElementById('style-current-action');
   if (action) action.textContent = 'Change ▾';
   renderCanvas(); if (state.viewMode === 'elevation') renderElevation();
+  if (state.viewMode === '3d') renderIsometric();
+}
+// Project hardware: bar pulls everywhere, or knobs on doors (drawers always get pulls)
+function setHardware(v) {
+  const p = activeProj(); if (!p) return;
+  p.hardware = v === 'knobs' ? 'knobs' : 'pulls';
+  persist(); syncHardwareButtons();
+  if (state.viewMode === '3d') renderIsometric();
+}
+function syncHardwareButtons() {
+  const hw = activeProj()?.hardware === 'knobs' ? 'knobs' : 'pulls';
+  document.querySelectorAll('.hw-row [data-hw]').forEach(b => b.classList.toggle('active', b.dataset.hw === hw));
 }
 function syncStylePanel() {
+  syncHardwareButtons();
   const p = activeProj(); const code = p ? (p.style || 'AW') : 'AW';
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
   syncStyleCurrent(code);

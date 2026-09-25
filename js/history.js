@@ -20,7 +20,7 @@ const HISTORY_SETTLE_MS = 450;  // edits closer together than this become one st
 // (browsers slow timers down there).
 const hist = { projectId: null, last: null, lastTime: 0, undo: [], redo: [] };
 
-function designSnapshot(p) { return JSON.stringify({ rooms: p.rooms, style: p.style }); }
+function designSnapshot(p) { return JSON.stringify({ rooms: p.rooms, style: p.style, hardware: p.hardware || 'pulls' }); }
 
 // Called from persist() after every edit
 function historyNoteChange() {
@@ -49,7 +49,7 @@ function historyStep(from, to, label) {
   to.push(designSnapshot(p));
   const snap = from.pop();
   const d = JSON.parse(snap);
-  p.rooms = d.rooms; p.style = d.style;
+  p.rooms = d.rooms; p.style = d.style; p.hardware = d.hardware;
   hist.last = snap; hist.lastTime = 0;               // the save below isn't a new edit; next edit starts a fresh step
   if (!p.rooms.some(r => r.id === state.activeRoomId)) state.activeRoomId = p.rooms[0]?.id;
   if (typeof getSelectedItem === 'function' && selectedItemId && !getSelectedItem()) selectedItemId = null;

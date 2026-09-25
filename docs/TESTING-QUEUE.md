@@ -140,3 +140,13 @@ Claude tested locally as a simulated Gold account: CSV + printable list for the 
 - [ ] **Hinge side:** double-click a single-door cabinet (≤21" base/wall, ≤18" tall, blind corners, diagonal walls) and set Hinge side Left/Right. Anything unset shows **SPECIFY** in red and you get a heads-up on download. Doubles, drawers and fillers show "—".
 - [ ] Appliances are not on the order list.
 - [ ] Free account: the Order List button isn't shown.
+
+### 3.1 Door styles in 3D (built 2026-09-24)
+Claude checked renders of the sample kitchen in White Shaker, Espresso, Natural Wood (+ knobs), plus a test room with Raised Panel, Slab Gloss, glass uppers, tall pantries, blind corners on a normal and a mirrored wall, and a sink base. 242 meshes, under 1 ms per frame on the CPU side.
+- [ ] **3D view of a White Shaker kitchen** reads as white Shaker: 5-piece doors with recessed panels, a drawer over the doors on base cabinets, 3 drawers on drawer bases, a false front on sink bases, stacked doors on talls, glass uppers where "Glass Doors" is ticked.
+- [ ] **Change the Door Style** (right panel): 3D updates immediately. A per-cabinet style (double-click → Door style) shows on just that cabinet.
+- [ ] **Hardware:** new "Bar pulls / Knobs on doors" buttons under Door Style. Knobs go on doors, and drawers always keep pulls.
+- [ ] **Single doors:** the handle is on the side opposite the hinge you set (2.x hinge side). Doubles have handles at the center.
+- [ ] **Wood finishes** (names with oak, walnut, natural wood, etc.) show grain.
+- [ ] **Orbiting a full kitchen is smooth** on your laptop (tell me if it stutters).
+- [ ] Does anything look off to your trade eye (proportions, drawer height, pull placement)? These are easy to tune.

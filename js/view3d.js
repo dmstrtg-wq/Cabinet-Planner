@@ -131,8 +131,11 @@ function initIso3D() {
   controls.maxDistance = 3000;
   controls.target.set(0,0,0);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+  // Brighter, softer fill so light finishes read true (a white cabinet should look white,
+  // not grey). Lighting presets come in Build Plan 3.4.
+  const ambient = new THREE.AmbientLight(0xffffff, 0.72);
   scene.add(ambient);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d4ca, 0.38));
   const sun = new THREE.DirectionalLight(0xffffff, 1.0);
   sun.castShadow = true;
   sun.shadow.mapSize.set(1024,1024);
@@ -331,60 +334,12 @@ function renderIsometric() {
     root.add(sprite);
   }
 
-  // Inset door/drawer front panel overlay on the room-facing side of a cabinet
-  function addFrontPanel(pos, baseY, h, wall, color, glass) {
-    const inset = 1.5, thk = 0.5;
-    const hh = h - inset*2;
-    if (hh<=0) return;
-    let geoArgs, cx, cz;
-    const cy = baseY + h/2;
-    switch(wall) {
-      case 'north': {
-        const ww = pos.w - inset*2; if (ww<=0) return;
-        geoArgs = [ww,hh,thk]; cx = pos.x0+pos.w/2; cz = pos.z0+pos.d+thk/2; break;
-      }
-      case 'south': {
-        const ww = pos.w - inset*2; if (ww<=0) return;
-        geoArgs = [ww,hh,thk]; cx = pos.x0+pos.w/2; cz = pos.z0-thk/2; break;
-      }
-      case 'west': {
-        const dd = pos.d - inset*2; if (dd<=0) return;
-        geoArgs = [thk,hh,dd]; cx = pos.x0+pos.w+thk/2; cz = pos.z0+pos.d/2; break;
-      }
-      case 'east': {
-        const dd = pos.d - inset*2; if (dd<=0) return;
-        geoArgs = [thk,hh,dd]; cx = pos.x0-thk/2; cz = pos.z0+pos.d/2; break;
-      }
-      case 'step1': case 'step2': {
-        // Map step wall to the face that looks into the main room
-        const sw = ld && ld[wall];
-        if (!sw) return;
-        const effectiveDir = sw.isVertical
-          ? (sw.depthRight ? 'east' : 'west')   // east = panel on left face; west = panel on right face
-          : (sw.depthDown  ? 'south' : 'north');
-        addFrontPanel(pos, baseY, h, effectiveDir, color, glass);
-        return;
-      }
-      default: return;
-    }
-    const mat = new THREE.MeshStandardMaterial({
-      color: shade3D(color, glass ? 50 : -10),
-      roughness: glass ? 0.15 : 0.5,
-      metalness: glass ? 0.1 : 0.05,
-      transparent: !!glass,
-      opacity: glass ? 0.45 : 1
-    });
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...geoArgs), mat);
-    mesh.position.set(cx, cy, cz);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    root.add(mesh);
-  }
-
   // ── Style colour (use project door-style swatch for all cabinets) ──
   const _p3d = activeProj();
   const _styleHex = (getStyles().find(s => s.code === (_p3d?.style || getStyles()[0]?.code)) || getStyles()[0])?.swatch || '#F2F1EE';
 
   // ── Cabinets ──
+  const _frontKit = makeFrontKit(_p3d?.hardware);   // shared door/drawer materials + shapes for this render
   r.cabinets.filter(layerShowsItem).forEach(cab => {
     const cat = CATALOG[cab.type]; if (!cat) return;
     const off = cab.offset || 0;
@@ -392,13 +347,13 @@ function renderIsometric() {
     const dep = cab.depth  || cat.depth || 24;
     const baseY = itemVerticalRange(cab)[0];   // uppers at their bottom, fillers wherever they sit, bases on the floor
     const pos = cabPos(cab.wall, off, cab.width, dep);
-    const baseCol = _styleHex;
+    const baseCol = doorStyleInfo(cab.styleOverride || _p3d?.style).swatch;   // per-cabinet style wins
 
     const _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
     if (_m) _m.userData.itemId = cab.id; // for selection highlight
-    if (cab.type !== 'cornerBase' && !isFiller(cab.type)) {   // fillers are plain boards, no door
-      addFrontPanel(pos, baseY, h, cab.wall, baseCol, cab.glassDoors);
-    }
+    // Doors, drawer fronts and hardware in the cabinet's door style (fronts3d.js)
+    const fronts = buildCabinetFronts3D(cab, r, _frontKit, _p3d);
+    if (fronts) root.add(fronts);
     if (cab.width >= 6) addLabel(fmtFrac(cab.width), pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 

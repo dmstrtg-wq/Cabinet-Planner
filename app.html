@@ -377,6 +377,11 @@
             <div class="style-current-action" id="style-current-action">Change ▾</div>
           </div>
           <div id="style-container" class="hidden"></div>
+          <div class="hw-row" role="group" aria-label="Cabinet hardware">
+            <span>Hardware</span>
+            <button type="button" data-hw="pulls" onclick="setHardware('pulls')">Bar pulls</button>
+            <button type="button" data-hw="knobs" onclick="setHardware('knobs')">Knobs on doors</button>
+          </div>
         </div>
         <div class="cp-section" id="palette-section" style="flex-shrink:0">
           <div class="cp-label">Catalog <span class="palette-hint">drag onto a wall · click to add at the end</span></div>
@@ -1111,6 +1116,7 @@
 <script src="/js/layers.js" data-categories="essential"></script>
 <script src="/js/fillgap.js" data-categories="essential"></script>
 <script src="/js/orderlist.js" data-categories="essential"></script>
+<script src="/js/fronts3d.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->
