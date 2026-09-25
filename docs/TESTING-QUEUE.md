@@ -131,3 +131,12 @@ Claude tested locally: solver on 105" (offers 36+36+30 + 3" filler, the Build Pl
 - [ ] **Use this:** everything drops in, the gap is closed exactly, and the filler sits against the wall/corner end.
 - [ ] **One ⌘Z** removes the whole fill.
 - [ ] A gap narrower than 9" offers a single filler of exactly that width.
+
+### 5.7 Order List (built 2026-09-24) — Silver/Gold only
+Claude tested locally as a simulated Gold account: CSV + printable list for the sample kitchen, grouping of identical items, fillers as stock pieces, hinge flags, no Forevermark names, hidden/blocked for Free.
+- [ ] **Order List ▾** (floor-plan toolbar, next to Print Plans) → **Download CSV**: opens cleanly in Excel with Room, Qty, SKU (B36, W3030, SB33, FL3…), size, door style + finish code, hinge, item #s, notes. Identical pieces in a room are combined (e.g. `2× W2430`).
+- [ ] **Print order list:** a clean printable sheet per room.
+- [ ] **Fillers** show as the stock piece to order plus the rip size (a 7" filler = `2× FL6 — rip to 7"`).
+- [ ] **Hinge side:** double-click a single-door cabinet (≤21" base/wall, ≤18" tall, blind corners, diagonal walls) and set Hinge side Left/Right. Anything unset shows **SPECIFY** in red and you get a heads-up on download. Doubles, drawers and fillers show "—".
+- [ ] Appliances are not on the order list.
+- [ ] Free account: the Order List button isn't shown.

@@ -327,6 +327,14 @@ This phase is the moat. See 4.0 for where these tasks slot into the build order.
 - Requirements: export a CSV (and a printable list) of every cabinet/panel/filler with SKU code, width/height/depth, door style, finish, hinge side, room, and quantity, grouped by room. SKU codes and style names come from the account's own catalog/price sheet (see the brand-sensitivity rule in Section 2).
 - Done when: the CSV could be pasted into a supplier order form with minimal edits.
 
+**5.8 AI price-list import (added 2026-09-24, Dan's idea; do right after 5.7)**
+- Goal: a company uploads its supplier's price list exactly as it received it (Excel/CSV, later PDF) and the planner sets up its pricing, instead of hand-filling our template.
+- How: a Netlify function sends the file's rows to a Claude model (Anthropic API, key server-side only). It maps each row to planner type + width (+ height) + finish, and captures the supplier SKU. The result goes to a **review screen** (matched / needs a look / skipped) and nothing is saved until the user confirms. Prices never change silently.
+- Also store supplier SKUs per type/size/finish so 5.7's order export can use real supplier codes.
+- Decide before building (Dan): data handling (supplier price lists are confidential; they're sent to Anthropic's API), per-account upload limits and measured cost per upload, which tier gets it, and file types for v1 (recommend CSV/XLSX first, PDF later).
+- Security: auth required, rate-limited per account, file size/type limits, API key never client-side, and the function only ever writes the caller's own `company_profiles` row.
+- Done when: a real supplier price list from one of Dan's brands imports with a clear review, and the confirmed prices quote correctly.
+
 ### Phase 6 — Protect the lead funnel
 
 **6.1 Homeowner mode**

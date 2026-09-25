@@ -307,7 +307,9 @@ body.free-tier .cp-section:has(#pricing-toggle),
 body.pricing-locked .cp-section:has(#pricing-toggle) { display: none !important; }
 /* Print Floor Plan — Silver+ only; hide for demo and free/unsubscribed users */
 body.demo-mode #floor-plan-print-btn,
-body.free-tier #floor-plan-print-btn { display: none !important; }
+body.free-tier #floor-plan-print-btn,
+body.demo-mode .order-wrap,
+body.free-tier .order-wrap { display: none !important; }
 .toolbar-pricing .toggle-label { font-size: 12px; }
 .empty-msg { padding: 24px 12px; text-align: center; color: rgba(255,255,255,0.65); font-size: 12px; line-height: 1.6; }
 .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
@@ -701,3 +703,9 @@ body.free-tier #connect-pro-btn { display:block; }
 .fill-seg { display: flex; align-items: center; justify-content: center; background: #dbeafe; border-right: 1px solid #94a3b8; font-size: 11px; font-weight: 700; color: #1e3a8a; min-width: 2px; overflow: hidden; white-space: nowrap; }
 .fill-seg:last-child { border-right: none; }
 .fill-seg-filler { background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 3px, #cbd5e1 3px, #cbd5e1 6px); }
+
+/* Order list (5.7) */
+.order-wrap { position: relative; display: inline-block; }
+.order-menu { right: 0; left: auto; min-width: 250px; }
+.order-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 7px 8px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; border-radius: 5px; }
+.order-item:hover { background: #f1f5f9; }

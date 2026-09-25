@@ -121,6 +121,8 @@ function openItemPopover(item, clientX, clientY) {
     html += row('Width', `<select data-f="width" ${selStyle}>${CATALOG[item.type].widths.map(w => opt(w, w + '"', w === item.width)).join('')}</select>`);
     if (CATALOG[item.type].heights.length > 1)
       html += row('Height', `<select data-f="height" ${selStyle}>${CATALOG[item.type].heights.map(h => opt(h, h + '"', h === item.height)).join('')}</select>`);
+    if (needsHinge(item))
+      html += row('Hinge side', `<select data-f="hinge" ${selStyle}>${opt('', 'Specify…', !item.hinge)}${opt('L', 'Left', item.hinge === 'L')}${opt('R', 'Right', item.hinge === 'R')}</select>`);
     html += row('Door style', `<select data-f="styleOverride" ${selStyle}>${opt('', 'Project default', !item.styleOverride)}${getStyles().map(s => opt(s.code, s.name, s.code === item.styleOverride)).join('')}</select>`);
   } else {
     const acat = APPLIANCES[item.type];
@@ -145,7 +147,7 @@ function openItemPopover(item, clientX, clientY) {
     const f = e.target.dataset.f; if (!f) return;
     applyItemEdit(item, f, e.target.value);
     // Type changes the valid widths/heights, so rebuild the popover in place
-    if (f === 'type') { const b = pop.getBoundingClientRect(); openItemPopover(item, b.left - 12, b.top - 12); }
+    if (f === 'type' || f === 'width') { const b = pop.getBoundingClientRect(); openItemPopover(item, b.left - 12, b.top - 12); }
   });
   pop.addEventListener('click', e => {
     const act = e.target.dataset.act; if (!act) return;
@@ -162,6 +164,7 @@ function applyItemEdit(item, field, value) {
   const filler = isFiller(item.type);
   if (field === 'note') item.note = value.trim();
   else if (field === 'styleOverride') item.styleOverride = value || null;
+  else if (field === 'hinge') item.hinge = value || null;
   else if (field === 'width') item.width = filler ? cleanFillerDim(value, item.width) : parseFloat(value);
   else if (field === 'height') item.height = filler ? cleanFillerDim(value, item.height) : parseFloat(value);
   else if (field === 'wallBottom') { item.wallBottom = Math.max(0, parseInches(value) || 0); item.depth = item.wallBottom >= 48 ? 12 : 24; }
