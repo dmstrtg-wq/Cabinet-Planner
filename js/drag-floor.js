@@ -17,19 +17,16 @@
   }
   function hitTestCab(mx,my,info) {
     const {scale,RX,RY,RW,RH,r} = info;
-    const vm = document.getElementById('view-sel')?.value || 'all'; // respect the Base/Wall-only layer filter
-    const wallTypes = ['wall','diagWall'];
-    const baseTypes = ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'];
-    for (const cab of r.cabinets) {
-      // Skip types hidden in the current view mode to avoid cross-layer false hits
-      if (vm === 'wall' && !wallTypes.includes(cab.type)) continue;
-      if (vm === 'base' && !baseTypes.includes(cab.type)) continue;
+    // Only what's visible (Layers) can be clicked; uppers first, since they draw on top of bases
+    const isUpper = c => c.type === 'wall' || c.type === 'diagWall';
+    for (const cab of [...r.cabinets.filter(isUpper), ...r.cabinets.filter(c => !isUpper(c))]) {
+      if (!layerShowsItem(cab)) continue;
       const _rc = itemRect(r, cab, cab.depth); if (!_rc) continue;
       const x=RX+_rc.x*scale, y=RY+_rc.y*scale, w=_rc.w*scale, h=_rc.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
     }
     for (const app of (r.appliances||[])) {
-      const acat=APPLIANCES[app.type]; if(!acat) continue;
+      const acat=APPLIANCES[app.type]; if(!acat || !layerShowsItem(app)) continue;
       const _ra = itemRect(r, app, acat.depth); if (!_ra) continue;
       const x=RX+_ra.x*scale, y=RY+_ra.y*scale, w=_ra.w*scale, h=_ra.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};

@@ -28,14 +28,14 @@
     const floorY = WY + WH;
     const flip = wall === 'south' || wall === 'west';
     const eX = (offset, width) => flip ? WX + WW - (offset + width)*scale : WX + offset*scale;
-    for (const cab of r.cabinets.filter(c => c.wall === wall)) {
+    for (const cab of r.cabinets.filter(c => c.wall === wall && layerShowsItem(c))) {
       const cW = cab.width*scale, cH = cab.height*scale;
       const x = eX(cab.offset||0, cab.width);
       const bIn = (cab.type==='wall'||cab.type==='diagWall') ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
       const y = (cab.type==='wall'||cab.type==='diagWall') ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
-    for (const app of (r.appliances||[]).filter(a => a.wall === wall)) {
+    for (const app of (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a))) {
       const acat = APPLIANCES[app.type]; if (!acat) continue;
       const aW = app.width*scale, aH = (app.height||acat.height)*scale;
       const x  = eX(app.offset||0, app.width);

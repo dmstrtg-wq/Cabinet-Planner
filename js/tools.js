@@ -6,18 +6,9 @@
 // ════════════════════════════
 // DIMENSION CALLOUTS
 // ════════════════════════════
-function toggleDimensions() {
-  showDimensions = !showDimensions;
-  document.querySelectorAll('.dims-btn').forEach(btn => btn.classList.toggle('active', showDimensions));
-  renderAll();
-}
+function toggleDimensions() { setLayer('dims', !layers.dims); }  // same switch as Layers ▸ Dimensions
 
-function toggleItemNumbers() {
-  showItemNumbers = !showItemNumbers;
-  document.querySelectorAll('.itemnum-btn').forEach(btn => btn.classList.toggle('active', showItemNumbers));
-  renderAll();
-  renderCutList();
-}
+function toggleItemNumbers() { setLayer('itemNums', !layers.itemNums); renderCutList(); }  // = Layers ▸ Item numbers
 
 // Small numbered hexagon tag, straddling the top edge of a cabinet/appliance —
 // matches the callout convention on a real cabinet shop drawing.

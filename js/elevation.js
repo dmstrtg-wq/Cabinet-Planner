@@ -43,10 +43,12 @@ function renderElevation() {
   } else {
     ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
     ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
-    ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
-    const gs = 12*scale;
-    for (let gx=WX; gx<=WX+WW; gx+=gs) { ctx.beginPath(); ctx.moveTo(gx,WY); ctx.lineTo(gx,WY+WH); ctx.stroke(); }
-    for (let gy=WY; gy<=WY+WH; gy+=gs) { ctx.beginPath(); ctx.moveTo(WX,gy); ctx.lineTo(WX+WW,gy); ctx.stroke(); }
+    if (layers.grid) {   // Layers ▸ Grid
+      ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
+      const gs = 12*scale;
+      for (let gx=WX; gx<=WX+WW; gx+=gs) { ctx.beginPath(); ctx.moveTo(gx,WY); ctx.lineTo(gx,WY+WH); ctx.stroke(); }
+      for (let gy=WY; gy<=WY+WH; gy+=gs) { ctx.beginPath(); ctx.moveTo(WX,gy); ctx.lineTo(WX+WW,gy); ctx.stroke(); }
+    }
   }
   ctx.fillStyle = PDF ? '#888888' : '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
   const counterY = WY+WH-36*scale;
@@ -55,8 +57,8 @@ function renderElevation() {
   ctx.fillStyle = PDF ? '#555555' : '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
   ctx.fillText('Counter Height 36"', WX+4, counterY-4);
 
-  const wallCabs     = r.cabinets.filter(c => c.wall === wall);
-  const wallOpenings = (r.openings||[]).filter(o => o.wall === wall);
+  const wallCabs     = r.cabinets.filter(c => c.wall === wall && layerShowsItem(c));          // Layers
+  const wallOpenings = layers.openings ? (r.openings||[]).filter(o => o.wall === wall) : [];
   const floorY = WY+WH;
   if (!PDF) vpGeom.elev = { originX: WX, originY: floorY, wIn: wallLength, hIn: ceiling, scale, vertUp: true };
 
@@ -167,7 +169,7 @@ function renderElevation() {
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
     }
     if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
-    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + (isCorner ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
+    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + (isCorner ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
   });
 
   wallCabs.filter(c=>['wall','diagWall'].includes(c.type)).forEach(cab => {
@@ -216,7 +218,7 @@ function renderElevation() {
       ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
     }
     if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
-    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
+    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
   });
 
   wallCabs.filter(c=>c.type==='tall').forEach(cab => {
@@ -231,7 +233,7 @@ function renderElevation() {
     ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
     ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
-    if ((showItemNumbers || PDF) && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
+    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
   });
 
   // ── Corner cabinet crossover: adjacent-wall corner cabs shown at elevation edges ──
@@ -292,7 +294,7 @@ function renderElevation() {
   }
 
   // Appliances in elevation
-  (r.appliances||[]).filter(a => a.wall === wall).forEach(app => {
+  (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a)).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const aW   = app.width * scale;
     const aH   = (app.height || acat.height) * scale;
@@ -305,7 +307,7 @@ function renderElevation() {
       ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
       ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
     }
-    if ((showItemNumbers || PDF) && app.itemNum) drawItemHexagon(ctx, x+aW/2, y, app.itemNum, PDF);
+    if (showItemNumbers && app.itemNum) drawItemHexagon(ctx, x+aW/2, y, app.itemNum, PDF);
   });
 
   // PDF: dimension callout strings

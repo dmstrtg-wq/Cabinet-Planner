@@ -104,3 +104,12 @@ Claude tested locally: 6 different edit types (add, nudge burst, room resize, do
 - [ ] **B / W / T / C / F / A** jump to that catalog category with the cursor in the search box. Type "36" right after pressing B.
 - [ ] **?** or the ⌨ button shows the shortcut list.
 - [ ] Shortcuts don't fire while typing in a box. ⌘Z inside a text box undoes the typing, not the design.
+
+### 2.6 View layers + Print Plans fix (built 2026-09-24)
+Claude tested locally: each of the 7 layers changes the floor plan and elevation, and turning it back on restores the drawing exactly; hidden items can't be clicked; 3D drops hidden appliances/cabinets; item numbers vanish from printed output when off; the layer choice is remembered. Also fixed: **Print Plans crashed for any project with cabinets** unless Export PDF had been clicked first (it never loaded the table add-on for its cut-list page). Now 6 pages from a cold start; Export PDF still 8 pages.
+- [ ] **Layers ▾** (where the "Show: All Cabinets" dropdown used to be, and in the Elevation toolbar) lists Dimensions, Item numbers, Base & tall cabinets, Wall cabinets, Appliances, Doors & windows, Grid. Each checkbox hides or shows that part right away.
+- [ ] **Item numbers are now ON by default,** so the numbered hexagon tags show on screen in both the floor plan and elevation, matching the cut list. (Before, they only appeared on PDFs.) Turn them off in Layers if you prefer, and it's remembered.
+- [ ] **Item numbers off → Print Plans / Export PDF:** the hexagon tags are gone from the printed drawings too.
+- [ ] The **Dims** and **Item #s** buttons still work and stay in sync with the Layers checkboxes.
+- [ ] Hide Wall cabinets, then click where an upper sits over a base. You get the base.
+- [ ] **Print Plans (Silver/Gold, fresh page load):** click Print Plans without clicking Export PDF first. The PDF downloads, including the cut-list page. **This was broken on the live site.**

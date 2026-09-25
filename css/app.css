@@ -681,3 +681,12 @@ body.free-tier #connect-pro-btn { display:block; }
 .shortcut-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .shortcut-table td:first-child { width: 42%; white-space: nowrap; }
 .shortcut-table kbd { font-family: inherit; font-size: 12px; font-weight: 700; background: #f1f5f9; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; }
+
+/* View layers (2.6) */
+.layers-wrap { position: relative; display: inline-block; }
+.layers-btn-count { color: var(--text-muted); font-weight: 600; }
+.layers-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 500; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.16); padding: 6px; min-width: 210px; }
+.layers-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; border-radius: 5px; text-transform: none; letter-spacing: 0; }
+.layers-row:hover { background: #f1f5f9; }
+.layers-row input { accent-color: var(--accent); width: 15px; height: 15px; }
+.layers-note { font-size: 11px; color: var(--text-muted); padding: 6px 6px 2px; border-top: 1px solid var(--border); margin-top: 4px; line-height: 1.35; }

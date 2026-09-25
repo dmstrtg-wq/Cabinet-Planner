@@ -267,12 +267,7 @@
         <div id="view-floor">
           <div class="canvas-toolbar">
             <div class="tb-group">
-              <label>Show:</label>
-              <select id="view-sel" onchange="renderCanvas()">
-                <option value="all">All Cabinets</option>
-                <option value="base">Base Only</option>
-                <option value="wall">Wall Only</option>
-              </select>
+              <div class="layers-wrap"><button type="button" class="toolbar-btn layers-btn" onclick="toggleLayersMenu(this)" aria-haspopup="true" title="Show or hide parts of the drawing"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/></svg>Layers <span class="layers-btn-count"></span></button><div class="layers-menu hidden" role="group" aria-label="Layers"></div></div>
               <div class="toolbar-pricing">
                 <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
                 <span class="toggle-label">Pricing</span>
@@ -330,6 +325,7 @@
               <button class="elev-wall-tab" data-wall="west" onclick="selectElevWall('west')">← West</button>
             </div>
             <div class="tb-group">
+              <div class="layers-wrap"><button type="button" class="toolbar-btn layers-btn" onclick="toggleLayersMenu(this)" aria-haspopup="true" title="Show or hide parts of the drawing"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/></svg>Layers <span class="layers-btn-count"></span></button><div class="layers-menu hidden" role="group" aria-label="Layers"></div></div>
               <button id="dims-btn-elev" class="toolbar-btn dims-btn" onclick="toggleDimensions()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4v8M14 4v8M2 8h12"/></svg>Dims</button>
               <button id="itemnum-btn-elev" class="toolbar-btn itemnum-btn" onclick="toggleItemNumbers()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 1.5l6 3.5v6l-6 3.5-6-3.5v-6z"/></svg>Item #s</button>
               <button id="cutlist-btn-elev" class="toolbar-btn" onclick="toggleCutList()"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3" width="12" height="2.2" rx="0.5"/><rect x="2" y="7" width="12" height="2.2" rx="0.5"/><rect x="2" y="11" width="8" height="2.2" rx="0.5"/></svg>Cut List</button>
@@ -1110,6 +1106,7 @@
 <script src="/js/gaps.js" data-categories="essential"></script>
 <script src="/js/history.js" data-categories="essential"></script>
 <script src="/js/shortcuts.js" data-categories="essential"></script>
+<script src="/js/layers.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

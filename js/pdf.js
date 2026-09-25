@@ -6,13 +6,19 @@
 // ════════════════════════════
 // PDF EXPORT
 // ════════════════════════════
+// Loads a library once. Callers that arrive while it's still downloading wait for the same
+// download (the old version resolved immediately if the <script> tag merely existed).
+const _scriptLoads = {};
 function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve; s.onerror = reject;
-    document.head.appendChild(s);
-  });
+  if (!_scriptLoads[src]) {
+    _scriptLoads[src] = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = resolve;
+      s.onerror = () => { delete _scriptLoads[src]; s.remove(); reject(new Error('Could not load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  return _scriptLoads[src];
 }
 
 /* ── PRINT FLOOR PLAN (Silver+) ──────────────────────────────────
@@ -27,6 +33,8 @@ async function printFloorPlan(btn) {
   btn.textContent = '⏳ Generating…'; btn.disabled = true;
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    // The cut-list page uses tables — without this, Print Plans failed unless Export PDF had run first
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
   } catch(e) {
     alert('Could not load PDF library. Check your internet connection.');
     btn.textContent = origText; btn.disabled = false; return;

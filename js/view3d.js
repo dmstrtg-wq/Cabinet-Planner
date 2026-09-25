@@ -252,7 +252,7 @@ function renderIsometric() {
     floor.position.set(roomW/2, 1, roomD/2); // y=1 lifts floor off wall-base plane → no z-fighting
     floor.receiveShadow = true;
     root.add(floor);
-    root.add(buildFloorGrid3D(roomW, roomD));
+    if (layers.grid) root.add(buildFloorGrid3D(roomW, roomD));
   }
 
   // ── Walls ──
@@ -385,7 +385,7 @@ function renderIsometric() {
   const _styleHex = (getStyles().find(s => s.code === (_p3d?.style || getStyles()[0]?.code)) || getStyles()[0])?.swatch || '#F2F1EE';
 
   // ── Cabinets ──
-  r.cabinets.forEach(cab => {
+  r.cabinets.filter(layerShowsItem).forEach(cab => {
     const cat = CATALOG[cab.type]; if (!cat) return;
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
@@ -403,7 +403,7 @@ function renderIsometric() {
   });
 
   // ── Appliances ──
-  (r.appliances||[]).forEach(app => {
+  (r.appliances||[]).filter(layerShowsItem).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const off  = app.offset || 0;
     const h    = app.height || acat.height || 30;

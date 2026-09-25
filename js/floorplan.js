@@ -237,7 +237,6 @@ function renderCanvas() {
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
   const scale    = CANVAS_SCALE;
-  const viewMode = document.getElementById('view-sel').value;
   const roomW = Math.max(r.walls.north, r.walls.south, 48);
   const roomH = Math.max(r.walls.east,  r.walls.west,  48);
   const PDF = !!window._pdfMode; // true only while exportPDF/printFloorPlan capture this canvas
@@ -289,8 +288,9 @@ function renderCanvas() {
     ctx.restore();
   }
 
-  // Grid clipped to room shape
+  // Grid clipped to room shape (Layers ▸ Grid)
   const GRID12 = 12*scale, GRID6 = 6*scale;
+  if (layers.grid) {
   ctx.save(); buildRoomPath(); ctx.clip();
   // Minor 6" grid
   ctx.strokeStyle = '#F0F4F8'; ctx.lineWidth = 0.5;
@@ -301,12 +301,11 @@ function renderCanvas() {
   for (let x = RX; x <= RX+RW; x += GRID12) { ctx.beginPath(); ctx.moveTo(x,RY); ctx.lineTo(x,RY+RH); ctx.stroke(); }
   for (let y = RY; y <= RY+RH; y += GRID12) { ctx.beginPath(); ctx.moveTo(RX,y); ctx.lineTo(RX+RW,y); ctx.stroke(); }
   ctx.restore();
+  }
 
   const _fitIds = new Set(roomFitProblems(r).map(x => x.item.id));
   const _flagRects = [];
-  let cabs = r.cabinets;
-  if (viewMode === 'base') cabs = cabs.filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type));
-  if (viewMode === 'wall') cabs = cabs.filter(c => ['wall','diagWall'].includes(c.type));
+  const cabs = r.cabinets.filter(layerShowsItem);   // Layers ▸ Base / Wall cabinets
 
   function drawCabOnFloor(cab, wall) {
     const cat = CATALOG[cab.type];
@@ -479,10 +478,21 @@ function renderCanvas() {
     // Base cabs first (solid), then wall/upper cabs as dashed overlay on top (NKBA convention)
     cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
     cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
-    (r.appliances||[]).filter(a => a.wall===wall).forEach(app => drawAppOnFloor(app,wall));
+    (r.appliances||[]).filter(a => a.wall===wall && layerShowsItem(a)).forEach(app => drawAppOnFloor(app,wall));
   });
 
-  (r.openings||[]).forEach(op => {
+  // Item numbers (Layers ▸ Item numbers): a small tag at the front edge of each piece,
+  // matching the cut list and elevation tags
+  if (showItemNumbers) {
+    [...cabs, ...(r.appliances||[]).filter(layerShowsItem)].forEach(it => {
+      if (!it.itemNum) return;
+      const f = wallFrame(r, it.wall); if (!f) return;
+      const t = (it.offset||0) + it.width/2, d = Math.max(4, itemDepth(it) - 5);
+      drawItemHexagon(ctx, RX + (f.start[0] + f.dir[0]*t + f.inward[0]*d)*scale, RY + (f.start[1] + f.dir[1]*t + f.inward[1]*d)*scale, it.itemNum, PDF);
+    });
+  }
+
+  (layers.openings ? (r.openings||[]) : []).forEach(op => {
     const wall = op.wall, oW = op.width*scale, opOffset = (op.offset||0)*scale;
     let ox,oy,fw,fh;
     if      (wall==='north') { ox=RX+opOffset; oy=RY;      fw=oW; fh=8; }
