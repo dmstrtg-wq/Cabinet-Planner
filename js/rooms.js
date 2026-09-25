@@ -459,14 +459,19 @@ function onTypeChange() {
   ws.innerHTML = '<option value="">— Width —</option>';
   hs.innerHTML = '<option value="">— Height —</option>';
   hs.classList.add('hidden');
+  // Fillers get free-typed width/height boxes instead of the size dropdowns
+  const filler = isFiller(type);
+  const wn = document.getElementById('cab-width-num'), hn = document.getElementById('cab-height-num');
+  ws.classList.toggle('hidden', filler); wn.classList.toggle('hidden', !filler); hn.classList.toggle('hidden', !filler);
   if (!type) return;
   const cat = CATALOG[type];
+  if (filler) { wn.value = cat.stock; hn.value = cat.heights[0]; }
   cat.widths.forEach(w => {
     const o = document.createElement('option'); o.value = w;
     o.textContent = `${w}" wide  (${(w/12).toFixed(1)}')`;
     ws.appendChild(o);
   });
-  if (cat.heights.length > 1) {
+  if (cat.heights.length > 1 && !filler) {
     hs.classList.remove('hidden');
     cat.heights.forEach(h => {
       const o = document.createElement('option'); o.value = h;
@@ -488,6 +493,10 @@ function onTypeChange() {
     wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
     ds.classList.add('hidden'); // depth is auto from width selection
     gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
+  } else if (filler) {          // a filler can sit at any height: 0 = on the floor
+    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '0';
+    ds.classList.add('hidden');
+    gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
   } else {
     wbr.style.display = 'none'; ds.classList.add('hidden');
     gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
@@ -513,6 +522,7 @@ function defaultCabHeight(type, r) {
 function itemVerticalRange(item) {
   if (CATALOG[item.type]) {
     if (item.type === 'wall' || item.type === 'diagWall') { const b = item.wallBottom ?? 54; return [b, b + item.height]; }
+    if (isFiller(item.type)) { const b = item.wallBottom ?? 0; return [b, b + item.height]; }   // fillers sit wherever they're put
     return [0, item.height];
   }
   const acat = APPLIANCES[item.type] || {};
@@ -522,6 +532,7 @@ function itemVerticalRange(item) {
 // 'upper' or 'base' — which run a new piece of this type belongs to
 function itemLevel(item) {
   if (item.type === 'wall' || item.type === 'diagWall') return 'upper';
+  if (isFiller(item.type)) return (item.wallBottom ?? 0) >= 48 ? 'upper' : 'base';
   const acat = APPLIANCES[item.type];
   return acat && acat.wallMount ? 'upper' : 'base';
 }
@@ -548,7 +559,10 @@ function overlappingItems(r, wall, vRange, offset, width, ignoreId) {
   return wallItems(r, wall).filter(i => i.id !== ignoreId && rangesOverlap(itemVerticalRange(i), vRange)
     && offset < (i.offset||0) + i.width - 0.01 && (i.offset||0) < offset + width - 0.01);
 }
-function itemLabel(i) { return (CATALOG[i.type]?.abbr || APPLIANCES[i.type]?.abbr || i.type) + (i.width >= 1 ? i.width : ''); }
+function itemLabel(i) {
+  const w = i.width >= 1 || isFiller(i.type) ? fmtFrac(i.width).replace('"', '').replace(' ', '-') : '';
+  return (CATALOG[i.type]?.abbr || APPLIANCES[i.type]?.abbr || i.type) + w;   // B36, FL1-3/8
+}
 // Keep both "From left" boxes pointed at the end of the current run.
 function refreshPlacementOffsets() {
   const r = activeRoom(); if (!r) return;
@@ -571,18 +585,23 @@ function nextItemNum(r) {
 function addCabinet() {
   const r = activeRoom(); if (!r) return;
   const type  = document.getElementById('cab-type').value;
-  const width = parseFloat(document.getElementById('cab-width').value);
-  if (!type || !width) { alert('Select cabinet type and width.'); return; }
+  const filler = isFiller(type);
+  const width = filler ? cleanFillerDim(document.getElementById('cab-width-num').value, NaN)
+                       : parseFloat(document.getElementById('cab-width').value);
+  if (!type || !width) { alert(filler ? 'Enter the filler width in inches, e.g. 1 3/8.' : 'Select cabinet type and width.'); return; }
   const cat = CATALOG[type];
   const hs  = document.getElementById('cab-height-sel');
-  const height = hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || defaultCabHeight(type, r));
+  const height = filler ? cleanFillerDim(document.getElementById('cab-height-num').value, cat.heights[0])
+               : hs.classList.contains('hidden') ? cat.heights[0] : (parseFloat(hs.value) || defaultCabHeight(type, r));
   const note   = document.getElementById('cab-note-input').value.trim();
-  const cabOffset = parseInt(document.getElementById('cab-offset-input').value) || 0;
+  const cabOffset = parseInches(document.getElementById('cab-offset-input').value) || 0;
   const depthSel    = document.getElementById('cab-depth-sel');
+  const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInches(document.getElementById('cab-wall-bottom').value) || 54)
+                    : filler ? Math.max(0, parseInches(document.getElementById('cab-wall-bottom').value) || 0) : null;
   const depth       = type === 'diagWall' ? (width === 24 ? 24 : 15)
                     : (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value)
+                    : filler ? (wallBottom >= 48 ? 12 : 24)       // a filler up in the upper run is upper-depth
                     : cat.depth;
-  const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInt(document.getElementById('cab-wall-bottom').value) || 54) : null;
   const glassDoors    = (type === 'wall' || type === 'diagWall') && document.getElementById('cab-glass-doors').checked;
   const styleOverride = document.getElementById('cab-style-override').value || null;
   if (!confirmNoOverlap(r, { type, height, wallBottom }, cabOffset, width)) return;
@@ -784,6 +803,21 @@ function openEditModal(cab) {
   document.getElementById('edit-cab-note').value        = cab.note || '';
   document.getElementById('edit-cab-glass').checked     = !!cab.glassDoors;
 
+  const filler = isFiller(cab.type);
+  document.getElementById('edit-cab-offset').value = +(cab.offset || 0).toFixed(4);
+  // Fillers: free width/height boxes (fractions OK) instead of size dropdowns
+  let wnum = document.getElementById('edit-cab-width-num'), hnum = document.getElementById('edit-cab-height-num');
+  if (!wnum) {
+    const mk = (id, after, label) => { const i = document.createElement('input'); i.type = 'text'; i.id = id; i.className = 'cp-input';
+      i.setAttribute('inputmode', 'decimal'); i.setAttribute('aria-label', label); after.insertAdjacentElement('afterend', i); return i; };
+    wnum = mk('edit-cab-width-num', document.getElementById('edit-cab-width'), 'Filler width in inches');
+    hnum = mk('edit-cab-height-num', document.getElementById('edit-cab-height'), 'Filler height in inches');
+  }
+  document.getElementById('edit-cab-width').classList.toggle('hidden', filler);
+  document.getElementById('edit-cab-height').classList.toggle('hidden', filler);
+  wnum.classList.toggle('hidden', !filler); hnum.classList.toggle('hidden', !filler);
+  if (filler) { wnum.value = fmtFrac(cab.width).replace('"', ''); hnum.value = fmtFrac(cab.height).replace('"', ''); }
+
   // Width options
   const ws = document.getElementById('edit-cab-width');
   ws.innerHTML = '';
@@ -818,9 +852,9 @@ function openEditModal(cab) {
 
   // Wall bottom (wall + diagWall)
   const wbg = document.getElementById('edit-wallbottom-group');
-  if (cab.type === 'wall' || cab.type === 'diagWall') {
+  if (cab.type === 'wall' || cab.type === 'diagWall' || filler) {
     wbg.style.display = '';
-    document.getElementById('edit-cab-wallbottom').value = cab.wallBottom != null ? cab.wallBottom : 54;
+    document.getElementById('edit-cab-wallbottom').value = cab.wallBottom != null ? cab.wallBottom : (filler ? 0 : 54);
   } else { wbg.style.display = 'none'; }
 
   // Glass doors (wall + diagWall)
@@ -829,9 +863,10 @@ function openEditModal(cab) {
   // Door style override
   const ss = document.getElementById('edit-cab-style');
   ss.innerHTML = '<option value="">— Use Project Default —</option>';
-  const proj = state.projects.find(p => p.id === state.activeProjectId);
-  if (proj?.styles) {
-    proj.styles.forEach(s => {
+  // (Was reading proj.styles, which doesn't exist — the list was always empty and saving
+  // wiped any per-cabinet style. The account's styles come from getStyles().)
+  {
+    getStyles().forEach(s => {
       const o = document.createElement('option'); o.value = s.code;
       o.textContent = s.name || s.code;
       if (s.code === cab.styleOverride) o.selected = true;
@@ -846,17 +881,24 @@ function saveEditModal() {
   const r = activeRoom(); if (!r) return;
   const id  = document.getElementById('edit-cab-id').value;
   const cab = r.cabinets.find(c => c.id === id); if (!cab) return;
-  cab.width         = parseFloat(document.getElementById('edit-cab-width').value)   || cab.width;
-  const hs = document.getElementById('edit-cab-height');
-  if (hs.options.length > 0 && hs.value) cab.height = parseFloat(hs.value);
+  if (isFiller(cab.type)) {
+    cab.width  = cleanFillerDim(document.getElementById('edit-cab-width-num').value, cab.width);
+    cab.height = cleanFillerDim(document.getElementById('edit-cab-height-num').value, cab.height);
+    cab.wallBottom = Math.max(0, parseInches(document.getElementById('edit-cab-wallbottom').value) || 0);
+    cab.depth  = cab.wallBottom >= 48 ? 12 : 24;
+  } else {
+    cab.width  = parseFloat(document.getElementById('edit-cab-width').value) || cab.width;
+    const hs = document.getElementById('edit-cab-height');
+    if (hs.options.length > 0 && hs.value) cab.height = parseFloat(hs.value);
+  }
   if (cab.type === 'wall') {
     cab.depth      = parseFloat(document.getElementById('edit-cab-depth').value) || 12;
   }
   if (cab.type === 'wall' || cab.type === 'diagWall') {
-    cab.wallBottom = parseInt(document.getElementById('edit-cab-wallbottom').value) || 54;
+    cab.wallBottom = parseInches(document.getElementById('edit-cab-wallbottom').value) || 54;
     cab.glassDoors = document.getElementById('edit-cab-glass').checked;
   }
-  cab.offset        = parseInt(document.getElementById('edit-cab-offset').value)    || 0;
+  cab.offset        = parseInches(document.getElementById('edit-cab-offset').value) || 0;   // was parseInt: dropped fractions
   cab.note          = document.getElementById('edit-cab-note').value.trim();
   cab.styleOverride = document.getElementById('edit-cab-style').value || null;
   closeModal('modal-edit-cabinet');

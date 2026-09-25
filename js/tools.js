@@ -206,7 +206,7 @@ function renderCutList() {
     return `<tr>
       <td><span class="cutlist-num">${item.itemNum}</span></td>
       <td>${escHtml(label)}</td>
-      <td>${item.width}"W × ${item.height}"H × ${depth}"D</td>
+      <td>${fmtFrac(item.width)}W × ${fmtFrac(item.height)}H × ${depth}"D</td>
       <td>${escHtml(wallLabel)}</td>
     </tr>`;
   }).join('');

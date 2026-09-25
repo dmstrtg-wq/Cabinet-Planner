@@ -2044,6 +2044,10 @@ const CABINET_TYPES = [
   { key:'tall',        label:'Tall / Pantry' },
   { key:'diagWall',    label:'Diagonal Corner Wall' },
   { key:'fridgePanel', label:'Fridge End Panel' },
+  // Fillers can be any width in the planner; they're priced as the stock piece they're
+  // ripped from (≤3" → the 3" price, up to 6" → the 6" price, wider → several 6" pieces)
+  { key:'filler3',     label:'Filler - 3 inch stock' },
+  { key:'filler6',     label:'Filler - 6 inch stock' },
 ];
 // Valid widths/heights per cabinet type — mirrors CATALOG in app.html. Only Wall and Tall
 // vary by height there; these are two separate static files with no shared module system,
@@ -2059,6 +2063,8 @@ const CABINET_WIDTHS = {
   tall:        [15,18,24,30],
   diagWall:    [24,27],
   fridgePanel: [0.75],
+  filler3:     [3],
+  filler6:     [6],
 };
 const CABINET_HEIGHTS = { wall: [12,15,18,30,36,42], tall: [84,90,96] }; // only types that vary by height
 

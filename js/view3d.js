@@ -390,16 +390,16 @@ function renderIsometric() {
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
     const dep = cab.depth  || cat.depth || 24;
-    const baseY = (cab.type === 'wall' || cab.type === 'diagWall') ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
+    const baseY = itemVerticalRange(cab)[0];   // uppers at their bottom, fillers wherever they sit, bases on the floor
     const pos = cabPos(cab.wall, off, cab.width, dep);
     const baseCol = _styleHex;
 
     const _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
     if (_m) _m.userData.itemId = cab.id; // for selection highlight
-    if (cab.type !== 'cornerBase') {
+    if (cab.type !== 'cornerBase' && !isFiller(cab.type)) {   // fillers are plain boards, no door
       addFrontPanel(pos, baseY, h, cab.wall, baseCol, cab.glassDoors);
     }
-    addLabel(`${cab.width}"`, pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
+    if (cab.width >= 6) addLabel(fmtFrac(cab.width), pos.x0+pos.w/2, baseY+h+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 
   // ── Appliances ──

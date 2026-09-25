@@ -497,8 +497,10 @@ const CATALOG = {
   drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
   cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB',  basePrice: w => w*6  },
   lazysusan:   { label:'Lazy Susan',            widths:[33],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
-  filler3:     { label:'Filler 3"',             widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15  },
-  filler6:     { label:'Filler 6"',             widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20  },
+  // Fillers: any width/height, anywhere on the wall (widths/heights below are just the
+  // starting sizes). Priced as the stock piece they're ripped from — see fillerPriceParts().
+  filler3:     { label:'Filler',                widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15, filler:true, stock:3 },
+  filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20, filler:true, stock:6 },
   fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
   diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:24, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
 };
@@ -849,6 +851,31 @@ const activeProj = () => getProj(state.activeProjectId);
 const activeRoom = () => getRoom(activeProj(), state.activeRoomId);
 const escHtml  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fmtIn    = i => i > 0 ? `${i}" (${Math.floor(i/12)}'-${i%12}")` : '0"';
+const isFiller = t => !!(CATALOG[t] && CATALOG[t].filler);
+const FILLER_MIN = 0.0625, FILLER_MAX = 96;   // 1/16" up to 8'
+// A typed filler size → inches to the nearest 1/16" (blank/invalid → fallback)
+// Reads inches the way people type them: 1.375, 1 3/8, 1-3/8, 3/8, 34 1/2"
+function parseInches(v) {
+  if (typeof v === 'number') return v;
+  const s = String(v || '').trim().replace(/["”″]|in(ches)?$/gi, '').trim();
+  let m = s.match(/^(\d+(?:\.\d+)?)?\s*[- ]?\s*(\d+)\s*\/\s*(\d+)$/);        // 1 3/8, 1-3/8, 3/8
+  if (m && +m[3]) return (m[1] ? parseFloat(m[1]) : 0) + (+m[2]) / (+m[3]);
+  m = s.match(/^\d*\.?\d+$/);
+  return m ? parseFloat(s) : NaN;
+}
+function cleanFillerDim(v, fallback) {
+  const n = parseInches(v);
+  if (!isFinite(n) || n <= 0) return fallback;
+  return Math.min(FILLER_MAX, Math.max(FILLER_MIN, Math.round(n * 16) / 16));
+}
+// Inches as a tape-measure string: 12", 12 3/8", 1/16" (nearest 1/16")
+function fmtFrac(v) {
+  const neg = v < 0; v = Math.round(Math.abs(v) * 16) / 16;   // nearest 1/16"
+  const whole = Math.floor(v); let n = Math.round((v - whole) * 16), d = 16;
+  while (n && n % 2 === 0) { n /= 2; d /= 2; }
+  const frac = n ? `${n}/${d}` : '';
+  return (neg ? '-' : '') + (whole || !frac ? whole : '') + (whole && frac ? ' ' : '') + frac + '"';
+}
 const fmtMoney = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 function getMarkup() { return (parseFloat(document.getElementById('markup-pct').value) || 0) / 100; }
 function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
@@ -857,8 +884,19 @@ function pricingOn() { return document.getElementById('pricing-toggle').checked;
 // size + finish combination. We never substitute a guessed/default price here — a company's
 // uploaded price sheet (or legacy manual $/in rate) is the only source of truth, so an
 // unpriced cabinet stays visibly unpriced instead of silently showing a wrong number.
+// A filler is priced as the stock filler it's ripped from: up to 3" → one 3" filler,
+// over 3" up to 6" → one 6" filler, wider → as many 6" fillers as it takes. (Dan, 2026-09-24)
+function fillerPriceParts(width) {
+  if (width <= 3) return { type: 'filler3', stock: 3, count: 1 };
+  return { type: 'filler6', stock: 6, count: Math.ceil(width / 6 - 1e-9) };
+}
 function cabinetPrice(cab) {
   const overrides = companyProfile.price_overrides;
+  if (isFiller(cab.type) && !cab._fillerPiece) {
+    const f = fillerPriceParts(cab.width);
+    const one = cabinetPrice({ ...cab, type: f.type, width: f.stock, _fillerPiece: true });
+    return one == null ? null : one * f.count;   // markup already applied per piece
+  }
   const ov = overrides && overrides[cab.type];
   let base = null;
   if (ov != null) {

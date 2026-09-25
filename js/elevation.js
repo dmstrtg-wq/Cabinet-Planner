@@ -125,7 +125,24 @@ function renderElevation() {
     return getStyles().find(s => s.code === code) || styleInfo;
   }
 
-  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type)).forEach(cab => {
+  // Fillers: plain boards at whatever height they sit (any width, any height)
+  wallCabs.filter(c => isFiller(c.type)).forEach(cab => {
+    const [bot, top] = itemVerticalRange(cab);
+    const cW = cab.width*scale, cH = (top - bot)*scale, x = eX(cab.offset||0, cab.width), y = floorY - top*scale;
+    const si = cabStyle(cab);
+    ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(x, y, cW, cH);
+    ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = PDF ? 1.5 : 1.2; ctx.strokeRect(x, y, cW, cH);
+    if (bot === 0) { ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY-7, cW, 7); }   // toe kick
+    const label = 'FL ' + fmtFrac(cab.width);
+    ctx.fillStyle = PDF ? '#1a1a1a' : (darkSwatches.includes(si.swatch) ? '#fff' : '#334155');
+    ctx.font = `600 ${Math.max(8, Math.min(scale*1.7, 10))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.translate(x + cW/2, y + cH/2);
+    if (ctx.measureText(label).width > cW - 2) ctx.rotate(-Math.PI/2);   // narrow filler: label runs up the board
+    ctx.fillText(label, 0, 0); ctx.restore();
+    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
+  });
+
+  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||34.5)*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const isCorner=cab.type==='cornerBase';
@@ -340,13 +357,13 @@ function renderElevation() {
     // Upper cabinets → dim string above wall
     const upperDimItems = wallCabs
       .filter(c => ['wall','diagWall','tall'].includes(c.type))
-      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: `${c.width}"` }))
+      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
       .sort((a,b) => a.x1-b.x1);
     if (upperDimItems.length) pdfDimString(upperDimItems, WY - 28, true);
     // Base cabinets → dim string below floor
     const baseDimItems = wallCabs
-      .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','filler3','filler6','fridgePanel'].includes(c.type))
-      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: `${c.width}"` }))
+      .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) || (isFiller(c.type) && !(c.wallBottom > 0)))
+      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
       .sort((a,b) => a.x1-b.x1);
     if (baseDimItems.length) pdfDimString(baseDimItems, WY + WH + 22, false);
 

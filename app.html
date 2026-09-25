@@ -433,7 +433,7 @@
           </div>
           <div class="opening-inputs" style="margin-bottom:4px;">
             <label style="font-size:11px;white-space:nowrap;">From left:</label>
-            <input type="number" id="opening-offset" aria-label="Opening distance from left (inches)" placeholder='0"' min="0" value="0" style="width:52px;">
+            <input type="number" id="opening-offset" step="any" aria-label="Opening distance from left (inches)" placeholder='0"' min="0" value="0" style="width:52px;">
             <button class="btn btn-secondary" style="padding:5px 9px;font-size:11px;flex-shrink:0" onclick="addOpening()">＋ Add</button>
           </div>
           <div style="font-size:10px;color:#64748b;margin-top:2px;">Inches from left edge of wall</div>
@@ -452,23 +452,24 @@
             <option value="lazysusan">Lazy Susan Corner</option>
             <option value="diagWall">Diagonal Corner Wall</option>
             <option value="fridgePanel">Fridge End Panel</option>
-            <option value="filler3">Filler 3"</option>
-            <option value="filler6">Filler 6"</option>
+            <option value="filler3">Filler (any size)</option>
           </select>
           <select id="cab-width" class="cp-select"><option value="">— Width —</option></select>
+          <input type="text" id="cab-width-num" class="cp-input hidden" inputmode="decimal" autocomplete="off" style="margin-bottom:6px;" placeholder='Width, e.g. 1 3/8' aria-label="Filler width in inches (fractions OK)">
           <select id="cab-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
+          <input type="text" id="cab-height-num" class="cp-input hidden" inputmode="decimal" autocomplete="off" style="margin-bottom:6px;" placeholder='Height, e.g. 34 1/2' aria-label="Filler height in inches (fractions OK)">
           <select id="cab-depth-sel" class="cp-select hidden">
             <option value="12">12" deep — Standard upper</option>
             <option value="24">24" deep — Over fridge/appliance</option>
           </select>
           <div id="wall-bottom-row" style="display:none;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Bottom from floor:</label>
-            <input type="number" id="cab-wall-bottom" aria-label="Bottom of wall cabinet from floor (inches)" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
+            <input type="number" id="cab-wall-bottom" step="any" aria-label="Bottom of wall cabinet from floor (inches)" class="cp-input" value="54" min="0" style="margin-bottom:0;width:60px;">
             <span style="font-size:10px;color:#64748b;white-space:nowrap;">in.</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
-            <input type="number" id="cab-offset-input" aria-label="Cabinet distance from left wall (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <input type="number" id="cab-offset-input" step="any" aria-label="Cabinet distance from left wall (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#64748b;white-space:nowrap;">inches</span>
           </div>
           <div id="glass-door-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
@@ -501,7 +502,7 @@
           <select id="app-elev-bottom-sel" class="cp-select hidden"><option value="">— Height from floor —</option></select>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
             <label style="font-size:11px;color:var(--text-muted);white-space:nowrap;">From left:</label>
-            <input type="number" id="app-offset" aria-label="Appliance distance from left (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
+            <input type="number" id="app-offset" step="any" aria-label="Appliance distance from left (inches)" class="cp-input" placeholder='0"' min="0" value="0" style="margin-bottom:0;flex:1;">
             <span style="font-size:10px;color:#64748b;white-space:nowrap;">inches</span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -617,12 +618,12 @@
       </div>
       <div class="form-group" id="edit-wallbottom-group">
         <label for="edit-cab-wallbottom">Bottom from floor (in)</label>
-        <input type="number" id="edit-cab-wallbottom" class="cp-input" value="54" min="0" style="margin-bottom:0;">
+        <input type="number" id="edit-cab-wallbottom" step="any" class="cp-input" value="54" min="0" style="margin-bottom:0;">
       </div>
     </div>
     <div class="form-group">
       <label for="edit-cab-offset">From left (in)</label>
-      <input type="number" id="edit-cab-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
+      <input type="number" id="edit-cab-offset" step="any" class="cp-input" min="0" value="0" style="margin-bottom:0;">
     </div>
     <div class="form-group" id="edit-glass-group" style="display:none;">
       <div style="display:flex;align-items:center;gap:8px;">

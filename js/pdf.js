@@ -164,7 +164,7 @@ async function printFloorPlan(btn) {
         const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
         const label = cat ? cat.label : item.type;
         const depth = item.depth || (cat && cat.depth) || '—';
-        return [String(item.itemNum), label, `${item.width}"W × ${item.height}"H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
+        return [String(item.itemNum), label, `${fmtFrac(item.width)}W × ${fmtFrac(item.height)}H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
       });
       doc.autoTable({ startY: cy, margin:{left:MAR,right:MAR},
         head:[['#','Item','Size','Wall']],
@@ -355,7 +355,7 @@ async function exportPDF(btn) {
         const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
         const label = cat ? cat.label : item.type;
         const depth = item.depth || (cat && cat.depth) || '—';
-        return [String(item.itemNum), label, `${item.width}"W × ${item.height}"H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
+        return [String(item.itemNum), label, `${fmtFrac(item.width)}W × ${fmtFrac(item.height)}H × ${depth}"D`, item.wall.charAt(0).toUpperCase()+item.wall.slice(1)];
       });
       doc.autoTable({ startY: cy, margin:{left:MAR,right:MAR},
         head:[['#','Item','Size','Wall']],
@@ -392,7 +392,7 @@ async function exportPDF(btn) {
       const cat=CATALOG[c.type];
       cabRows.push([
         (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
-        `${c.width}"W × ${c.height}"H × ${c.depth}"D`,
+        `${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
         pr!=null ? {content:'$'+pr.toFixed(2),styles:{halign:'right',fontStyle:'bold'}}
                  : {content:'N/A',styles:{halign:'right',fontStyle:'italic',textColor:[148,163,184]}}

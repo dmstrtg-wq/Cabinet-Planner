@@ -426,22 +426,22 @@ function renderCanvas() {
     const fs = Math.max(8, Math.min(scale*2.0, 11));
     ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (isCorner) {
-      if      (wall==='north') ctx.fillText(`${cab.width}"`, x+cW*0.25, y+cD*0.35);
-      else if (wall==='south') ctx.fillText(`${cab.width}"`, x+cW*0.25, y+cD*0.65);
-      else if (wall==='west')  ctx.fillText(`${cab.width}"`, x+cD*0.35, y+cW*0.25);
-      else                     ctx.fillText(`${cab.width}"`, x+cD*0.65, y+cW*0.25);
+      if      (wall==='north') ctx.fillText(fmtFrac(cab.width), x+cW*0.25, y+cD*0.35);
+      else if (wall==='south') ctx.fillText(fmtFrac(cab.width), x+cW*0.25, y+cD*0.65);
+      else if (wall==='west')  ctx.fillText(fmtFrac(cab.width), x+cD*0.35, y+cW*0.25);
+      else                     ctx.fillText(fmtFrac(cab.width), x+cD*0.65, y+cW*0.25);
     } else if (isLazySusan) {
       // Label in the middle of the L's long wing
-      if (wall==='east') ctx.fillText(`LS${cab.width}"`, x+cD - cW*0.65, y+cW*0.55);
-      else               ctx.fillText(`LS${cab.width}"`, x+cW*0.65, y+cW*0.55);
+      if (wall==='east') ctx.fillText(`LS${fmtFrac(cab.width)}`, x+cD - cW*0.65, y+cW*0.55);
+      else               ctx.fillText(`LS${fmtFrac(cab.width)}`, x+cW*0.65, y+cW*0.55);
     } else if (isDiagWall) {
       // Label in the centre of the placed-wall wing
       const wallD2 = Math.min(12*scale, cW*0.45, cD*0.45);
-      if      (wall==='north') ctx.fillText(`DCW${cab.width}"`, x+cW/2, y+wallD2/2);
-      else if (wall==='south') ctx.fillText(`DCW${cab.width}"`, x+cW/2, y+cD-wallD2/2);
-      else if (wall==='west')  ctx.fillText(`DCW${cab.width}"`, x+wallD2/2, y+cW/2);
-      else                     ctx.fillText(`DCW${cab.width}"`, x+cD-wallD2/2, y+cW/2);
-    } else { ctx.fillText(`${cab.width}"`, x+w/2, y+h/2); }
+      if      (wall==='north') ctx.fillText(`DCW${fmtFrac(cab.width)}`, x+cW/2, y+wallD2/2);
+      else if (wall==='south') ctx.fillText(`DCW${fmtFrac(cab.width)}`, x+cW/2, y+cD-wallD2/2);
+      else if (wall==='west')  ctx.fillText(`DCW${fmtFrac(cab.width)}`, x+wallD2/2, y+cW/2);
+      else                     ctx.fillText(`DCW${fmtFrac(cab.width)}`, x+cD-wallD2/2, y+cW/2);
+    } else { ctx.fillText(fmtFrac(cab.width), x+w/2, y+h/2); }
   }
 
   function drawAppOnFloor(app, wall) {

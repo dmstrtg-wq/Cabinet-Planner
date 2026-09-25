@@ -113,3 +113,13 @@ Claude tested locally: each of the 7 layers changes the floor plan and elevation
 - [ ] The **Dims** and **Item #s** buttons still work and stay in sync with the Layers checkboxes.
 - [ ] Hide Wall cabinets, then click where an upper sits over a base. You get the base.
 - [ ] **Print Plans (Silver/Gold, fresh page load):** click Print Plans without clicking Export PDF first. The PDF downloads, including the cut-list page. **This was broken on the live site.**
+
+### Fillers: any size, anywhere (built 2026-09-24, before 5.2)
+Dan's rules: a filler is just a filler (not base or upper). Any width, any height, any spot on the plan. Priced as the stock piece it's ripped from: ≤3" = your 3" filler price, over 3" up to 6" = your 6" price, wider = your 6" price × the number of 6" pieces. Claude tested locally: fraction entry, 1/16" precision, pricing at 1/8", 1 3/8", 3", 3 1/16", 6", 7", 13" (+ markup), the add form, popover, edit dialog, drag-to-fit, upper-run drop, and the printed quote line.
+- [ ] **Add form:** Type → "Filler (any size)". Width/Height boxes accept `1 3/8`, `3/8`, `1.375`; "Bottom from floor" puts it anywhere (0 = on the floor, 54 = in the upper run).
+- [ ] **Double-click a filler:** the popover has Width / Height / Bottom from floor boxes (fractions OK).
+- [ ] **Drag FL3 or FL6 from the Catalog into a small gap (6" or less):** it resizes to exactly fill the gap. In the Elevation, dropping it up high puts it in the upper run.
+- [ ] **Fillers can go in corners and against door/window casings** (no red). They still can't sit on top of another cabinet.
+- [ ] **Quote:** a filler line reads like `Filler | 5/8"W × 34 1/2"H`. Heights on all quote lines now show as fractions (`34 1/2"` instead of `34.5"`).
+- [ ] **⚠ Price sheet — ACTION:** fillers were never in the price-sheet template, so every filler has always quoted as "No price set". Profile → download a fresh price-sheet template: it now has "Filler - 3 inch stock" and "Filler - 6 inch stock" rows. Fill those in and re-upload. (Your other prices are unaffected.)
+- [ ] **Edit dialog fixes:** open a cabinet with a per-cabinet door style, click Save. The style is kept (it used to be wiped, and the style list was empty). A cabinet at a fractional position (e.g. 81 3/4") keeps it after Save (it used to round down to 81).

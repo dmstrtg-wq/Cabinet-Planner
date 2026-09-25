@@ -21,6 +21,9 @@ function placementIssue(r, item) {
   const a = itemRect(r, item);
   const corner = roomItems(r).find(i => i.id !== item.id && i.wall && i.wall !== item.wall && rangesOverlap(itemVerticalRange(i), vr)
     && (b => b && a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01)(itemRect(r, i)));
+  // Fillers are scribed into corners and against door/window casings all the time,
+  // so only the same-spot overlap rule above applies to them.
+  if (isFiller(item.type)) return null;
   if (corner) return 'Hits ' + itemLabel(corner) + ' in the corner';
   // Doors and windows on this wall
   const blocked = (r.openings || []).find(o => {
@@ -66,13 +69,6 @@ function snapPlacementOffset(r, item, off) {
 
 const lcFirst = t => t.charAt(0).toLowerCase() + t.slice(1); // "Overlaps B18" → "overlaps B18"
 
-// Inches as a tape-measure string: 12, 12 3/8, 0 1/8 (nearest 1/8")
-function fmtFrac(v) {
-  const neg = v < 0; v = Math.round(Math.abs(v) * 8) / 8;
-  const whole = Math.floor(v), eighths = Math.round((v - whole) * 8);
-  const frac = eighths ? (eighths % 4 === 0 ? '1/2' : eighths % 2 === 0 ? (eighths / 2) + '/4' : eighths + '/8') : '';
-  return (neg ? '-' : '') + (whole || !frac ? whole : '') + (whole && frac ? ' ' : '') + frac + '"';
-}
 
 // ════════════════════════════
 // MOVING PLACED ITEMS (Build Plan 2.3)
@@ -171,7 +167,7 @@ function paletteEntries() {
     const isCab = !!CATALOG[type], def = isCab ? CATALOG[type] : APPLIANCES[type];
     def.widths.forEach(w => out.push({
       cat: cat.id, type, width: w, isCab, color: def.color,
-      code: def.abbr + (w >= 1 ? w : ''),
+      code: def.abbr + (w >= 1 ? w : ''),   // fillers: FL3 / FL6 are just starting sizes
       label: `${def.label} ${w >= 1 ? w + '"' : ''}`.trim(),
     }));
   }));
@@ -201,7 +197,7 @@ function makePaletteItem(entry, wall, offset) {
     const cat = CATALOG[entry.type], upper = entry.type === 'wall' || entry.type === 'diagWall';
     return { id: uid(), type: entry.type, wall, width: entry.width, height: defaultCabHeight(entry.type, r),
       depth: entry.type === 'diagWall' ? (entry.width === 24 ? 24 : 15) : cat.depth, note: '', offset,
-      wallBottom: upper ? 54 : null, glassDoors: false, styleOverride: null, itemNum: null };
+      wallBottom: upper ? 54 : isFiller(entry.type) ? 0 : null, glassDoors: false, styleOverride: null, itemNum: null };
   }
   const acat = APPLIANCES[entry.type];
   return { id: uid(), type: entry.type, wall, width: entry.width, height: acat.height, note: '', offset,
@@ -209,6 +205,7 @@ function makePaletteItem(entry, wall, offset) {
 }
 function commitPaletteItem(item) {
   const r = activeRoom(); if (!r) return;
+  delete item._fitted;
   item.itemNum = nextItemNum(r);
   (CATALOG[item.type] ? r.cabinets : (r.appliances = r.appliances || [])).push(item);
   persist(); renderCutList(); refreshPlacementOffsets();
@@ -252,23 +249,37 @@ function floorPlacement(entry, clientX, clientY) {
   });
   if (!best) return { item: makePaletteItem(entry, null, 0), issue: 'Drop it next to a wall' };
   const item = makePaletteItem(entry, best.w, 0);
-  item.offset = snapPlacementOffset(r, item, best.t - item.width / 2);
+  fitFillerToGap(r, item, best.t);
+  if (!item._fitted) item.offset = snapPlacementOffset(r, item, best.t - item.width / 2);
   return { item, issue: placementIssue(r, item) };
 }
-function elevPlacement(entry, clientX) {
+// A filler dragged over an open gap of 6" or less becomes exactly that wide — the usual
+// reason to drop a filler is to close a gap. (Wider gaps: it keeps its size and snaps.)
+function fitFillerToGap(r, item, t) {
+  if (!isFiller(item.type)) return;
+  const span = wallOpenSpans(r, item.wall, itemVerticalRange(item)).find(([a, b]) => t >= a - 0.01 && t <= b + 0.01);
+  if (span && span[1] - span[0] <= 6.001) { item.width = Math.round((span[1] - span[0]) * 16) / 16; item.offset = span[0]; item._fitted = true; }
+}
+function elevPlacement(entry, clientX, clientY) {
   const r = activeRoom(), g = vpGeom.elev; if (!r || !g) return null;
   const wall = state.elevWall, len = wallLength(r, wall);
   const c = document.getElementById('elevation-plan').getBoundingClientRect(), z = vpState.elev.zoom;
   let x = ((clientX - c.left) / z - g.originX) / g.scale;
   if (wall === 'south' || wall === 'west') x = len - x;   // these elevations are drawn mirrored
   const item = makePaletteItem(entry, wall, 0);
-  item.offset = snapPlacementOffset(r, item, x - item.width / 2);
+  if (isFiller(item.type)) {
+    // In the elevation a filler goes at the height you drop it: up in the upper run or on the floor
+    const h = (g.originY - ((clientY - c.top) / z)) / g.scale;
+    if (h > 50) { item.wallBottom = 54; item.height = defaultCabHeight('wall', r); item.depth = 12; }
+  }
+  fitFillerToGap(r, item, x);
+  if (!item._fitted) item.offset = snapPlacementOffset(r, item, x - item.width / 2);
   return { item, issue: placementIssue(r, item) };
 }
 function placementAt(entry, clientX, clientY) {
   const el = document.elementFromPoint(clientX, clientY);
   if (state.viewMode === 'floor' && el && el.closest('#fp-viewport')) return floorPlacement(entry, clientX, clientY);
-  if (state.viewMode === 'elevation' && el && el.closest('#elev-viewport')) return elevPlacement(entry, clientX);
+  if (state.viewMode === 'elevation' && el && el.closest('#elev-viewport')) return elevPlacement(entry, clientX, clientY);
   return null;
 }
 function redrawForGhost() {

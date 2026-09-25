@@ -26,7 +26,7 @@ function renderSummary(r) {
       : fmtMoney(g.totalPrice);
     return `<div class="summary-row">
       <div class="summary-dot" style="background:${cat.color}"></div>
-      <div class="summary-name">${cat.label} — ${g.width}"W × ${g.height}"H</div>
+      <div class="summary-name">${cat.label} — ${fmtFrac(g.width)}W × ${fmtFrac(g.height)}H</div>
       ${showPrice ? `<div class="summary-price">${priceDisplay}</div>` : ''}
       <div class="summary-count">×${g.count}</div>
     </div>`;
@@ -238,7 +238,7 @@ function printQuote() {
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
       const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
       const priceCell = price != null ? fmtMoney(price) : '<span style="color:#64748b;font-style:italic;">N/A</span>';
-      cabRows += `<tr><td>${cabLabel}</td><td>${c.width}"W × ${c.height}"H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
+      cabRows += `<tr><td>${cabLabel}</td><td>${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
     });
   });
 

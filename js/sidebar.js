@@ -155,7 +155,7 @@ function renderCabinetList() {
         <div class="cab-color" style="background:${cat.color}"></div>
         <div class="cab-info">
           <div class="cab-name">${cat.label}</div>
-          <div class="cab-dim">${c.width}"W × ${c.height}"H × ${c.depth}"D · ${c.offset||0}" from left</div>
+          <div class="cab-dim">${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D · ${fmtFrac(c.offset||0)} from left</div>
           ${c.note ? `<div class="cab-note">${escHtml(c.note)}</div>` : ''}
           ${fitTag(c.id)}
           ${price}
@@ -173,7 +173,7 @@ function renderCabinetList() {
         <div class="cab-color" style="background:${acat.color}"></div>
         <div class="cab-info">
           <div class="cab-name">${acat.label}</div>
-          <div class="cab-dim">${a.width}"W · ${a.offset||0}" from left</div>
+          <div class="cab-dim">${a.width}"W · ${fmtFrac(a.offset||0)} from left</div>
           ${a.note ? `<div class="cab-note">${escHtml(a.note)}</div>` : ''}
           ${fitTag(a.id)}
         </div>

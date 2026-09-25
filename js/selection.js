@@ -108,8 +108,16 @@ function openItemPopover(item, clientX, clientY) {
   let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
       <strong>#${item.itemNum || '?'} ${escHtml(isCab ? CATALOG[item.type].label : APPLIANCES[item.type].label)}</strong>
       <button data-act="close" aria-label="Close" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted,#64748b);line-height:1;">×</button></div>`;
+  const inch = (f, v) => `<input data-f="${f}" type="text" inputmode="decimal" ${selStyle} value="${escHtml(fmtFrac(v).replace('"', ''))}">`;
   if (isCab) {
-    html += row('Type', `<select data-f="type" ${selStyle}>${Object.entries(CATALOG).map(([k, c]) => opt(k, c.label, k === item.type)).join('')}</select>`);
+    // (filler6 is folded into one "Filler" entry — every filler is any size)
+    html += row('Type', `<select data-f="type" ${selStyle}>${Object.entries(CATALOG).filter(([k]) => k !== 'filler6' || item.type === 'filler6').map(([k, c]) => opt(k, c.label, k === item.type)).join('')}</select>`);
+  }
+  if (isCab && isFiller(item.type)) {
+    html += row('Width (in)', inch('width', item.width));
+    html += row('Height (in)', inch('height', item.height));
+    html += row('Bottom from floor', inch('wallBottom', item.wallBottom ?? 0));
+  } else if (isCab) {
     html += row('Width', `<select data-f="width" ${selStyle}>${CATALOG[item.type].widths.map(w => opt(w, w + '"', w === item.width)).join('')}</select>`);
     if (CATALOG[item.type].heights.length > 1)
       html += row('Height', `<select data-f="height" ${selStyle}>${CATALOG[item.type].heights.map(h => opt(h, h + '"', h === item.height)).join('')}</select>`);
@@ -151,10 +159,17 @@ function openItemPopover(item, clientX, clientY) {
 }
 
 function applyItemEdit(item, field, value) {
+  const filler = isFiller(item.type);
   if (field === 'note') item.note = value.trim();
   else if (field === 'styleOverride') item.styleOverride = value || null;
-  else if (field === 'width') item.width = parseFloat(value);
-  else if (field === 'height') item.height = parseFloat(value);
+  else if (field === 'width') item.width = filler ? cleanFillerDim(value, item.width) : parseFloat(value);
+  else if (field === 'height') item.height = filler ? cleanFillerDim(value, item.height) : parseFloat(value);
+  else if (field === 'wallBottom') { item.wallBottom = Math.max(0, parseInches(value) || 0); item.depth = item.wallBottom >= 48 ? 12 : 24; }
+  else if (field === 'type' && isFiller(value)) {
+    // → filler: keep the width it had (any width is fine), sit where the old piece sat
+    const [bot, top] = itemVerticalRange(item);
+    item.type = value; item.wallBottom = bot; item.height = top - bot; item.depth = bot >= 48 ? 12 : 24; item.glassDoors = false;
+  }
   else if (field === 'type') {
     const cat = CATALOG[value]; if (!cat) return;
     item.type = value;
