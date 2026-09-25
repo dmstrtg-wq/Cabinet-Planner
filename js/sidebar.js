@@ -194,6 +194,7 @@ function renderCabinetList() {
     </div>`).join('');
   }
   if (!wallCabs.length && !wallOpenings.length && !wallApps.length && !allIslands.length) html = '<div class="no-cabs">Nothing on this wall yet.<br>Add cabinets, appliances, or openings above.</div>';
+  html = openSpaceListHTML(r, state.activeWall) + html;   // "Open space · Fill…" (fillgap.js)
   list.innerHTML = html;
 }
 

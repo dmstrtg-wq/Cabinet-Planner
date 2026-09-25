@@ -123,3 +123,11 @@ Dan's rules: a filler is just a filler (not base or upper). Any width, any heigh
 - [ ] **Quote:** a filler line reads like `Filler | 5/8"W × 34 1/2"H`. Heights on all quote lines now show as fractions (`34 1/2"` instead of `34.5"`).
 - [ ] **⚠ Price sheet — ACTION:** fillers were never in the price-sheet template, so every filler has always quoted as "No price set". Profile → download a fresh price-sheet template: it now has "Filler - 3 inch stock" and "Filler - 6 inch stock" rows. Fill those in and re-upload. (Your other prices are unaffected.)
 - [ ] **Edit dialog fixes:** open a cabinet with a per-cabinet door style, click Save. The style is kept (it used to be wiped, and the style list was empty). A cabinet at a fractional position (e.g. 81 3/4") keeps it after Save (it used to round down to 81).
+
+### 5.2 Fill this gap (built 2026-09-24)
+Claude tested locally: solver on 105" (offers 36+36+30 + 3" filler, the Build Plan example), 102", 144", 200", 30 1/2", 26 1/4", 13 3/4", 9", 7 1/2", 1 3/8", and a 60" sink run, every option summing exactly. Filled the sample kitchen's east base gap (B24 + 2 1/4" filler at the wall end) and upper corner gap (W12), no problems, and one undo removed the whole fill.
+- [ ] **Side panel → Open space:** each open stretch on the active wall shows with its size, base or upper run, and a **Fill…** button.
+- [ ] **Fill…** shows up to 3 exact options with a little scale bar (filler hatched). Change "Cabinet type" (Base, Drawer Base, Sink Base, Vanity / Wall) and the options update.
+- [ ] **Use this:** everything drops in, the gap is closed exactly, and the filler sits against the wall/corner end.
+- [ ] **One ⌘Z** removes the whole fill.
+- [ ] A gap narrower than 9" offers a single filler of exactly that width.

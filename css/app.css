@@ -690,3 +690,14 @@ body.free-tier #connect-pro-btn { display:block; }
 .layers-row:hover { background: #f1f5f9; }
 .layers-row input { accent-color: var(--accent); width: 15px; height: 15px; }
 .layers-note { font-size: 11px; color: var(--text-muted); padding: 6px 6px 2px; border-top: 1px solid var(--border); margin-top: 4px; line-height: 1.35; }
+
+/* Fill this gap (5.2) */
+.open-space-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; margin-bottom: 4px; border: 1px dashed var(--border); border-radius: 6px; font-size: 12px; }
+.open-space-fill { padding: 4px 10px !important; font-size: 12px !important; }
+.fill-option { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.fill-option:hover { border-color: var(--accent); }
+.fill-option-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.fill-bar { display: flex; height: 26px; border: 1px solid #94a3b8; border-radius: 4px; overflow: hidden; }
+.fill-seg { display: flex; align-items: center; justify-content: center; background: #dbeafe; border-right: 1px solid #94a3b8; font-size: 11px; font-weight: 700; color: #1e3a8a; min-width: 2px; overflow: hidden; white-space: nowrap; }
+.fill-seg:last-child { border-right: none; }
+.fill-seg-filler { background: repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 3px, #cbd5e1 3px, #cbd5e1 6px); }
