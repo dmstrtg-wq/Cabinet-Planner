@@ -74,14 +74,19 @@ function openProject(projId, roomId) {
   if (iso3D) iso3D.initedCamera = false;
   persist(); renderProjectView();
 }
+// The line under the project name: "Kitchen · Style: WS – White Shaker · Created …"
+// (also refreshed when the door style changes — it used to stay on the old style)
+function renderProjectMeta(p) {
+  const si = getStyles().find(s => s.code === (p.style || getStyles()[0]?.code));
+  document.getElementById('pv-meta').textContent = `${p.type} · Style: ${si ? si.code + ' – ' + si.name : ''} · Created ${new Date(p.createdAt).toLocaleDateString()}`;
+}
 function renderProjectView() {
   const p = activeProj();
   document.getElementById('welcome').classList.add('hidden');
   document.getElementById('project-view').classList.remove('hidden');
   document.getElementById('project-view').style.display = 'flex';
   document.getElementById('pv-name').textContent = p.customer;
-  const si = getStyles().find(s => s.code === (p.style || getStyles()[0]?.code));
-  document.getElementById('pv-meta').textContent = `${p.type} · Style: ${si ? si.code + ' – ' + si.name : ''} · Created ${new Date(p.createdAt).toLocaleDateString()}`;
+  renderProjectMeta(p);
   // Status pill
   const pill = document.getElementById('pv-status-pill');
   const status = p.status || 'Lead';

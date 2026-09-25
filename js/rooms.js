@@ -971,6 +971,7 @@ function buildStylePanel() {
 function selectStyle(code) {
   const p = activeProj(); if (!p) return;
   p.style = code; persist();
+  renderProjectMeta(p);
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
   syncStyleCurrent(code);
   document.getElementById('style-container').classList.add('hidden');

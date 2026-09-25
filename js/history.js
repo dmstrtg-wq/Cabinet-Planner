@@ -55,7 +55,7 @@ function historyStep(from, to, label) {
   if (typeof getSelectedItem === 'function' && selectedItemId && !getSelectedItem()) selectedItemId = null;
   if (typeof closeItemPopover === 'function') closeItemPopover();
   persist();
-  syncStylePanel(); renderRoomTabs(); renderWallButtons(); refreshPlacementOffsets();
+  syncStylePanel(); renderProjectMeta(p); renderRoomTabs(); renderWallButtons(); refreshPlacementOffsets();
   renderAll();
   if (state.viewMode === '3d') renderIsometric();
   updateUndoButtons();

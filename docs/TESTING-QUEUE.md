@@ -150,3 +150,7 @@ Claude checked renders of the sample kitchen in White Shaker, Espresso, Natural 
 - [ ] **Wood finishes** (names with oak, walnut, natural wood, etc.) show grain.
 - [ ] **Orbiting a full kitchen is smooth** on your laptop (tell me if it stutters).
 - [ ] Does anything look off to your trade eye (proportions, drawer height, pull placement)? These are easy to tune.
+
+### Door style "stuck" fix (2026-09-24, Dan's report)
+- [ ] Pick a new door style in the right panel. The line under the project name ("Kitchen · Style: … ") now changes immediately, along with the right panel, floor plan, elevation and 3D. (Before, that header line stayed on the old style until you reopened the project.)
+- [ ] If the style **still** doesn't change anywhere for you (right panel swatch, 3D colors), tell Claude exactly which part stayed on Ice White. That would be a different problem than the one fixed here.
