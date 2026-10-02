@@ -111,7 +111,14 @@ function deleteProject(id, e) {
   e.stopPropagation();
   if (!confirm('Delete this project?')) return;
   state.projects = state.projects.filter(p => p.id !== id);
-  if (currentUser) db.from('projects').delete().eq('id', id); // fire and forget
+  if (currentUser) {
+    db.from('projects').delete().eq('id', id); // fire and forget
+    // …and its 3D quote views in storage
+    const folder = `${effectiveOwnerId}/${id}`;
+    db.storage.from('quote-snapshots').list(folder).then(({ data }) => {
+      if (data && data.length) db.storage.from('quote-snapshots').remove(data.map(f => `${folder}/${f.name}`));
+    }).catch(() => {});
+  }
   // Also drop it from this browser's copy, or it would come back on the next load.
   writeLocalProjects(readLocalProjects().filter(p => p.id !== id));
   if (state.activeProjectId === id) { state.activeProjectId = null; state.activeRoomId = null; showWelcome(); }
@@ -994,6 +1001,7 @@ function syncHardwareButtons() {
 function syncStylePanel() {
   syncHardwareButtons();
   if (typeof syncCountertopPanel === 'function') syncCountertopPanel();
+  if (typeof updateSnapButton === 'function') updateSnapButton();
   const p = activeProj(); const code = p ? (p.style || 'AW') : 'AW';
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
   syncStyleCurrent(code);

@@ -208,6 +208,7 @@ async function exportPDF(btn) {
     btn.textContent = origText; btn.disabled = false; return;
   }
 
+  const _pdfSnapImgs = await loadSnapshotImages(currentSnapshotPaths(p));   // 3D views for the quote page
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'letter' });
   const PW=215.9, PH=279.4, MAR=16, CW=PW-MAR*2;
@@ -379,6 +380,8 @@ async function exportPDF(btn) {
   doc.text('#'+quoteNum, PW-MAR, qy, {align:'right'}); qy+=5;
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(100,100,100);
   doc.text(`Customer: ${p.customer||'—'}   ·   Project: ${p.type||'—'}   ·   Style: ${p.style||'—'}   ·   Date: ${today}   ·   Valid: ${validThru}`, MAR, qy); qy+=5;
+  // 3D views on the quote (3.6), above the line items
+  qy = addSnapshotsToPdf(doc, _pdfSnapImgs, MAR, qy, CW);
 
   const tax=getTax(); let cabSub=0;
 

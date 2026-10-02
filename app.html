@@ -366,6 +366,7 @@
                 <option value="plain">Floor: Plain</option><option value="wood">Floor: Wood</option><option value="tile">Floor: Tile</option><option value="lvp">Floor: LVP</option>
               </select>
             </div>
+            <button id="snap-add-btn" class="toolbar-btn snap-btn" onclick="addQuoteSnapshot()" title="Put this exact view on the printed quote (up to 3)">📷 Add to quote</button>
             <span class="cam-hint">Drag to rotate · scroll to zoom · right-drag to pan</span>
           </div>
           <div id="iso-wrapper">
@@ -950,6 +951,10 @@
       <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addTrimRow()">＋ Add Trim / Molding</button>
     </div>
 
+    <!-- 3D views printed on the quote (3.6) -->
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">3D Views on This Quote</div>
+    <div id="quote-snapshots" style="margin-bottom:16px;"></div>
+
     <!-- Live Totals Preview -->
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Quote Summary</div>
     <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;"></div>
@@ -1141,6 +1146,7 @@
 <script src="/js/fronts3d.js" data-categories="essential"></script>
 <script src="/js/counters.js" data-categories="essential"></script>
 <script src="/js/camera3d.js" data-categories="essential"></script>
+<script src="/js/snapshots.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

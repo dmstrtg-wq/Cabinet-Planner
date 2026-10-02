@@ -172,3 +172,14 @@ Claude checked: the opening angle picked for L, U, galley, single-wall and an L-
 - [ ] **Light:** Daylight / Warm interior / Studio. Studio is the clean white look for presentations.
 - [ ] **Floor:** Plain / Wood / Tile / LVP (looks only). Your choice is remembered per project.
 - [ ] **Orbiting a full kitchen stays smooth** on your laptop (shadows are now higher resolution, so tell me if it stutters).
+
+### 3.6 3D views on the quote (built 2026-10-02) — Silver/Gold
+**First: run `supabase-quote-snapshots-storage.sql` in the Supabase SQL editor** (creates the private bucket + access rules). Until then, "Add to quote" will show an error.
+Claude tested locally against a stand-in for storage: capture/upload, 3-view limit, Quote-window thumbnails, printed quote + PDF, Gold versions recording their views, file cleanup, project delete, demo/Free blocked.
+- [ ] **3D → 📷 Add to quote:** the button counts up (1/3, 2/3, 3/3). A 4th says to remove one first.
+- [ ] **Quote window → "3D Views on This Quote":** thumbnails appear, and × removes one.
+- [ ] **Print / Save PDF:** a "Your Kitchen" row of the views sits above the cabinet line items. Same for **Export PDF** (quote page).
+- [ ] **Gold:** after marking a quote as sent, changing which views are on it and printing makes **Revision 2**. Reprinting without changes keeps the same version and the same views.
+- [ ] **Team member (Gold):** can add and see views on the owner's projects.
+- [ ] **Free / demo:** no Add-to-quote button.
+- [ ] **Tip:** set Light to **Studio** before capturing for the cleanest presentation images.

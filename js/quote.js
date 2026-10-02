@@ -80,6 +80,7 @@ function openQuoteModal() {
   renderTrimRows();
   refreshQuoteTotals();
   refreshQuoteLockBanner();
+  renderQuoteSnapshotList();
   openModal('modal-quote');
 }
 
@@ -199,7 +200,12 @@ function quoteSignature(p, total) {
     r.cabinets.map(c => [c.type, c.width, c.height, c.depth, c.styleOverride || '', !!c.glassDoors, c.note || '']),
     (r.appliances || []).map(a => [a.type, a.width, a.price ?? null, a.note || '']),
   ]);
-  const str = JSON.stringify([p.style, items, p.jobCosts || [], p.trimItems || [], Math.round(total * 100)]);
+  const parts = [p.style, items, p.jobCosts || [], p.trimItems || [], Math.round(total * 100)];
+  // The 3D views are part of what the customer sees, so changing them is a new version.
+  // (Only added when there are any, so fingerprints of quotes saved before 3.6 don't change.)
+  const snaps = typeof currentSnapshotPaths === 'function' ? currentSnapshotPaths(p) : [];
+  if (snaps.length) parts.push(snaps);
+  const str = JSON.stringify(parts);
   let h = 5381;
   for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
   return h.toString(36); // short hash — kept on every history entry, so don't store the full string
@@ -289,7 +295,7 @@ function printQuote() {
     p.quoteHistory.push({
       revision, quoteNum,
       date: new Date().toISOString(),
-      total, sig,
+      total, sig, snapshots: currentSnapshotPaths(p),
       breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt }
     });
     if (!p.activityLog) p.activityLog = [];
@@ -311,8 +317,9 @@ function printQuote() {
   p.lastQuotedAt = new Date().toISOString();
   persist();
 
-  const win = window.open('', '_blank', 'width=920,height=750');
-  win.document.write(`<!DOCTYPE html><html><head>
+  // 3D views for this quote (a reprint shows exactly what that version recorded)
+  const snapPaths = (isGold && p.quoteLocked && isReprint && last && Array.isArray(last.snapshots)) ? last.snapshots : currentSnapshotPaths(p);
+  const quoteHtml = snapBlock => `<!DOCTYPE html><html><head>
 <meta charset="UTF-8"><title>Quote — ${escHtml(p.customer)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -379,6 +386,7 @@ ${revision > 1 ? `
   <div class="ci"><label>Door Style</label><span>${escHtml(p.style)}</span><small>${escHtml(styleName)}</small></div>
   <div class="ci"><label>Rooms</label><span>${p.rooms.length}</span></div>
 </div>
+${snapBlock}
 <div class="sec">Cabinet Line Items</div>
 <table><thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
 <tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
@@ -405,8 +413,15 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
   </div>
 </div>
 <div class="foot">${escHtml(companyName)}${cp.website ? ' · '+escHtml(cp.website) : ''} · Quote #${quoteNum} · Generated ${today}</div>
-</body></html>`);
-  win.document.close();
+</body></html>`;
+  // Open the window right away (so it isn't treated as a pop-up), then fill it in once the
+  // 3D views have loaded
+  const win = window.open('', '_blank', 'width=920,height=750');
+  if (!snapPaths.length) { win.document.write(quoteHtml('')); win.document.close(); }
+  else {
+    win.document.write('<p style="font-family:Arial,sans-serif;padding:40px;color:#64748b;">Preparing your quote…</p>');
+    loadSnapshotImages(snapPaths).then(imgs => { win.document.open(); win.document.write(quoteHtml(quoteSnapshotsHTML(imgs))); win.document.close(); });
+  }
 
   // Case A: Gold + not yet locked — prompt to mark as sent after PDF opens
   if (isGold && !p.quoteLocked) {
@@ -418,7 +433,7 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
       );
       if (doLock) {
         p.quoteLocked  = true;
-        p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total, sig,
+        p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total, sig, snapshots: snapPaths,
                            breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt } };
         if (!p.quoteHistory) p.quoteHistory = [];
         p.quoteHistory.push(p.lockedQuote);
