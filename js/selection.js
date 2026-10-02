@@ -55,7 +55,7 @@ function drawFloorSelection(ctx, r, scale, RX, RY) {
   const it = getSelectedItem(); if (!it) return;
   let rc;
   if (r.islands && r.islands.includes(it)) rc = { x: it.x, y: it.y, w: it.width, h: it.depth };
-  else rc = itemRect(r, it);
+  else { const rs = itemRects(r, it); rc = rs.length ? rectOfPts(rs.flatMap(b => [[b.x, b.y], [b.x + b.w, b.y + b.h]])) : null; }
   if (rc) drawSelectionBox(ctx, RX + rc.x * scale, RY + rc.y * scale, rc.w * scale, rc.h * scale);
 }
 // Elevation (called from renderElevation, only for items on the wall being shown)
@@ -179,7 +179,7 @@ function applyItemEdit(item, field, value) {
     // Keep the width if the new type offers it, otherwise take the closest one it does
     if (!cat.widths.includes(item.width)) item.width = cat.widths.reduce((a, b) => Math.abs(b - item.width) < Math.abs(a - item.width) ? b : a);
     item.height = defaultCabHeight(value, activeRoom());
-    item.depth = value === 'diagWall' ? (item.width === 24 ? 24 : 15) : cat.depth;
+    item.depth = value === 'diagWall' ? 12 : cat.depth;
     const upper = value === 'wall' || value === 'diagWall';
     item.wallBottom = upper ? (item.wallBottom ?? 54) : null;
     if (!upper) item.glassDoors = false;

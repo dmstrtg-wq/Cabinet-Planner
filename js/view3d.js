@@ -316,6 +316,9 @@ function renderIsometric() {
   const _frontKit = makeFrontKit(_p3d?.hardware);   // shared door/drawer materials + shapes for this render
   r.cabinets.filter(layerShowsItem).forEach(cab => {
     const cat = CATALOG[cab.type]; if (!cat) return;
+    // Corner cabinets on two walls: L-shaped lazy susan, five-sided diagonal upper (corners.js)
+    const _ci = cornerInfo(r, cab);
+    if (_ci) { root.add(buildCorner3D(r, cab, _ci, _frontKit, _p3d)); return; }
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
     const dep = cab.depth  || cat.depth || 24;

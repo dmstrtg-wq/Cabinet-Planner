@@ -142,7 +142,8 @@ function renderElevation() {
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
   });
 
-  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type)).forEach(cab => {
+  // (a lazy susan at a corner is drawn by drawElevCorner below, on both walls)
+  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) && !cornerInfo(r, c)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||34.5)*scale;
     const x=eX(cab.offset||0, cab.width), y=floorY-cH;
     const isCorner=cab.type==='cornerBase';
@@ -187,7 +188,7 @@ function renderElevation() {
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + (isCorner ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
   });
 
-  wallCabs.filter(c=>['wall','diagWall'].includes(c.type)).forEach(cab => {
+  wallCabs.filter(c=>['wall','diagWall'].includes(c.type) && !cornerInfo(r, c)).forEach(cab => {
     const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||30)*scale;
     const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
     const y=Math.max(WY, floorY-bottomIn*scale-cH);
@@ -251,10 +252,17 @@ function renderElevation() {
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
   });
 
-  // ── Corner cabinet crossover: adjacent-wall corner cabs shown at elevation edges ──
-  // A lazysusan/cornerBase/diagWall physically spans two walls; show the depth face here.
+  // ── Corner cabinets on two walls (lazy susan, diagonal corner wall) — true view, the
+  // same from either wall: the leg next to the corner set back, then this face's door.
+  r.cabinets.filter(c => layerShowsItem(c)).forEach(cab => {
+    const ci = cornerInfo(r, cab); if (!ci || (cab.wall !== wall && ci.w2 !== wall)) return;
+    const si = cabStyle(cab);
+    drawElevCorner(ctx, r, cab, ci, wall, scale, floorY, eX, PDF, si, darkSwatches.includes(si.swatch));
+  });
+
+  // ── Corner base crossover: an adjacent wall's blind corner base shown at the edge ──
   {
-    const CORNER_CAB_TYPES = ['lazysusan','cornerBase','diagWall'];
+    const CORNER_CAB_TYPES = ['cornerBase'];
     // For each elevation wall: left corner and right corner, which adjacent wall and at which end.
     // atFarEnd:true  → corner is at offset ≈ adjWallLength (far end of adj wall)
     // atFarEnd:false → corner is at offset ≈ 0 (near/north/west end of adj wall)

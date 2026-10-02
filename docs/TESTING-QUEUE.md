@@ -190,3 +190,13 @@ Root cause: the Door Style picker was filled in once at page load, BEFORE the ac
 - [ ] Open **"Daniel Muller"**. The Door Style box is red: "Not one of your finishes — pick one". Pick the right finish. The box turns normal, and 3D, elevation and prices follow.
 - [ ] Check your other projects the same way (any red Door Style box needs a finish picked).
 - [ ] **Trial companies with their own finishes** had the same problem. Worth a quick look at any test projects they made.
+
+### Corner cabinets on two walls — Lazy Susan + Diagonal Corner Wall (2026-10-02)
+What changed: a Lazy Susan or Diagonal Corner Wall placed at the end of a wall now also takes up the same width on the wall that meets it there, like the real cabinet. LS = an L, 24" deep, bifold doors in the corner. DCW = 12" sides with one angled door. Added **LS36**. Old projects' DCWs are automatically fixed to 12" sides.
+Claude tested locally on a copy of the "Daniel Muller" layout (LS33 west@0, sink north@33, DCW24 west@0) plus an LS36 and DCW27 at other corners. Checked: floor plan shapes, all 4 elevations (true view: the corner 24" shaded, then this wall's door), 3D (L-shaped LS with no gap to the sink, 5-sided DCW with angled door), placing a cabinet into either leg is refused ("Hits LS33 in the corner"), the gap finder, countertop running through the corner, elevation PDF mode, and a mid-wall LS still drawing as before. No console errors.
+- [ ] Open **"Daniel Muller"**: 3D has no gap between the lazy susan and the sink base; the corner upper has an angled door.
+- [ ] **Floor plan:** LS is an L across both walls; DCW is the 5-sided shape. Click either leg to select it, and drag it.
+- [ ] **Elevation, both walls of the corner:** the same cabinet appears on each (shaded part = the other leg, then the door). Price/quote lists it once.
+- [ ] **Countertop** runs continuously around the LS corner (3D and elevation).
+- [ ] **Add an LS36** in your price sheet (Profile → prices) if you sell it. Until it has a price it shows as "No price set".
+- [ ] **PDF / Print Plans:** the corner elevations look right.

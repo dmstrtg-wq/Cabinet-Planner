@@ -286,6 +286,7 @@ function wallFrame(r, wall) {
   }
 }
 function itemDepth(item) {
+  if (item.type === 'diagWall') return 12;    // diagonal corner uppers: 12" sides, always
   if (CATALOG[item.type]) return item.depth || CATALOG[item.type].depth;
   return APPLIANCES[item.type]?.depth || 24;
 }
@@ -550,7 +551,7 @@ function wallItems(r, wall) { return [...r.cabinets, ...(r.appliances||[])].filt
 // Bases and uppers are separate runs; a tall piece (fridge, pantry) sitting right where
 // the run would continue is stepped over, since nothing at that level fits there.
 function nextFreeOffset(r, wall, level) {
-  const items = wallItems(r, wall);
+  const items = wallItemsWithReturns(r, wall);   // includes a corner cabinet's leg on this wall
   const end = i => (i.offset || 0) + i.width;
   const sameLevel = items.filter(i => itemLevel(i) === level);
   let pos = sameLevel.length ? Math.max(...sameLevel.map(end)) : 0;
@@ -605,7 +606,7 @@ function addCabinet() {
   const depthSel    = document.getElementById('cab-depth-sel');
   const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInches(document.getElementById('cab-wall-bottom').value) || 54)
                     : filler ? Math.max(0, parseInches(document.getElementById('cab-wall-bottom').value) || 0) : null;
-  const depth       = type === 'diagWall' ? (width === 24 ? 24 : 15)
+  const depth       = type === 'diagWall' ? 12
                     : (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value)
                     : filler ? (wallBottom >= 48 ? 12 : 24)       // a filler up in the upper run is upper-depth
                     : cat.depth;

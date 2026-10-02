@@ -75,12 +75,13 @@ function wallStripRect(r, wall, a, b, depth) {
 function counterRuns(r) {
   const out = [];
   roomWalls(r).forEach(wall => {
-    groupRuns(wallItems(r, wall).filter(coversCounter)).forEach(run => {
+    groupRuns(wallItemsWithReturns(r, wall).filter(coversCounter)).forEach(run => {   // incl. a corner LS's other leg
       const cabs = run.items.filter(i => CATALOG[i.type]);
       const depth = Math.max(...run.items.map(i => CATALOG[i.type] ? (i.depth || CATALOG[i.type].depth) : 24));
       const top = cabs.length ? Math.max(...cabs.map(i => itemVerticalRange(i)[1])) : 34.5;
       const ends = runEndsFree(r, wall, [0, top], run.a, run.b);
-      out.push({ wall, a: run.a - (ends.startFree ? END_PANEL_T + COUNTER_SIDE : 0), b: run.b + (ends.endFree ? END_PANEL_T + COUNTER_SIDE : 0),
+      const a = run.a - (ends.startFree ? END_PANEL_T + COUNTER_SIDE : 0), b = run.b + (ends.endFree ? END_PANEL_T + COUNTER_SIDE : 0);
+      out.push({ wall, a, b, fullA: a, fullB: b,   // fullA/B: before corner trimming (elevations see the corner piece end-on)
         depth: depth + COUNTER_FRONT, top, sinks: run.items.filter(i => i.type === 'sink'), ...ends, cabA: run.a, cabB: run.b });
     });
   });
@@ -109,7 +110,7 @@ function islandCounterRects(r) {
 function upperRuns(r) {
   const out = [];
   roomWalls(r).forEach(wall => {
-    const uppers = wallItems(r, wall).filter(i => CATALOG[i.type] && itemLevel(i) === 'upper' && i.type !== 'fridgePanel');
+    const uppers = wallItemsWithReturns(r, wall).filter(i => CATALOG[i.type] && itemLevel(i) === 'upper' && i.type !== 'fridgePanel');
     const byTop = new Map();
     uppers.forEach(i => { const t = itemVerticalRange(i)[1]; (byTop.get(t) || byTop.set(t, []).get(t)).push(i); });
     byTop.forEach((items, top) => groupRuns(items).forEach(run => {
@@ -255,7 +256,7 @@ function drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF) {
   if (layers.bases) {
     endPanels(r).filter(pn => pn.wall === wall && pn.bottom < 40).forEach(pn => band(pn.a, pn.b, pn.bottom, pn.top, finish, PDF ? '#1a1a1a' : '#64748B'));
     counterRuns(r).filter(run => run.wall === wall).forEach(run =>
-      band(run.a, run.b, run.top, run.top + COUNTER_T, PDF ? '#E5E5E5' : mat.base, PDF ? '#1a1a1a' : '#475569'));
+      band(run.fullA, run.fullB, run.top, run.top + COUNTER_T, PDF ? '#E5E5E5' : mat.base, PDF ? '#1a1a1a' : '#475569'));
   }
   if (layers.uppers) {
     endPanels(r).filter(pn => pn.wall === wall && pn.bottom >= 40).forEach(pn => band(pn.a, pn.b, pn.bottom, pn.top, finish, PDF ? '#1a1a1a' : '#64748B'));

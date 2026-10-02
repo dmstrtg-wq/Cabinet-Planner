@@ -18,9 +18,14 @@ function placementIssue(r, item) {
   const hits = overlappingItems(r, item.wall, vr, off, item.width, item.id);
   if (hits.length) return 'Overlaps ' + hits.map(itemLabel).join(', ');
   // Footprint against the runs on the neighbouring walls (inside corners)
-  const a = itemRect(r, item);
+  // (corner cabinets count with both legs — itemRects)
+  const hit = (a, b) => a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01;
+  const mine = itemRects(r, item);
   const corner = roomItems(r).find(i => i.id !== item.id && i.wall && i.wall !== item.wall && rangesOverlap(itemVerticalRange(i), vr)
-    && (b => b && a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01)(itemRect(r, i)));
+    && itemRects(r, i).some(b => mine.some(a => hit(a, b))))
+    // …and a corner cabinet on this same wall whose other leg reaches here
+    || (cornerInfo(r, item) ? null : roomItems(r).find(i => i.id !== item.id && i.wall && rangesOverlap(itemVerticalRange(i), vr)
+         && cornerInfo(r, i) && cornerInfo(r, i).w2 === item.wall && itemRects(r, i).some(b => mine.some(a => hit(a, b)))));
   // Fillers are scribed into corners and against door/window casings all the time,
   // so only the same-spot overlap rule above applies to them.
   if (isFiller(item.type)) return null;
@@ -45,10 +50,13 @@ function snapCandidates(r, item) {
   wallItems(r, item.wall).filter(i => i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr))
     .forEach(i => { cands.push((i.offset || 0) + i.width, (i.offset || 0) - w); });
   // Neighbouring runs, projected onto this wall
-  roomItems(r).filter(i => i.wall && i.wall !== item.wall && rangesOverlap(itemVerticalRange(i), vr)).forEach(i => {
-    const b = itemRect(r, i); if (!b) return;
-    const along = [[b.x, b.y], [b.x + b.w, b.y + b.h]].map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
-    cands.push(Math.max(...along), Math.min(...along) - w);
+  roomItems(r).filter(i => i.wall && i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr)).forEach(i => {
+    // other walls' runs, and a corner cabinet's leg on this wall
+    itemRects(r, i).forEach(b => {
+      if (i.wall === item.wall && !cornerInfo(r, i)) return;
+      const along = [[b.x, b.y], [b.x + b.w, b.y + b.h]].map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
+      cands.push(Math.max(...along), Math.min(...along) - w);
+    });
   });
   return cands;
 }
@@ -196,7 +204,7 @@ function makePaletteItem(entry, wall, offset) {
   if (entry.isCab) {
     const cat = CATALOG[entry.type], upper = entry.type === 'wall' || entry.type === 'diagWall';
     return { id: uid(), type: entry.type, wall, width: entry.width, height: defaultCabHeight(entry.type, r),
-      depth: entry.type === 'diagWall' ? (entry.width === 24 ? 24 : 15) : cat.depth, note: '', offset,
+      depth: entry.type === 'diagWall' ? 12 : cat.depth, note: '', offset,
       wallBottom: upper ? 54 : isFiller(entry.type) ? 0 : null, glassDoors: false, styleOverride: null, itemNum: null };
   }
   const acat = APPLIANCES[entry.type];

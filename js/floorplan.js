@@ -316,6 +316,13 @@ function renderCanvas() {
     const isLazySusan = cab.type === 'lazysusan';
     const isDiagWall = cab.type === 'diagWall';
     const effD = cD; // always use actual depth (24")
+    // Corner cabinets (lazy susan, diagonal corner wall) sit on BOTH walls — js/corners.js
+    const _ci = cornerInfo(r, cab);
+    if (_ci) {
+      drawCornerOnFloor(ctx, r, cab, _ci, scale, RX, RY, isActive);
+      if (_fitIds.has(cab.id)) itemRects(r, cab).forEach(b => _flagRects.push({ x: RX + b.x*scale, y: RY + b.y*scale, w: b.w*scale, h: b.h*scale }));
+      return;
+    }
     const _rc = itemRect(r, { ...cab, wall }, cab.depth); if (!_rc) return;
     const x = RX + _rc.x*scale, y = RY + _rc.y*scale, w = _rc.w*scale, h = _rc.h*scale;
     if (_fitIds.has(cab.id)) _flagRects.push({x, y, w, h});

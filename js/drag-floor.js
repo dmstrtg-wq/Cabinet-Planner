@@ -21,9 +21,13 @@
     const isUpper = c => c.type === 'wall' || c.type === 'diagWall';
     for (const cab of [...r.cabinets.filter(isUpper), ...r.cabinets.filter(c => !isUpper(c))]) {
       if (!layerShowsItem(cab)) continue;
-      const _rc = itemRect(r, cab, cab.depth); if (!_rc) continue;
-      const x=RX+_rc.x*scale, y=RY+_rc.y*scale, w=_rc.w*scale, h=_rc.h*scale;
-      if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab,wall:cab.wall,x,y,w,h};
+      // a corner cabinet can be grabbed on either leg
+      const _rs = cornerInfo(r, cab) ? itemRects(r, cab) : [itemRect(r, cab, cab.depth)].filter(Boolean);
+      const _rc = _rs.find(b => { const x=RX+b.x*scale, y=RY+b.y*scale; return mx>=x&&mx<=x+b.w*scale&&my>=y&&my<=y+b.h*scale; });
+      if (!_rc) continue;
+      const own = itemRect(r, cab, cab.depth) || _rc;
+      const x=RX+own.x*scale, y=RY+own.y*scale, w=own.w*scale, h=own.h*scale;
+      return {cab,wall:cab.wall,x,y,w,h};
     }
     for (const app of (r.appliances||[])) {
       const acat=APPLIANCES[app.type]; if(!acat || !layerShowsItem(app)) continue;

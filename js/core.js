@@ -496,13 +496,13 @@ const CATALOG = {
   vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
   drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
   cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB',  basePrice: w => w*6  },
-  lazysusan:   { label:'Lazy Susan',            widths:[33],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
+  lazysusan:   { label:'Lazy Susan',            widths:[33,36],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
   // Fillers: any width/height, anywhere on the wall (widths/heights below are just the
   // starting sizes). Priced as the stock piece they're ripped from — see fillerPriceParts().
   filler3:     { label:'Filler',                widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15, filler:true, stock:3 },
   filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20, filler:true, stock:6 },
   fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
-  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:24, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
+  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:12, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -760,6 +760,8 @@ function migrateProject(p) {
     if (!r.shape) r.shape = r.lCut ? 'L' : 'rect';
     if (!r.ceilingHeight) r.ceilingHeight = 96;
     ensureItemNumbers(r);
+    // Diagonal corner uppers have 12" sides (older saves stored 24"/15", which drew them as deep boxes)
+    r.cabinets.forEach(c => { if (c.type === 'diagWall') c.depth = 12; });
   });
   p.schemaVersion = PROJECT_SCHEMA_VERSION;
   return p;

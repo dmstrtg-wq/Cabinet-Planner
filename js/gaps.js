@@ -22,7 +22,7 @@ function wallObstacles(r, wall, band, excludeId) {
   const stripDepth = band[0] >= 48 ? 13 : 25;
   roomItems(r).forEach(i => {
     if (!i.wall || i.wall === wall || i.id === excludeId || !rangesOverlap(itemVerticalRange(i), band)) return;
-    const b = itemRect(r, i); if (!b) return;
+    itemRects(r, i).forEach(b => {             // a corner cabinet brings both legs
     const corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
     const along = corners.map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
     const depth = corners.map(([x, y]) => (x - f.start[0]) * f.inward[0] + (y - f.start[1]) * f.inward[1]);
@@ -30,6 +30,7 @@ function wallObstacles(r, wall, band, excludeId) {
       const a = Math.max(0, Math.min(...along)), z = Math.min(len, Math.max(...along));
       if (z > a) out.push([a, z]);
     }
+    });
   });
   (r.openings || []).forEach(o => {
     if (o.wall !== wall) return;
