@@ -200,3 +200,4 @@ Claude tested locally on a copy of the "Daniel Muller" layout (LS33 west@0, sink
 - [ ] **Countertop** runs continuously around the LS corner (3D and elevation).
 - [ ] **Add an LS36** in your price sheet (Profile → prices) if you sell it. Until it has a price it shows as "No price set".
 - [ ] **PDF / Print Plans:** the corner elevations look right.
+- Live check by Claude after push (2026-10-02, view only, "Daniel Muller"): LS33 is L-shaped in plan; north + west elevations show it on both walls; 3D has no gap at the sink, and the countertop runs around the corner; DCW24 auto-corrected to 12" with an angled door. Found + fixed (needs push): in the floor plan the corner upper was hidden under the lazy susan. All uppers now draw after all bases.

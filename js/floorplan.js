@@ -481,12 +481,15 @@ function renderCanvas() {
   }
 
   const _wallList = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+  // Base cabs + appliances first (solid), then ALL wall/upper cabs as a dashed overlay on
+  // top (NKBA convention) — every wall's bases before any uppers, since a corner upper
+  // reaches over the next wall's bases
+  const _isUpperCab = c => c.type === 'wall' || c.type === 'diagWall';
   _wallList.forEach(wall => {
-    // Base cabs first (solid), then wall/upper cabs as dashed overlay on top (NKBA convention)
-    cabs.filter(c => c.wall===wall && c.type!=='wall').forEach(cab => drawCabOnFloor(cab,wall));
-    cabs.filter(c => c.wall===wall && c.type==='wall').forEach(cab => drawCabOnFloor(cab,wall));
+    cabs.filter(c => c.wall===wall && !_isUpperCab(c)).forEach(cab => drawCabOnFloor(cab,wall));
     (r.appliances||[]).filter(a => a.wall===wall && layerShowsItem(a)).forEach(app => drawAppOnFloor(app,wall));
   });
+  _wallList.forEach(wall => cabs.filter(c => c.wall===wall && _isUpperCab(c)).forEach(cab => drawCabOnFloor(cab,wall)));
 
   // Item numbers (Layers ▸ Item numbers): a small tag at the front edge of each piece,
   // matching the cut list and elevation tags
