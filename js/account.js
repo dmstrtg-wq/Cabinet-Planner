@@ -172,6 +172,11 @@ async function loadCompanyProfile() {
   const { data } = await db.from('company_profiles').select('*').eq('user_id', effectiveOwnerId).single();
   if (data) companyProfile = data;
   applyTierGates();
+  // The style picker is first built before the account is known (generic starter styles).
+  // Now that we know the account's finishes, rebuild it — otherwise every company sees the
+  // starter list, picks a code its finishes don't have, and 3D/elevation/pricing can't use it.
+  buildStylePanel();
+  if (activeProj()) syncStylePanel();
 }
 
 // Apply/remove tier-gated UI after profile loads

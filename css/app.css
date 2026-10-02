@@ -736,3 +736,7 @@ body.free-tier #connect-pro-btn { display:block; }
 .snap-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .snap-remove { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: none; background: rgba(15,23,42,.72); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; }
 .snap-remove:hover { background: #dc2626; }
+
+/* Door style saved on the project isn't one of the account's finishes */
+.style-current.style-missing { border-color: #dc2626 !important; background: #fef2f2; }
+.style-current.style-missing #style-current-name { color: #b91c1c; font-weight: 700; }

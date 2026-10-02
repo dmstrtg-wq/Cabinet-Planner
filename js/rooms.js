@@ -954,12 +954,15 @@ function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode =
 function buildStylePanel() {
   const container = document.getElementById('style-container');
   const overrideSel = document.getElementById('cab-style-override');
-  let html = '', tier = '';
+  // Rebuilt when the account loads — start the per-cabinet list fresh so entries don't pile up
+  if (overrideSel) overrideSel.innerHTML = '<option value="">— Door Style: Use Project Default —</option>';
+  let html = '', tier = null;
   getStyles().forEach(s => {
-    if (s.tier !== tier) {
-      if (tier) html += '</div>';
-      html += `<div class="style-tier-label">${s.tier}</div><div class="style-grid">`;
-      tier = s.tier;
+    const t = s.tier || '';
+    if (t !== tier) {
+      if (tier !== null) html += '</div>';
+      html += `${t ? `<div class="style-tier-label">${escHtml(t)}</div>` : ''}<div class="style-grid">`;
+      tier = t;
     }
     const bord = s.swatch === '#FEFEFE' || s.swatch === '#FAF9F7' ? '#ddd' : 'transparent';
     html += `<div class="style-opt" data-code="${s.code}" onclick="selectStyle('${s.code}')" title="${s.name}">
@@ -968,11 +971,11 @@ function buildStylePanel() {
     // Also populate the per-cabinet style override dropdown
     if (overrideSel) {
       const o = document.createElement('option'); o.value = s.code;
-      o.textContent = `${s.tier}: ${s.code} — ${s.name}`;
+      o.textContent = `${s.tier ? s.tier + ': ' : ''}${s.code} — ${s.name}`;
       overrideSel.appendChild(o);
     }
   });
-  if (tier) html += '</div>';
+  if (tier !== null) html += '</div>';
   container.innerHTML = html;
 }
 function selectStyle(code) {
@@ -1007,13 +1010,17 @@ function syncStylePanel() {
   syncStyleCurrent(code);
 }
 function syncStyleCurrent(code) {
-  const s = getStyles().find(x => x.code === code) || getStyles()[0];
+  const found = getStyles().find(x => x.code === code);
+  const s = found || getStyles()[0];
   const sw = document.getElementById('style-current-swatch');
   const cd = document.getElementById('style-current-code');
   const nm = document.getElementById('style-current-name');
   if (sw) { sw.style.background = s.swatch; sw.style.borderColor = (s.swatch === '#FEFEFE' || s.swatch === '#FAF9F7') ? '#ddd' : 'transparent'; }
-  if (cd) cd.textContent = s.code;
-  if (nm) nm.textContent = s.name;
+  if (cd) cd.textContent = found ? s.code : (code || '—');
+  // A saved style that isn't one of this account's finishes used to quietly show the first
+  // finish (e.g. Ice White Shaker). Say so instead, so it gets fixed with one click.
+  if (nm) nm.textContent = found ? s.name : 'Not one of your finishes — pick one';
+  document.getElementById('style-current')?.classList.toggle('style-missing', !found);
 }
 function toggleStylePicker() {
   const container = document.getElementById('style-container');

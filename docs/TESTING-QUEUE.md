@@ -183,3 +183,10 @@ Claude tested locally against a stand-in for storage: capture/upload, 3-view lim
 - [ ] **Team member (Gold):** can add and see views on the owner's projects.
 - [ ] **Free / demo:** no Add-to-quote button.
 - [ ] **Tip:** set Light to **Studio** before capturing for the cleanest presentation images.
+
+### Door style picker — real fix (2026-10-02, found with Dan's live login)
+Root cause: the Door Style picker was filled in once at page load, BEFORE the account was known, so every account saw the generic starter list (White Shaker / Grey Shaker / Espresso / Natural Wood) instead of its own finishes. Picking one saved a code the account doesn't have (e.g. Dan's "Daniel Muller" project = `ES`), so 3D/elevation fell back to the first finish (Ice White Shaker) and pricing couldn't find the finish ("No price set").
+- [ ] After the push, **reload /app**. Door Style → Change shows **your** finishes (Gold / Platinum / Titanium groups for your account, or the company's own list for others).
+- [ ] Open **"Daniel Muller"**. The Door Style box is red: "Not one of your finishes — pick one". Pick the right finish. The box turns normal, and 3D, elevation and prices follow.
+- [ ] Check your other projects the same way (any red Door Style box needs a finish picked).
+- [ ] **Trial companies with their own finishes** had the same problem. Worth a quick look at any test projects they made.
