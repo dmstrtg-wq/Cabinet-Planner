@@ -31,6 +31,18 @@ function doorStyleInfo(code) {
 // FRONT LAYOUT (what goes on the face of each cabinet type)
 // ════════════════════════════
 const TOE_KICK_H = 4.5, REVEAL = 0.125, TOP_DRAWER_H = 6;
+// The opening a built-in cabinet leaves for its appliance: where the appliance placed in it
+// sits (several stacked → their full span), or the standard spot if it's still empty.
+function builtInOpening(r, cab) {
+  const apps = r ? hostedAppliances(r, cab) : [];
+  if (apps.length) {
+    const rs = apps.map(itemVerticalRange);
+    return { y0: Math.min(...rs.map(v => v[0])), y1: Math.max(...rs.map(v => v[1])), filled: true };
+  }
+  const std = cab.type === 'ovenTall' ? { type: 'wallOven', height: 29 } : { type: 'microwaveDrawer' };
+  const [y0, y1] = itemVerticalRange(std);
+  return { y0, y1, filled: false };
+}
 // → [{ x0,x1,y0,y1, kind:'door'|'drawer'|'false'|'panel', hinge:'L'|'R', glass }]
 function frontLayout(cab, r) {
   const w = cab.width, [bot, top] = itemVerticalRange(cab);
@@ -81,6 +93,24 @@ function frontLayout(cab, r) {
     case 'wall': case 'diagWall':
       doorsAcross(L, R, bot + g / 2, top - g / 2, cab.type === 'diagWall', { glass: !!cab.glassDoors });
       break;
+    case 'ovenTall': {
+      // Drawers under the oven, doors over it, an opening for the oven itself
+      const o = builtInOpening(r, cab), y0 = TOE_KICK_H;
+      const below = o.y0 - y0;
+      if (below > 22) {                                     // tall space: two drawers
+        const half = below / 2;
+        out.push({ x0: L + g / 2, x1: R - g / 2, y0: y0 + half + g / 2, y1: o.y0 - g / 2, kind: 'drawer' });
+        out.push({ x0: L + g / 2, x1: R - g / 2, y0: y0 + g / 2, y1: y0 + half - g / 2, kind: 'drawer' });
+      } else if (below > 3) out.push({ x0: L + g / 2, x1: R - g / 2, y0: y0 + g / 2, y1: o.y0 - g / 2, kind: 'drawer' });
+      if (top - o.y1 > 3) doorsAcross(L, R, o.y1 + g / 2, top - g / 2, false, { upper: true });
+      break;
+    }
+    case 'mwDrawerBase': {
+      const o = builtInOpening(r, cab);
+      if (o.y0 - TOE_KICK_H > 3) out.push({ x0: L + g / 2, x1: R - g / 2, y0: TOE_KICK_H + g / 2, y1: o.y0 - g / 2, kind: 'drawer' });
+      if (top - o.y1 > 3) out.push({ x0: L + g / 2, x1: R - g / 2, y0: o.y1 + g / 2, y1: top - g / 2, kind: 'drawer' });
+      break;
+    }
     case 'tall': {
       const split = TOE_KICK_H + (top - TOE_KICK_H) * 0.56;
       doorsAcross(L, R, TOE_KICK_H + g / 2, split - g / 2, w <= 18.01);
@@ -206,7 +236,13 @@ function buildCabinetFronts3D(cab, r, kit, p) {
   const info = doorStyleInfo(cab.styleOverride || p.style);
   const group = new THREE.Group();
   const upper = itemLevel(cab) === 'upper';
-  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || (cab.type === 'tall' && fr.y0 > 40)); });
+  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || fr.upper || (cab.type === 'tall' && fr.y0 > 40)); });
+  // An oven / microwave-drawer cabinet with nothing in it yet: show the dark opening
+  if (cab.type === 'ovenTall' || cab.type === 'mwDrawerBase') {
+    const o = builtInOpening(r, cab);
+    if (!o.filled) addPiece(group, kit, kit.cavity || (kit.cavity = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.9 })),
+      -cab.width / 2 + 1.5, cab.width / 2 - 1.5, o.y0, o.y1, -0.6, 0.05);
+  }
   const t = (cab.offset || 0) + cab.width / 2, d = cab.depth || CATALOG[cab.type].depth;
   group.position.set(f.start[0] + f.dir[0] * t + f.inward[0] * d, 0, f.start[1] + f.dir[1] * t + f.inward[1] * d);
   group.rotation.y = Math.atan2(f.inward[0], f.inward[1]);   // local +z → into the room

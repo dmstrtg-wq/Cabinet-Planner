@@ -201,3 +201,14 @@ Claude tested locally on a copy of the "Daniel Muller" layout (LS33 west@0, sink
 - [ ] **Add an LS36** in your price sheet (Profile → prices) if you sell it. Until it has a price it shows as "No price set".
 - [ ] **PDF / Print Plans:** the corner elevations look right.
 - Live check by Claude after push (2026-10-02, view only, "Daniel Muller"): LS33 is L-shaped in plan; north + west elevations show it on both walls; 3D has no gap at the sink, and the countertop runs around the corner; DCW24 auto-corrected to 12" with an angled door. Found + fixed (needs push): in the floor plan the corner upper was hidden under the lazy susan. All uppers now draw after all bases.
+
+### 3.3 Appliances in 3D (built 2026-10-02)
+What changed: appliances are real 3D models now, not flat boxes. Choices per appliance (double-click → popover, or More…): **Style** (fridge: French door / Side-by-side / Top freezer; hood: Auto / Chimney / Under-cabinet), **Size** (fridge heights; wall oven Single 29" / Double 51"), **Finish** (Stainless / Black stainless / White; Panel-ready on fridge, dishwasher, beverage cooler = fronts in your door style). Finish and style are looks only. Appliance prices work exactly as before.
+New (Dan's choice): **Oven Cabinet** (OC 27/30/33 × 84/90/96) and **Microwave Drawer Base** (MDB 24/30) are priced cabinets; the **Wall Oven** and **Microwave Drawer** appliances go inside them and move/duplicate with them. A cooktop can now sit over a base cabinet. **Add rows for OC and MDB to your price sheet** (download a fresh template from Profile; OC is priced by width × height like Tall).
+Claude tested locally: every appliance type in 3D and elevation, all finishes and fridge styles, auto hood (insert under a cabinet, chimney to the ceiling otherwise), single ↔ double oven (height from the floor follows), empty oven cabinet shows "Oven opening", moving/nudging/duplicating the cabinet carries the oven, an oven half out of its cabinet is refused ("Fit it inside the OC30"), palette click drops the oven centred into a free oven cabinet, order list SKUs (OC3084, MDB30), printed elevation mode. No console errors.
+- [ ] Open a real kitchen in **3D**: fridge, range, hood, dishwasher and microwave are recognizable at normal distance.
+- [ ] Double-click an appliance → change **Style / Finish / Size** → 3D and elevation update.
+- [ ] Add an **Oven Cabinet**, then a **Wall Oven** (palette click or sidebar): the oven lands inside it. Drag the cabinet: the oven goes with it.
+- [ ] **Hood over a range with a wall cabinet above** → slim insert. No cabinet above → chimney to the ceiling.
+- [ ] **Price sheet:** after adding OC/MDB prices, the quote prices those cabinets; the oven/microwave keep their own price box.
+- [ ] Orbit a full kitchen: still smooth (models add a few hundred small parts).

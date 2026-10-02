@@ -252,6 +252,41 @@ function renderElevation() {
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
   });
 
+  // ── Oven cabinet / microwave drawer base: fronts around the appliance opening, from the
+  // same layout the 3D view uses (fronts3d.js). The appliance itself is drawn further down.
+  wallCabs.filter(c => c.type === 'ovenTall' || c.type === 'mwDrawerBase').forEach(cab => {
+    const cat = CATALOG[cab.type], [, topIn] = itemVerticalRange(cab);
+    const cW = cab.width*scale, x = eX(cab.offset||0, cab.width), y = floorY - topIn*scale;
+    const si = cabStyle(cab), txtColor = darkSwatches.includes(si.swatch) ? '#fff' : '#334155';
+    ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(x, y, cW, topIn*scale);
+    ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = PDF ? 2 : 1.5; ctx.strokeRect(x, y, cW, topIn*scale);
+    ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY - TOE_KICK_H*scale, cW, TOE_KICK_H*scale);   // toe kick
+    const sx = fx => x + (fx + cab.width/2) * scale, sy = fy => floorY - fy*scale;
+    frontLayout(cab, r).forEach(f => {
+      const fx = sx(f.x0), fy = sy(f.y1), fw = (f.x1 - f.x0)*scale, fh = (f.y1 - f.y0)*scale;
+      ctx.strokeStyle = PDF ? '#333333' : '#475569'; ctx.lineWidth = 1; ctx.strokeRect(fx, fy, fw, fh);
+      ctx.fillStyle = PDF ? '#555555' : '#94A3B8';
+      if (f.kind === 'door') {
+        drawDoorPanel(ctx, fx, fy, fw, fh, si.code, scale, PDF);
+        const px = f.hinge === 'R' ? fx + 4 : fx + fw - 7;
+        ctx.fillRect(px, f.upper ? fy + fh - 18 : fy + 6, 3, 12);
+      } else { ctx.beginPath(); ctx.roundRect(fx + fw/2 - 8, fy + fh/2 - 3, 16, 6, 3); ctx.fill(); }
+    });
+    const o = builtInOpening(r, cab);
+    if (!o.filled) {                                   // nothing in it yet: show the opening
+      const ox = x + 1.5*scale, oy = sy(o.y1), ow = cW - 3*scale, oh = (o.y1 - o.y0)*scale;
+      ctx.fillStyle = PDF ? '#EEEEEE' : '#1F2328'; ctx.fillRect(ox, oy, ow, oh);
+      ctx.fillStyle = PDF ? '#555555' : '#CBD5E1'; ctx.font = `600 ${Math.max(7, Math.min(scale*1.5, 9))}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(cab.type === 'ovenTall' ? 'Oven opening' : 'Microwave opening', ox + ow/2, oy + oh/2);
+    }
+    // label in the lowest drawer
+    ctx.fillStyle = PDF ? '#1a1a1a' : txtColor; ctx.font = `600 ${Math.max(8, Math.min(scale*1.9, 11))}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${cat.abbr}${cab.width}`, x + cW/2, sy(TOE_KICK_H + Math.min(7, (o.y0 - TOE_KICK_H) / 2)));
+    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
+  });
+
   // ── Corner cabinets on two walls (lazy susan, diagonal corner wall) — true view, the
   // same from either wall: the leg next to the corner set back, then this face's door.
   r.cabinets.filter(c => layerShowsItem(c)).forEach(cab => {
@@ -322,10 +357,10 @@ function renderElevation() {
     const aW   = app.width * scale;
     const aH   = (app.height || acat.height) * scale;
     const x    = eX(app.offset||0, app.width);
-    const botY = floorY - (app.customElevBottom != null ? app.customElevBottom : acat.elevBottom) * scale; // bottom edge Y
+    const botY = floorY - itemVerticalRange(app)[0] * scale; // bottom edge Y
     const y    = botY - aH;                        // top edge Y
 
-    drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale);
+    drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, { PDF, styleCode: p.style, ceilY: WY, r });
     if (app.note) {
       ctx.font=`italic ${Math.max(7,scale*1.4)}px sans-serif`; ctx.fillStyle='#64748B';
       ctx.textBaseline='bottom'; ctx.fillText(app.note, x+aW/2, y-4);
@@ -362,13 +397,13 @@ function renderElevation() {
     }
     // Upper cabinets → dim string above wall
     const upperDimItems = wallCabs
-      .filter(c => ['wall','diagWall','tall'].includes(c.type))
+      .filter(c => ['wall','diagWall','tall','ovenTall'].includes(c.type))
       .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
       .sort((a,b) => a.x1-b.x1);
     if (upperDimItems.length) pdfDimString(upperDimItems, WY - 28, true);
     // Base cabinets → dim string below floor
     const baseDimItems = wallCabs
-      .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) || (isFiller(c.type) && !(c.wallBottom > 0)))
+      .filter(c => ['base','sink','vanity','drawerBase','mwDrawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) || (isFiller(c.type) && !(c.wallBottom > 0)))
       .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
       .sort((a,b) => a.x1-b.x1);
     if (baseDimItems.length) pdfDimString(baseDimItems, WY + WH + 22, false);

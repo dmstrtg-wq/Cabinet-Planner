@@ -28,6 +28,16 @@
     const floorY = WY + WH;
     const flip = wall === 'south' || wall === 'west';
     const eX = (offset, width) => flip ? WX + WW - (offset + width)*scale : WX + offset*scale;
+    const hitApp = app => {
+      const acat = APPLIANCES[app.type]; if (!acat) return false;
+      const aW = app.width*scale, aH = (app.height||acat.height)*scale;
+      const x  = eX(app.offset||0, app.width);
+      const y  = floorY - itemVerticalRange(app)[0]*scale - aH;
+      return mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH;
+    };
+    // A built-in (wall oven, microwave drawer, cooktop) sits inside a cabinet: it wins the click
+    const apps = (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a));
+    const inner = apps.find(a => applianceHost(r, a) && hitApp(a)); if (inner) return inner;
     for (const cab of r.cabinets.filter(c => c.wall === wall && layerShowsItem(c))) {
       const cW = cab.width*scale, cH = cab.height*scale;
       const x = eX(cab.offset||0, cab.width);
@@ -35,14 +45,7 @@
       const y = (cab.type==='wall'||cab.type==='diagWall') ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
-    for (const app of (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a))) {
-      const acat = APPLIANCES[app.type]; if (!acat) continue;
-      const aW = app.width*scale, aH = (app.height||acat.height)*scale;
-      const x  = eX(app.offset||0, app.width);
-      const y  = floorY - (app.customElevBottom != null ? app.customElevBottom : acat.elevBottom)*scale - aH;
-      if (mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH) return app;
-    }
-    return null;
+    return apps.find(hitApp) || null;
   }
 
   const canvas  = document.getElementById('elevation-plan');
@@ -107,7 +110,7 @@
       const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
       if (cab) {
         const newOffset = resolveMoveOffset(info.r, cab, raw);
-        if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+        if (newOffset !== cab.offset) { setItemOffset(info.r, cab, newOffset); persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
         tooltip.style.display = 'block';
         tooltip.textContent = `${fmtFrac(newOffset)} from left`;
       }
@@ -207,7 +210,7 @@
       const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId) || (info.r.appliances||[]).find(a => a.id === elevDrag.cabId);
       if (cab) {
         const newOffset = resolveMoveOffset(info.r, cab, elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale);
-        if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+        if (newOffset !== cab.offset) { setItemOffset(info.r, cab, newOffset); persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
         tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
       }
       e.preventDefault();

@@ -111,7 +111,7 @@ function drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX) {
 
   // ── Horizontal: individual base cabinet widths, just under the floor line ──
   const baseCabs = wallCabs
-    .filter(c => ['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type))
+    .filter(c => ['base','sink','vanity','drawerBase','mwDrawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type))
     .sort((a,b) => (a.offset||0)-(b.offset||0));
   const hY = floorY + 14;
   baseCabs.forEach(cab => {

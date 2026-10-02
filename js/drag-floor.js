@@ -152,7 +152,7 @@
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta/drag.scale);
-          if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderCanvas(); renderCabinetList(); }
+          if (newOffset !== cab.offset) { setItemOffset(info.r, cab, newOffset); persist(); renderCanvas(); renderCabinetList(); }
           tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
         }
       }
@@ -255,7 +255,7 @@
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta / drag.scale);
-          if (newOffset !== cab.offset) { cab.offset = newOffset; persist(); renderCanvas(); renderCabinetList(); }
+          if (newOffset !== cab.offset) { setItemOffset(info.r, cab, newOffset); persist(); renderCanvas(); renderCabinetList(); }
           tooltip.style.display='block'; tooltip.textContent=`${fmtFrac(newOffset)} from left`;
         }
       }

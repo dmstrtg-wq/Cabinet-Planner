@@ -30,14 +30,15 @@ function projectCounter(p) {
 // ════════════════════════════
 // WHAT GETS A COUNTERTOP / TOE KICK
 // ════════════════════════════
-const COUNTER_CAB_TYPES = ['base', 'sink', 'drawerBase', 'cornerBase', 'lazysusan', 'vanity'];
+const COUNTER_CAB_TYPES = ['base', 'sink', 'drawerBase', 'mwDrawerBase', 'cornerBase', 'lazysusan', 'vanity'];
 const UNDER_COUNTER_APPS = ['dishwasher', 'beverageCooler', 'cooktop'];   // the range breaks the counter instead
 function isFloorFiller(i) { if (!isFiller(i.type)) return false; const [b, t] = itemVerticalRange(i); return b < 0.01 && t <= 37; }
 function coversCounter(i) {
   if (CATALOG[i.type]) return COUNTER_CAB_TYPES.includes(i.type) || isFloorFiller(i);
   return UNDER_COUNTER_APPS.includes(i.type);
 }
-function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || cab.type === 'tall' || isFloorFiller(cab); }
+const TALL_TYPES = ['tall', 'ovenTall'];
+function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || TALL_TYPES.includes(cab.type) || isFloorFiller(cab); }
 function roomWalls(r) { return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])]; }
 
 // ════════════════════════════
@@ -124,7 +125,7 @@ function upperRuns(r) {
 // Base-height runs that aren't countertop runs' business (tall cabinets) also get end panels
 function tallRuns(r) {
   const out = [];
-  roomWalls(r).forEach(wall => groupRuns(wallItems(r, wall).filter(i => i.type === 'tall')).forEach(run => {
+  roomWalls(r).forEach(wall => groupRuns(wallItems(r, wall).filter(i => TALL_TYPES.includes(i.type))).forEach(run => {
     const top = Math.max(...run.items.map(i => i.height));
     out.push({ wall, a: run.a, b: run.b, top, bottom: 0, depth: Math.max(...run.items.map(i => i.depth || 24)), ...runEndsFree(r, wall, [0, top], run.a, run.b) });
   }));

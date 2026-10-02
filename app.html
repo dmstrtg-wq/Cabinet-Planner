@@ -474,9 +474,11 @@
             <option value="base">Base Cabinet</option>
             <option value="wall">Wall Cabinet</option>
             <option value="tall">Tall / Pantry</option>
+            <option value="ovenTall">Oven Cabinet (for a wall oven)</option>
             <option value="sink">Sink Base</option>
             <option value="vanity">Vanity</option>
             <option value="drawerBase">Drawer Base (3-drawer)</option>
+            <option value="mwDrawerBase">Microwave Drawer Base</option>
             <option value="cornerBase">Corner Base (Blind)</option>
             <option value="lazysusan">Lazy Susan Corner</option>
             <option value="diagWall">Diagonal Corner Wall</option>
@@ -523,10 +525,12 @@
             <option value="microwave">OTR Microwave</option>
             <option value="cooktop">Cooktop</option>
             <option value="hood">Range Hood</option>
+            <option value="wallOven">Wall Oven (in an Oven Cabinet)</option>
+            <option value="microwaveDrawer">Microwave Drawer (in its base)</option>
             <option value="beverageCooler">Beverage Cooler (UC)</option>
             <option value="floatingShelf">Floating Shelf</option>
           </select>
-          <select id="app-width" class="cp-select"><option value="">— Width —</option></select>
+          <select id="app-width" class="cp-select" onchange="refreshPlacementOffsets()"><option value="">— Width —</option></select>
           <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
           <select id="app-elev-bottom-sel" class="cp-select hidden"><option value="">— Height from floor —</option></select>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -720,13 +724,25 @@
       <label for="edit-app-width">Width</label>
       <select id="edit-app-width" class="cp-select"></select>
     </div>
+    <div class="form-group" id="edit-app-height-group" style="display:none;">
+      <label for="edit-app-height">Size</label>
+      <select id="edit-app-height" class="cp-select"></select>
+    </div>
+    <div class="form-group" id="edit-app-variant-group" style="display:none;">
+      <label for="edit-app-variant">Style</label>
+      <select id="edit-app-variant" class="cp-select"></select>
+    </div>
+    <div class="form-group" id="edit-app-finish-group" style="display:none;">
+      <label for="edit-app-finish">Finish (look only — doesn't change the price)</label>
+      <select id="edit-app-finish" class="cp-select"></select>
+    </div>
     <div class="form-group" id="edit-app-elevbottom-group" style="display:none;">
       <label for="edit-app-elevbottom">Height from floor (in)</label>
       <select id="edit-app-elevbottom" class="cp-select"></select>
     </div>
     <div class="form-group">
       <label for="edit-app-offset">From left (in)</label>
-      <input type="number" id="edit-app-offset" class="cp-input" min="0" value="0" style="margin-bottom:0;">
+      <input type="number" id="edit-app-offset" class="cp-input" min="0" step="any" value="0" style="margin-bottom:0;">
     </div>
     <div class="form-group">
       <label for="edit-app-price">Price ($) — leave blank for N/A</label>
@@ -1148,6 +1164,7 @@
 <script src="/js/camera3d.js" data-categories="essential"></script>
 <script src="/js/snapshots.js" data-categories="essential"></script>
 <script src="/js/corners.js" data-categories="essential"></script>
+<script src="/js/appliances3d.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

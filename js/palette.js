@@ -15,8 +15,16 @@ function placementIssue(r, item) {
   const len = wallLength(r, item.wall), off = item.offset || 0;
   if (off < -0.01 || off + item.width > len + 0.01) return 'Runs past the end of the wall';
   const vr = itemVerticalRange(item);
-  const hits = overlappingItems(r, item.wall, vr, off, item.width, item.id);
+  const hits = overlappingItems(r, item.wall, vr, off, item.width, item.id, item.type);
   if (hits.length) return 'Overlaps ' + hits.map(itemLabel).join(', ');
+  // A built-in is either inside its cabinet or clear of it — never half in
+  // (a cabinet's own built-ins travel with it, so they never block it)
+  const placed = CATALOG[item.type] && r.cabinets.find(c => c.id === item.id);
+  const own = placed ? hostedAppliances(r, placed).map(a => a.id) : [];
+  const half = wallItems(r, item.wall).find(i => i.id !== item.id && !own.includes(i.id) && canHost(item.type, i.type) && rangesOverlap(itemVerticalRange(i), vr)
+    && off < (i.offset || 0) + i.width - 0.01 && (i.offset || 0) < off + item.width - 0.01
+    && !(APPLIANCES[item.type] ? _inside(item, i) : _inside(i, item)));
+  if (half) return APPLIANCES[item.type] ? `Fit it inside the ${itemLabel(half)}` : `Half over the ${itemLabel(half)}`;
   // Footprint against the runs on the neighbouring walls (inside corners)
   // (corner cabinets count with both legs — itemRects)
   const hit = (a, b) => a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01;
@@ -48,7 +56,11 @@ function snapCandidates(r, item) {
   const len = wallLength(r, item.wall), w = item.width, vr = itemVerticalRange(item);
   const cands = [0, len - w];
   wallItems(r, item.wall).filter(i => i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr))
-    .forEach(i => { cands.push((i.offset || 0) + i.width, (i.offset || 0) - w); });
+    .forEach(i => {
+      cands.push((i.offset || 0) + i.width, (i.offset || 0) - w);
+      if (APPLIANCES[item.type] && canHost(item.type, i.type) && i.width >= w - 0.01)   // built-in: centred in its cabinet
+        cands.push((i.offset || 0) + (i.width - w) / 2, i.offset || 0);
+    });
   // Neighbouring runs, projected onto this wall
   roomItems(r).filter(i => i.wall && i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr)).forEach(i => {
     // other walls' runs, and a corner cabinet's leg on this wall
@@ -141,7 +153,7 @@ function nudgeSelected(key, shift, alt) {
     if (stop == null) { showMoveTip(`Can't move: ${lcFirst(issue)}`, true); return true; }
     next = stop;
   }
-  it.offset = next;
+  setItemOffset(r, it, next);
   persist(); renderCanvas(); renderCabinetList();
   if (state.viewMode === 'elevation') renderElevation();
   showMoveTip(`${itemLabel(it)} · ${fmtFrac(next)} from left`);
@@ -160,9 +172,9 @@ document.addEventListener('keydown', e => {
 // PALETTE
 // ════════════════════════════
 const PALETTE_CATEGORIES = [
-  { id: 'base',   label: 'Base',              types: ['base', 'sink', 'drawerBase', 'vanity'] },
+  { id: 'base',   label: 'Base',              types: ['base', 'sink', 'drawerBase', 'mwDrawerBase', 'vanity'] },
   { id: 'wall',   label: 'Wall',              types: ['wall'] },
-  { id: 'tall',   label: 'Tall',              types: ['tall'] },
+  { id: 'tall',   label: 'Tall',              types: ['tall', 'ovenTall'] },
   { id: 'corner', label: 'Corner',            types: ['cornerBase', 'lazysusan', 'diagWall'] },
   { id: 'fill',   label: 'Fillers & Panels',  types: ['filler3', 'filler6', 'fridgePanel'] },
   { id: 'app',    label: 'Appliances',        types: Object.keys(APPLIANCES) },
@@ -225,7 +237,8 @@ function commitPaletteItem(item) {
 function paletteQuickAdd(entry) {
   const r = activeRoom(); if (!r) return;
   const item = makePaletteItem(entry, state.activeWall, 0);
-  item.offset = nextFreeOffset(r, state.activeWall, itemLevel(item));
+  const inHost = freeHostOffset(r, state.activeWall, item.type, item.width);
+  item.offset = inHost != null ? inHost : nextFreeOffset(r, state.activeWall, itemLevel(item));
   if (placementIssue(r, item)) {
     // e.g. the start of the wall is filled by the corner of the next run: take the first
     // open snap point from the end of this run onward

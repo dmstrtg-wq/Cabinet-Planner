@@ -127,6 +127,13 @@ function openItemPopover(item, clientX, clientY) {
   } else {
     const acat = APPLIANCES[item.type];
     html += row('Width', `<select data-f="width" ${selStyle}>${acat.widths.map(w => opt(w, w + '"', w === item.width)).join('')}</select>`);
+    if (acat.heights)
+      html += row('Size', `<select data-f="height" ${selStyle}>${acat.heights.map(h => opt(h, applianceHeightLabel(item.type, h), h === (item.height || acat.height))).join('')}</select>`);
+    if (APPLIANCE_VARIANTS[item.type])
+      html += row('Style', `<select data-f="variant" ${selStyle}>${Object.entries(APPLIANCE_VARIANTS[item.type]).map(([k, l]) => opt(k, l, k === applianceVariant(item))).join('')}</select>`);
+    const fin = applianceFinishOptions(item.type);
+    if (fin.length)
+      html += row('Finish', `<select data-f="finish" ${selStyle}>${fin.map(([k, l]) => opt(k, l, k === applianceFinish(item))).join('')}</select>`);
   }
   html += row('Notes', `<input data-f="note" type="text" ${selStyle} value="${escHtml(item.note || '')}" placeholder="Optional">`);
   const btn = 'style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border,#e2e8f0);background:#fff;cursor:pointer;font-weight:600;font-size:12px;"';
@@ -165,6 +172,12 @@ function applyItemEdit(item, field, value) {
   if (field === 'note') item.note = value.trim();
   else if (field === 'styleOverride') item.styleOverride = value || null;
   else if (field === 'hinge') item.hinge = value || null;
+  else if (field === 'variant') item.variant = value || null;
+  else if (field === 'finish') item.finish = value || null;
+  else if (field === 'height' && APPLIANCES[item.type]) {
+    item.height = parseFloat(value);
+    if (APPLIANCES[item.type].elevBottomFor) item.customElevBottom = null;   // single ↔ double oven: its own height from the floor
+  }
   else if (field === 'width') item.width = filler ? cleanFillerDim(value, item.width) : parseFloat(value);
   else if (field === 'height') item.height = filler ? cleanFillerDim(value, item.height) : parseFloat(value);
   else if (field === 'wallBottom') { item.wallBottom = Math.max(0, parseInches(value) || 0); item.depth = item.wallBottom >= 48 ? 12 : 24; }
@@ -195,7 +208,10 @@ function duplicateItem(item) {
   copy.id = uid();
   copy.itemNum = nextItemNum(r);
   copy.offset = freeSpotFor(r, copy, item);
+  // A cabinet's built-ins (wall oven, microwave drawer) come along, priced as before
+  const builtIns = CATALOG[item.type] ? hostedAppliances(r, item) : [];
   (CATALOG[item.type] ? r.cabinets : r.appliances).push(copy);
+  builtIns.forEach(a => r.appliances.push({ ...JSON.parse(JSON.stringify(a)), id: uid(), itemNum: nextItemNum(r), offset: copy.offset + ((a.offset || 0) - (item.offset || 0)) }));
   persist(); renderCutList();
   if (state.viewMode === '3d') renderIsometric();
   selectItem(copy.id);

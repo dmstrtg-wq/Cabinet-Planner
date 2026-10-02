@@ -457,6 +457,15 @@ function renderCanvas() {
     const _ra = itemRect(r, { ...app, wall }, acat.depth); if (!_ra) return;
     const x = RX + _ra.x*scale, y = RY + _ra.y*scale, w = _ra.w*scale, h = _ra.h*scale;
     if (_fitIds.has(app.id)) _flagRects.push({x, y, w, h});
+    // A wall oven / microwave drawer is inside its cabinet: in plan you see the cabinet,
+    // with a small tag saying what's built in
+    if (acat.builtIn && applianceHost(r, app)) {
+      ctx.font = `bold ${Math.max(7, Math.min(scale*1.6, 9))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const tw = ctx.measureText(acat.abbr).width + 6;
+      ctx.fillStyle = 'rgba(15,23,42,0.75)'; ctx.fillRect(x + w/2 - tw/2, y + h*0.72 - 6, tw, 12);
+      ctx.fillStyle = '#fff'; ctx.fillText(acat.abbr, x + w/2, y + h*0.72);
+      return;
+    }
     ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
     ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
     // Burner circles for range/cooktop

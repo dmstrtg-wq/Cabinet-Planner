@@ -503,6 +503,10 @@ const CATALOG = {
   filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20, filler:true, stock:6 },
   fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
   diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:12, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
+  // Cabinets that hold a built-in appliance (Build Plan 3.3, Dan 2026-10-02): the cabinet is
+  // priced from the price sheet, the appliance placed inside it keeps its own price.
+  ovenTall:     { label:'Oven Cabinet',          widths:[27,30,33],  heights:[84,90,96],          depth:24, color:'#1E3A8A', abbr:'OC',  basePrice: w => w*12 },
+  mwDrawerBase: { label:'Microwave Drawer Base', widths:[24,30],     heights:[34.5],              depth:24, color:'#7C3AED', abbr:'MDB', basePrice: w => w*5  },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -626,6 +630,25 @@ const APPLIANCES = {
   hood:            { label:'Range Hood',                widths:[30,36,42],    height:18,             depth:20, color:'#9CA3AF', abbr:'RH',  wallMount:true,  elevBottom:60 },
   beverageCooler:  { label:'Beverage Cooler (UC)',      widths:[18,24,30,36], height:34.5,           depth:24, color:'#60A5FA', abbr:'BEV', wallMount:false, elevBottom:0  },
   floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42], height:2.5,            depth:12, color:'#D97706', abbr:'FSH', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84] },
+  // Built-ins: these sit inside their cabinet (builtIn = the cabinet type that holds them)
+  wallOven:        { label:'Wall Oven',                 widths:[27,30],       heights:[29,51], height:29, depth:24, color:'#374151', abbr:'WO',  wallMount:false, elevBottom:32, elevBottomFor: a => (a.height || 29) >= 50 ? 20 : 32, elevBottomOptions:[16,20,24,28,32,36,40], builtIn:'ovenTall' },
+  microwaveDrawer: { label:'Microwave Drawer',          widths:[24,30],       height:15,             depth:24, color:'#4B5563', abbr:'MWD', wallMount:false, elevBottom:18.5, builtIn:'mwDrawerBase' },
+};
+// Cabinets an appliance may sit inside (so they don't count as overlapping): built-ins in
+// their own cabinet, and a cooktop dropped into the counter over a base cabinet.
+const APPLIANCE_HOSTS = { wallOven: ['ovenTall'], microwaveDrawer: ['mwDrawerBase'], cooktop: ['base', 'drawerBase'] };
+// Looks (3D + elevation only; never affects price). Panel-ready takes the door style.
+const APPLIANCE_FINISHES = {
+  stainless: { label: 'Stainless',        color: '#C5C9CE' },
+  black:     { label: 'Black stainless',  color: '#3B3D41' },
+  white:     { label: 'White',            color: '#F1F1EF' },
+  panel:     { label: 'Panel-ready (door style)' },
+};
+const PANEL_READY_TYPES = ['refrigerator', 'dishwasher', 'beverageCooler'];
+const FINISHED_APPLIANCES = ['refrigerator', 'range', 'dishwasher', 'microwave', 'hood', 'beverageCooler', 'wallOven', 'microwaveDrawer'];
+const APPLIANCE_VARIANTS = {
+  refrigerator: { french: 'French door', sxs: 'Side-by-side', top: 'Top freezer' },
+  hood:         { auto: 'Auto (under a cabinet → insert)', chimney: 'Chimney', under: 'Under-cabinet' },
 };
 
 const OPENING_LABELS = { door:'Door', window:'Window', 'sink-loc':'Sink', arch:'Opening' };
@@ -905,7 +928,7 @@ function cabinetPrice(cab) {
   if (ov != null) {
     if (typeof ov === 'object') {
       // Per-size, per-finish table from an uploaded price sheet.
-      const sizeKey = (cab.type === 'wall' || cab.type === 'tall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
+      const sizeKey = (cab.type === 'wall' || cab.type === 'tall' || cab.type === 'ovenTall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
       const bySize = ov[sizeKey];
       if (bySize && typeof bySize === 'object') {
         const styleCode = cab.styleOverride || activeProj()?.style || 'AW';

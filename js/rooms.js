@@ -521,7 +521,7 @@ function defaultCabHeight(type, r) {
   const upper = ceiling >= 120 ? 42 : ceiling >= 108 ? 36 : 30;
   let want = cat.heights[0];
   if (type === 'wall' || type === 'diagWall') want = upper;
-  else if (type === 'tall' || type === 'fridgePanel') want = 54 + upper;
+  else if (type === 'tall' || type === 'ovenTall' || type === 'fridgePanel') want = 54 + upper;
   return cat.heights.includes(want) ? want : cat.heights[0];
 }
 // Height band an item fills on its wall, in inches from the floor. Two items only
@@ -534,7 +534,7 @@ function itemVerticalRange(item) {
     return [0, item.height];
   }
   const acat = APPLIANCES[item.type] || {};
-  const b = item.customElevBottom ?? acat.elevBottom ?? 0;
+  const b = item.customElevBottom ?? (acat.elevBottomFor ? acat.elevBottomFor(item) : acat.elevBottom) ?? 0;
   return [b, b + (item.height || acat.height || 0)];
 }
 // 'upper' or 'base' — which run a new piece of this type belongs to
@@ -563,9 +563,55 @@ function nextFreeOffset(r, wall, level) {
   }
   return pos;
 }
-function overlappingItems(r, wall, vRange, offset, width, ignoreId) {
+// selfType: the type of the piece being placed — a built-in and the cabinet that holds it
+// (wall oven in an oven cabinet, cooktop over a base) don't count as overlapping.
+function overlappingItems(r, wall, vRange, offset, width, ignoreId, selfType) {
   return wallItems(r, wall).filter(i => i.id !== ignoreId && rangesOverlap(itemVerticalRange(i), vRange)
-    && offset < (i.offset||0) + i.width - 0.01 && (i.offset||0) < offset + width - 0.01);
+    && offset < (i.offset||0) + i.width - 0.01 && (i.offset||0) < offset + width - 0.01
+    && !(selfType && canHost(selfType, i.type)));
+}
+// ── Built-in appliances (Build Plan 3.3) ──
+function canHost(a, b) { return (APPLIANCE_HOSTS[a] || []).includes(b) || (APPLIANCE_HOSTS[b] || []).includes(a); }
+const _inside = (a, c) => (a.offset || 0) >= (c.offset || 0) - 0.01 && (a.offset || 0) + a.width <= (c.offset || 0) + c.width + 0.01;
+// Appliances sitting inside this cabinet (they move with it)
+function hostedAppliances(r, cab) {
+  return (r.appliances || []).filter(a => a.wall === cab.wall && (APPLIANCE_HOSTS[a.type] || []).includes(cab.type) && _inside(a, cab));
+}
+// The cabinet an appliance sits inside, if any
+function applianceHost(r, app) {
+  const types = APPLIANCE_HOSTS[app.type]; if (!types) return null;
+  return r.cabinets.find(c => c.wall === app.wall && types.includes(c.type) && _inside(app, c)) || null;
+}
+// Move a placed item along its wall; a cabinet takes its built-ins with it
+function setItemOffset(r, item, next) {
+  const d = next - (item.offset || 0);
+  if (CATALOG[item.type] && d) hostedAppliances(r, item).forEach(a => { a.offset = Math.round(((a.offset || 0) + d) * 1000) / 1000; });
+  item.offset = next;
+}
+// Where a built-in goes when added: centred in the first cabinet of its kind on this wall
+// that doesn't have one yet
+function freeHostOffset(r, wall, type, width) {
+  const kinds = APPLIANCES[type] && APPLIANCES[type].builtIn ? [APPLIANCES[type].builtIn] : null; if (!kinds) return null;
+  const c = r.cabinets.find(c => c.wall === wall && kinds.includes(c.type) && c.width >= width - 0.01
+    && !hostedAppliances(r, c).some(a => a.type === type));
+  return c ? (c.offset || 0) + (c.width - width) / 2 : null;
+}
+function applianceVariant(app) {
+  const v = APPLIANCE_VARIANTS[app.type]; if (!v) return null;
+  return app.variant && v[app.variant] ? app.variant : Object.keys(v)[0];
+}
+function applianceFinishOptions(type) {
+  if (!FINISHED_APPLIANCES.includes(type)) return [];
+  return Object.entries(APPLIANCE_FINISHES).filter(([k]) => k !== 'panel' || PANEL_READY_TYPES.includes(type)).map(([k, f]) => [k, f.label]);
+}
+function applianceHeightLabel(type, h) {
+  if (type === 'wallOven') return h >= 50 ? `Double oven (${h}")` : `Single oven (${h}")`;
+  return `${h}" tall`;
+}
+// Look of an appliance: finish (stainless default; panel-ready only where it exists)
+function applianceFinish(app) {
+  const f = app.finish && APPLIANCE_FINISHES[app.finish] ? app.finish : 'stainless';
+  return f === 'panel' && !PANEL_READY_TYPES.includes(app.type) ? 'stainless' : f;
 }
 function itemLabel(i) {
   const w = i.width >= 1 || isFiller(i.type) ? fmtFrac(i.width).replace('"', '').replace(' ', '-') : '';
@@ -579,10 +625,12 @@ function refreshPlacementOffsets() {
   const appType = document.getElementById('app-type')?.value;
   const appLevel = appType ? itemLevel({ type: appType }) : 'base';
   const co = document.getElementById('cab-offset-input'); if (co) co.value = nextFreeOffset(r, state.activeWall, cabLevel);
-  const ao = document.getElementById('app-offset');       if (ao) ao.value = nextFreeOffset(r, state.activeWall, appLevel);
+  const appW = parseFloat(document.getElementById('app-width')?.value) || (appType && APPLIANCES[appType] ? APPLIANCES[appType].widths[0] : 0);
+  const inHost = appType ? freeHostOffset(r, state.activeWall, appType, appW) : null;   // a built-in: into its cabinet
+  const ao = document.getElementById('app-offset');       if (ao) ao.value = inHost != null ? inHost : nextFreeOffset(r, state.activeWall, appLevel);
 }
 function confirmNoOverlap(r, item, offset, width) {
-  const hits = overlappingItems(r, state.activeWall, itemVerticalRange(item), offset, width);
+  const hits = overlappingItems(r, state.activeWall, itemVerticalRange(item), offset, width, null, item.type);
   if (!hits.length) return true;
   return confirm(`This overlaps ${hits.map(itemLabel).join(', ')} on this wall (${offset}" to ${offset + width}" from left).\n\nAdd it anyway?`);
 }
@@ -673,7 +721,7 @@ function addAppliance() {
   if (!type || !width) { alert('Select appliance type and width.'); return; }
   const acat  = APPLIANCES[type];
   const note  = document.getElementById('app-note').value.trim();
-  const offset = parseInt(document.getElementById('app-offset').value) || 0;
+  const offset = parseInches(document.getElementById('app-offset').value) || 0;   // fractions: a built-in centred in its cabinet
   const priceRaw = document.getElementById('app-price').value.trim();
   const price = priceRaw !== '' ? parseFloat(priceRaw) : null;
   const hs = document.getElementById('app-height-sel');
@@ -769,11 +817,20 @@ function openEditApplianceModal(app) {
     acat.elevBottomOptions.forEach(v => {
       const o = document.createElement('option'); o.value = v;
       o.textContent = `${v}" from floor`;
-      const cur = app.customElevBottom != null ? app.customElevBottom : acat.elevBottom;
+      const cur = itemVerticalRange(app)[0];
       if (v === cur) o.selected = true;
       es.appendChild(o);
     });
   } else { eg.style.display = 'none'; }
+  // Size / style / finish (3.3)
+  const fillSel = (groupId, selId, entries, cur) => {
+    const g = document.getElementById(groupId), s = document.getElementById(selId);
+    g.style.display = entries.length ? '' : 'none';
+    s.innerHTML = entries.map(([v, l]) => `<option value="${v}"${String(v) === String(cur) ? ' selected' : ''}>${l}</option>`).join('');
+  };
+  fillSel('edit-app-height-group', 'edit-app-height', acat.heights ? acat.heights.map(h => [h, applianceHeightLabel(app.type, h)]) : [], app.height || acat.height);
+  fillSel('edit-app-variant-group', 'edit-app-variant', Object.entries(APPLIANCE_VARIANTS[app.type] || {}), applianceVariant(app));
+  fillSel('edit-app-finish-group', 'edit-app-finish', applianceFinishOptions(app.type), applianceFinish(app));
   document.getElementById('modal-edit-appliance').classList.remove('hidden');
 }
 function saveEditApplianceModal() {
@@ -782,12 +839,22 @@ function saveEditApplianceModal() {
   const app = (r.appliances||[]).find(a => a.id === id); if (!app) return;
   const acat = APPLIANCES[app.type];
   app.width  = parseFloat(document.getElementById('edit-app-width').value) || app.width;
-  app.offset = parseInt(document.getElementById('edit-app-offset').value) || 0;
+  app.offset = parseInches(document.getElementById('edit-app-offset').value) || 0;
   app.note   = document.getElementById('edit-app-note').value.trim();
   const editPriceRaw = document.getElementById('edit-app-price').value.trim();
   app.price  = editPriceRaw !== '' ? parseFloat(editPriceRaw) : null;
   const es = document.getElementById('edit-app-elevbottom');
-  if (acat.elevBottomOptions && es.value) app.customElevBottom = parseFloat(es.value);
+  const oldBottom = itemVerticalRange(app)[0];
+  const newH = acat.heights ? parseFloat(document.getElementById('edit-app-height').value) : null;
+  const heightChanged = !!newH && newH !== (app.height || acat.height);
+  if (heightChanged) app.height = newH;
+  const pickedBottom = acat.elevBottomOptions && es.value ? parseFloat(es.value) : null;
+  // Switching single ↔ double oven: if the height-from-floor wasn't touched, take the new
+  // size's own default (double ovens sit lower)
+  if (heightChanged && acat.elevBottomFor && pickedBottom === oldBottom) app.customElevBottom = null;
+  else if (pickedBottom != null) app.customElevBottom = pickedBottom;
+  if (APPLIANCE_VARIANTS[app.type]) app.variant = document.getElementById('edit-app-variant').value || null;
+  if (FINISHED_APPLIANCES.includes(app.type)) app.finish = document.getElementById('edit-app-finish').value || null;
   closeModal('modal-edit-appliance');
   persist(); renderCabinetList(); renderCanvas();
   if (state.viewMode === 'elevation') renderElevation();
@@ -906,7 +973,7 @@ function saveEditModal() {
     cab.wallBottom = parseInches(document.getElementById('edit-cab-wallbottom').value) || 54;
     cab.glassDoors = document.getElementById('edit-cab-glass').checked;
   }
-  cab.offset        = parseInches(document.getElementById('edit-cab-offset').value) || 0;   // was parseInt: dropped fractions
+  setItemOffset(r, cab, parseInches(document.getElementById('edit-cab-offset').value) || 0);   // was parseInt: dropped fractions (built-ins move with it)
   cab.note          = document.getElementById('edit-cab-note').value.trim();
   cab.styleOverride = document.getElementById('edit-cab-style').value || null;
   closeModal('modal-edit-cabinet');
