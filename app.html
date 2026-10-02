@@ -383,6 +383,15 @@
             <button type="button" data-hw="knobs" onclick="setHardware('knobs')">Knobs on doors</button>
           </div>
         </div>
+        <div class="cp-section" id="countertop-section" style="flex-shrink:0">
+          <div class="cp-label">Countertop &amp; Trim</div>
+          <select id="ct-material" class="cp-select" aria-label="Countertop material" onchange="setCountertop('material', this.value)">
+            <option value="quartz">Quartz</option><option value="granite">Granite</option><option value="butcher">Butcher block</option><option value="laminate">Laminate</option>
+          </select>
+          <label class="ct-check"><input type="checkbox" id="ct-crown" onchange="setCountertop('crown', this.checked)"> Crown molding on uppers</label>
+          <label class="ct-check"><input type="checkbox" id="ct-lightrail" onchange="setCountertop('lightRail', this.checked)"> Light rail under uppers</label>
+          <div id="ct-stats" class="form-hint" style="margin-top:4px;"></div>
+        </div>
         <div class="cp-section" id="palette-section" style="flex-shrink:0">
           <div class="cp-label">Catalog <span class="palette-hint">drag onto a wall · click to add at the end</span></div>
           <input type="search" id="palette-search" class="cp-input" placeholder='Search — e.g. "B36", "sink", "30"' aria-label="Search catalog" autocomplete="off">
@@ -1117,6 +1126,7 @@
 <script src="/js/fillgap.js" data-categories="essential"></script>
 <script src="/js/orderlist.js" data-categories="essential"></script>
 <script src="/js/fronts3d.js" data-categories="essential"></script>
+<script src="/js/counters.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

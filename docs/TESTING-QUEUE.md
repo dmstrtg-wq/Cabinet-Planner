@@ -154,3 +154,12 @@ Claude checked renders of the sample kitchen in White Shaker, Espresso, Natural 
 ### Door style "stuck" fix (2026-09-24, Dan's report)
 - [ ] Pick a new door style in the right panel. The line under the project name ("Kitchen · Style: … ") now changes immediately, along with the right panel, floor plan, elevation and 3D. (Before, that header line stayed on the old style until you reopened the project.)
 - [ ] If the style **still** doesn't change anywhere for you (right panel swatch, 3D colors), tell Claude exactly which part stayed on Ice White. That would be a different problem than the one fixed here.
+
+### 3.2 Countertops, toe kicks, end panels, trim (built 2026-10-02)
+Claude checked on the sample kitchen: one continuous north countertop over the DW and sink (with bowl), east runs broken at the range and trimmed cleanly into the corner, island top, recessed toe kicks, end panels on the two exposed upper ends, crown + light rail, all four materials, elevation drawing, undo, and stats (20.8 linear ft / 48.5 sq ft).
+- [ ] **3D:** base runs have a 1.5" countertop with a 1" front overhang. It stops at the range, has a sink bowl, covers the dishwasher, and corners meet cleanly. Islands get a top.
+- [ ] **Toe kicks** are recessed (dark, set back 3") under base cabinets, talls and floor fillers.
+- [ ] **End panels** appear where a run ends in open space (not against a wall, tall cabinet, appliance or door), and the countertop overhangs them by 1".
+- [ ] **Right panel → Countertop & Trim:** Quartz / Granite / Butcher block / Laminate changes the 3D top. Crown molding and Light rail checkboxes add trim to the uppers. ⌘Z undoes these.
+- [ ] **Elevation + Print Plans:** the countertop band, toe kick, end panels, crown and light rail are drawn.
+- [ ] **The footage line** ("≈ X linear ft · Y sq ft") under Countertop & Trim looks right for a kitchen you know. It's saved on the project for a future countertop quote line (no pricing yet).

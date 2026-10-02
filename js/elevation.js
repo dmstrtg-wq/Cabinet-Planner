@@ -132,7 +132,7 @@ function renderElevation() {
     const si = cabStyle(cab);
     ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(x, y, cW, cH);
     ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = PDF ? 1.5 : 1.2; ctx.strokeRect(x, y, cW, cH);
-    if (bot === 0) { ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY-7, cW, 7); }   // toe kick
+    if (bot === 0) { ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY-TOE_KICK_H*scale, cW, TOE_KICK_H*scale); }   // toe kick
     const label = 'FL ' + fmtFrac(cab.width);
     ctx.fillStyle = PDF ? '#1a1a1a' : (darkSwatches.includes(si.swatch) ? '#fff' : '#334155');
     ctx.font = `600 ${Math.max(8, Math.min(scale*1.7, 10))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -157,8 +157,7 @@ function renderElevation() {
       ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(x+cutW+3,y+5); ctx.lineTo(x+cW-4,y+5); ctx.lineTo(x+cW-4,y+cH-12); ctx.lineTo(x+4,y+cH-12); ctx.lineTo(x+4,y+cH*0.18); ctx.closePath(); ctx.stroke();
       ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.55-7,y+cH-18,14,5,2); ctx.fill();
-      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
-      ctx.fillStyle=PDF?'#D0D0D0':'#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.fillRect(x,floorY-TOE_KICK_H*scale,cW,TOE_KICK_H*scale);   // recessed toe kick
       ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW*0.6, y+cH*0.5);
     } else {
@@ -180,8 +179,7 @@ function renderElevation() {
         drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
         ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
       }
-      ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(x,floorY-7,cW,7);
-      ctx.fillStyle=PDF?'#D0D0D0':'#E2E8F0'; ctx.fillRect(x-1,y-4,cW+2,4);
+      ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(x,floorY-TOE_KICK_H*scale,cW,TOE_KICK_H*scale);   // recessed toe kick
       ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
     }
@@ -427,6 +425,7 @@ function renderElevation() {
     });
   }
 
+  drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF);   // countertop, end panels, crown (counters.js)
   if (!PDF) { drawElevGaps(ctx, r, wall, scale, floorY, eX); drawElevSelection(ctx, r, wall, scale, floorY, eX); drawElevGhost(ctx, r, wall, scale, floorY, eX); }
   ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
   ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);

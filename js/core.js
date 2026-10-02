@@ -670,6 +670,7 @@ function persist() {
   clearTimeout(saveTimer);
   setSyncStatus('saving');
   saveTimer = setTimeout(syncActiveProject, 1000);
+  if (typeof updateCountertopStats === 'function') { updateCountertopStats(activeProj()); syncCountertopPanel(); } // counters.js
   if (typeof historyNoteChange === 'function') historyNoteChange(); // undo/redo (history.js)
 }
 // Demo and Free accounts keep projects in this browser only; Silver+ saves to Supabase.

@@ -349,7 +349,15 @@ function renderIsometric() {
     const pos = cabPos(cab.wall, off, cab.width, dep);
     const baseCol = doorStyleInfo(cab.styleOverride || _p3d?.style).swatch;   // per-cabinet style wins
 
-    const _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
+    let _m;
+    if (hasToeKick(cab)) {
+      // Recessed toe kick: the box starts 4.5" up, with a darker kick board set back 3"
+      _m = addBox(pos.x0, TOE_KICK_H, pos.z0, pos.w, h - TOE_KICK_H, pos.d, baseCol);
+      const kick = cabPos(cab.wall, off, cab.width, dep - TOE_RECESS);
+      addBox(kick.x0, 0, kick.z0, kick.w, TOE_KICK_H, kick.d, '#' + shade3D(baseCol, -70).toString(16).padStart(6, '0'));
+    } else {
+      _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
+    }
     if (_m) _m.userData.itemId = cab.id; // for selection highlight
     // Doors, drawer fronts and hardware in the cabinet's door style (fronts3d.js)
     const fronts = buildCabinetFronts3D(cab, r, _frontKit, _p3d);
@@ -405,6 +413,9 @@ function renderIsometric() {
     if (_m) _m.userData.itemId = isl.id;
     addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
+
+  // ── Countertops, end panels, crown / light rail (counters.js) ──
+  root.add(buildCountersAndTrim3D(r, _p3d));
 
   // ── Room dimension labels ──
   addLabel(fmtIn(roomW), roomW/2, 1, roomD+8, { fontSize:24, scale:0.05, bg:'transparent', color:'#475569' });

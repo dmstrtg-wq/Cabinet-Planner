@@ -993,6 +993,7 @@ function syncHardwareButtons() {
 }
 function syncStylePanel() {
   syncHardwareButtons();
+  if (typeof syncCountertopPanel === 'function') syncCountertopPanel();
   const p = activeProj(); const code = p ? (p.style || 'AW') : 'AW';
   document.querySelectorAll('.style-opt').forEach(el => el.classList.toggle('selected', el.dataset.code === code));
   syncStyleCurrent(code);
