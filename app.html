@@ -352,8 +352,21 @@
 
         <div id="view-3d" class="hidden">
           <div class="canvas-toolbar">
-            <span style="font-size:12px;color:var(--text-muted);">Drag to rotate &middot; scroll to zoom &middot; right-drag to pan</span>
-            <button class="toolbar-btn" onclick="resetIso3DView()">Reset View</button>
+            <div class="tb-group cam-group" role="group" aria-label="Camera">
+              <button class="toolbar-btn" onclick="setCameraPreset('hero')" title="Best 3/4 view of the cabinets">3/4 View</button>
+              <button class="toolbar-btn" onclick="setCameraPreset('doorway')" title="Standing in the doorway at eye height">Doorway</button>
+              <select id="cam-wall" class="cp-select cam-select" aria-label="Face a wall" onchange="if (this.value) setCameraPreset('wall:' + this.value); this.value = ''"><option value="">Face a wall…</option></select>
+              <button class="toolbar-btn" onclick="setCameraPreset('overhead')" title="Straight down from above">Overhead</button>
+            </div>
+            <div class="tb-group">
+              <select id="light-sel" class="cp-select cam-select" aria-label="Lighting" onchange="setScene('lighting', this.value)">
+                <option value="daylight">Light: Daylight</option><option value="warm">Light: Warm interior</option><option value="studio">Light: Studio</option>
+              </select>
+              <select id="floor-sel" class="cp-select cam-select" aria-label="Floor" onchange="setScene('floor', this.value)">
+                <option value="plain">Floor: Plain</option><option value="wood">Floor: Wood</option><option value="tile">Floor: Tile</option><option value="lvp">Floor: LVP</option>
+              </select>
+            </div>
+            <span class="cam-hint">Drag to rotate · scroll to zoom · right-drag to pan</span>
           </div>
           <div id="iso-wrapper">
             <div class="plan-title plan-title-bar">3D View</div>
@@ -1127,6 +1140,7 @@
 <script src="/js/orderlist.js" data-categories="essential"></script>
 <script src="/js/fronts3d.js" data-categories="essential"></script>
 <script src="/js/counters.js" data-categories="essential"></script>
+<script src="/js/camera3d.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

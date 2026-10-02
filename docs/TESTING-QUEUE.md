@@ -163,3 +163,12 @@ Claude checked on the sample kitchen: one continuous north countertop over the D
 - [ ] **Right panel → Countertop & Trim:** Quartz / Granite / Butcher block / Laminate changes the 3D top. Crown molding and Light rail checkboxes add trim to the uppers. ⌘Z undoes these.
 - [ ] **Elevation + Print Plans:** the countertop band, toe kick, end panels, crown and light rail are drawn.
 - [ ] **The footage line** ("≈ X linear ft · Y sq ft") under Countertop & Trim looks right for a kitchen you know. It's saved on the project for a future countertop quote line (no pricing yet).
+
+### 3.4 Lighting + camera (built 2026-10-02)
+Claude checked: the opening angle picked for L, U, galley, single-wall and an L-shaped room; walls fading correctly at every angle in a full 360° orbit (96 checks, 0 wrong); doorway at 64" eye height with no walls faded; glide lands exactly; all presets on the sample kitchen and the L room's inner walls; lighting/floor saved on the project; toolbar fits at 1280px. Fixed along the way: a floor-texture bug (blotchy wood), overexposed Studio light, blocky shadows (now 2× sharper), Face-a-wall now looks over islands.
+- [ ] **Open 3D on several real projects:** it starts on a good angle every time and never behind a wall.
+- [ ] **Orbit around:** whichever wall is between you and the kitchen goes see-through, and it comes back when you move past it.
+- [ ] **3/4 View / Doorway / Face a wall… / Overhead** glide smoothly to their views. Doorway stands in your drawn door at eye height (or on the open side if there's no door).
+- [ ] **Light:** Daylight / Warm interior / Studio. Studio is the clean white look for presentations.
+- [ ] **Floor:** Plain / Wood / Tile / LVP (looks only). Your choice is remembered per project.
+- [ ] **Orbiting a full kitchen stays smooth** on your laptop (shadows are now higher resolution, so tell me if it stutters).

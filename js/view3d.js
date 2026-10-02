@@ -135,10 +135,12 @@ function initIso3D() {
   // not grey). Lighting presets come in Build Plan 3.4.
   const ambient = new THREE.AmbientLight(0xffffff, 0.72);
   scene.add(ambient);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xd9d4ca, 0.38));
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xd9d4ca, 0.38);   // values set by the lighting preset (camera3d.js)
+  scene.add(hemi);
   const sun = new THREE.DirectionalLight(0xffffff, 1.0);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024,1024);
+  sun.shadow.mapSize.set(2048,2048);   // finer shadows — 1024 looked blocky on textured floors
+  sun.shadow.radius = 3;
   sun.shadow.bias = -0.0005;
   scene.add(sun);
   scene.add(sun.target);
@@ -146,9 +148,10 @@ function initIso3D() {
   const root = new THREE.Group();
   scene.add(root);
 
-  iso3D = { renderer, scene, camera, controls, root, sun, initedCamera: false };
+  iso3D = { renderer, scene, camera, controls, root, sun, ambient, hemi, initedCamera: false };
 
-  controls.addEventListener('change', () => renderer.render(scene, camera));
+  // Re-check which walls to fade every time the camera moves (camera3d.js)
+  controls.addEventListener('change', () => { updateCutaway(); renderer.render(scene, camera); });
 
   if (typeof ResizeObserver !== 'undefined') {
     new ResizeObserver(() => resizeIso3D()).observe(canvas);
@@ -170,36 +173,10 @@ function resizeIso3D() {
   iso3D.renderer.render(iso3D.scene, iso3D.camera);
 }
 
-// Position camera/sun for a good default view of the room
-function setIso3DCamera({roomW, roomD, ceiling}) {
-  const target = new THREE.Vector3(roomW/2, ceiling*0.3, roomD/2);
-  const dist = Math.max(roomW, roomD, ceiling) * 1.3 + 80;
-  iso3D.camera.position.set(target.x - dist*0.62, target.y + dist*0.55, target.z + dist*0.62);
-  iso3D.camera.near = Math.max(1, dist*0.01);
-  iso3D.camera.far  = dist*10;
-  iso3D.camera.updateProjectionMatrix();
-  iso3D.controls.target.copy(target);
-  iso3D.controls.update();
-
-  const sun = iso3D.sun;
-  sun.position.set(target.x + dist*0.5, target.y + dist*1.1, target.z - dist*0.4);
-  sun.target.position.copy(target);
-  sun.target.updateMatrixWorld();
-  const shadowSize = Math.max(roomW, roomD)*0.8 + 40;
-  sun.shadow.camera.left   = -shadowSize;
-  sun.shadow.camera.right  =  shadowSize;
-  sun.shadow.camera.top    =  shadowSize;
-  sun.shadow.camera.bottom = -shadowSize;
-  sun.shadow.camera.near = 1;
-  sun.shadow.camera.far  = dist*6;
-  sun.shadow.camera.updateProjectionMatrix();
-}
-
-// "Reset View" button handler
-function resetIso3DView() {
-  if (!iso3D || !iso3D._roomDims) return;
-  setIso3DCamera(iso3D._roomDims);
-  iso3D.renderer.render(iso3D.scene, iso3D.camera);
+// "Reset View" / opening 3D: jump to the 3/4 hero view for this room (camera3d.js)
+function resetIso3DView(animate) {
+  if (!iso3D || !activeRoom()) return;
+  setCameraPreset('hero', !animate);
 }
 
 function renderIsometric() {
@@ -224,14 +201,11 @@ function renderIsometric() {
   const openings = r.openings || [];
   const ld = getLShapeData(r); // null for rectangular rooms
 
-  // ── Auto-pick which wall to omit (open) for camera visibility ──
-  // Camera sits at SW corner looking NE, so south+west walls block the view most.
-  const allWallItems = [...r.cabinets, ...(r.appliances||[])];
-  const wallEmpty = name => !allWallItems.some(c => c.wall === name);
-  // The camera sits south-west of the room, so an empty south or west wall only blocks
-  // the view — hide all of those. If both have cabinets, fall back to hiding one empty wall.
-  const camSideEmpty = ['south','west'].filter(w => wallEmpty(w));
-  const openWalls = new Set(camSideEmpty.length ? camSideEmpty : [['east','north'].find(w => wallEmpty(w))].filter(Boolean));
+  // Every wall knows which way is into the room, so it can fade when the camera is behind it
+  function tagCutaway(mesh, wallName) {
+    const f = wallFrame(r, wallName); if (!f) return;
+    mesh.userData.cutaway = { nx: f.inward[0], nz: f.inward[1], px: f.start[0], pz: f.start[1] };
+  }
 
   // ── Wall color map ──
   const wallColors = { north:0xF8FAFC, south:0xF1F5F9, east:0xEFF3F7, west:0xF0F4F8, step1:0xF4F6F8, step2:0xF4F6F8 };
@@ -244,13 +218,13 @@ function renderIsometric() {
     const fShape = new THREE.Shape();
     fShape.moveTo(ld.polygon[0][0], -ld.polygon[0][1]);
     for (let i=1; i<ld.polygon.length; i++) fShape.lineTo(ld.polygon[i][0], -ld.polygon[i][1]);
-    const floorL = new THREE.Mesh(new THREE.ShapeGeometry(fShape), new THREE.MeshStandardMaterial({ color:0xE8EDF2, roughness:0.95 }));
+    const floorL = new THREE.Mesh(new THREE.ShapeGeometry(fShape), floorMaterial(activeProj()));
     floorL.rotation.x = -Math.PI/2;
     floorL.position.y = 1; // lift off wall-base plane to prevent z-fighting
     floorL.receiveShadow = true;
     root.add(floorL);
   } else {
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), new THREE.MeshStandardMaterial({ color:0xE8EDF2, roughness:0.95 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMaterial(activeProj(), roomW, roomD));
     floor.rotation.x = -Math.PI/2;
     floor.position.set(roomW/2, 1, roomD/2); // y=1 lifts floor off wall-base plane → no z-fighting
     floor.receiveShadow = true;
@@ -266,10 +240,10 @@ function renderIsometric() {
   const WT = 3.5;
 
   function addWall3D(wallName, length, posX, posZ, rotY) {
-    if (openWalls.has(wallName)) return;
     const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName] || 0xF4F6F8);
     if (rotY) mesh.rotation.y = rotY;
     mesh.position.set(posX, 0, posZ);
+    tagCutaway(mesh, wallName);
     root.add(mesh);
   }
 
@@ -283,8 +257,8 @@ function renderIsometric() {
       const wallName = horiz
         ? (az < 0.1 ? 'north' : Math.abs(az-roomD)<0.1 ? 'south' : 'step2')
         : (ax < 0.1 ? 'west'  : Math.abs(ax-roomW)<0.1 ? 'east'  : 'step1');
-      if (openWalls.has(wallName)) continue;
       const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName]||0xF4F6F8);
+      tagCutaway(mesh, wallName);
       if (horiz) {
         // Natural position: interior face sits exactly at the polygon edge z-value.
         // ExtrudeGeometry extrudes outward (away from interior) — no corner gaps.
@@ -422,11 +396,10 @@ function renderIsometric() {
   addLabel(fmtIn(roomD), -8, 1, roomD/2, { fontSize:24, scale:0.05, bg:'transparent', color:'#475569' });
 
   iso3D._roomDims = { roomW, roomD, ceiling };
-  if (!iso3D.initedCamera) {
-    setIso3DCamera(iso3D._roomDims);
-    iso3D.initedCamera = true;
-  }
-  resizeIso3D();
+  setupSun(r); applyLighting(); syncScenePanel();
+  resizeIso3D();                    // first, so the camera fit uses the canvas's real shape
+  if (!iso3D.initedCamera) { setCameraPreset('hero', true); iso3D.initedCamera = true; }
+  render3DNow();
   highlight3DSelection();
 }
 

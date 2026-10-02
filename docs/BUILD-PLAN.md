@@ -129,6 +129,8 @@ Phases stay numbered as written so references don't break, but the **build order
 | 5.7 SKU export | Accurate | Moat | Silver |
 | 6.1 Homeowner mode | Lead funnel | Moat | Free (feeds Leads) |
 
+> **Order update (Dan, 2026-10-02):** done so far: Phase 0, 1, 2, 5.2, 5.7, 3.1, 3.2. Next: **3.4 → 3.6 → 5.8 (talk it through together first)**, then 3.3, 3.5, 5.1, 5.6. Pause before Phase 4 to see what the trial companies ask for.
+
 ### Phase 0 — Baseline (do this first, no feature work)
 
 **0.1 Map the code**
