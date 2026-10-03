@@ -230,3 +230,14 @@ Claude tested locally: a 15' wall with corner base, drawer base, sink, glass upp
 - [ ] Set **Backsplash → Full-height tile** and look at elevation + 3D.
 - [ ] Doors showing **Hinge L/R?** → set the side, the mark appears.
 - [ ] **Print / PDF a quote:** the # column matches the hexagon numbers on the drawings.
+
+### Live test session on Dan's Gold account (2026-10-03, Claude, test project "ZZ Claude Test" only)
+Passed live: 3.5 on "Daniel Muller" (no errors); building a kitchen by palette clicks (LS33 pushes the next wall's run to 33", wall oven drops into the oven cabinet); Print Quote (# column matches the drawing tags; declining "Mark as sent" leaves it unlocked, no history); Export PDF (8 pages) and Print Plans (6 pages) build without errors. Printing and PDFs were captured in memory, so nothing was printed or downloaded.
+Found + fixed (needs push):
+- **PDFs were ~12 MB** (images embedded uncompressed, since day one). Now lossless-compressed: a 6-page Print Plans went to ~0.25 MB, same sharpness.
+- **Hood snapping:** dragging a hood near a range/cooktop now lines it up centred over it.
+Found, not code:
+- **Your account has no price sheet uploaded** (no prices at all), so every cabinet on every quote shows N/A. Upload one in Profile when you're ready.
+- Empty walls still get their own blank elevation page in Print Plans. Could skip them; your call.
+To do (Dan): delete "ZZ_Door_Style_Test (delete me)" (Claude isn't allowed to delete projects). "ZZ Claude Test" stays until the PDF fix is verified live, then delete it too.
+- [ ] After the push: Export PDF on a real job. The file should now be well under 1 MB.

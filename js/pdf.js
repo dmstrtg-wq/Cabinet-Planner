@@ -81,7 +81,7 @@ async function printFloorPlan(btn) {
   window._pdfMode = true; renderCanvas(); // bake rulers into the canvas for print
   if (fpCv && fpCv.width>0) {
     const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-12);
-    doc.addImage(fpCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y, w, h);
+    doc.addImage(fpCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y, w, h, undefined, 'FAST');   // FAST = lossless deflate: ~50× smaller files, same lines
   }
   window._pdfMode = false; renderCanvas();
 
@@ -134,7 +134,7 @@ async function printFloorPlan(btn) {
       const evCv = document.getElementById('elevation-plan');
       if (evCv && evCv.width>0) {
         const {w,h} = fitImg(evCv.width, evCv.height, CW, PH-y-MAR-6);
-        doc.addImage(evCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y+2, w, h);
+        doc.addImage(evCv.toDataURL('image/png'), 'PNG', MAR+(CW-w)/2, y+2, w, h, undefined, 'FAST');
       }
     }
     window._pdfMode = false;
@@ -256,7 +256,7 @@ async function exportPDF(btn) {
   // Logo (left) if available
   if (logoDataUrl) {
     const lh=14, lw=Math.min(lh*4, 60);
-    doc.addImage(logoDataUrl,'PNG',MAR,y,lw,lh); y+=lh+3;
+    doc.addImage(logoDataUrl,'PNG',MAR,y,lw,lh,undefined,'FAST'); y+=lh+3;
   }
   // Company name left, QUOTE label right
   doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
@@ -282,7 +282,7 @@ async function exportPDF(btn) {
   window._pdfMode = true; renderCanvas(); // bake rulers into the canvas for print
   if (fpCv && fpCv.width) {
     const {w,h} = fitImg(fpCv.width, fpCv.height, CW, PH-y-MAR-8);
-    doc.addImage(fpCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, y, w, h);
+    doc.addImage(fpCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, y, w, h, undefined, 'FAST');   // compressed (lossless)
   }
   window._pdfMode = false; renderCanvas();
 
@@ -325,7 +325,7 @@ async function exportPDF(btn) {
       const evCv = document.getElementById('elevation-plan');
       if (evCv && evCv.width) {
         const {w,h} = fitImg(evCv.width, evCv.height, CW, PH-ey-MAR-8);
-        doc.addImage(evCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, ey, w, h);
+        doc.addImage(evCv.toDataURL('image/png'),'PNG', MAR+(CW-w)/2, ey, w, h, undefined, 'FAST');
       }
     }
     window._pdfMode = false;

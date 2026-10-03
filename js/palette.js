@@ -61,6 +61,10 @@ function snapCandidates(r, item) {
       if (APPLIANCES[item.type] && canHost(item.type, i.type) && i.width >= w - 0.01)   // built-in: centred in its cabinet
         cands.push((i.offset || 0) + (i.width - w) / 2, i.offset || 0);
     });
+  // A hood lines up over the range / cooktop below it (and they line up under a hood)
+  const pairs = { hood: ['range', 'cooktop'], range: ['hood'], cooktop: ['hood'] }[item.type];
+  if (pairs) wallItems(r, item.wall).filter(i => i.id !== item.id && pairs.includes(i.type))
+    .forEach(i => cands.push((i.offset || 0) + (i.width - w) / 2));
   // Neighbouring runs, projected onto this wall
   roomItems(r).filter(i => i.wall && i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr)).forEach(i => {
     // other walls' runs, and a corner cabinet's leg on this wall
