@@ -402,6 +402,9 @@
           <select id="ct-material" class="cp-select" aria-label="Countertop material" onchange="setCountertop('material', this.value)">
             <option value="quartz">Quartz</option><option value="granite">Granite</option><option value="butcher">Butcher block</option><option value="laminate">Laminate</option>
           </select>
+          <select id="ct-backsplash" class="cp-select" aria-label="Backsplash" onchange="setCountertop('backsplash', this.value)">
+            <option value="none">No backsplash</option><option value="4in">4" backsplash (countertop material)</option><option value="full">Full-height tile backsplash</option>
+          </select>
           <label class="ct-check"><input type="checkbox" id="ct-crown" onchange="setCountertop('crown', this.checked)"> Crown molding on uppers</label>
           <label class="ct-check"><input type="checkbox" id="ct-lightrail" onchange="setCountertop('lightRail', this.checked)"> Light rail under uppers</label>
           <div id="ct-stats" class="form-hint" style="margin-top:4px;"></div>

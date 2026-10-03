@@ -575,6 +575,12 @@ function getDoorProfile(code) { return DOOR_PROFILE[code] || {panel:'flat', fram
 
 // Draws one door/drawer-front panel, frame proportioned to the style's real door
 // construction instead of a fixed 4px inset for every style.
+// Is a finish dark enough to need light text on it? (perceived brightness, any color)
+function swatchIsDark(hex) {
+  const n = parseInt(String(hex || '').replace('#', ''), 16); if (isNaN(n)) return false;
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 120;
+}
 function drawDoorPanel(ctx, x, y, w, h, code, scale, PDF) {
   const profile = getDoorProfile(code);
   const frameIn = profile.frame === 'narrow' ? 1.1 : 2.1;

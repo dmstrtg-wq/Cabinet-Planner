@@ -24,7 +24,7 @@ const COUNTER_T = 1.5, COUNTER_FRONT = 1, COUNTER_SIDE = 1, END_PANEL_T = 0.75, 
 const CROWN_H = 3, CROWN_PROJ = 2, LIGHT_RAIL_H = 1.5;
 
 function projectCounter(p) {
-  return { material: 'quartz', crown: false, lightRail: false, ...((p && p.countertop) || {}) };
+  return { material: 'quartz', crown: false, lightRail: false, backsplash: 'none', ...((p && p.countertop) || {}) };
 }
 
 // ════════════════════════════
@@ -156,6 +156,58 @@ function updateCountertopStats(p) {
 }
 
 // ════════════════════════════
+// BACKSPLASH (Build Plan 3.5)
+// ════════════════════════════
+// 4": a strip of the countertop material. Full: tile from the counter up to the underside
+// of the uppers (18" where there are none), stopping at a window sill.
+const BACKSPLASH_4 = 4, BACKSPLASH_FULL = 18;
+// → [{ a, b, y0, y1 }] pieces along `wall` for one countertop run, in inches
+function backsplashPieces(r, p, run) {
+  const kind = projectCounter(p).backsplash;
+  if (kind !== '4in' && kind !== 'full') return [];
+  const y0 = run.top + COUNTER_T;
+  const a = run.cabA ?? run.a, b = run.cabB ?? run.b;   // along the cabinets (not the countertop's end overhang)
+  if (kind === '4in') return [{ a, b, y0, y1: y0 + BACKSPLASH_4 }];
+  // Things that cap the tile: the bottom of an upper (or hood/microwave) above, a window sill
+  const caps = [];
+  wallItems(r, run.wall).forEach(i => {
+    const [bot] = itemVerticalRange(i);
+    if (bot > y0 + 0.5 && bot < y0 + BACKSPLASH_FULL + 30 && (itemLevel(i) === 'upper' || i.type === 'tall' || i.type === 'ovenTall'))
+      caps.push({ a: i.offset || 0, b: (i.offset || 0) + i.width, top: bot });
+  });
+  (r.openings || []).filter(o => o.wall === run.wall && o.type === 'window').forEach(o => {
+    caps.push({ a: o.offset, b: o.offset + o.width, top: Math.max(y0, o.sillHeight ?? 36) });
+  });
+  const cuts = [...new Set([a, b, ...caps.flatMap(c => [c.a, c.b])].filter(t => t >= a && t <= b))].sort((m, n) => m - n);
+  const out = [];
+  for (let k = 0; k < cuts.length - 1; k++) {
+    const m = (cuts[k] + cuts[k + 1]) / 2;
+    const over = caps.filter(c => c.a < m && m < c.b).map(c => c.top);
+    const top = over.length ? Math.min(...over) : y0 + BACKSPLASH_FULL;
+    if (top - y0 > 0.25) {
+      const last = out[out.length - 1];
+      if (last && Math.abs(last.y1 - top) < 0.01 && Math.abs(last.b - cuts[k]) < 0.01) last.b = cuts[k + 1];
+      else out.push({ a: cuts[k], b: cuts[k + 1], y0, y1: top });
+    }
+  }
+  return out;
+}
+let _tileTex = null;
+function tileTexture() {
+  if (_tileTex && _tileTex.image) return _tileTex;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64;   // 2 rows of 3×6 subway tile, 6"×3"
+  const x = c.getContext('2d');
+  x.fillStyle = '#c9c5bd'; x.fillRect(0, 0, 128, 64);                         // grout
+  x.fillStyle = '#f3f1ec';
+  for (let row = 0; row < 2; row++) for (let col = -1; col < 3; col++) {
+    const ox = col * 64 + (row % 2 ? 32 : 0);
+    x.fillRect(ox + 1.5, row * 32 + 1.5, 61, 29);
+  }
+  _tileTex = new THREE.CanvasTexture(c); _tileTex.wrapS = _tileTex.wrapT = THREE.RepeatWrapping;
+  return _tileTex;
+}
+
+// ════════════════════════════
 // 3D
 // ════════════════════════════
 const _counterTex = {};
@@ -217,6 +269,17 @@ function buildCountersAndTrim3D(r, p) {
       });
     });
     islandCounterRects(r).forEach(c => _box3D(g, counterMat(c.w, c.h), c.x, c.top, c.y, c.w, COUNTER_T, c.h));
+    // Backsplash: a thin layer on the wall above each run
+    counterRuns(r).forEach(run => backsplashPieces(r, p, run).forEach(pc => {
+      const R = wallStripRect(r, run.wall, pc.a, pc.b, 0.4); if (!R) return;
+      let mat;
+      if (ct.backsplash === 'full') {
+        const t = tileTexture().clone(); t.needsUpdate = true;
+        t.repeat.set(Math.max(R.w, R.h) / 12, (pc.y1 - pc.y0) / 6);   // 12" texture = two 6" tiles across, 6" = two 3" rows
+        mat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.25, metalness: 0.02 });
+      } else mat = counterMat(Math.max(R.w, R.h), pc.y1 - pc.y0);
+      _box3D(g, mat, R.x, pc.y0, R.y, R.w, pc.y1 - pc.y0, R.h, { cast: false });
+    }));
   }
   // Finished end panels (in the door style's finish)
   endPanels(r).forEach(pn => {
@@ -256,8 +319,24 @@ function drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF) {
   const finish = PDF ? '#FFFFFF' : doorStyleInfo(p.style).swatch;
   if (layers.bases) {
     endPanels(r).filter(pn => pn.wall === wall && pn.bottom < 40).forEach(pn => band(pn.a, pn.b, pn.bottom, pn.top, finish, PDF ? '#1a1a1a' : '#64748B'));
-    counterRuns(r).filter(run => run.wall === wall).forEach(run =>
-      band(run.fullA, run.fullB, run.top, run.top + COUNTER_T, PDF ? '#E5E5E5' : mat.base, PDF ? '#1a1a1a' : '#475569'));
+    counterRuns(r).filter(run => run.wall === wall).forEach(run => {
+      band(run.fullA, run.fullB, run.top, run.top + COUNTER_T, PDF ? '#E5E5E5' : mat.base, PDF ? '#1a1a1a' : '#475569');
+      // Backsplash: 4" in the counter color, or tile (light, with a subway-tile pattern)
+      backsplashPieces(r, p, run).forEach(pc => {
+        const full = ct.backsplash === 'full';
+        band(pc.a, pc.b, pc.y0, pc.y1, PDF ? (full ? '#F7F7F7' : '#EFEFEF') : (full ? '#F3F1EC' : mat.base), PDF ? '#555555' : '#94A3B8');
+        if (full) {
+          const x0 = eX(pc.a, pc.b - pc.a), x1 = x0 + (pc.b - pc.a) * scale, yb = floorY - pc.y0 * scale, yt = floorY - pc.y1 * scale;
+          ctx.save(); ctx.beginPath(); ctx.rect(x0, yt, x1 - x0, yb - yt); ctx.clip();
+          ctx.strokeStyle = PDF ? '#CCCCCC' : 'rgba(148,163,184,0.45)'; ctx.lineWidth = 0.6;
+          for (let row = 0, yy = yb; yy > yt; row++, yy -= 3 * scale) {
+            ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x1, yy); ctx.stroke();
+            for (let xx = x0 + (row % 2 ? 3 : 0) * scale; xx < x1; xx += 6 * scale) { ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx, yy - 3 * scale); ctx.stroke(); }
+          }
+          ctx.restore();
+        }
+      });
+    });
   }
   if (layers.uppers) {
     endPanels(r).filter(pn => pn.wall === wall && pn.bottom >= 40).forEach(pn => band(pn.a, pn.b, pn.bottom, pn.top, finish, PDF ? '#1a1a1a' : '#64748B'));
@@ -283,6 +362,7 @@ function syncCountertopPanel() {
   const p = activeProj(); if (!p) return;
   const ct = projectCounter(p);
   const sel = document.getElementById('ct-material'); if (sel) sel.value = ct.material;
+  const bs = document.getElementById('ct-backsplash'); if (bs) bs.value = ct.backsplash || 'none';
   const cr = document.getElementById('ct-crown'); if (cr) cr.checked = !!ct.crown;
   const lr = document.getElementById('ct-lightrail'); if (lr) lr.checked = !!ct.lightRail;
   const st = document.getElementById('ct-stats');

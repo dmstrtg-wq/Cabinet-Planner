@@ -237,14 +237,15 @@ function printQuote() {
   let cabRows = '';
   p.rooms.forEach(room => {
     if (!room.cabinets.length) return;
-    cabRows += `<tr class="room-hdr"><td colspan="5">${escHtml(room.name)}</td></tr>`;
+    cabRows += `<tr class="room-hdr"><td colspan="6">${escHtml(room.name)}</td></tr>`;
     room.cabinets.forEach(c => {
       const price = cabinetPrice(c);
       if (price != null) cabSubtotal += price;
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
       const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
       const priceCell = price != null ? fmtMoney(price) : '<span style="color:#64748b;font-style:italic;">N/A</span>';
-      cabRows += `<tr><td>${cabLabel}</td><td>${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
+      // # = the item number tagged on the floor plan and elevations (3.5)
+      cabRows += `<tr><td class="num">${c.itemNum || ''}</td><td>${cabLabel}</td><td>${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;
     });
   });
 
@@ -255,7 +256,7 @@ function printQuote() {
       const ac = APPLIANCES[a.type];
       const hasPrice = a.price != null && a.price > 0;
       if (hasPrice) appSubtotal += a.price;
-      appRows += `<tr><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`;
+      appRows += `<tr><td class="num">${a.itemNum || ''}</td><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`;
     });
   });
 
@@ -340,6 +341,7 @@ th{background:#1e293b;color:#fff;text-align:left;padding:7px 10px;font-size:9px;
 td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
 tr:nth-child(even) td{background:#faf9f7;}
 tr.room-hdr td{background:#f1f5f9!important;font-weight:700;font-size:10px;color:#0f766e;padding:4px 10px;}
+th.num,td.num{width:26px;text-align:center;color:#6b7280;font-weight:600;}
 .amt{text-align:right;font-weight:600;white-space:nowrap;}
 .totals{margin-top:12px;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;}
 .tr{display:flex;justify-content:space-between;padding:6px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
@@ -388,9 +390,9 @@ ${revision > 1 ? `
 </div>
 ${snapBlock}
 <div class="sec">Cabinet Line Items</div>
-<table><thead><tr><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
-<tbody>${cabRows||'<tr><td colspan="5" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
-${appRows?`<div class="sec">Appliances</div><table><thead><tr><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
+<table><thead><tr><th class="num">#</th><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
+<tbody>${cabRows||'<tr><td colspan="6" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
+${appRows?`<div class="sec">Appliances</div><table><thead><tr><th class="num">#</th><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
 ${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
 ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>${trimRows}</tbody></table>`:''}
 <div class="totals" style="margin-top:16px;">

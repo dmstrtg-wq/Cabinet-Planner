@@ -84,42 +84,62 @@ function renderElevation() {
     ? WX + WW - (offset + width) * scale
     : WX + offset * scale;
 
+  // Openings with trim (Build Plan 3.5): 3-1/2" casing around windows, doors and cased
+  // openings; windows get a double-hung sash, a sill (stool) and an apron.
+  const CASING = 3.5;
+  const TRIM = PDF ? '#FFFFFF' : '#FFFFFF', TRIM_LINE = PDF ? '#1a1a1a' : '#94A3B8';
+  const trimRect = (x, y, w, h) => { ctx.fillStyle = TRIM; ctx.fillRect(x, y, w, h); ctx.strokeStyle = TRIM_LINE; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h); };
+  const opLabel = (text, x, y, color) => {
+    ctx.fillStyle = PDF ? '#1a1a1a' : color; ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(text, x, y);
+  };
   wallOpenings.forEach(op => {
-    const ox = eX(op.offset||0, op.width), oW = op.width*scale, oH = op.height*scale;
+    const ox = eX(op.offset||0, op.width), oW = op.width*scale, oH = op.height*scale, c = CASING*scale;
     if (op.type==='window') {
-      const sillY = floorY-(op.sillHeight||36)*scale-oH;
-      ctx.fillStyle='#BAE6FD'; ctx.fillRect(ox+2,sillY,oW-4,oH);
-      ctx.strokeStyle='#0369A1'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.strokeRect(ox+2,sillY,oW-4,oH);
-      ctx.strokeStyle='#7dd3fc'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(ox+2+oW/2,sillY); ctx.lineTo(ox+2+oW/2,sillY+oH); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(ox+2,sillY+oH/2); ctx.lineTo(ox+2+oW-4,sillY+oH/2); ctx.stroke();
-      ctx.fillStyle='#0369A1'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText('W '+op.width+'"', ox+oW/2, sillY-4);
+      const sill = op.sillHeight ?? 36, top = floorY - (sill + op.height)*scale, bot = floorY - sill*scale;
+      trimRect(ox - c, top - c, oW + 2*c, c);                       // head casing
+      trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);  // side casings
+      trimRect(ox - c - 1*scale, bot, oW + 2*c + 2*scale, 1*scale); // stool (sill)
+      trimRect(ox - c, bot + 1*scale, oW + 2*c, 3*scale);           // apron
+      ctx.fillStyle = PDF ? '#F2F6F9' : '#BAE6FD'; ctx.fillRect(ox, top, oW, oH);
+      ctx.strokeStyle = PDF ? '#1a1a1a' : '#0369A1'; ctx.lineWidth = 1.5; ctx.strokeRect(ox, top, oW, oH);
+      // double-hung: meeting rail across the middle, sash frames
+      const sash = 1.5*scale;
+      ctx.lineWidth = 1; ctx.strokeStyle = PDF ? '#333333' : '#0369A1';
+      ctx.strokeRect(ox + sash, top + sash, oW - 2*sash, oH/2 - 1.5*sash);
+      ctx.strokeRect(ox + sash, top + oH/2 + sash/2, oW - 2*sash, oH/2 - 1.5*sash);
+      // label inside the glass, under the head (above it may sit on the soffit band)
+      ctx.fillStyle = PDF ? '#FFFFFF' : 'rgba(255,255,255,0.8)'; ctx.font = 'bold 9px sans-serif';
+      const wl = `W ${fmtFrac(op.width)} × ${fmtFrac(op.height)}, sill ${fmtFrac(sill)}`, wlw = ctx.measureText(wl).width + 6;
+      ctx.fillRect(ox + oW/2 - wlw/2, top + 3, wlw, 13);
+      opLabel(wl, ox + oW/2, top + 15, '#0369A1');
     } else if (op.type==='door') {
-      ctx.fillStyle='#FEF9C3'; ctx.fillRect(ox,floorY-oH,oW,oH);
-      ctx.strokeStyle='#D97706'; ctx.lineWidth=2; ctx.setLineDash([]); ctx.strokeRect(ox,floorY-oH,oW,oH);
-      ctx.strokeStyle='#F59E0B'; ctx.lineWidth=1.5;
-      ctx.beginPath();
-      if (flip) { ctx.arc(ox+oW,floorY,oW,Math.PI,Math.PI*1.5); }
-      else       { ctx.arc(ox,floorY,oW,Math.PI*1.5,Math.PI*2); }
-      ctx.stroke();
-      ctx.fillStyle='#D97706'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText('D '+op.width+'"', ox+oW/2, floorY-oH-4);
+      const top = floorY - oH;
+      trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);
+      ctx.fillStyle = PDF ? '#FFFFFF' : '#FEF9C3'; ctx.fillRect(ox, top, oW, oH);
+      ctx.strokeStyle = PDF ? '#1a1a1a' : '#D97706'; ctx.lineWidth = 1.5; ctx.strokeRect(ox, top, oW, oH);
+      // two-panel door slab + knob
+      ctx.lineWidth = 1; ctx.strokeStyle = PDF ? '#555555' : '#F59E0B';
+      const m = 4*scale;
+      ctx.strokeRect(ox + m, top + m, oW - 2*m, oH*0.42 - m);
+      ctx.strokeRect(ox + m, top + oH*0.48, oW - 2*m, oH*0.52 - m);
+      ctx.fillStyle = PDF ? '#555555' : '#B45309'; ctx.beginPath(); ctx.arc(ox + oW - 2.5*scale, floorY - 36*scale, 1.1*scale, 0, Math.PI*2); ctx.fill();
+      opLabel(`D ${fmtFrac(op.width)} × ${fmtFrac(op.height)}`, ox + oW/2, top - c - 3, '#D97706');
     } else if (op.type==='sink-loc') {
       ctx.fillStyle='#E0F2FE'; ctx.fillRect(ox,counterY-12,oW,12);
       ctx.strokeStyle='#0284C7'; ctx.lineWidth=1.5; ctx.setLineDash([]); ctx.strokeRect(ox,counterY-12,oW,12);
       ctx.strokeStyle='#0284C7'; ctx.lineWidth=1; ctx.strokeRect(ox+4,counterY-10,oW-8,8);
       ctx.fillStyle='#0284C7'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
       ctx.fillText('S '+op.width+'"', ox+oW/2, counterY-14);
-    } else {
-      ctx.fillStyle='rgba(241,245,249,0.6)'; ctx.fillRect(ox,floorY-oH,oW,oH);
-      ctx.strokeStyle='#7C3AED'; ctx.lineWidth=2; ctx.setLineDash([4,4]); ctx.strokeRect(ox,floorY-oH,oW,oH); ctx.setLineDash([]);
-      ctx.fillStyle='#7C3AED'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillText('O '+op.width+'"', ox+oW/2, floorY-oH-4);
+    } else {                                           // cased opening (arch)
+      const top = floorY - oH;
+      trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);
+      ctx.fillStyle = PDF ? '#FFFFFF' : 'rgba(241,245,249,0.6)'; ctx.fillRect(ox, top, oW, oH);
+      ctx.strokeStyle = PDF ? '#1a1a1a' : '#7C3AED'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]); ctx.strokeRect(ox, top, oW, oH); ctx.setLineDash([]);
+      opLabel(`Opening ${fmtFrac(op.width)} × ${fmtFrac(op.height)}`, ox + oW/2, top - c - 3, '#7C3AED');
     }
   });
 
-  const darkSwatches = ['#2B2926','#1B3A5C','#4B4F5C','#5B6069','#1C1B1A'];
   function cabStyle(cab) {
     const code = cab.styleOverride || p.style || 'AW';
     return getStyles().find(s => s.code === code) || styleInfo;
@@ -134,7 +154,7 @@ function renderElevation() {
     ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = PDF ? 1.5 : 1.2; ctx.strokeRect(x, y, cW, cH);
     if (bot === 0) { ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY-TOE_KICK_H*scale, cW, TOE_KICK_H*scale); }   // toe kick
     const label = 'FL ' + fmtFrac(cab.width);
-    ctx.fillStyle = PDF ? '#1a1a1a' : (darkSwatches.includes(si.swatch) ? '#fff' : '#334155');
+    ctx.fillStyle = PDF ? '#1a1a1a' : (swatchIsDark(si.swatch) ? '#fff' : '#334155');
     ctx.font = `600 ${Math.max(8, Math.min(scale*1.7, 10))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.save(); ctx.translate(x + cW/2, y + cH/2);
     if (ctx.measureText(label).width > cW - 2) ctx.rotate(-Math.PI/2);   // narrow filler: label runs up the board
@@ -142,148 +162,90 @@ function renderElevation() {
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
   });
 
-  // (a lazy susan at a corner is drawn by drawElevCorner below, on both walls)
-  wallCabs.filter(c=>['base','sink','vanity','drawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) && !cornerInfo(r, c)).forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||34.5)*scale;
-    const x=eX(cab.offset||0, cab.width), y=floorY-cH;
-    const isCorner=cab.type==='cornerBase';
-    const si=cabStyle(cab);
-    const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
-    if (isCorner) {
-      const cutW=cW*0.28;
-      ctx.fillStyle=PDF?'#FFFFFF':si.swatch;
-      ctx.beginPath(); ctx.moveTo(x+cutW,y); ctx.lineTo(x+cW,y); ctx.lineTo(x+cW,y+cH); ctx.lineTo(x,y+cH); ctx.lineTo(x,y+cH*0.12); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5; ctx.stroke();
-      ctx.strokeStyle=PDF?'#888888':'#94A3B8'; ctx.beginPath(); ctx.moveTo(x,y+cH*0.12); ctx.lineTo(x+cutW,y); ctx.stroke();
-      ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(x+cutW+3,y+5); ctx.lineTo(x+cW-4,y+5); ctx.lineTo(x+cW-4,y+cH-12); ctx.lineTo(x+4,y+cH-12); ctx.lineTo(x+4,y+cH*0.18); ctx.closePath(); ctx.stroke();
-      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.55-7,y+cH-18,14,5,2); ctx.fill();
-      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.fillRect(x,floorY-TOE_KICK_H*scale,cW,TOE_KICK_H*scale);   // recessed toe kick
-      ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`600 ${Math.max(8,Math.min(scale*1.9,11))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(`${cat.abbr}${cab.width}`, x+cW*0.6, y+cH*0.5);
-    } else {
-      ctx.fillStyle=PDF?'#FFFFFF':si.swatch; ctx.fillRect(x,y,cW,cH);
-      ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5; ctx.strokeRect(x,y,cW,cH);
-      if (cab.type === 'lazysusan') {
-        // Bifolding door — two panels meeting at center fold
-        const midX = x + cW/2;
-        ctx.strokeStyle=PDF?'#333333':'#475569'; ctx.lineWidth=1;
-        ctx.strokeRect(x+3, y+4, cW/2-4, cH-14); // left panel
-        ctx.strokeRect(midX+1, y+4, cW/2-4, cH-14); // right panel
-        ctx.strokeStyle=PDF?'#888888':'#94A3B8'; ctx.lineWidth=1.5; ctx.setLineDash([3,2]);
-        ctx.beginPath(); ctx.moveTo(midX, y+4); ctx.lineTo(midX, y+cH-10); ctx.stroke();
-        ctx.setLineDash([]);
-        // Bifolding knobs at center fold
-        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.arc(midX, y+cH*0.45, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(midX, y+cH*0.55, 3, 0, Math.PI*2); ctx.fill();
-      } else {
-        drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
-        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-8,y+cH-19,16,6,3); ctx.fill();
-      }
-      ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(x,floorY-TOE_KICK_H*scale,cW,TOE_KICK_H*scale);   // recessed toe kick
-      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(`${cat.abbr}${cab.width}`, x+cW/2, y+cH/2);
-    }
-    if (cab.note) { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
-    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + (isCorner ? cW*0.6 : cW/2), y, cab.itemNum, PDF);
-  });
-
-  wallCabs.filter(c=>['wall','diagWall'].includes(c.type) && !cornerInfo(r, c)).forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||30)*scale;
-    const bottomIn = cab.wallBottom != null ? cab.wallBottom : 54;
-    const y=Math.max(WY, floorY-bottomIn*scale-cH);
-    const x=eX(cab.offset||0, cab.width);
-    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
-    if (cab.type === 'diagWall') {
-      // Diagonal corner wall cabinet. Seen straight-on from this wall it reads as a plain
-      // full-height rectangle: the half nearest the corner is the finished end of the leg
-      // that runs down the adjacent wall, the other half is the 45° door, foreshortened.
-      // (It used to be drawn with a chamfer clipped off the top corner, which looked like
-      // a damaged cabinet rather than a corner unit.)
-      ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
-      ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-      const nearLeft  = (x - WX) <= scale + 0.5;
-      const nearRight = (WX + WW - (x + cW)) <= scale + 0.5;
-      if (nearLeft || nearRight) {
-        const half = cW/2, doorX = nearLeft ? x + half : x;
-        drawDoorPanel(ctx, doorX, y, half, cH, si.code, scale, PDF);
-        // Seam between the door and the end panel
-        ctx.strokeStyle=PDF?'#444444':'#CBD5E1'; ctx.lineWidth=PDF?1:0.8;
-        ctx.beginPath(); ctx.moveTo(x+half, y); ctx.lineTo(x+half, y+cH); ctx.stroke();
-        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(doorX+half/2-6,y+cH-12,12,4,2); ctx.fill();
-      } else {
-        // Not actually in a corner (odd placement) — show it like a standard wall cabinet
-        drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
-        ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
-      }
-      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs2=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs2}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(`DCW${cab.width}`, x+cW/2, y+cH/2);
-    } else {
-      ctx.fillStyle=PDF?'#F8F8F8':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#94A3B8'; ctx.lineWidth=PDF?2:1.5;
-      ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-      drawDoorPanel(ctx, x, y, cW, cH, si.code, scale, PDF);
-      ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW*0.5-6,y+cH-12,12,4,2); ctx.fill();
-      ctx.fillStyle=PDF?'#1a1a1a':txtColor; const fs=Math.max(8,Math.min(scale*1.9,11)); ctx.font=`600 ${fs}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(`W${cab.width}`, x+cW/2, y+cH/2);
-      if (cab.note) { ctx.font=`italic ${fs-1}px sans-serif`; ctx.fillStyle=PDF?'#333333':'#64748B'; ctx.textBaseline='top'; ctx.fillText(cab.note,x+cW/2,y-12); }
-    }
-    // Bottom-from-floor annotation (both types)
-    const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
-    if (bIn !== 54) {
-      ctx.font=`600 8px sans-serif`; ctx.fillStyle=PDF?'#333333':'#f59e0b'; ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText(`↑${bIn}" from floor`, x+cW/2, y+cH+3);
-    }
-    if (cab.note && cab.type !== 'diagWall') { ctx.font=`italic ${Math.max(7,Math.min(scale*1.6,10))}px sans-serif`; ctx.fillStyle='#64748B'; ctx.textBaseline='bottom'; ctx.fillText(cab.note,x+cW/2,y-6); }
-    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
-  });
-
-  wallCabs.filter(c=>c.type==='tall').forEach(cab => {
-    const cat=CATALOG[cab.type], cW=cab.width*scale, cH=(cab.height||cat.heights?.[0]||84)*scale;
-    const x=eX(cab.offset||0, cab.width), y=floorY-cH;
-    const si=cabStyle(cab); const txtColor=darkSwatches.includes(si.swatch)?'#fff':'#334155';
-    ctx.fillStyle=PDF?'#FFFFFF':si.swatch; ctx.strokeStyle=PDF?'#1a1a1a':'#64748B'; ctx.lineWidth=PDF?2:1.5;
-    ctx.fillRect(x,y,cW,cH); ctx.strokeRect(x,y,cW,cH);
-    const mid=y+cH/2;
-    drawDoorPanel(ctx, x, y, cW, cH/2, si.code, scale, PDF);
-    drawDoorPanel(ctx, x, mid, cW, cH/2, si.code, scale, PDF);
-    ctx.fillStyle=PDF?'#555555':'#94A3B8'; ctx.beginPath(); ctx.roundRect(x+cW/2-8,mid-3,16,6,3); ctx.fill();
-    ctx.fillStyle=PDF?'#1a1a1a':txtColor; ctx.font=`bold ${Math.max(8,Math.min(scale*2,12))}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(`WP${cab.width}`, x+cW/2, y+cH/2);
-    if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x+cW/2, y, cab.itemNum, PDF);
-  });
-
-  // ── Oven cabinet / microwave drawer base: fronts around the appliance opening, from the
-  // same layout the 3D view uses (fronts3d.js). The appliance itself is drawn further down.
-  wallCabs.filter(c => c.type === 'ovenTall' || c.type === 'mwDrawerBase').forEach(cab => {
-    const cat = CATALOG[cab.type], [, topIn] = itemVerticalRange(cab);
-    const cW = cab.width*scale, x = eX(cab.offset||0, cab.width), y = floorY - topIn*scale;
-    const si = cabStyle(cab), txtColor = darkSwatches.includes(si.swatch) ? '#fff' : '#334155';
-    ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(x, y, cW, topIn*scale);
-    ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = PDF ? 2 : 1.5; ctx.strokeRect(x, y, cW, topIn*scale);
-    ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY - TOE_KICK_H*scale, cW, TOE_KICK_H*scale);   // toe kick
+  // ── Cabinets (Build Plan 3.5): every door and drawer comes from the same layout the 3D
+  // view uses (frontLayout in fronts3d.js), so the elevation is a true working drawing —
+  // door-style panels, glass, pulls/knobs where they really go, and a hinge mark on each
+  // door (dashed lines meeting at the HINGE side). Corner cabinets that span two walls
+  // are drawn by drawElevCorner below; fillers above.
+  const hwKnobs = (p.hardware || 'pulls') === 'knobs';
+  const LINE = PDF ? '#1a1a1a' : '#64748B', FRONT_LINE = PDF ? '#333333' : '#475569', HW = PDF ? '#555555' : '#94A3B8';
+  const isFrontCab = c => CATALOG[c.type] && !isFiller(c.type) && !cornerInfo(r, c);
+  // bases first, then talls, then uppers (uppers sit in front of nothing, but tall tops overlap the upper band)
+  const order = c => itemLevel(c) === 'upper' ? 2 : itemVerticalRange(c)[1] > 40 ? 1 : 0;
+  wallCabs.filter(isFrontCab).sort((a, b) => order(a) - order(b)).forEach(cab => {
+    const [botIn, topIn] = itemVerticalRange(cab);
+    const cW = cab.width*scale, x = eX(cab.offset||0, cab.width), y = floorY - topIn*scale, cH = (topIn - botIn)*scale;
+    const si = cabStyle(cab), sinfo = doorStyleInfo(si.code);
+    const txtColor = PDF ? '#1a1a1a' : swatchIsDark(si.swatch) ? '#fff' : '#334155';
+    const upper = itemLevel(cab) === 'upper';
+    ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(x, y, cW, cH);
+    ctx.strokeStyle = LINE; ctx.lineWidth = PDF ? 2 : 1.5; ctx.strokeRect(x, y, cW, cH);
+    if (hasToeKick(cab)) { ctx.fillStyle = PDF ? '#888888' : '#94A3B8'; ctx.fillRect(x, floorY - TOE_KICK_H*scale, cW, TOE_KICK_H*scale); }
     const sx = fx => x + (fx + cab.width/2) * scale, sy = fy => floorY - fy*scale;
-    frontLayout(cab, r).forEach(f => {
-      const fx = sx(f.x0), fy = sy(f.y1), fw = (f.x1 - f.x0)*scale, fh = (f.y1 - f.y0)*scale;
-      ctx.strokeStyle = PDF ? '#333333' : '#475569'; ctx.lineWidth = 1; ctx.strokeRect(fx, fy, fw, fh);
-      ctx.fillStyle = PDF ? '#555555' : '#94A3B8';
-      if (f.kind === 'door') {
-        drawDoorPanel(ctx, fx, fy, fw, fh, si.code, scale, PDF);
-        const px = f.hinge === 'R' ? fx + 4 : fx + fw - 7;
-        ctx.fillRect(px, f.upper ? fy + fh - 18 : fy + 6, 3, 12);
-      } else { ctx.beginPath(); ctx.roundRect(fx + fw/2 - 8, fy + fh/2 - 3, 16, 6, 3); ctx.fill(); }
+    const fronts = frontLayout(cab, r);
+    const hingeUnknown = needsHinge(cab) && !cab.hinge;
+    fronts.forEach(f => {
+      const fx = sx(f.x0), fy = sy(f.y1), fw = (f.x1 - f.x0)*scale, fh = (f.y1 - f.y0)*scale, H = f.y1 - f.y0;
+      ctx.strokeStyle = FRONT_LINE; ctx.lineWidth = 1; ctx.strokeRect(fx, fy, fw, fh);
+      // Panel: same rule as the 3D fronts — short drawers and plain panels are slabs
+      const plain = f.kind === 'panel' || (f.kind === 'false' && sinfo.door !== 'shaker');
+      const slab = sinfo.door === 'slab' || plain || (f.kind !== 'door' && H < 8);
+      if (f.glass) {
+        const fr = Math.min(sinfo.frame, (f.x1 - f.x0) * 0.3, H * 0.3) * scale;
+        ctx.fillStyle = PDF ? '#EEF4F8' : '#CFE3EE'; ctx.fillRect(fx + fr, fy + fr, fw - 2*fr, fh - 2*fr);
+        ctx.strokeRect(fx + fr, fy + fr, fw - 2*fr, fh - 2*fr);
+      } else if (!slab) drawDoorPanel(ctx, fx, fy, fw, fh, si.code, scale, PDF);
+      // Hardware where the 3D puts it (addHardware in fronts3d.js)
+      ctx.fillStyle = HW; ctx.strokeStyle = HW;
+      if (f.kind === 'drawer') {
+        const len = ((f.x1 - f.x0) >= 24 ? 8 : 5) * scale;
+        if (hwKnobs) { ctx.beginPath(); ctx.arc(fx + fw/2, fy + fh/2, 0.65*scale, 0, Math.PI*2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.roundRect(fx + fw/2 - len/2, fy + fh/2 - 0.3*scale, len, 0.6*scale, 0.3*scale); ctx.fill(); }
+      } else if (f.kind === 'door') {
+        const hUp = upper || f.upper || (cab.type === 'tall' && f.y0 > 40);
+        const hx = f.hinge === 'R' ? sx(f.x0 + 1.75) : sx(f.x1 - 1.75);
+        const hyIn = hUp ? f.y0 + 3 : f.y1 - 3.5, len = Math.min(4, H * 0.4);
+        if (hwKnobs) { ctx.beginPath(); ctx.arc(hx, sy(hyIn), 0.65*scale, 0, Math.PI*2); ctx.fill(); }
+        else { const yA = sy(hUp ? hyIn + len : hyIn); ctx.beginPath(); ctx.roundRect(hx - 0.3*scale, yA, 0.6*scale, len*scale, 0.3*scale); ctx.fill(); }
+        // Hinge mark: dashed lines from the handle-side corners to the middle of the hinge side
+        // (a pair of doors has fixed hinges; a single door needs the cabinet's hinge side)
+        const paired = fronts.some(q => q !== f && q.kind === 'door' && Math.abs(q.y0 - f.y0) < 0.01);
+        if (!(hingeUnknown && !paired)) {
+          const hingeX = f.hinge === 'R' ? fx + fw : fx, openX = f.hinge === 'R' ? fx : fx + fw;
+          ctx.save(); ctx.strokeStyle = PDF ? '#777777' : swatchIsDark(si.swatch) ? 'rgba(226,232,240,0.6)' : 'rgba(71,85,105,0.55)'; ctx.lineWidth = 0.8; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(openX, fy + 2); ctx.lineTo(hingeX, fy + fh/2); ctx.lineTo(openX, fy + fh - 2); ctx.stroke();
+          ctx.restore();
+        } else {
+          ctx.fillStyle = PDF ? '#1a1a1a' : swatchIsDark(si.swatch) ? '#FBBF24' : '#B45309'; ctx.font = `700 ${Math.max(7, Math.min(scale*1.4, 9))}px sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('Hinge L/R?', fx + fw/2, fy + fh - 9);
+        }
+      }
     });
-    const o = builtInOpening(r, cab);
-    if (!o.filled) {                                   // nothing in it yet: show the opening
-      const ox = x + 1.5*scale, oy = sy(o.y1), ow = cW - 3*scale, oh = (o.y1 - o.y0)*scale;
-      ctx.fillStyle = PDF ? '#EEEEEE' : '#1F2328'; ctx.fillRect(ox, oy, ow, oh);
-      ctx.fillStyle = PDF ? '#555555' : '#CBD5E1'; ctx.font = `600 ${Math.max(7, Math.min(scale*1.5, 9))}px sans-serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(cab.type === 'ovenTall' ? 'Oven opening' : 'Microwave opening', ox + ow/2, oy + oh/2);
+    // Oven / microwave cabinet with nothing in it yet: show the opening
+    if (cab.type === 'ovenTall' || cab.type === 'mwDrawerBase') {
+      const o = builtInOpening(r, cab);
+      if (!o.filled) {
+        const ox = x + 1.5*scale, oy = sy(o.y1), ow = cW - 3*scale, oh = (o.y1 - o.y0)*scale;
+        ctx.fillStyle = PDF ? '#EEEEEE' : '#1F2328'; ctx.fillRect(ox, oy, ow, oh);
+        ctx.fillStyle = PDF ? '#555555' : '#CBD5E1'; ctx.font = `600 ${Math.max(7, Math.min(scale*1.5, 9))}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(cab.type === 'ovenTall' ? 'Oven opening' : 'Microwave opening', ox + ow/2, oy + oh/2);
+      }
     }
-    // label in the lowest drawer
-    ctx.fillStyle = PDF ? '#1a1a1a' : txtColor; ctx.font = `600 ${Math.max(8, Math.min(scale*1.9, 11))}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(`${cat.abbr}${cab.width}`, x + cW/2, sy(TOE_KICK_H + Math.min(7, (o.y0 - TOE_KICK_H) / 2)));
+    // Label = the order-list code (B18, SB36, W3030, WP2484 …) in the largest front
+    const big = fronts.filter(f => f.kind === 'door' || f.kind === 'drawer').sort((a, b) => (b.x1-b.x0)*(b.y1-b.y0) - (a.x1-a.x0)*(a.y1-a.y0))[0];
+    // (in a drawer, sit under its pull so the two don't cross)
+    const lx = big ? sx((big.x0 + big.x1) / 2) : x + cW/2, ly = (big ? sy((big.y0 + big.y1) / 2) : y + cH/2) + (big && big.kind === 'drawer' ? 9 : 0);
+    ctx.font = `600 ${Math.max(8, Math.min(scale*1.9, 11))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const lbl = orderSku(cab), tw = ctx.measureText(lbl).width + 6;
+    ctx.fillStyle = PDF ? '#FFFFFF' : swatchIsDark(si.swatch) ? 'rgba(15,23,42,0.35)' : 'rgba(255,255,255,0.7)'; ctx.fillRect(lx - tw/2, ly - 7, tw, 14);
+    ctx.fillStyle = txtColor; ctx.fillText(lbl, lx, ly);
+    if (upper) {
+      const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
+      if (bIn !== 54) { ctx.font = '600 8px sans-serif'; ctx.fillStyle = PDF ? '#333333' : '#f59e0b'; ctx.textBaseline = 'top'; ctx.fillText(`↑${bIn}" from floor`, x + cW/2, y + cH + 3); }
+    }
+    if (cab.note) { ctx.font = `italic ${Math.max(7, Math.min(scale*1.6, 10))}px sans-serif`; ctx.fillStyle = PDF ? '#333333' : '#64748B'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(cab.note, x + cW/2, y - 6); }
     if (showItemNumbers && cab.itemNum) drawItemHexagon(ctx, x + cW/2, y, cab.itemNum, PDF);
   });
 
@@ -292,7 +254,7 @@ function renderElevation() {
   r.cabinets.filter(c => layerShowsItem(c)).forEach(cab => {
     const ci = cornerInfo(r, cab); if (!ci || (cab.wall !== wall && ci.w2 !== wall)) return;
     const si = cabStyle(cab);
-    drawElevCorner(ctx, r, cab, ci, wall, scale, floorY, eX, PDF, si, darkSwatches.includes(si.swatch));
+    drawElevCorner(ctx, r, cab, ci, wall, scale, floorY, eX, PDF, si, swatchIsDark(si.swatch));
   });
 
   // ── Corner base crossover: an adjacent wall's blind corner base shown at the edge ──
@@ -344,7 +306,7 @@ function renderElevation() {
           ctx.globalAlpha = 1;
         }
         const fs = Math.max(7, Math.min(scale * 1.5, 9));
-        ctx.fillStyle = PDF ? '#475569' : (darkSwatches.includes(si.swatch) ? '#fff' : '#475569');
+        ctx.fillStyle = PDF ? '#475569' : (swatchIsDark(si.swatch) ? '#fff' : '#475569');
         ctx.font = `600 ${fs}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(cat.abbr || '', x + cW / 2, y + cH / 2);
       });
@@ -368,93 +330,9 @@ function renderElevation() {
     if (showItemNumbers && app.itemNum) drawItemHexagon(ctx, x+aW/2, y, app.itemNum, PDF);
   });
 
-  // PDF: dimension callout strings
-  if (PDF) {
-    function pdfDimString(items, dimY, above) {
-      ctx.save();
-      ctx.strokeStyle = '#1a1a1a'; ctx.fillStyle = '#1a1a1a'; ctx.lineWidth = 0.8; ctx.setLineDash([]);
-      items.forEach(({x1, x2, label}) => {
-        if (x2 - x1 < 6) return;
-        const midX = (x1+x2)/2;
-        const tickOuter = above ? dimY - 10 : dimY + 10;
-        const tickInner = above ? dimY + 2  : dimY - 2;
-        // Extension lines
-        ctx.beginPath(); ctx.moveTo(x1, tickOuter); ctx.lineTo(x1, tickInner); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x2, tickOuter); ctx.lineTo(x2, tickInner); ctx.stroke();
-        // Dimension line
-        ctx.beginPath(); ctx.moveTo(x1, dimY); ctx.lineTo(x2, dimY); ctx.stroke();
-        // Slash ticks at ends (architectural style)
-        const sl = 5;
-        ctx.beginPath(); ctx.moveTo(x1-sl*0.5, dimY+sl*0.6); ctx.lineTo(x1+sl*0.5, dimY-sl*0.6); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x2-sl*0.5, dimY+sl*0.6); ctx.lineTo(x2+sl*0.5, dimY-sl*0.6); ctx.stroke();
-        // Label
-        const fs2 = Math.max(7, Math.min(10, (x2-x1)*0.14));
-        ctx.font = `700 ${fs2}px sans-serif`; ctx.textAlign = 'center';
-        ctx.textBaseline = above ? 'bottom' : 'top';
-        ctx.fillText(label, midX, above ? dimY - 13 : dimY + 13);
-      });
-      ctx.restore();
-    }
-    // Upper cabinets → dim string above wall
-    const upperDimItems = wallCabs
-      .filter(c => ['wall','diagWall','tall','ovenTall'].includes(c.type))
-      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
-      .sort((a,b) => a.x1-b.x1);
-    if (upperDimItems.length) pdfDimString(upperDimItems, WY - 28, true);
-    // Base cabinets → dim string below floor
-    const baseDimItems = wallCabs
-      .filter(c => ['base','sink','vanity','drawerBase','mwDrawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type) || (isFiller(c.type) && !(c.wallBottom > 0)))
-      .map(c => ({ x1: eX(c.offset||0, c.width), x2: eX(c.offset||0, c.width) + c.width*scale, label: fmtFrac(c.width) }))
-      .sort((a,b) => a.x1-b.x1);
-    if (baseDimItems.length) pdfDimString(baseDimItems, WY + WH + 22, false);
-
-    // Height chain (vertical) — counter height, then upper cabinet band — to the
-    // left of the wall. Same architectural tick style as pdfDimString, rotated.
-    function pdfDimStringV(items, dimX) {
-      ctx.save();
-      ctx.strokeStyle = '#1a1a1a'; ctx.fillStyle = '#1a1a1a'; ctx.lineWidth = 0.8; ctx.setLineDash([]);
-      items.forEach(({y1, y2, label}) => {
-        if (Math.abs(y2 - y1) < 6) return;
-        const midY = (y1+y2)/2;
-        const tickOuter = dimX - 10, tickInner = dimX + 2;
-        ctx.beginPath(); ctx.moveTo(tickOuter, y1); ctx.lineTo(tickInner, y1); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(tickOuter, y2); ctx.lineTo(tickInner, y2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(dimX, y1); ctx.lineTo(dimX, y2); ctx.stroke();
-        const sl = 5;
-        ctx.beginPath(); ctx.moveTo(dimX-sl*0.6, y1+sl*0.5); ctx.lineTo(dimX+sl*0.6, y1-sl*0.5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(dimX-sl*0.6, y2+sl*0.5); ctx.lineTo(dimX+sl*0.6, y2-sl*0.5); ctx.stroke();
-        const fs2 = Math.max(7, Math.min(10, Math.abs(y2-y1)*0.14));
-        ctx.save();
-        ctx.translate(dimX-13, midY); ctx.rotate(-Math.PI/2);
-        ctx.font = `700 ${fs2}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.fillText(label, 0, 0);
-        ctx.restore();
-      });
-      ctx.restore();
-    }
-    const counterInPdf = 36;
-    pdfDimStringV([{ y1: floorY, y2: floorY - counterInPdf*scale, label: counterInPdf+'"' }], WX - 16);
-
-    const wallCabsOnlyPdf = wallCabs.filter(c => ['wall','diagWall'].includes(c.type));
-    if (wallCabsOnlyPdf.length) {
-      const bottomInPdf = Math.min(...wallCabsOnlyPdf.map(c => c.wallBottom != null ? c.wallBottom : 54));
-      const repPdf = wallCabsOnlyPdf.find(c => (c.wallBottom != null ? c.wallBottom : 54) === bottomInPdf);
-      const catRPdf = CATALOG[repPdf.type];
-      const hInPdf = repPdf.height || catRPdf.heights?.[0] || 30;
-      const topInPdf = bottomInPdf + hInPdf;
-      pdfDimStringV([{ y1: floorY - bottomInPdf*scale, y2: floorY - topInPdf*scale, label: hInPdf+'"' }], WX - 34);
-    }
-  }
-
-  // On screen, rulers are drawn on the viewport edges (drawViewportRulers); the PDF
-  // uses dimension strings instead.
-
-  // Full dimension callouts (app mode, toggled by the Dims button) — individual
-  // cabinet widths + overall total along the bottom, and a floor→counter→upper
-  // cabinet band→ceiling height chain on the left.
-  if (!PDF && showDimensions) {
-    drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX);
-  }
+  // Dimension strings (Build Plan 3.5) — always on printed plans, on screen with Dims.
+  // Drawn after the counters below so they sit on top.
+  const dimsOn = PDF || showDimensions;
 
   // Items that don't fit the room on this wall: red dashed outline (screen only)
   if (!PDF) {
@@ -469,13 +347,14 @@ function renderElevation() {
   }
 
   drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF);   // countertop, end panels, crown (counters.js)
+  if (dimsOn) drawElevDimensionStrings(ctx, r, wall, scale, WX, WY, WW, WH, floorY, eX, PDF);
   if (!PDF) { drawElevGaps(ctx, r, wall, scale, floorY, eX); drawElevSelection(ctx, r, wall, scale, floorY, eX); drawElevGhost(ctx, r, wall, scale, floorY, eX); }
   ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
   ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
   ctx.fillStyle=PDF?'#1a1a1a':'#475569';
   const df=Math.max(10,scale*2.2); ctx.font=`700 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(PDF?72:20));
-  ctx.save(); ctx.translate(PDF ? WX-52 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
+  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(dimsOn?66:20));
+  ctx.save(); ctx.translate(dimsOn ? WX-66 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
   document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
   if (vpState.elev.zoom === 1 && vpState.elev.panX === 0 && vpState.elev.panY === 0) {
@@ -485,3 +364,106 @@ function renderElevation() {
   }
 }
 
+
+// ════════════════════════════
+// DIMENSION STRINGS (Build Plan 3.5)
+// ════════════════════════════
+// Shop-drawing dimensions around one wall's elevation:
+//   bottom  — every piece standing on the floor (and the open spaces between), then the wall
+//   top     — every upper-level piece (and spaces); doors/windows located from the wall ends
+//   left    — floor → countertop → bottom of uppers → top of uppers → ceiling, + overall
+// Architectural slash ticks; inches with fractions (fmtFrac).
+function drawElevDimensionStrings(ctx, r, wall, scale, WX, WY, WW, WH, floorY, eX, PDF) {
+  const len = wallLength(r, wall), ceiling = r.ceilingHeight || 96;
+  const INK = PDF ? '#1a1a1a' : '#1D4ED8', MUTED = PDF ? '#666666' : '#64748B';
+  const items = wallItemsWithReturns(r, wall).filter(i => (CATALOG[i.type] || APPLIANCES[i.type]) && layerShowsItem(i));
+  const lab = v => fmtFrac(Math.round(v * 16) / 16);
+  // A chain along the wall: pieces + the gaps between them, from one wall end to the other
+  const chain = list => {
+    const segs = [];
+    const spans = list.map(i => [i.offset || 0, (i.offset || 0) + i.width]).sort((m, n) => m[0] - n[0]);
+    let at = 0;
+    spans.forEach(([a, b]) => {
+      if (b <= at + 0.01) return;                       // fully inside the previous piece (built-ins, overlaps)
+      if (a > at + 0.24) segs.push({ a: at, b: a, gap: true });
+      segs.push({ a: Math.max(a, at), b });
+      at = b;
+    });
+    if (spans.length && len - at > 0.24) segs.push({ a: at, b: len, gap: true });
+    return segs;
+  };
+  const hLine = (segs, y, labelAbove) => {
+    ctx.save(); ctx.lineWidth = PDF ? 0.8 : 1; ctx.setLineDash([]);
+    ctx.font = `700 ${PDF ? 9 : 9}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = labelAbove ? 'bottom' : 'top';
+    let lastRight = -Infinity;
+    segs.forEach(sg => {
+      const xa = eX(sg.a, 0), xb = eX(sg.b, 0), x1 = Math.min(xa, xb), x2 = Math.max(xa, xb);
+      ctx.strokeStyle = sg.gap ? MUTED : INK; ctx.fillStyle = sg.gap ? MUTED : INK;
+      ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+      [x1, x2].forEach(xx => {
+        ctx.beginPath(); ctx.moveTo(xx, y - 6); ctx.lineTo(xx, y + 6); ctx.stroke();         // extension
+        ctx.beginPath(); ctx.moveTo(xx - 3, y + 3); ctx.lineTo(xx + 3, y - 3); ctx.stroke();   // slash tick
+      });
+      const t = lab(sg.b - sg.a), tw = ctx.measureText(t).width;
+      if (x2 - x1 < 8) return;
+      // Too narrow for its label: lift it one row so neighbours don't collide
+      const cx = (x1 + x2) / 2, crowded = tw + 4 > x2 - x1 || cx - tw / 2 < lastRight + 2;
+      const ty = labelAbove ? y - 3 - (crowded ? 10 : 0) : y + 3 + (crowded ? 10 : 0);
+      ctx.fillText(t, cx, ty);
+      lastRight = cx + tw / 2;
+    });
+    ctx.restore();
+  };
+  const vLine = (pairs, x) => {                        // pairs: [{ y0, y1 }] in inches from the floor
+    ctx.save(); ctx.lineWidth = PDF ? 0.8 : 1; ctx.strokeStyle = INK; ctx.fillStyle = INK;
+    ctx.font = '700 9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    pairs.forEach(({ y0, y1 }) => {
+      if (y1 - y0 < 0.24) return;
+      const ya = floorY - y0 * scale, yb = floorY - y1 * scale;
+      ctx.beginPath(); ctx.moveTo(x, ya); ctx.lineTo(x, yb); ctx.stroke();
+      [ya, yb].forEach(yy => {
+        ctx.beginPath(); ctx.moveTo(x - 6, yy); ctx.lineTo(x + 6, yy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 3, yy + 3); ctx.lineTo(x + 3, yy - 3); ctx.stroke();
+      });
+      if (Math.abs(ya - yb) < 12) return;
+      ctx.save(); ctx.translate(x - 3, (ya + yb) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(lab(y1 - y0), 0, 0); ctx.restore();
+    });
+    ctx.restore();
+  };
+
+  // ── Bottom: floor pieces, then the whole wall
+  const floorPieces = items.filter(i => itemVerticalRange(i)[0] < 1 && !(APPLIANCES[i.type] && applianceHost(r, i)));
+  if (floorPieces.length) hLine(chain(floorPieces), floorY + 20, false);
+  hLine([{ a: 0, b: len }], floorY + 44, false);
+
+  // ── Top: upper-level pieces (wall cabinets, hood, microwave, shelves) — talls/fridges
+  // reach up there too, so they're part of this chain
+  const upperPieces = items.filter(i => itemLevel(i) === 'upper' || itemVerticalRange(i)[1] > 60);
+  if (upperPieces.length) hLine(chain(upperPieces), WY - 14, true);
+  // Doors and windows located from the wall ends
+  const ops = (r.openings || []).filter(o => o.wall === wall && (o.type === 'window' || o.type === 'door' || o.type === 'arch'));
+  if (ops.length) hLine(chain(ops.map(o => ({ offset: o.offset, width: o.width }))), WY - 38, true);
+
+  // ── Left: height chain + overall
+  const counters = counterRuns(r).filter(run => run.wall === wall);
+  const counterTop = counters.length ? Math.max(...counters.map(run => run.top + COUNTER_T)) : null;
+  const uppers = items.filter(i => CATALOG[i.type] && itemLevel(i) === 'upper');
+  const stops = [0];
+  if (counterTop != null) stops.push(counterTop);
+  if (uppers.length) {
+    // bottom of the lowest upper, and the top most of them share (a stray high one doesn't skew it)
+    const ub = Math.min(...uppers.map(i => itemVerticalRange(i)[0]));
+    const tops = uppers.map(i => itemVerticalRange(i)[1]), count = t => tops.filter(v => Math.abs(v - t) < 0.01).length;
+    const ut = tops.reduce((m, t) => count(t) > count(m) || (count(t) === count(m) && t < m) ? t : m, tops[0]);
+    stops.push(ub, ut);
+  }
+  stops.push(ceiling);
+  const st = [...new Set(stops.map(v => Math.round(v * 16) / 16))].sort((m, n) => m - n);
+  vLine(st.slice(0, -1).map((y0, k) => ({ y0, y1: st[k + 1] })), WX - 20);
+  vLine([{ y0: 0, y1: ceiling }], WX - 44);
+
+  // Legend for the door marks
+  ctx.save(); ctx.fillStyle = MUTED; ctx.font = 'italic 9px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('Dashed lines on a door meet at its hinge side.  Dimensions in inches.', WX, floorY + 62);
+  ctx.restore();
+}

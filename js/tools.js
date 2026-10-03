@@ -97,59 +97,7 @@ function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
   ctx.restore();
 }
 
-// Elevation dimensions: individual base cabinet widths + one overall total along
-// the bottom, and a floor→counter→upper-cabinet-band→ceiling height chain on the
-// left — same visual language as a real cabinet shop drawing.
-function drawElevationDimensions(ctx, r, wall, scale, WX, WY, WW, floorY, eX) {
-  const wallCabs = r.cabinets.filter(c => c.wall === wall);
-  if (!wallCabs.length) return;
-
-  ctx.save();
-  ctx.lineWidth = 1;
-  ctx.font = '600 9px sans-serif';
-  ctx.textBaseline = 'middle';
-
-  // ── Horizontal: individual base cabinet widths, just under the floor line ──
-  const baseCabs = wallCabs
-    .filter(c => ['base','sink','vanity','drawerBase','mwDrawerBase','cornerBase','lazysusan','fridgePanel'].includes(c.type))
-    .sort((a,b) => (a.offset||0)-(b.offset||0));
-  const hY = floorY + 14;
-  baseCabs.forEach(cab => {
-    const x = eX(cab.offset||0, cab.width), w = cab.width*scale;
-    drawDimLine(ctx, x, hY, x+w, hY, cab.width+'"', true, false);
-  });
-
-  // ── Horizontal: overall total across the occupied run, further below ──
-  if (baseCabs.length) {
-    const first = baseCabs[0], last = baseCabs[baseCabs.length-1];
-    const firstOff = first.offset||0, lastEnd = (last.offset||0)+last.width;
-    const x1 = eX(firstOff, 0), x2 = eX(lastEnd, 0);
-    const lo = Math.min(x1,x2), hi = Math.max(x1,x2);
-    const totalIn = Math.round((lastEnd - firstOff) * 100) / 100;
-    drawDimLine(ctx, lo, hY+28, hi, hY+28, totalIn+'"', true, false);
-  }
-
-  // ── Vertical: floor → counter height, on the left ──
-  const counterIn = 36;
-  drawDimLine(ctx, WX-16, floorY, WX-16, floorY-counterIn*scale, counterIn+'"', false, true);
-
-  // ── Vertical: floor → bottom of the lowest-hanging upper cabinet → its top ──
-  const wallCabsOnly = wallCabs.filter(c => ['wall','diagWall'].includes(c.type));
-  if (wallCabsOnly.length) {
-    const bottomIn = Math.min(...wallCabsOnly.map(c => c.wallBottom != null ? c.wallBottom : 54));
-    const rep = wallCabsOnly.find(c => (c.wallBottom != null ? c.wallBottom : 54) === bottomIn);
-    const cat = CATALOG[rep.type];
-    const hIn = rep.height || cat.heights?.[0] || 30;
-    const topIn = bottomIn + hIn;
-    drawDimLine(ctx, WX-34, floorY-bottomIn*scale, WX-34, floorY-topIn*scale, hIn+'"', false, true);
-  }
-
-  // ── Vertical: overall ceiling height, outermost ──
-  const ceiling = r.ceilingHeight || 96;
-  drawDimLine(ctx, WX-52, floorY, WX-52, WY, ceiling+'"', false, true);
-
-  ctx.restore();
-}
+// (Elevation dimension strings live in elevation.js — drawElevDimensionStrings.)
 
 // ════════════════════════════
 // WORK TRIANGLE

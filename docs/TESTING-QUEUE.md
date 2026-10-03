@@ -212,3 +212,21 @@ Claude tested locally: every appliance type in 3D and elevation, all finishes an
 - [ ] **Hood over a range with a wall cabinet above** → slim insert. No cabinet above → chimney to the ceiling.
 - [ ] **Price sheet:** after adding OC/MDB prices, the quote prices those cabinets; the oven/microwave keep their own price box.
 - [ ] Orbit a full kitchen: still smooth (models add a few hundred small parts).
+
+### 3.5 Elevation drawings an installer can work from (built 2026-10-03)
+What changed:
+- Every cabinet's doors and drawers in elevation now come from the same layout as the 3D (door-style panels, glass, pulls or knobs where they really are). Labels use the order-list codes (B18, SB36, W3030, WP2484).
+- **Hinge marks:** dashed lines on each door meet at its hinge side. A single door with no hinge side set says **"Hinge L/R?"** (set it with double-click → Hinge side).
+- **Backsplash** (Countertop & Trim panel): None / 4" in the countertop material / Full-height tile (up to the uppers, 18" where there are none, stopping at window sills). Shows in elevation and 3D. New projects start at None.
+- **Dimensions** (always on printed plans; on screen with Dims):
+  - bottom: every floor piece and open space, then the whole wall
+  - top: the uppers/hood/talls and spaces, plus doors and windows located from the wall ends
+  - left: floor → counter → bottom of uppers → top of uppers → ceiling, plus overall height
+- **Windows and doors** drawn with 3-1/2" casing; windows with sash, sill and apron, labelled with size and sill height.
+- **Quote:** a **#** column on cabinet and appliance lines matches the numbered tags on the drawings. Printed quote and PDF. Doesn't change revision numbering.
+- Dark finishes (e.g. Espresso) now get light labels automatically.
+Claude tested locally: a 15' wall with corner base, drawer base, sink, glass uppers, tall, hood, window, DW; the "Daniel Muller" layout copy in Espresso; print mode; no console errors.
+- [ ] **Print Plans** on a real job: the elevation pages read like a shop drawing (sizes, hinge marks, heights on the left).
+- [ ] Set **Backsplash → Full-height tile** and look at elevation + 3D.
+- [ ] Doors showing **Hinge L/R?** → set the side, the mark appears.
+- [ ] **Print / PDF a quote:** the # column matches the hexagon numbers on the drawings.

@@ -389,11 +389,12 @@ async function exportPDF(btn) {
   const cabRows=[];
   p.rooms.forEach(room => {
     if (!room.cabinets.length) return;
-    cabRows.push([{content:room.name,colSpan:4,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
+    cabRows.push([{content:room.name,colSpan:5,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
     room.cabinets.forEach(c => {
       const pr=cabinetPrice(c); if (pr!=null) cabSub+=pr;
       const cat=CATALOG[c.type];
       cabRows.push([
+        String(c.itemNum || ''),     // # = item number on the plans (3.5)
         (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
         `${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
@@ -403,7 +404,8 @@ async function exportPDF(btn) {
     });
   });
   doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
-    head:[['Cabinet','Dimensions','Wall','Price']],
+    head:[['#','Cabinet','Dimensions','Wall','Price']],
+    columnStyles:{0:{cellWidth:8,halign:'center',textColor:[100,116,139]}},
     body:cabRows,
     styles:{fontSize:7.5,cellPadding:2},
     headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
@@ -416,14 +418,15 @@ async function exportPDF(btn) {
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac=APPLIANCES[a.type]||{};
-      appRows.push([ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—']);
+      appRows.push([String(a.itemNum || ''), ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—']);
     });
   });
   if (appRows.length) {
     doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
     doc.text('APPLIANCES', MAR, qy); qy+=3;
     doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
-      head:[['Appliance','Width','Wall','Notes']],
+      head:[['#','Appliance','Width','Wall','Notes']],
+      columnStyles:{0:{cellWidth:8,halign:'center',textColor:[100,116,139]}},
       body:appRows,
       styles:{fontSize:7.5,cellPadding:2},
       headStyles:{fillColor:[44,31,20],textColor:255,fontStyle:'bold',fontSize:7.5},
