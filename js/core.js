@@ -299,21 +299,25 @@ function buildDemoSampleProject() {
       cab('base', 'north', 24, 0), cab('base', 'north', 30, 24), cab('sink', 'north', 36, 78),
       cab('drawerBase', 'north', 18, 114), cab('cornerBase', 'north', 36, 132),
       upper('north', 24, 0), upper('north', 30, 24), upper('north', 24, 54), upper('north', 18, 114), upper('north', 36, 132),
-      // East wall run (from the north corner, starting past the corner cabinet's depth)
-      cab('base', 'east', 15, 24), cab('base', 'east', 12, 69), cab('fridgePanel', 'east', 0.75, 81, { height: 84 }),
-      upper('east', 15, 24), upper('east', 12, 69), upper('east', 36, 81.75, 12, 72),
+      // East wall run (from the north corner): a 3" filler gives the blind corner its pull clearance
+      cab('filler3', 'east', 3, 24, { wallBottom: 0 }),
+      cab('base', 'east', 15, 27), cab('base', 'east', 12, 72), cab('fridgePanel', 'east', 0.75, 84, { height: 84 }),
+      upper('east', 15, 27), upper('east', 12, 72), upper('east', 36, 84.75, 12, 72),
     ],
     appliances: [
       app('dishwasher', 'north', 24, 54),
-      app('range', 'east', 30, 39), app('hood', 'east', 30, 39),
-      app('refrigerator', 'east', 36, 81.75),
+      app('range', 'east', 30, 42), app('hood', 'east', 30, 42),
+      app('refrigerator', 'east', 36, 84.75),
     ],
     openings: [
       { id: uid(), type: 'window', wall: 'north', width: 36, height: 40, offset: 78, sillHeight: 42 },
       { id: uid(), type: 'door',   wall: 'south', width: 36, height: 80, offset: 30, sillHeight: 0 },
     ],
-    islands: [{ id: uid(), width: 54, depth: 36, x: 42, y: 66, label: 'Island' }],
+    islands: [{ id: uid(), width: 54, depth: 36, x: 40, y: 68, label: 'Island' }],   // 42" counter-to-counter aisles
   };
+  // Single doors get a hinge side, as a finished design would (Design Check flags missing ones)
+  const HINGES = { 'north:114': 'R', 'north:132': 'L', 'east:27': 'R', 'east:72': 'L' };
+  room.cabinets.forEach(c => { if (needsHinge(c)) c.hinge = HINGES[c.wall + ':' + c.offset] || 'L'; });
   return {
     id: DEMO_SAMPLE_ID, customer: 'Sample Kitchen', phone: '', company: '', type: 'Kitchen',
     notes: 'A finished example — change anything you like, or use Reset demo to start over.',
@@ -700,6 +704,7 @@ function persist() {
   setSyncStatus('saving');
   saveTimer = setTimeout(syncActiveProject, 1000);
   if (typeof updateCountertopStats === 'function') { updateCountertopStats(activeProj()); syncCountertopPanel(); } // counters.js
+  if (typeof renderDesignCheck === 'function') renderDesignCheck();                                              // designcheck.js
   if (typeof historyNoteChange === 'function') historyNoteChange(); // undo/redo (history.js)
 }
 // Demo and Free accounts keep projects in this browser only; Silver+ saves to Supabase.

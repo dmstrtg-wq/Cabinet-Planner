@@ -740,3 +740,20 @@ body.free-tier #connect-pro-btn { display:block; }
 /* Door style saved on the project isn't one of the account's finishes */
 .style-current.style-missing { border-color: #dc2626 !important; background: #fef2f2; }
 .style-current.style-missing #style-current-name { color: #b91c1c; font-weight: 700; }
+
+/* Design Check (5.1) */
+.dc-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: 9px; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; margin-left: 4px; text-transform: none; letter-spacing: 0; }
+.dc-count.dc-problem { background: #FEE2E2; color: #991B1B; }
+.dc-count.dc-ok { background: #DCFCE7; color: #166534; }
+.dc-item { display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; background: var(--surface, #fff); border: 1px solid var(--border, #e2e8f0); border-left-width: 4px; border-radius: 6px; padding: 6px 8px; margin: 0 0 6px; cursor: pointer; font: inherit; color: var(--text); }
+.dc-item:hover, .dc-item:focus-visible { background: #F8FAFC; }
+.dc-item.dc-problem { border-left-color: #DC2626; }
+.dc-item.dc-warning { border-left-color: #D97706; }
+.dc-item.dc-tip { border-left-color: #2563EB; }
+.dc-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.dc-problem .dc-dot { background: #DC2626; } .dc-warning .dc-dot { background: #D97706; } .dc-tip .dc-dot { background: #2563EB; }
+.dc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dc-title { font-size: 12px; font-weight: 700; }
+.dc-detail { font-size: 11px; color: var(--text-muted, #475569); }
+.dc-allgood { color: #166534; font-weight: 600; }
+.dc-upgrade { width: 100%; margin-top: 6px; }

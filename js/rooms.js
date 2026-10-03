@@ -1014,7 +1014,7 @@ function onPricingToggle(fromToolbar) {
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
-function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); }
+function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); if (typeof renderDesignCheck === 'function') renderDesignCheck(); }
 
 // ════════════════════════════
 // STYLE PANEL

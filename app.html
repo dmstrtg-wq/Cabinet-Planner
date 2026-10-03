@@ -409,6 +409,10 @@
           <label class="ct-check"><input type="checkbox" id="ct-lightrail" onchange="setCountertop('lightRail', this.checked)"> Light rail under uppers</label>
           <div id="ct-stats" class="form-hint" style="margin-top:4px;"></div>
         </div>
+        <div class="cp-section" id="designcheck-section" style="flex-shrink:0">
+          <div class="cp-label">Design Check <span id="dc-badge"></span></div>
+          <div id="dc-list" aria-live="polite"></div>
+        </div>
         <div class="cp-section" id="palette-section" style="flex-shrink:0">
           <div class="cp-label">Catalog <span class="palette-hint">drag onto a wall · click to add at the end</span></div>
           <input type="search" id="palette-search" class="cp-input" placeholder='Search — e.g. "B36", "sink", "30"' aria-label="Search catalog" autocomplete="off">
@@ -1168,6 +1172,7 @@
 <script src="/js/snapshots.js" data-categories="essential"></script>
 <script src="/js/corners.js" data-categories="essential"></script>
 <script src="/js/appliances3d.js" data-categories="essential"></script>
+<script src="/js/designcheck.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

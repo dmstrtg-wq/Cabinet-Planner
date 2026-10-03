@@ -241,3 +241,20 @@ Found, not code:
 - Empty walls still get their own blank elevation page in Print Plans. Could skip them; your call.
 To do (Dan): delete "ZZ_Door_Style_Test (delete me)" (Claude isn't allowed to delete projects). "ZZ Claude Test" stays until the PDF fix is verified live, then delete it too.
 - [ ] After the push: Export PDF on a real job. The file should now be well under 1 MB.
+- Live re-check after push (2026-10-03): quote PDF 229 KB (8 pages), Print Plans 206 KB (6 pages), down from ~12 MB; hood snaps over the range. "ZZ Claude Test" kept as the reusable test kitchen (Dan's account = test environment).
+
+### 5.1 Design Check (built 2026-10-03) — Silver (demo shows it in full; Free sees the count + upgrade)
+New **Design Check** section in the right panel (under Countertop & Trim) with a badge (✓ or a count). Each line is a problem (red), warning (amber) or tip (blue); click one to select the piece and flash its area on the floor plan (click again to step through the pieces involved). Marks on the plan can be turned off: Layers ▸ Design check marks. All numbers are in one place (DESIGN_RULES in js/designcheck.js) so they can be tuned.
+Rules (NKBA-style, measured countertop edge to countertop edge):
+- Aisles between facing runs or a run and an island: under 36" problem, under 42" warning, under 48" tip (two cooks)
+- Dishwasher (26"), range (22") or wall-oven (22") door hits the opposite run/island when open
+- Landing space: range/cooktop 12" one side + 15" other; sink 24" one side (18" other = tip); fridge 15" beside it or an island within 48"
+- Uppers less than 18" above the countertop; hood less than 24" above the range/cooktop
+- Inside corners: doors/drawers on both runs with no filler (blind corners: "no pull clearance")
+- Pieces that overlap, run past the wall, hit a corner, or block a door/window (and anything taller than the ceiling)
+- Tip: single doors with no hinge side set
+Not yet (needs Phase 4 data): seating overhang at islands.
+The demo **Sample Kitchen** was corrected so it passes (3" filler at the blind corner, island moved for 42" aisles, hinge sides set). This only affects new demo visitors.
+Claude tested locally: sample passes (0 problems/warnings); a deliberately bad layout lists every rule; L-shaped room; click-to-locate; Free-tier teaser; no console errors.
+- [ ] Open your real jobs: does the list make sense? Anything it flags that a pro would call fine? (Tell Claude and the numbers get tuned.)
+- [ ] Click a few lines: the right piece gets selected and its area flashes on the plan.

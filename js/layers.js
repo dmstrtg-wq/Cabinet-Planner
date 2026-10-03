@@ -18,8 +18,9 @@ const LAYER_DEFS = [
   ['appliances', 'Appliances'],
   ['openings',   'Doors & windows'],
   ['grid',       'Grid'],
+  ['checks',     'Design check marks'],
 ];
-const LAYER_DEFAULTS = { dims: false, itemNums: true, bases: true, uppers: true, appliances: true, openings: true, grid: true };
+const LAYER_DEFAULTS = { dims: false, itemNums: true, bases: true, uppers: true, appliances: true, openings: true, grid: true, checks: true };
 let layers = (() => {
   try { return { ...LAYER_DEFAULTS, ...JSON.parse(localStorage.getItem('cp_layers') || '{}') }; }
   catch (e) { return { ...LAYER_DEFAULTS }; }
