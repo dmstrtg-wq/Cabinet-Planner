@@ -333,6 +333,32 @@ function buildAppliance3D(r, app, kit, frontKit, p) {
       glassShade.position.set(0, b + 7, 3.5); g.add(glassShade);
       break;
     }
+    // ── Countertop appliances (7.5), sitting on the counter ──
+    case 'coffeeMaker': {
+      body(kit.dark, L, R, b, b + 1.5, 6, D + 4);                                    // base
+      _abox(g, kit, kit.dark, L, R, b + 1.5, top, 4, 9);                             // tower
+      _abox(g, kit, kit.dark, L, R, top - 3, top, 9, D + 4);                         // head
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.9, 6, 16), kit.tint); pot.position.set(0, b + 4.5, D); g.add(pot);
+      break;
+    }
+    case 'standMixer': {
+      const red = kit.mixer || (kit.mixer = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.25, metalness: 0.15 }));
+      body(red, L + 2, R - 2, b, b + 1.5, 2, D + 3);                                  // base
+      _abox(g, kit, red, -2, 2, b + 1.5, top - 2, 2, 6);                              // column
+      _abox(g, kit, red, -2.5, 2.5, top - 4, top, 2, D + 3);                          // head
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 2.4, 5, 18), kit.steel); bowl.position.set(0, b + 4, D); g.add(bowl);
+      break;
+    }
+    case 'toaster':
+      body(kit.finish('stainless'), L, R, b, top, 8, 15);
+      _abox(g, kit, kit.dark, L + 2, R - 2, top - 0.05, top + 0.02, 9.5, 10.5, false); _abox(g, kit, kit.dark, L + 2, R - 2, top - 0.05, top + 0.02, 12.5, 13.5, false);
+      break;
+    case 'counterMicrowave': {
+      body(kit.finish('black'), L, R, b, top, 4, 4 + D);
+      _awindow(g, kit, L + 1.5, R - 6, b + 2, top - 2, 4 + D);
+      _abox(g, kit, kit.glass, R - 5.5, R - 1, b + 1.5, top - 1.5, 4 + D, 4 + D + 0.05, false);
+      break;
+    }
     case 'tv': {                                        // 7.4b: thin panel, black glass screen
       body(kit.dark, L, R, b, top, 0.5, D);
       _abox(g, kit, kit.glass, L + 0.4, R - 0.4, b + 0.4, top - 0.4, D, D + 0.05, false);

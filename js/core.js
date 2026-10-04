@@ -666,6 +666,23 @@ const APPLIANCES = {
   tv:              { label:'TV (wall-mounted)',         widths:[44,49,57,66,75], height:28,          depth:3,  color:'#111827', abbr:'TV',  wallMount:true,  elevBottom:42, elevBottomOptions:[36,40,42,44,48,52,56,60], fixture:true,
                      heightFor: w => Math.round(w * 9 / 16 + 1), sizeLabel: w => ({ 44: '50" TV', 49: '55" TV', 57: '65" TV', 66: '75" TV', 75: '85" TV' }[w] || w + '" wide TV') },
 };
+// Kitchen extras (7.5): looks only — never on the quote (decor:true), even with a price.
+// Countertop appliances sit on the counter (bottom at 36").
+Object.assign(APPLIANCES, {
+  coffeeMaker:      { label:'Coffee Maker',          widths:[10], height:15, depth:12, color:'#1F2937', abbr:'CM',  wallMount:false, elevBottom:36, decor:true },
+  standMixer:       { label:'Stand Mixer',           widths:[14], height:14, depth:9,  color:'#B91C1C', abbr:'MX',  wallMount:false, elevBottom:36, decor:true },
+  toaster:          { label:'Toaster',               widths:[12], height:8,  depth:7,  color:'#9CA3AF', abbr:'TS',  wallMount:false, elevBottom:36, decor:true },
+  counterMicrowave: { label:'Countertop Microwave',  widths:[20], height:12, depth:15, color:'#374151', abbr:'CMW', wallMount:false, elevBottom:36, decor:true },
+});
+// Free-standing furniture (7.5): kept in room.furniture as { id, type, x, y, width, depth, face },
+// placed anywhere like an island. Scale references for the plan and 3D — never quoted.
+const FURNITURE = {
+  tableRect:  { label:'Dining Table',  sizes:[[60,36],[72,40],[84,42]], height:30, color:'#A47148', abbr:'TBL' },
+  tableRound: { label:'Round Table',   sizes:[[42,42],[48,48],[54,54]], height:30, color:'#A47148', abbr:'TBL', round:true },
+  chair:      { label:'Dining Chair',  sizes:[[18,20]],                  height:36, color:'#7C5A3A', abbr:'CH',  faces:true },
+  stool:      { label:'Counter Stool', sizes:[[17,17]],                  height:30, color:'#475569', abbr:'ST',  faces:true, round:true },
+};
+
 // What kind of room a room is (7.4): stored as room.kind, or worked out from its name
 const ROOM_KINDS = { kitchen: 'Kitchen', bath: 'Bathroom', hall: 'Hallway', living: 'Living room', laundry: 'Laundry', other: 'Other' };
 function roomKind(r) {

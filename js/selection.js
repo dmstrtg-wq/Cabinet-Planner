@@ -10,7 +10,7 @@
 let selectedItemId = null;
 const SELECT_COLOR = '#0f766e';
 
-function roomItems(r) { return r ? [...r.cabinets, ...(r.appliances || []), ...(r.islands || [])] : []; }
+function roomItems(r) { return r ? [...r.cabinets, ...(r.appliances || []), ...(r.islands || []), ...(r.furniture || [])] : []; }
 function getSelectedItem() {
   if (!selectedItemId) return null;
   return roomItems(activeRoom()).find(i => i.id === selectedItemId) || null;
@@ -54,7 +54,7 @@ function drawSelectionBox(ctx, x, y, w, h) {
 function drawFloorSelection(ctx, r, scale, RX, RY) {
   const it = getSelectedItem(); if (!it) return;
   let rc;
-  if (r.islands && r.islands.includes(it)) rc = { x: it.x, y: it.y, w: it.width, h: it.depth };
+  if ((r.islands && r.islands.includes(it)) || isFurniture(it)) rc = { x: it.x, y: it.y, w: it.width, h: it.depth };
   else { const rs = itemRects(r, it); rc = rs.length ? rectOfPts(rs.flatMap(b => [[b.x, b.y], [b.x + b.w, b.y + b.h]])) : null; }
   if (rc) drawSelectionBox(ctx, RX + rc.x * scale, RY + rc.y * scale, rc.w * scale, rc.h * scale);
 }
@@ -97,6 +97,7 @@ function openItemPopover(item, clientX, clientY) {
   if (selectedItemId !== item.id) selectItem(item.id);
   closeItemPopover();
   const isCab = !!CATALOG[item.type];
+  if (isFurniture(item)) { openFurniturePopover(item, clientX, clientY); return; }   // 7.5
   const pop = document.createElement('div');
   pop.id = 'item-popover';
   pop.setAttribute('role', 'dialog');
@@ -241,7 +242,12 @@ function applyItemEdit(item, field, value) {
 }
 
 function duplicateItem(item) {
-  const r = activeRoom(); if (!r || !item.wall) return;
+  const r = activeRoom(); if (!r) return;
+  if (isFurniture(item)) {                               // 7.5: a copy right beside it
+    const copy = { ...JSON.parse(JSON.stringify(item)), id: uid(), x: item.x + item.width + 4 };
+    commitFurniture(copy); return;
+  }
+  if (!item.wall) return;
   const copy = JSON.parse(JSON.stringify(item));
   copy.id = uid();
   copy.itemNum = nextItemNum(r);
@@ -268,6 +274,7 @@ function freeSpotFor(r, copy, original) {
 }
 
 function deleteItem(item) {
+  if (isFurniture(item)) { removeFurniture(item.id); selectItem(null); if (state.viewMode === '3d') renderIsometric(); return; }
   if (CATALOG[item.type]) removeCabinet(item.id);
   else if (APPLIANCES[item.type]) removeAppliance(item.id);
   if (state.viewMode === '3d') renderIsometric();

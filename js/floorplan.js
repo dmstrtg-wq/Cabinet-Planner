@@ -732,6 +732,7 @@ function renderCanvas() {
     if (!PDF) ctx.fillText(`⚠ ${_flagRects.length} item${_flagRects.length === 1 ? " doesn't" : "s don't"} fit — see list`, RX + RW, RY - 28);
     ctx.restore();
   }
+  drawFurnitureOnFloor(ctx, r, scale, RX, RY);          // tables, chairs, stools (7.5)
   if (!PDF) { drawDesignCheckOnFloor(ctx, r, scale, RX, RY); drawFloorGaps(ctx, r, scale, RX, RY); drawFloorSelection(ctx, r, scale, RX, RY); drawFloorGhost(ctx, r, scale, RX, RY); }
   renderSummary(r);
   // Auto-fit only on first render of a project (zoom resets to 1 signal)

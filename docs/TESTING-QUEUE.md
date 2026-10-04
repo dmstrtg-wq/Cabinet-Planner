@@ -310,3 +310,13 @@ Claude tested locally: starter layouts for 8'×5', 10'×8', 12'×9', 9'×5'6" ro
 - Hardware counts: open shelving has no hardware; locker doors and bench drawers are counted.
 Claude tested locally: living rooms 14'/10'/8' and halls 6'8"/5' (no placement problems, Design Check clean), elevation, 3D, hardware counts. All scripts compile; no errors.
 - [ ] Add a Living room and a Hallway to a job with the starter option on; check plan, elevation, 3D, quote.
+- 7.4b live check (2026-10-04, "ZZ Claude Test" → Add Room "Family Room" 14'×12', living): BC30 ×2, MB72, 75" TV; Living tab opened; Design Check clean; no errors.
+
+### 7.5 Kitchen extras (built 2026-10-04) — looks only, never on the quote
+- **Catalog → Extras:** Dining Table (60/72/84"), Round Table (42/48/54"), Dining Chair, Counter Stool, and countertop appliances (Coffee Maker, Stand Mixer, Toaster, Countertop Microwave).
+- Tables/chairs/stools are free-standing like an island: click a tile (lands mid-room) or drag it onto the floor plan, then drag it anywhere. Double-click: size (or turned), which way it faces, **＋ 4 chairs** on tables, duplicate, delete.
+- **Island → double-click → Counter stools:** adds stools along any side, one every 24", facing the island.
+- Countertop appliances land on the first open stretch of countertop (or drag one onto a counter).
+- Shown in plan and 3D (not elevations). Nothing here is quoted or ordered, even if a price is typed.
+Claude tested locally: island stools, round table + chairs, all four countertop appliances placed on the counter, 3D, popover/duplicate/delete, quote total unaffected. All scripts compile; no errors.
+- [ ] On a kitchen with an island: add stools, a table with chairs and a coffee maker; look in 3D.

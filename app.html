@@ -428,6 +428,7 @@
             <button type="button" data-cat="bath" onclick="setPaletteCategory('bath')">Bath</button>
             <button type="button" data-cat="living" onclick="setPaletteCategory('living')">Living</button>
             <button type="button" data-cat="hall" onclick="setPaletteCategory('hall')">Hall</button>
+            <button type="button" data-cat="extras" onclick="setPaletteCategory('extras')">Extras</button>
           </div>
           <div id="palette-items" class="palette-items"></div>
         </div>
@@ -722,6 +723,15 @@
     <div class="form-group">
       <label>Label</label>
       <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Counter stools (looks only)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="islandStoolsFromModal('s')">＋ Stools on south side</button>
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="islandStoolsFromModal('n')">＋ North side</button>
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="islandStoolsFromModal('e')">＋ East</button>
+        <button type="button" class="btn btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="islandStoolsFromModal('w')">＋ West</button>
+      </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
       <button class="btn" style="background:#dc2626;color:#fff;font-weight:600;" onclick="deleteFromEditIslandModal()">Delete</button>
@@ -1204,6 +1214,7 @@
 <script src="/js/appliances3d.js" data-categories="essential"></script>
 <script src="/js/designcheck.js" data-categories="essential"></script>
 <script src="/js/hardware.js" data-categories="essential"></script>
+<script src="/js/furniture.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

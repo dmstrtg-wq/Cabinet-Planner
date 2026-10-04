@@ -35,6 +35,11 @@
       const x=RX+_ra.x*scale, y=RY+_ra.y*scale, w=_ra.w*scale, h=_ra.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }
+    // Tables, chairs, stools (7.5) sit on top — they win the click
+    for (const f of [...(r.furniture||[])].reverse()) {
+      const fx=RX+f.x*scale, fy=RY+f.y*scale, fw=f.width*scale, fh=f.depth*scale;
+      if (mx>=fx&&mx<=fx+fw&&my>=fy&&my<=fy+fh) return {cab:f,wall:'furniture',x:fx,y:fy,w:fw,h:fh,isIsland:true,isFurniture:true};
+    }
     for (const isl of (r.islands||[])) {
       const ix=RX+isl.x*scale, iy=RY+isl.y*scale, iw=isl.width*scale, ih=isl.depth*scale;
       if (mx>=ix&&mx<=ix+iw&&my>=iy&&my<=iy+ih) return {cab:isl,wall:'island',x:ix,y:iy,w:iw,h:ih,isIsland:true};
@@ -78,7 +83,8 @@
     const hit  = hitTestCab((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, info);
     if (!hit) return;
     e.preventDefault();
-    if (hit.isIsland) openEditIslandModal(hit.cab);
+    if (hit.isFurniture) openItemPopover(hit.cab, e.clientX, e.clientY);
+    else if (hit.isIsland) openEditIslandModal(hit.cab);
     else openItemPopover(hit.cab, e.clientX, e.clientY);
   });
 
@@ -133,6 +139,13 @@
     const hx = mx/z, hy = my/z;
     if (drag) {
       if (drag.isIsland) {
+        const fur = (info.r.furniture||[]).find(f=>f.id===drag.cabId);
+        if (fur) {                                         // 7.5: furniture moves freely, no clearance readout
+          fur.x = Math.round(drag.startX + (mx-drag.startMX)/drag.scale); fur.y = Math.round(drag.startY + (my-drag.startMY)/drag.scale);
+          clampFurniture(info.r, fur);
+          tooltip.style.display='block'; tooltip.style.background='#1e293b'; tooltip.textContent=`${FURNITURE[fur.type].label} · ${fur.x}", ${fur.y}" from NW`;
+          persist(); renderCanvas();
+        }
         const isl = (info.r.islands||[]).find(i=>i.id===drag.cabId);
         if (isl) {
           const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);
@@ -213,7 +226,8 @@
       const now = Date.now();
       if (now - fpLastTapTime < 350 && fpLastTapId === hit.cab.id) {
         fpLastTapTime = 0; fpLastTapId = null;
-        if (hit.isIsland) openEditIslandModal(hit.cab);
+        if (hit.isFurniture) openItemPopover(hit.cab, t.clientX, t.clientY);
+        else if (hit.isIsland) openEditIslandModal(hit.cab);
         else openItemPopover(hit.cab, t.clientX, t.clientY);
         e.preventDefault();
         return;
@@ -241,6 +255,11 @@
       const info = getCanvasInfo(); if (!info) return;
       const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
       if (drag.isIsland) {
+        const fur = (info.r.furniture||[]).find(f => f.id === drag.cabId);
+        if (fur) {
+          fur.x = Math.round(drag.startX + (t.clientX-rect.left - drag.startMX) / drag.scale); fur.y = Math.round(drag.startY + (t.clientY-rect.top - drag.startMY) / drag.scale);
+          clampFurniture(info.r, fur); persist(); renderCanvas();
+        }
         const isl = (info.r.islands||[]).find(i => i.id === drag.cabId);
         if (isl) {
           const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);

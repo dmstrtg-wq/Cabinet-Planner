@@ -128,7 +128,7 @@ function nudgeSelected(key, shift, alt) {
   const r = activeRoom(), it = getSelectedItem(); if (!r || !it) return false;
   const step = alt ? 3 : shift ? 0.125 : 1;
   const v = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[key];
-  if (r.islands && r.islands.includes(it)) {            // islands move freely inside the room
+  if ((r.islands && r.islands.includes(it)) || isFurniture(it)) {   // islands and furniture move freely inside the room
     if (state.viewMode !== 'floor') return false;
     const { w, h } = roomSize(r);
     it.x = Math.max(0, Math.min(w - it.width, it.x + v[0] * step));
@@ -185,12 +185,19 @@ const PALETTE_CATEGORIES = [
   { id: 'bath',   label: 'Bath',              types: ['vanity', 'linenTall', 'toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce', 'floatingShelf'] },
   { id: 'living', label: 'Living',            types: ['mediaBase', 'openTall', 'wall', 'tv', 'floatingShelf'] },
   { id: 'hall',   label: 'Hall / Mudroom',    types: ['locker', 'bench', 'linenTall', 'tall', 'wall', 'floatingShelf'] },
+  { id: 'extras', label: 'Extras',            types: [...Object.keys(FURNITURE), 'coffeeMaker', 'standMixer', 'toaster', 'counterMicrowave'] },
 ];
 let paletteCategory = 'all';
 
 function paletteEntries() {
   const out = [];
   PALETTE_CATEGORIES.forEach(cat => cat.types.forEach(type => {
+    if (FURNITURE[type]) {                              // 7.5: free-standing pieces, one tile per size
+      const fd = FURNITURE[type];
+      fd.sizes.forEach(([w, d]) => out.push({ cat: cat.id, type, width: w, depth: d, isFurniture: true, color: fd.color,
+        code: fd.abbr + (fd.sizes.length > 1 ? w : ''), label: `${fd.label}${fd.sizes.length > 1 ? ` ${w}×${d}` : ''}` }));
+      return;
+    }
     const isCab = !!CATALOG[type], def = isCab ? CATALOG[type] : APPLIANCES[type];
     def.widths.forEach(w => out.push({
       cat: cat.id, type, width: w, isCab, color: def.color,
@@ -252,7 +259,19 @@ function commitPaletteItem(item) {
 // Click a tile: add it to the end of the active wall's run (or say why it won't fit)
 function paletteQuickAdd(entry) {
   const r = activeRoom(); if (!r) return;
+  if (entry.isFurniture) { furnitureQuickAdd(entry); return; }
   const item = makePaletteItem(entry, state.activeWall, 0);
+  // Countertop appliances (7.5): the first open stretch of countertop on this wall, then any wall
+  if (APPLIANCES[item.type] && APPLIANCES[item.type].decor) {
+    const walls = [state.activeWall, ...roomWalls(r).filter(w => w !== state.activeWall)];
+    for (const w of walls) for (const run of counterRuns(r).filter(x => x.wall === w)) {
+      for (let t = run.cabA + 2; t + item.width <= run.cabB - 2; t += 2) {
+        const cand = { ...item, wall: w, offset: t };
+        if (!placementIssue(r, cand)) { if (w !== state.activeWall) selectWall(w); commitPaletteItem(cand); return; }
+      }
+    }
+    paletteToast(`No open countertop for ${entry.code} — add base cabinets first, or drag it onto a counter.`, true); return;
+  }
   const inHost = freeHostOffset(r, state.activeWall, item.type, item.width);
   item.offset = inHost != null ? inHost : nextFreeOffset(r, state.activeWall, itemLevel(item));
   if (placementIssue(r, item)) {
@@ -275,6 +294,7 @@ function floorPlacement(entry, clientX, clientY) {
   const r = activeRoom(), g = vpGeom.floor; if (!r || !g) return null;
   const c = document.getElementById('floor-plan').getBoundingClientRect(), z = vpState.floor.zoom;
   const px = ((clientX - c.left) / z - g.originX) / g.scale, py = ((clientY - c.top) / z - g.originY) / g.scale;
+  if (entry.isFurniture) return furnitureAt(entry, px, py);          // 7.5: anywhere in the room
   const walls = ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])];
   let best = null;
   walls.forEach(w => {
@@ -299,6 +319,7 @@ function fitFillerToGap(r, item, t) {
 }
 function elevPlacement(entry, clientX, clientY) {
   const r = activeRoom(), g = vpGeom.elev; if (!r || !g) return null;
+  if (entry.isFurniture) return { item: { type: entry.type, width: entry.width }, issue: 'Place tables and chairs in the Floor Plan' };
   const wall = state.elevWall, len = wallLength(r, wall);
   const c = document.getElementById('elevation-plan').getBoundingClientRect(), z = vpState.elev.zoom;
   let x = ((clientX - c.left) / z - g.originX) / g.scale;
@@ -351,7 +372,7 @@ function _paletteMove(e) {
     if (!_pDrag) return;
     placementGhost = placementAt(_pDrag.entry, pos.x, pos.y);
     _pDrag.chip.classList.toggle('bad', !!(placementGhost && placementGhost.issue));
-    _pDrag.chip.textContent = _pDrag.entry.code + (placementGhost ? (placementGhost.issue ? ' — ' + placementGhost.issue : ' @ ' + placementGhost.item.offset + '"') : '');
+    _pDrag.chip.textContent = _pDrag.entry.code + (placementGhost ? (placementGhost.issue ? ' — ' + placementGhost.issue : isFurniture(placementGhost.item) ? '' : ' @ ' + placementGhost.item.offset + '"') : '');
     redrawForGhost();
   });
 }
@@ -363,7 +384,7 @@ function _paletteUp(e) {
   if (!d.dragging) { paletteQuickAdd(d.entry); return; }   // a click, not a drag
   const g = placementAt(d.entry, e.clientX, e.clientY);
   placementGhost = null;
-  if (g && !g.issue) commitPaletteItem(g.item);
+  if (g && !g.issue) (isFurniture(g.item) ? commitFurniture(g.item) : commitPaletteItem(g.item));
   else { redrawForGhost(); if (g) paletteToast(`Can't place ${d.entry.code} there: ${lcFirst(g.issue)}.`, true); }
 }
 function cancelPaletteDrag() {
@@ -384,7 +405,9 @@ function drawGhostBox(ctx, x, y, w, h, bad, label) {
   ctx.restore();
 }
 function drawFloorGhost(ctx, r, scale, RX, RY) {
-  const g = placementGhost; if (!g || !g.item.wall) return;
+  const g = placementGhost; if (!g) return;
+  if (isFurniture(g.item)) { const f = g.item; drawGhostBox(ctx, RX + f.x * scale, RY + f.y * scale, f.width * scale, f.depth * scale, false, FURNITURE[f.type].abbr); return; }
+  if (!g.item.wall) return;
   const rc = itemRect(r, g.item); if (!rc) return;
   drawGhostBox(ctx, RX + rc.x * scale, RY + rc.y * scale, rc.w * scale, rc.h * scale, !!g.issue, itemLabel(g.item));
 }

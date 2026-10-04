@@ -379,6 +379,9 @@ function renderIsometric() {
     addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
 
+  // ── Tables, chairs, stools (7.5) ──
+  if (layers.appliances) root.add(buildFurniture3D(r));
+
   // ── Countertops, end panels, crown / light rail (counters.js) ──
   root.add(buildCountersAndTrim3D(r, _p3d));
 
