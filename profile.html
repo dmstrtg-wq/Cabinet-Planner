@@ -599,6 +599,12 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 <textarea id="cp-terms" rows="6" placeholder="Paste your standard terms and conditions here. These will appear at the bottom of every quote PDF you generate. Leave blank to omit the T&C section." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);resize:vertical;line-height:1.6;"></textarea>
                 <div style="font-size:11px;color:var(--muted);margin-top:5px;">Tip: include payment terms, final sale policy, warranty info, and any other conditions your customers need to sign off on.</div>
               </div>
+              <div style="margin-top:14px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                  <input type="checkbox" id="cp-slides-included" checked> Drawer slides come with our cabinets
+                </label>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Untick this if slides are an add-on: quotes will then count one pair of slides per drawer under Hardware &amp; Accessories (you type the price on each quote).</div>
+              </div>
             </div>
 
             <div style="margin-top:8px;">
@@ -1809,6 +1815,7 @@ function applyCompanyData(company) {
   document.getElementById('cp-email').value   = company?.email       || '';
   document.getElementById('cp-website').value = company?.website     || '';
   document.getElementById('cp-terms').value   = company?.terms_and_conditions || '';
+  document.getElementById('cp-slides-included').checked = (company?.quote_settings || {}).slidesIncluded !== false;
   if (pendingLogoDataUrl === null) updateLogoPreview(company?.logo_url || '');
 
   document.getElementById('overview-company-line').textContent = company?.company_name
@@ -1871,11 +1878,18 @@ async function saveCompanySettings() {
     website:               document.getElementById('cp-website').value.trim(),
     terms_and_conditions:  document.getElementById('cp-terms').value.trim() || null,
     custom_styles:         (() => { const s = _pfStyles.filter(s => s.name.trim()); return s.length ? s : null; })(),
+    // Quote settings (7.2) — needs the quote_settings column (supabase-quote-settings.sql)
+    quote_settings:        { ...((companyProfile && companyProfile.quote_settings) || {}), slidesIncluded: document.getElementById('cp-slides-included').checked },
     updated_at:            new Date().toISOString(),
   };
   if (pendingLogoDataUrl !== null) profile.logo_url = pendingLogoDataUrl || null;
 
-  const { data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single();
+  let { data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single();
+  // Before the quote_settings column exists, save everything else rather than failing
+  if (error && /quote_settings/.test(error.message || '')) {
+    delete profile.quote_settings;
+    ({ data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single());
+  }
   if (error) {
     statusEl.style.color = '#b91c1c';
     statusEl.textContent = 'Error: ' + error.message;

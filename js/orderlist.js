@@ -49,8 +49,9 @@ function buildOrderList(p) {
       const hinge = needsHinge(cab) ? (HINGE_LABEL[cab.hinge] || 'SPECIFY') : '';
       const desc = filler
         ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}` + (cab._casingFor ? ' (bump-out casing)' : '')
-        : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '') + (cab.wallOffset ? `, set out ${fmtFrac(cab.wallOffset)} from wall` : '');
-      const key = [orderSku(cab), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : ''].join('|');
+        : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '') + (cab.trash ? `, trash pull-out (${cab.trash === 'double' ? 'trash + recycle' : 'single'})` : '')
+          + (cab.wallOffset ? `, set out ${fmtFrac(cab.wallOffset)} from wall` : '');
+      const key = [orderSku(cab), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : '', cab.trash || '', cab.wallOffset || ''].join('|');
       if (!groups.has(key)) groups.set(key, {
         qty: 0, sku: orderSku(cab), desc,
         w: filler ? fp.stock : cab.width, h: cab.height, d: cab.depth || CATALOG[cab.type].depth,
@@ -62,7 +63,14 @@ function buildOrderList(p) {
       if (cab.note) g.notes.push(cab.note);
     });
     return { room: r.name, rows: [...groups.values()] };
-  }).filter(x => x.rows.length);
+  }).filter(x => x.rows.length).concat(hardwareOrderGroup(p));
+}
+// Hardware & accessories (7.2) as their own section, with the quantities on the quote
+function hardwareOrderGroup(p) {
+  const lines = typeof hardwareQuoteLines === 'function' ? hardwareQuoteLines(p) : [];
+  if (!lines.length) return [];
+  return [{ room: 'Hardware & accessories', rows: lines.map(l => ({ qty: l.qty, sku: 'HW', desc: l.label, w: '', h: '', d: '',
+    styleName: '', styleCode: '', hinge: '', items: [], notes: [] })) }];
 }
 
 // ════════════════════════════
@@ -83,7 +91,8 @@ function downloadOrderCSV() {
   if (!list.length) { alert('There are no cabinets on this project yet.'); return; }
   const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const rows = [['Room', 'Qty', 'SKU', 'Description', 'Width (in)', 'Height (in)', 'Depth (in)', 'Door Style / Finish', 'Finish Code', 'Hinge', 'Item #s', 'Notes']];
-  list.forEach(g => g.rows.forEach(r => rows.push([g.room, r.qty, r.sku, r.desc, _num(r.w), _num(r.h), _num(r.d), r.styleName, r.styleCode, r.hinge, r.items.join(' '), r.notes.join('; ')])));
+  list.forEach(g => g.rows.forEach(r => rows.push([g.room, r.qty, r.sku, r.desc, ...[r.w, r.h, r.d].map(v => v === '' ? '' : _num(v)),   // (hardware rows have no size)
+      r.styleName, r.styleCode, r.hinge, r.items.join(' '), r.notes.join('; ')])));
   const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');   // BOM so Excel reads the inch marks right
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a'); a.href = url; a.download = _orderFileName(p, 'csv');
@@ -104,7 +113,7 @@ function printOrderList() {
     <h2>${escHtml(g.room)}</h2>
     <table><thead><tr><th>Qty</th><th>SKU</th><th>Description</th><th>W × H × D</th><th>Door style / finish</th><th>Hinge</th><th>Item #</th><th>Notes</th></tr></thead><tbody>
     ${g.rows.map(r => `<tr><td class="c">${r.qty}</td><td class="sku">${escHtml(r.sku)}</td><td>${escHtml(r.desc)}</td>
-      <td>${fmtFrac(r.w)} × ${fmtFrac(r.h)} × ${fmtFrac(r.d)}</td><td>${escHtml(r.styleName)}${r.styleCode ? ` <span class="code">(${escHtml(r.styleCode)})</span>` : ''}</td>
+      <td>${r.w === '' ? '—' : `${fmtFrac(r.w)} × ${fmtFrac(r.h)} × ${fmtFrac(r.d)}`}</td><td>${escHtml(r.styleName)}${r.styleCode ? ` <span class="code">(${escHtml(r.styleCode)})</span>` : ''}</td>
       <td class="${r.hinge === 'SPECIFY' ? 'warn' : ''}">${escHtml(r.hinge || '—')}</td><td>${r.items.join(', ')}</td><td>${escHtml(r.notes.join('; '))}</td></tr>`).join('')}
     </tbody></table>`).join('');
   const win = window.open('', '_blank', 'width=1000,height=750');

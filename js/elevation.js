@@ -167,7 +167,7 @@ function renderElevation() {
   // door-style panels, glass, pulls/knobs where they really go, and a hinge mark on each
   // door (dashed lines meeting at the HINGE side). Corner cabinets that span two walls
   // are drawn by drawElevCorner below; fillers above.
-  const hwKnobs = (p.hardware || 'pulls') === 'knobs';
+  const hwStyle = projectHardware(p), doorKnobs = hwStyle !== 'pulls', drawerKnobs = hwStyle === 'allKnobs';
   const LINE = PDF ? '#1a1a1a' : '#64748B', FRONT_LINE = PDF ? '#333333' : '#475569', HW = PDF ? '#555555' : '#94A3B8';
   const isFrontCab = c => CATALOG[c.type] && !isFiller(c.type) && !cornerInfo(r, c);
   // bases first, then talls, then uppers (uppers sit in front of nothing, but tall tops overlap the upper band)
@@ -198,14 +198,18 @@ function renderElevation() {
       // Hardware where the 3D puts it (addHardware in fronts3d.js)
       ctx.fillStyle = HW; ctx.strokeStyle = HW;
       if (f.kind === 'drawer') {
-        const len = ((f.x1 - f.x0) >= 24 ? 8 : 5) * scale;
-        if (hwKnobs) { ctx.beginPath(); ctx.arc(fx + fw/2, fy + fh/2, 0.65*scale, 0, Math.PI*2); ctx.fill(); }
-        else { ctx.beginPath(); ctx.roundRect(fx + fw/2 - len/2, fy + fh/2 - 0.3*scale, len, 0.6*scale, 0.3*scale); ctx.fill(); }
+        const len = ((f.x1 - f.x0) >= 24 ? 8 : 5) * scale, hy = f.trash ? sy(f.y1 - 3) : fy + fh/2;   // trash pull-out: handle near the top
+        if (drawerKnobs) { ctx.beginPath(); ctx.arc(fx + fw/2, hy, 0.65*scale, 0, Math.PI*2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.roundRect(fx + fw/2 - len/2, hy - 0.3*scale, len, 0.6*scale, 0.3*scale); ctx.fill(); }
+        if (f.trash) {                                  // mark it as a trash pull-out
+          ctx.font = `600 ${Math.max(7, Math.min(scale*1.3, 8))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText(f.trash === 'double' ? 'trash + recycle' : 'trash', fx + fw/2, fy + fh - 3);
+        }
       } else if (f.kind === 'door') {
         const hUp = upper || f.upper || (cab.type === 'tall' && f.y0 > 40);
         const hx = f.hinge === 'R' ? sx(f.x0 + 1.75) : sx(f.x1 - 1.75);
         const hyIn = hUp ? f.y0 + 3 : f.y1 - 3.5, len = Math.min(4, H * 0.4);
-        if (hwKnobs) { ctx.beginPath(); ctx.arc(hx, sy(hyIn), 0.65*scale, 0, Math.PI*2); ctx.fill(); }
+        if (doorKnobs) { ctx.beginPath(); ctx.arc(hx, sy(hyIn), 0.65*scale, 0, Math.PI*2); ctx.fill(); }
         else { const yA = sy(hUp ? hyIn + len : hyIn); ctx.beginPath(); ctx.roundRect(hx - 0.3*scale, yA, 0.6*scale, len*scale, 0.3*scale); ctx.fill(); }
         // Hinge mark: dashed lines from the handle-side corners to the middle of the hinge side
         // (a pair of doors has fixed hinges; a single door needs the cabinet's hinge side)

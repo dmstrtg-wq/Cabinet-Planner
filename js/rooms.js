@@ -1127,15 +1127,16 @@ function selectStyle(code) {
   renderCanvas(); if (state.viewMode === 'elevation') renderElevation();
   if (state.viewMode === '3d') renderIsometric();
 }
-// Project hardware: bar pulls everywhere, or knobs on doors (drawers always get pulls)
+// Project hardware: bar pulls everywhere, knobs on doors (pulls on drawers), or knobs on
+// everything. Drives the 3D/elevation look and the hardware counts on the quote (7.2).
 function setHardware(v) {
   const p = activeProj(); if (!p) return;
-  p.hardware = v === 'knobs' ? 'knobs' : 'pulls';
+  p.hardware = ['knobs', 'allKnobs'].includes(v) ? v : 'pulls';
   persist(); syncHardwareButtons();
-  if (state.viewMode === '3d') renderIsometric();
+  renderAll(); if (state.viewMode === '3d') renderIsometric();
 }
 function syncHardwareButtons() {
-  const hw = activeProj()?.hardware === 'knobs' ? 'knobs' : 'pulls';
+  const hw = projectHardware(activeProj());
   document.querySelectorAll('.hw-row [data-hw]').forEach(b => b.classList.toggle('active', b.dataset.hw === hw));
 }
 function syncStylePanel() {

@@ -123,6 +123,8 @@ function openItemPopover(item, clientX, clientY) {
       html += row('Height', `<select data-f="height" ${selStyle}>${CATALOG[item.type].heights.map(h => opt(h, h + '"', h === item.height)).join('')}</select>`);
     if (needsHinge(item))
       html += row('Hinge side', `<select data-f="hinge" ${selStyle}>${opt('', 'Specify…', !item.hinge)}${opt('L', 'Left', item.hinge === 'L')}${opt('R', 'Right', item.hinge === 'R')}</select>`);
+    if (item.type === 'base')
+      html += row('Trash pull-out', `<select data-f="trash" ${selStyle}>${opt('', 'None', !item.trash)}${opt('single', 'Single trash', item.trash === 'single')}${opt('double', 'Trash + recycle', item.trash === 'double')}</select>`);
     if (canBumpOut(item))
       html += row('Wall offset', inch('wallOffset', item.wallOffset || 0).replace('value=', 'title="How far it stands out from the wall (the gap is cased in with filler)" value='));
     html += row('Door style', `<select data-f="styleOverride" ${selStyle}>${opt('', 'Project default', !item.styleOverride)}${getStyles().map(s => opt(s.code, s.name, s.code === item.styleOverride)).join('')}</select>`);
@@ -183,6 +185,7 @@ function applyItemEdit(item, field, value) {
   else if (field === 'styleOverride') item.styleOverride = value || null;
   else if (field === 'hinge') item.hinge = value || null;
   else if (field === 'variant') item.variant = value || null;
+  else if (field === 'trash') item.trash = ['single', 'double'].includes(value) ? value : null;   // 7.2
   else if (field === 'wallOffset') item.wallOffset = Math.max(0, Math.min(36, parseInches(value) || 0)) || null;   // 7.1 bump-out
   else if (field === 'finish') item.finish = value || null;
   else if (field === 'height' && APPLIANCES[item.type]) {

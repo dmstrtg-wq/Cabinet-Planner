@@ -267,3 +267,15 @@ Claude tested locally: sample passes (0 problems/warnings); a deliberately bad l
 Claude tested locally: fridge case-in (panel + W3615 out 12"), casing counted only on the open side, order list "2× FL6 … (bump-out casing)", 3D casing, Design Check clean, no console errors.
 - [ ] On a real job: double-click the upper over the fridge → Wall offset 12 → check plan, 3D, elevation note, and the quote line.
 - [ ] Double-click the fridge → Case in this fridge.
+- 7.1 live check (2026-10-04, "ZZ Claude Test"): W36 over the fridge, Case in this fridge → panel on one side (other side is the oven cabinet's corner, reported as no room), W36 out 12"; printed quote shows "Wall (out 12" from wall)", the panel, and "Filler — bump-out casing … for W36". No quote history created.
+
+### 7.2 Hardware & accessories on the quote (built 2026-10-04)
+**First: run `supabase-quote-settings.sql` in the Supabase SQL editor** (adds the quote_settings column for the slides setting). Until then Profile still saves everything else; the slides box just won't stick.
+- **Quote window → Hardware & Accessories:** counted from the plan. Pulls/knobs per door and drawer (from the same front layout as 3D/elevations; corner units = 1; false fronts and panels = 0), trash pull-out kits, and drawer slides (only if Profile says slides don't come with your cabinets). Counted quantity shows in grey; type to change it. Type the **each** price, untick a line to leave it off. **＋ Add Accessory** for roll-out trays, spice pull-outs, LED, soft-close upgrades, etc. (preset list, or type your own).
+- **Door Style panel → hardware:** Bar pulls / Knobs on doors (pulls on drawers) / **All knobs**. Drives the 3D, elevations and the counts.
+- **Trash pull-out:** double-click a Base cabinet → Trash pull-out: Single / Trash + recycle. It becomes a top drawer over one tall pull-out (3D, elevation note "trash + recycle"), and its kit is counted. Its slides aren't counted separately.
+- Printed quote and PDF get a "Hardware & Accessories" section and total line; the order list gets a "Hardware & accessories" section; Gold revisions notice hardware changes.
+- **Pricing fix found along the way:** the PDF export and the Quote window's summary left **appliance prices** out of the total, while the printed quote included them. All three now use one shared total, and the PDF lists appliance prices.
+Claude tested locally: counts on a known layout (9 doors / 7 drawers; 16 pulls, 7+9 split, or 16 knobs; 6 slide pairs with slides off, since the trash front's slides come with its kit), totals with an $899 dishwasher, order list section, elevation look, Quote window rows. No console errors. (Printing is blocked in demo, so the printed quote/PDF get checked live after the push.)
+- [ ] Profile → untick "Drawer slides come with our cabinets" → Quote window shows a slides line.
+- [ ] Set a base to Trash + recycle → see it in 3D/elevation and as a kit line on the quote.

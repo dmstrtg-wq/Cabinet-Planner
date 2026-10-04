@@ -60,6 +60,11 @@ function frontLayout(cab, r) {
   switch (cab.type) {
     case 'base': case 'vanity': case 'sink': {
       const y0 = TOE_KICK_H, dTop = top - TOP_DRAWER_H;
+      if (cab.type === 'base' && cab.trash) {             // trash pull-out (7.2): top drawer over one tall pull-out front
+        out.push({ x0: L + g / 2, x1: R - g / 2, y0: dTop + g / 2, y1: top - g / 2, kind: 'drawer' });
+        out.push({ x0: L + g / 2, x1: R - g / 2, y0: y0 + g / 2, y1: dTop - g / 2, kind: 'drawer', trash: cab.trash });
+        break;
+      }
       out.push({ x0: L + g / 2, x1: R - g / 2, y0: dTop + g / 2, y1: top - g / 2, kind: cab.type === 'base' ? 'drawer' : 'false' });
       doorsAcross(L, R, y0 + g / 2, dTop - g / 2, false);
       break;
@@ -147,7 +152,7 @@ function makeFrontKit(hardware) {
   const metal = new THREE.MeshStandardMaterial({ color: 0xc6cad0, roughness: 0.38, metalness: 0.3 });
   const cyl = (rad, len) => { const k = `c${rad}|${len}`; if (!geos.has(k)) geos.set(k, new THREE.CylinderGeometry(rad, rad, len, 12)); return geos.get(k); };
   const sphere = rad => { const k = `s${rad}`; if (!geos.has(k)) geos.set(k, new THREE.SphereGeometry(rad, 14, 10)); return geos.get(k); };
-  return { box, paint, glass, metal, cyl, sphere, hardware: hardware === 'knobs' ? 'knobs' : 'pulls' };
+  return { box, paint, glass, metal, cyl, sphere, hardware: ['knobs', 'allKnobs'].includes(hardware) ? hardware : 'pulls' };
 }
 
 let _grainTex = null;
@@ -215,12 +220,17 @@ function addHardware(group, kit, f, cabIsUpper) {
       group.add(post);
     });
   };
-  if (f.kind === 'drawer') { bar((f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, W >= 24 ? 8 : 5, false); return; }
+  if (f.kind === 'drawer') {
+    const cy = f.trash ? f.y1 - 3 : (f.y0 + f.y1) / 2;      // a trash pull-out's handle sits near its top
+    if (kit.hardware === 'allKnobs') { const k = new THREE.Mesh(kit.sphere(0.65), kit.metal); k.position.set((f.x0 + f.x1) / 2, cy, T + 0.8); group.add(k); }
+    else bar((f.x0 + f.x1) / 2, cy, W >= 24 ? 8 : 5, false);
+    return;
+  }
   // Doors: handle on the side away from the hinge, near the top (bases/talls' lower doors)
   // or near the bottom (uppers)
   const hx = f.hinge === 'R' ? f.x0 + 1.75 : f.x1 - 1.75;
   const hy = cabIsUpper ? f.y0 + 3 : f.y1 - 3.5;
-  if (kit.hardware === 'knobs') {
+  if (kit.hardware === 'knobs' || kit.hardware === 'allKnobs') {
     const k = new THREE.Mesh(kit.sphere(0.65), kit.metal);
     k.position.set(hx, hy, T + 0.8); group.add(k);
   } else {

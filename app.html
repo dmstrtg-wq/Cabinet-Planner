@@ -395,6 +395,7 @@
             <span>Hardware</span>
             <button type="button" data-hw="pulls" onclick="setHardware('pulls')">Bar pulls</button>
             <button type="button" data-hw="knobs" onclick="setHardware('knobs')">Knobs on doors</button>
+            <button type="button" data-hw="allKnobs" onclick="setHardware('allKnobs')">All knobs</button>
           </div>
         </div>
         <div class="cp-section" id="countertop-section" style="flex-shrink:0">
@@ -974,6 +975,13 @@
       <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addTrimRow()">＋ Add Trim / Molding</button>
     </div>
 
+    <!-- Hardware & accessories, counted from the plan (7.2) -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Hardware &amp; Accessories</div>
+      <div id="hardware-rows"></div>
+      <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;margin-top:4px;" onclick="addHardwareExtra()">＋ Add Accessory</button>
+    </div>
+
     <!-- 3D views printed on the quote (3.6) -->
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">3D Views on This Quote</div>
     <div id="quote-snapshots" style="margin-bottom:16px;"></div>
@@ -1173,6 +1181,7 @@
 <script src="/js/corners.js" data-categories="essential"></script>
 <script src="/js/appliances3d.js" data-categories="essential"></script>
 <script src="/js/designcheck.js" data-categories="essential"></script>
+<script src="/js/hardware.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

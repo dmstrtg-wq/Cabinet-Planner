@@ -78,6 +78,7 @@ function openQuoteModal() {
   document.getElementById('quote-company-input').value = p.company || '';
   renderJobCostRows();
   renderTrimRows();
+  renderHardwareRows();
   refreshQuoteTotals();
   refreshQuoteLockBanner();
   renderQuoteSnapshotList();
@@ -161,20 +162,16 @@ function removeTrimRow(i) {
 function refreshQuoteTotals() {
   const p = activeProj(); if (!p) return;
   const tax = getTax();
-  let cabSubtotal = 0, unpricedCount = 0;
-  p.rooms.forEach(r => quoteCabinets(r).forEach(c => {
-    const pr = cabinetPrice(c);
-    if (pr != null) cabSubtotal += pr; else unpricedCount++;
-  }));
-  const jcTotal    = (p.jobCosts||[]).reduce((s,jc) => s + (parseFloat(jc.amount)||0), 0);
-  const trimTotal  = (p.trimItems||[]).reduce((s,t) => s + (parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
-  const beforeTax  = cabSubtotal + jcTotal + trimTotal;
-  const taxAmt    = beforeTax * tax;
-  const total     = beforeTax + taxAmt;
+  // (quoteTotals — hardware.js — is shared with the printed quote and PDF. This preview
+  // used to leave out appliance prices, so it could disagree with the printed total.)
+  const T = quoteTotals(p);
+  const cabSubtotal = T.cab, unpricedCount = T.unpriced, jcTotal = T.jc, trimTotal = T.trim, taxAmt = T.tax, total = T.total;
   const cabCount  = p.rooms.reduce((n,r) => n + quoteCabinets(r).length, 0);
   const el = document.getElementById('quote-totals-preview'); if (!el) return;
   el.innerHTML = `
     <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
+    ${T.app>0?`<div class="qtp-row"><span>Appliances</span><span>${fmtMoney(T.app)}</span></div>`:''}
+    ${T.hw>0?`<div class="qtp-row"><span>Hardware &amp; Accessories</span><span>${fmtMoney(T.hw)}</span></div>`:''}
     ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
     ${trimTotal>0?`<div class="qtp-row"><span>Trim &amp; Materials</span><span>${fmtMoney(trimTotal)}</span></div>`:''}
     ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
@@ -201,6 +198,9 @@ function quoteSignature(p, total) {
     (r.appliances || []).map(a => [a.type, a.width, a.price ?? null, a.note || '']),
   ]);
   const parts = [p.style, items, p.jobCosts || [], p.trimItems || [], Math.round(total * 100)];
+  // Hardware lines (7.2) — only when there are any, so older fingerprints don't change
+  const hwSig = typeof hardwareSignature === 'function' ? hardwareSignature(p) : [];
+  if (hwSig.length) parts.push(['hw', hwSig]);
   // The 3D views are part of what the customer sees, so changing them is a new version.
   // (Only added when there are any, so fingerprints of quotes saved before 3.6 don't change.)
   const snaps = typeof currentSnapshotPaths === 'function' ? currentSnapshotPaths(p) : [];
@@ -243,6 +243,7 @@ function printQuote() {
       if (price != null) cabSubtotal += price;
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
       const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '')
+        + (c.trash ? ` + trash pull-out (${c.trash === 'double' ? 'trash + recycle' : 'single'})` : '')
         + (c.wallOffset ? ` (out ${fmtFrac(c.wallOffset)} from wall)` : '') + (c._casingFor ? ' — bump-out casing' : '');
       const priceCell = price != null ? fmtMoney(price) : '<span style="color:#64748b;font-style:italic;">N/A</span>';
       // # = the item number tagged on the floor plan and elevations (3.5)
@@ -267,7 +268,8 @@ function printQuote() {
   const trimItems = (p.trimItems||[]).filter(t => t.label || t.unitPrice);
   const trimTotal = trimItems.reduce((s,t) => s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
   const trimRows  = trimItems.map(t => `<tr><td colspan="2">${escHtml(t.label||'Trim Item')}</td><td>Qty: ${t.qty||1}</td><td>${fmtMoney(parseFloat(t.unitPrice)||0)} ea</td><td class="amt">${fmtMoney((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0))}</td></tr>`).join('');
-  const beforeTax = cabSubtotal + appSubtotal + jcTotal + trimTotal;
+  const hwTotal   = hardwareTotal(p);                       // 7.2 hardware & accessories
+  const beforeTax = cabSubtotal + appSubtotal + jcTotal + trimTotal + hwTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
   const styleName = getStyles().find(s=>s.code===p.style)?.name || p.style;
@@ -298,7 +300,7 @@ function printQuote() {
       revision, quoteNum,
       date: new Date().toISOString(),
       total, sig, snapshots: currentSnapshotPaths(p),
-      breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt }
+      breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, hwTotal, taxAmt }
     });
     if (!p.activityLog) p.activityLog = [];
     p.activityLog.unshift({
@@ -394,11 +396,13 @@ ${snapBlock}
 <table><thead><tr><th class="num">#</th><th>Cabinet</th><th>Dimensions</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead>
 <tbody>${cabRows||'<tr><td colspan="6" style="text-align:center;color:#6b7280;">No cabinets added.</td></tr>'}</tbody></table>
 ${appRows?`<div class="sec">Appliances</div><table><thead><tr><th class="num">#</th><th>Appliance</th><th>Width</th><th>Wall</th><th>Notes</th><th style="text-align:right">Price</th></tr></thead><tbody>${appRows}</tbody></table>`:''}
+${hardwareQuoteHTML(p)}
 ${jcRows?`<div class="sec">Additional Job Costs</div><table><thead><tr><th colspan="4">Description</th><th style="text-align:right">Amount</th></tr></thead><tbody>${jcRows}</tbody></table>`:''}
 ${trimRows?`<div class="sec">Trim &amp; Materials</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Unit Price</th><th style="text-align:right">Total</th></tr></thead><tbody>${trimRows}</tbody></table>`:''}
 <div class="totals" style="margin-top:16px;">
   <div class="tr"><span class="tl">Cabinet Subtotal</span><span class="ta">${fmtMoney(cabSubtotal)}</span></div>
   ${appSubtotal>0?`<div class="tr"><span class="tl">Appliances</span><span class="ta">${fmtMoney(appSubtotal)}</span></div>`:''}
+  ${hwTotal>0?`<div class="tr"><span class="tl">Hardware &amp; Accessories</span><span class="ta">${fmtMoney(hwTotal)}</span></div>`:''}
   ${jcTotal>0?`<div class="tr"><span class="tl">Additional Costs</span><span class="ta">${fmtMoney(jcTotal)}</span></div>`:''}
   ${trimTotal>0?`<div class="tr"><span class="tl">Trim &amp; Materials</span><span class="ta">${fmtMoney(trimTotal)}</span></div>`:''}
   ${tax>0?`<div class="tr"><span class="tl">Tax (${(tax*100).toFixed(1)}%)</span><span class="ta">${fmtMoney(taxAmt)}</span></div>`:''}
@@ -437,7 +441,7 @@ ${cp.terms_and_conditions ? `<div class="terms"><h4>Terms &amp; Conditions</h4><
       if (doLock) {
         p.quoteLocked  = true;
         p.lockedQuote  = { revision: 1, quoteNum, date: new Date().toISOString(), total, sig, snapshots: snapPaths,
-                           breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, taxAmt } };
+                           breakdown: { cabSubtotal, appSubtotal, jcTotal, trimTotal, hwTotal, taxAmt } };
         if (!p.quoteHistory) p.quoteHistory = [];
         p.quoteHistory.push(p.lockedQuote);
         if (!p.activityLog) p.activityLog = [];

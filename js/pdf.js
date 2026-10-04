@@ -396,6 +396,7 @@ async function exportPDF(btn) {
       cabRows.push([
         String(c.itemNum || ''),     // # = item number on the plans (3.5)
         (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':'')
+          +(c.trash?` + trash pull-out (${c.trash==='double'?'trash + recycle':'single'})`:'')
           +(c.wallOffset?` (out ${fmtFrac(c.wallOffset)} from wall)`:'')+(c._casingFor?` — ${c.note}`:''),
         `${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
@@ -415,18 +416,22 @@ async function exportPDF(btn) {
   qy=doc.lastAutoTable.finalY+4;
 
   // Appliances
-  const appRows=[];
+  // (Appliance prices used to be left off the PDF — and out of its total — while the
+  // printed quote included them. Now both show and count them.)
+  const appRows=[]; let appSub=0;
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac=APPLIANCES[a.type]||{};
-      appRows.push([String(a.itemNum || ''), ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—']);
+      const has = a.price!=null && a.price>0; if (has) appSub+=a.price;
+      appRows.push([String(a.itemNum || ''), ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—',
+        has ? {content:'$'+a.price.toFixed(2),styles:{halign:'right',fontStyle:'bold'}} : {content:'N/A',styles:{halign:'right',fontStyle:'italic',textColor:[148,163,184]}}]);
     });
   });
   if (appRows.length) {
     doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(100,75,42);
     doc.text('APPLIANCES', MAR, qy); qy+=3;
     doc.autoTable({ startY:qy, margin:{left:MAR,right:MAR},
-      head:[['#','Appliance','Width','Wall','Notes']],
+      head:[['#','Appliance','Width','Wall','Notes','Price']],
       columnStyles:{0:{cellWidth:8,halign:'center',textColor:[100,116,139]}},
       body:appRows,
       styles:{fontSize:7.5,cellPadding:2},
@@ -435,6 +440,10 @@ async function exportPDF(btn) {
     });
     qy=doc.lastAutoTable.finalY+4;
   }
+
+  // Hardware & accessories (7.2)
+  qy = addHardwareToPdf(doc, p, MAR, qy);
+  const hwSub = hardwareTotal(p);
 
   // Job costs
   const jcItems=(p.jobCosts||[]).filter(jc=>jc.label||jc.amount);
@@ -469,13 +478,15 @@ async function exportPDF(btn) {
   }
 
   // Totals
-  const beforeTax=cabSub+jcTotal+trimTotal;
+  const beforeTax=cabSub+appSub+hwSub+jcTotal+trimTotal;
   const taxAmt=beforeTax*tax;
   const total=beforeTax+taxAmt;
   const totX=PW-MAR-70;
   doc.setDrawColor(220,220,220); doc.setLineWidth(0.3); doc.line(totX,qy,PW-MAR,qy); qy+=5;
   [
     ['Cabinet Subtotal', cabSub],
+    ...(appSub>0?[['Appliances',appSub]]:[]),
+    ...(hwSub>0?[['Hardware & Accessories',hwSub]]:[]),
     ...(jcTotal>0?[['Additional Costs',jcTotal]]:[]),
     ...(trimTotal>0?[['Trim & Materials',trimTotal]]:[]),
     ...(tax>0?[[`Tax (${(tax*100).toFixed(1)}%)`,taxAmt]]:[]),
