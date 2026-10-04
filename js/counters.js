@@ -37,14 +37,14 @@ function coversCounter(i) {
   if (CATALOG[i.type]) return COUNTER_CAB_TYPES.includes(i.type) || isFloorFiller(i);
   return UNDER_COUNTER_APPS.includes(i.type);
 }
-const TALL_TYPES = ['tall', 'ovenTall', 'linenTall'];
+const TALL_TYPES = ['tall', 'ovenTall', 'linenTall', 'openTall', 'locker'];
 // Vanity tops get their bowls (7.4): one centred, or two for a double vanity — as sink-sized spots
 function vanityBowls(v) {
   const a = v.offset || 0, w = v.width;
   if (v.sinks === 2 && w >= 47.9) { const half = w / 2; return [{ offset: a + half / 2 - 11, width: 22 }, { offset: a + half + half / 2 - 11, width: 22 }]; }
   return [{ offset: a + w / 2 - 11, width: 22 }];
 }
-function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || TALL_TYPES.includes(cab.type) || isFloorFiller(cab); }
+function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || TALL_TYPES.includes(cab.type) || ['mediaBase', 'bench'].includes(cab.type) || isFloorFiller(cab); }
 function roomWalls(r) { return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])]; }
 
 // ════════════════════════════

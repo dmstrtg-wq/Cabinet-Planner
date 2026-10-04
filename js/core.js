@@ -513,7 +513,14 @@ const CATALOG = {
   mwDrawerBase: { label:'Microwave Drawer Base', widths:[24,30],     heights:[34.5],              depth:24, color:'#7C3AED', abbr:'MDB', basePrice: w => w*5  },
   // Bathroom (7.4)
   linenTall:    { label:'Linen Tower',           widths:[15,18,24],  heights:[84,90,96],          depth:21, color:'#0E7490', abbr:'LT',  basePrice: w => w*10 },
+  // Living room / hallway (7.4b)
+  mediaBase:    { label:'Media Base',            widths:[24,30,36,48,60,72], heights:[24,30],      depth:18, color:'#0F766E', abbr:'MB',  basePrice: w => w*5  },
+  openTall:     { label:'Open Bookcase',         widths:[18,24,30,36], heights:[84,90,96],         depth:12, color:'#65A30D', abbr:'BC',  basePrice: w => w*8  },
+  locker:       { label:'Locker / Mudroom Unit', widths:[15,18,24],  heights:[84,90,96],          depth:18, color:'#B45309', abbr:'LK',  basePrice: w => w*10 },
+  bench:        { label:'Bench Seat Base',       widths:[24,30,36,48], heights:[18],              depth:18, color:'#A16207', abbr:'BN',  basePrice: w => w*4  },
 };
+// Cabinet types priced per width × height on the price sheet (the rest per width)
+const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker'];
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
   {tier:'Gold',     code:'AP', name:'Pepper Shaker',          swatch:'#2B2926'},
@@ -655,6 +662,9 @@ const APPLIANCES = {
   mirror:          { label:'Mirror',                    widths:[24,30,36,48,60], heights:[30,36,42], height:36, depth:1, color:'#CBD5E1', abbr:'MIR', wallMount:true, elevBottom:42, elevBottomOptions:[36,38,40,42,44,46,48], fixture:true },
   medicineCabinet: { label:'Medicine Cabinet',          widths:[15,20,24,30], height:26,             depth:5,  color:'#94A3B8', abbr:'MC',  wallMount:true,  elevBottom:44, elevBottomOptions:[40,42,44,46,48], fixture:true },
   sconce:          { label:'Wall Sconce',               widths:[6],           height:12,             depth:6,  color:'#FDE68A', abbr:'SC',  wallMount:true,  elevBottom:66, elevBottomOptions:[60,62,64,66,68,70,72], fixture:true },
+  // Living room (7.4b): TV, width = the set's actual width for 50/55/65/75/85" screens
+  tv:              { label:'TV (wall-mounted)',         widths:[44,49,57,66,75], height:28,          depth:3,  color:'#111827', abbr:'TV',  wallMount:true,  elevBottom:42, elevBottomOptions:[36,40,42,44,48,52,56,60], fixture:true,
+                     heightFor: w => Math.round(w * 9 / 16 + 1), sizeLabel: w => ({ 44: '50" TV', 49: '55" TV', 57: '65" TV', 66: '75" TV', 75: '85" TV' }[w] || w + '" wide TV') },
 };
 // What kind of room a room is (7.4): stored as room.kind, or worked out from its name
 const ROOM_KINDS = { kitchen: 'Kitchen', bath: 'Bathroom', hall: 'Hallway', living: 'Living room', laundry: 'Laundry', other: 'Other' };
@@ -964,7 +974,7 @@ function cabinetPrice(cab) {
   if (ov != null) {
     if (typeof ov === 'object') {
       // Per-size, per-finish table from an uploaded price sheet.
-      const sizeKey = (cab.type === 'wall' || cab.type === 'tall' || cab.type === 'ovenTall' || cab.type === 'linenTall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
+      const sizeKey = PRICE_BY_HEIGHT.includes(cab.type) ? `${cab.width}x${cab.height}` : `${cab.width}`;
       const bySize = ov[sizeKey];
       if (bySize && typeof bySize === 'object') {
         const styleCode = cab.styleOverride || activeProj()?.style || 'AW';

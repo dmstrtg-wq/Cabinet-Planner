@@ -414,7 +414,7 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
     if (finish === 'panel') drawDoorPanel(ctx, X, Y, W, H, opts.styleCode, s, PDF);
   };
   const isHood = app.type === 'hood';
-  const FIXTURE_FACE = ['toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce'];   // drawn below, shape by shape
+  const FIXTURE_FACE = ['toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce', 'tv'];   // drawn below, shape by shape
   if (!isHood && app.type !== 'floatingShelf' && !FIXTURE_FACE.includes(app.type)) rect(body, x, y, aW, aH, LINE);   // (shelves: only the boards, wall between)
 
   if (app.type === 'refrigerator') {
@@ -519,6 +519,9 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
     rect(PDF ? '#EEF3F6' : '#C8D3DC', x + 1 * s, y + 1 * s, aW - 2 * s, aH - 2 * s, LINE);
     ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1 * k;                    // a glint
     ctx.beginPath(); ctx.moveTo(x + aW * 0.2, y + aH * 0.75); ctx.lineTo(x + aW * 0.45, y + aH * 0.25); ctx.stroke();
+  } else if (app.type === 'tv') {                     // 7.4b
+    rect(PDF ? '#FFFFFF' : '#111827', x, y, aW, aH, LINE);
+    rect(PDF ? '#EEEEEE' : '#1F2937', x + 0.6 * s, y + 0.6 * s, aW - 1.2 * s, aH - 1.2 * s);
   } else if (app.type === 'sconce') {
     rect(STEEL, x + aW / 2 - 2 * s, y + 3 * s, 4 * s, 4 * s);
     ctx.beginPath(); ctx.moveTo(x + aW / 2 - 2.2 * s, y + 4 * s); ctx.lineTo(x + aW / 2 + 2.2 * s, y + 4 * s); ctx.lineTo(x + aW / 2 + 2.6 * s, y + 10 * s); ctx.lineTo(x + aW / 2 - 2.6 * s, y + 10 * s); ctx.closePath();

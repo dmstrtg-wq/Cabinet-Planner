@@ -170,11 +170,46 @@ function renameProject(id) {
 // ════════════════════════════
 // ROOM
 // ════════════════════════════
-// Show the "start with a bathroom layout" option only for bathrooms (7.4)
+// Room types with a starter layout (7.4): bathroom, living room (entertainment center),
+// hallway (mudroom lockers). The option only shows for those.
+const STARTER_TEXT = { bath: 'Start with a bathroom layout', living: 'Start with an entertainment center', hall: 'Start with a mudroom locker wall' };
 function syncStarterOption(prefix) {
   const kindEl = document.getElementById(prefix === 'np' ? 'np-type' : 'ar-kind');
-  const isBath = prefix === 'np' ? /bath|vanity/i.test(kindEl.value) : kindEl.value === 'bath';
-  const g = document.getElementById(prefix + '-starter-group'); if (g) g.style.display = isBath ? '' : 'none';
+  const kind = prefix === 'np' ? (/bath|vanity/i.test(kindEl.value) ? 'bath' : '') : kindEl.value;
+  const g = document.getElementById(prefix + '-starter-group'); if (g) g.style.display = STARTER_TEXT[kind] ? '' : 'none';
+  const t = document.getElementById(prefix + '-starter-text'); if (t && STARTER_TEXT[kind]) t.textContent = STARTER_TEXT[kind];
+}
+function applyStarterLayout(r) {
+  if (r.kind === 'bath') bathStarterLayout(r);
+  else if (r.kind === 'living') livingStarterLayout(r);
+  else if (r.kind === 'hall') hallStarterLayout(r);
+}
+// Entertainment center on the north wall (7.4b): a media base centred, open bookcases either
+// side if they fit, and a TV over the base sized to it.
+function livingStarterLayout(r) {
+  let n = 0;
+  const pick = (list, max) => list.filter(v => v <= max + 0.01).pop();
+  const L = r.walls.north;
+  const bw = L >= 150 ? 30 : L >= 108 ? 24 : 0;                       // bookcase each side
+  const mb = pick(CATALOG.mediaBase.widths, Math.min(72, L - 2 * bw)); if (!mb) return;
+  const x0 = (L - mb - 2 * bw) / 2;
+  const cab = (type, width, offset, extra = {}) => ({ id: uid(), type, wall: 'north', width, offset, height: defaultCabHeight(type, r),
+    depth: CATALOG[type].depth, note: '', wallBottom: null, glassDoors: false, styleOverride: null, itemNum: ++n, ...extra });
+  r.cabinets = r.cabinets || []; r.appliances = r.appliances || [];
+  if (bw) r.cabinets.push(cab('openTall', bw, x0), cab('openTall', bw, x0 + bw + mb));
+  r.cabinets.push(cab('mediaBase', mb, x0 + bw, { height: 24 }));
+  const tvW = pick(APPLIANCES.tv.widths, mb);
+  if (tvW) r.appliances.push({ id: uid(), type: 'tv', wall: 'north', width: tvW, offset: x0 + bw + (mb - tvW) / 2, height: APPLIANCES.tv.heightFor(tvW),
+    note: '', customElevBottom: 42, price: null, itemNum: ++n });
+  r.cabinets.filter(c => needsHinge(c) && !c.hinge).forEach(c => { c.hinge = 'L'; });
+}
+// Mudroom locker wall on the north wall (7.4b): as many 18" lockers as fit (up to 4), centred
+function hallStarterLayout(r) {
+  const L = r.walls.north, count = Math.max(0, Math.min(4, Math.floor(L / 18))); if (!count) return;
+  const x0 = (L - count * 18) / 2;
+  r.cabinets = r.cabinets || [];
+  for (let k = 0; k < count; k++) r.cabinets.push({ id: uid(), type: 'locker', wall: 'north', width: 18, offset: x0 + k * 18,
+    height: defaultCabHeight('locker', r), depth: CATALOG.locker.depth, note: '', wallBottom: null, glassDoors: false, styleOverride: null, itemNum: k + 1, hinge: k % 2 ? 'R' : 'L' });
 }
 // A starter bathroom sized to the room (7.4): tub (or a shower if the end wall is too short)
 // across the west wall; on the north wall a toilet with code clearance from the tub, then the
@@ -257,7 +292,7 @@ function addRoom() {
       depth:  parseInt(document.getElementById('ar-cut-depth').value)  || 48,
     };
   }
-  if (kind === 'bath' && arShape !== 'L' && document.getElementById('ar-starter')?.checked) bathStarterLayout(room);
+  if (STARTER_TEXT[kind] && arShape !== 'L' && document.getElementById('ar-starter')?.checked) applyStarterLayout(room);
   p.rooms.push(room);
   state.activeRoomId = room.id;
   // Reset ar-shape radio to rect for next time
@@ -665,7 +700,7 @@ function defaultCabHeight(type, r) {
   const upper = ceiling >= 120 ? 42 : ceiling >= 108 ? 36 : 30;
   let want = cat.heights[0];
   if (type === 'wall' || type === 'diagWall') want = upper;
-  else if (type === 'tall' || type === 'ovenTall' || type === 'linenTall' || type === 'fridgePanel') want = 54 + upper;
+  else if (['tall', 'ovenTall', 'linenTall', 'openTall', 'locker', 'fridgePanel'].includes(type)) want = 54 + upper;
   return cat.heights.includes(want) ? want : cat.heights[0];
 }
 // Height band an item fills on its wall, in inches from the floor. Two items only
@@ -680,6 +715,7 @@ function itemVerticalRange(item) {
   const acat = APPLIANCES[item.type] || {};
   const b = item.customElevBottom ?? (acat.elevBottomFor ? acat.elevBottomFor(item) : acat.elevBottom) ?? 0;
   if (item.type === 'floatingShelf') { const s = shelfStack(item); return [b, b + (s.n - 1) * s.spacing + s.t]; }
+  if (acat.heightFor) return [b, b + acat.heightFor(item.width)];                // a TV's height follows its size (7.4b)
   return [b, b + (item.height || acat.height || 0)];
 }
 // 'upper' or 'base' — which run a new piece of this type belongs to

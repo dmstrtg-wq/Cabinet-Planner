@@ -426,6 +426,8 @@
             <button type="button" data-cat="fill" onclick="setPaletteCategory('fill')">Fillers &amp; Panels</button>
             <button type="button" data-cat="app" onclick="setPaletteCategory('app')">Appliances</button>
             <button type="button" data-cat="bath" onclick="setPaletteCategory('bath')">Bath</button>
+            <button type="button" data-cat="living" onclick="setPaletteCategory('living')">Living</button>
+            <button type="button" data-cat="hall" onclick="setPaletteCategory('hall')">Hall</button>
           </div>
           <div id="palette-items" class="palette-items"></div>
         </div>
@@ -489,6 +491,10 @@
             <option value="drawerBase">Drawer Base (3-drawer)</option>
             <option value="mwDrawerBase">Microwave Drawer Base</option>
             <option value="linenTall">Linen Tower (bath)</option>
+            <option value="mediaBase">Media Base (living)</option>
+            <option value="openTall">Open Bookcase</option>
+            <option value="locker">Locker / Mudroom Unit</option>
+            <option value="bench">Bench Seat Base</option>
             <option value="cornerBase">Corner Base (Blind)</option>
             <option value="lazysusan">Lazy Susan Corner</option>
             <option value="diagWall">Diagonal Corner Wall</option>
@@ -543,6 +549,7 @@
               <option value="toilet">Toilet</option><option value="tub">Bathtub (alcove)</option><option value="shower">Shower</option>
               <option value="mirror">Mirror</option><option value="medicineCabinet">Medicine Cabinet</option><option value="sconce">Wall Sconce</option>
             </optgroup>
+            <optgroup label="Living room"><option value="tv">TV (wall-mounted)</option></optgroup>
           </select>
           <select id="app-width" class="cp-select" onchange="refreshPlacementOffsets()"><option value="">— Width —</option></select>
           <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
@@ -853,7 +860,7 @@
         <option value="kitchen">Kitchen</option><option value="bath">Bathroom</option><option value="hall">Hallway</option>
         <option value="living">Living room</option><option value="laundry">Laundry</option><option value="other">Other</option></select></div>
       <div class="form-group" id="ar-starter-group" style="display:none;align-self:end;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
-        <input type="checkbox" id="ar-starter" checked> Start with a bathroom layout</label></div>
+        <input type="checkbox" id="ar-starter" checked> <span id="ar-starter-text">Start with a bathroom layout</span></label></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" value="120" min="12" max="1200"></div>

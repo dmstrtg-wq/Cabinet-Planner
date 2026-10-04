@@ -104,6 +104,7 @@ function showWelcome() {
 // RENDER: ROOM TABS
 // ════════════════════════════
 function renderRoomTabs() {
+  if (typeof syncPaletteToRoom === 'function') setTimeout(syncPaletteToRoom, 0);   // a bathroom opens the Bath catalog (7.4)
   const p = activeProj();
   const bar = document.getElementById('room-tabs-bar');
   bar.querySelectorAll('.room-tab').forEach(t => t.remove());

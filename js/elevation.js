@@ -52,10 +52,12 @@ function renderElevation() {
   }
   ctx.fillStyle = PDF ? '#888888' : '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
   const counterY = WY+WH-36*scale;
-  ctx.strokeStyle = PDF ? '#555555' : '#94A3B8'; ctx.lineWidth = PDF ? 1.5 : 1; ctx.setLineDash([4,4]);
-  ctx.beginPath(); ctx.moveTo(WX,counterY); ctx.lineTo(WX+WW,counterY); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = PDF ? '#555555' : '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText('Counter Height 36"', WX+4, counterY-4);
+  if (['kitchen', 'laundry'].includes(roomKind(r))) {     // (a kitchen guide — not drawn in baths, living rooms, halls)
+    ctx.strokeStyle = PDF ? '#555555' : '#94A3B8'; ctx.lineWidth = PDF ? 1.5 : 1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(WX,counterY); ctx.lineTo(WX+WW,counterY); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = PDF ? '#555555' : '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('Counter Height 36"', WX+4, counterY-4);
+  }
 
   const wallCabs     = r.cabinets.filter(c => c.wall === wall && layerShowsItem(c));          // Layers
   const wallOpenings = layers.openings ? (r.openings||[]).filter(o => o.wall === wall) : [];
@@ -186,6 +188,13 @@ function renderElevation() {
     const hingeUnknown = needsHinge(cab) && !cab.hinge;
     fronts.forEach(f => {
       const fx = sx(f.x0), fy = sy(f.y1), fw = (f.x1 - f.x0)*scale, fh = (f.y1 - f.y0)*scale, H = f.y1 - f.y0;
+      if (f.kind === 'open') {                        // open shelving (7.4b): shaded interior + shelf lines / hooks
+        ctx.fillStyle = PDF ? '#F2F2F2' : '#' + shade3D(si.swatch, -40).toString(16).padStart(6, '0'); ctx.fillRect(fx, fy, fw, fh);
+        ctx.strokeStyle = FRONT_LINE; ctx.lineWidth = 1; ctx.strokeRect(fx, fy, fw, fh);
+        for (let k = 1; k <= (f.shelves || 0); k++) { const yy = fy + fh - (fh * k) / (f.shelves + 1); ctx.fillStyle = PDF ? '#FFFFFF' : si.swatch; ctx.fillRect(fx, yy - 0.375 * scale, fw, 0.75 * scale); ctx.strokeRect(fx, yy - 0.375 * scale, fw, 0.75 * scale); }
+        if (f.hooks) { ctx.fillStyle = HW; const n = Math.max(1, Math.round((f.x1 - f.x0) / 9)); for (let k = 0; k < n; k++) { ctx.beginPath(); ctx.arc(fx + fw * (k + 0.5) / n, fy + 6 * scale, 0.6 * scale, 0, Math.PI * 2); ctx.fill(); } }
+        return;
+      }
       ctx.strokeStyle = FRONT_LINE; ctx.lineWidth = 1; ctx.strokeRect(fx, fy, fw, fh);
       // Panel: same rule as the 3D fronts — short drawers and plain panels are slabs
       const plain = f.kind === 'panel' || (f.kind === 'false' && sinfo.door !== 'shaker');

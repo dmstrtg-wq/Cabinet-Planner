@@ -299,3 +299,14 @@ Claude tested locally: starter layouts for 8'×5', 10'×8', 12'×9', 9'×5'6" ro
 - [ ] New project → type Bathroom → keep "Start with a bathroom layout" → look at plan, elevation, 3D.
 - [ ] Add Room → Bathroom on an existing job; try a double vanity.
 - [ ] Your kitchens in 3D: cabinets on the north/east walls now sit right against the wall (check nothing looks off).
+- 7.4a live check (2026-10-04, "ZZ Claude Test" → Add Room "Hall Bath" 9'×5'6"): tub 66, toilet, V36, mirror, sconce; Design Check clean; 3D right. Fixed after: the catalog now switches to the room's tab when a room is added or switched to.
+
+### 7.4b Living room + Hallway/mudroom (built 2026-10-04)
+- **Add Room → Living room** ("Start with an entertainment center"): media base centred on the north wall (up to 72"), open bookcases each side when the wall is 9'+ (24") or 12'6"+ (30"), and a TV sized to the base (75" set on a 72" base).
+- **Add Room → Hallway** ("Start with a mudroom locker wall"): up to four 18" lockers, centred.
+- New priced cabinets (add to your price sheet; fresh template from Profile): **Media Base** (24–72" wide, 24/30" tall, 18" deep), **Open Bookcase** (18–36" × 84/90/96, 12" deep, open shelves), **Locker / Mudroom Unit** (15/18/24 × 84/90/96: shoe cubby, bench seat, open coat area with hooks, door over), **Bench Seat Base** (24–48", drawers under the seat).
+- **TV** (wall-mounted) in 50/55/65/75/85" sizes; placement/looks only unless priced.
+- Catalog tabs **Living** and **Hall** open by themselves in those rooms. The "Counter Height 36"" guide only shows in kitchens/laundry now.
+- Hardware counts: open shelving has no hardware; locker doors and bench drawers are counted.
+Claude tested locally: living rooms 14'/10'/8' and halls 6'8"/5' (no placement problems, Design Check clean), elevation, 3D, hardware counts. All scripts compile; no errors.
+- [ ] Add a Living room and a Hallway to a job with the starter option on; check plan, elevation, 3D, quote.

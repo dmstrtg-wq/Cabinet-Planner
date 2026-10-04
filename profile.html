@@ -2059,6 +2059,10 @@ const CABINET_TYPES = [
   { key:'ovenTall',    label:'Oven Cabinet' },
   { key:'mwDrawerBase', label:'Microwave Drawer Base' },
   { key:'linenTall',   label:'Linen Tower' },
+  { key:'mediaBase',   label:'Media Base' },
+  { key:'openTall',    label:'Open Bookcase' },
+  { key:'locker',      label:'Locker / Mudroom Unit' },
+  { key:'bench',       label:'Bench Seat Base' },
   { key:'diagWall',    label:'Diagonal Corner Wall' },
   { key:'fridgePanel', label:'Fridge End Panel' },
   // Fillers can be any width in the planner; they're priced as the stock piece they're
@@ -2081,12 +2085,16 @@ const CABINET_WIDTHS = {
   ovenTall:    [27,30,33],
   mwDrawerBase: [24,30],
   linenTall:   [15,18,24],
+  mediaBase:   [24,30,36,48,60,72],
+  openTall:    [18,24,30,36],
+  locker:      [15,18,24],
+  bench:       [24,30,36,48],
   diagWall:    [24,27],
   fridgePanel: [0.75],
   filler3:     [3],
   filler6:     [6],
 };
-const CABINET_HEIGHTS = { wall: [12,15,18,30,36,42], tall: [84,90,96], ovenTall: [84,90,96], linenTall: [84,90,96] }; // only types that vary by height (priced per width × height)
+const CABINET_HEIGHTS = { wall: [12,15,18,30,36,42], tall: [84,90,96], ovenTall: [84,90,96], linenTall: [84,90,96], mediaBase: [24,30], openTall: [84,90,96], locker: [84,90,96] }; // only types that vary by height (priced per width × height)
 
 // Generic placeholder finishes — mirrors DEFAULT_STYLES in app.html. Used to build a
 // company's price sheet template when they haven't set up their own style list yet.

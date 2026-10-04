@@ -183,6 +183,8 @@ const PALETTE_CATEGORIES = [
   { id: 'fill',   label: 'Fillers & Panels',  types: ['filler3', 'filler6', 'fridgePanel'] },
   { id: 'app',    label: 'Appliances',        types: Object.keys(APPLIANCES).filter(k => !APPLIANCES[k].fixture) },
   { id: 'bath',   label: 'Bath',              types: ['vanity', 'linenTall', 'toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce', 'floatingShelf'] },
+  { id: 'living', label: 'Living',            types: ['mediaBase', 'openTall', 'wall', 'tv', 'floatingShelf'] },
+  { id: 'hall',   label: 'Hall / Mudroom',    types: ['locker', 'bench', 'linenTall', 'tall', 'wall', 'floatingShelf'] },
 ];
 let paletteCategory = 'all';
 
@@ -193,7 +195,7 @@ function paletteEntries() {
     def.widths.forEach(w => out.push({
       cat: cat.id, type, width: w, isCab, color: def.color,
       code: def.abbr + (w >= 1 ? w : ''),   // fillers: FL3 / FL6 are just starting sizes
-      label: `${def.label} ${w >= 1 ? w + '"' : ''}`.trim(),
+      label: def.sizeLabel ? def.sizeLabel(w) : `${def.label} ${w >= 1 ? w + '"' : ''}`.trim(),
     }));
   }));
   return out;
@@ -219,7 +221,8 @@ let _palRoomId = null;
 function syncPaletteToRoom() {
   const r = activeRoom(); if (!r || r.id === _palRoomId) return;
   _palRoomId = r.id;
-  const want = roomKind(r) === 'bath' ? 'bath' : (paletteCategory === 'bath' ? 'all' : paletteCategory);
+  const own = { bath: 'bath', living: 'living', hall: 'hall' }[roomKind(r)];
+  const want = own || (['bath', 'living', 'hall'].includes(paletteCategory) ? 'all' : paletteCategory);
   if (want !== paletteCategory) setPaletteCategory(want);
 }
 

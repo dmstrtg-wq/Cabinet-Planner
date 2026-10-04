@@ -126,6 +126,25 @@ function frontLayout(cab, r) {
       if (top - o.y1 > 3) out.push({ x0: L + g / 2, x1: R - g / 2, y0: o.y1 + g / 2, y1: top - g / 2, kind: 'drawer' });
       break;
     }
+    // ── Living room / hallway (7.4b) ──
+    case 'mediaBase':
+      doorsAcross(L, R, TOE_KICK_H + g / 2, top - g / 2, false);
+      break;
+    case 'bench': {                                     // seat on top, drawer(s) under it
+      const halves = w >= 35.9 ? [[L, 0], [0, R]] : [[L, R]];
+      halves.forEach(([a, b]) => out.push({ x0: a + g / 2, x1: b - g / 2, y0: TOE_KICK_H + g / 2, y1: top - 1.5 - g / 2, kind: 'drawer' }));
+      break;
+    }
+    case 'openTall':                                    // open shelves, one every ~12"
+      out.push({ x0: L + 0.75, x1: R - 0.75, y0: TOE_KICK_H + 0.75, y1: top - 0.75, kind: 'open', shelves: Math.max(2, Math.round((top - TOE_KICK_H) / 12) - 1) });
+      break;
+    case 'locker': {                                    // shoe cubby, bench seat, open coat area with hooks, door(s) over
+      const seat = 18, upper = Math.min(top - 12, 66);
+      out.push({ x0: L + 0.75, x1: R - 0.75, y0: TOE_KICK_H + 0.75, y1: seat - 1.5, kind: 'open', shelves: 0 });
+      out.push({ x0: L + 0.75, x1: R - 0.75, y0: seat, y1: upper - 0.75, kind: 'open', shelves: 0, hooks: true });
+      doorsAcross(L, R, upper + g / 2, top - g / 2, false, { upper: true });
+      break;
+    }
     case 'tall': case 'linenTall': {
       const split = TOE_KICK_H + (top - TOE_KICK_H) * 0.56;
       doorsAcross(L, R, TOE_KICK_H + g / 2, split - g / 2, w <= 18.01);
@@ -192,6 +211,17 @@ function addPiece(group, kit, mat, x0, x1, y0, y1, z0, z1) {
 // One door or drawer front in the style's construction
 function addFront(group, kit, info, f) {
   const T = FRONT_T, W = f.x1 - f.x0, H = f.y1 - f.y0;
+  if (f.kind === 'open') {                              // open shelving (7.4b): shadowed interior, shelf boards, coat hooks
+    addPiece(group, kit, kit.paint(info, -48), f.x0, f.x1, f.y0, f.y1, -0.05, 0.02);
+    const n = f.shelves || 0;
+    for (let k = 1; k <= n; k++) { const y = f.y0 + (H * k) / (n + 1); addPiece(group, kit, kit.paint(info, 0), f.x0, f.x1, y - 0.375, y + 0.375, 0, 0.6); }
+    addPiece(group, kit, kit.paint(info, 0), f.x0 - 0.75, f.x1 + 0.75, f.y0 - 0.75, f.y0, 0, 0.75);   // bottom / seat edge
+    if (f.hooks) for (let k = 0; k < Math.max(1, Math.round(W / 9)); k++) {
+      const hk = new THREE.Mesh(kit.cyl(0.25, 2.2), kit.metal); hk.rotation.x = Math.PI / 2;
+      hk.position.set(f.x0 + (W * (k + 0.5)) / Math.max(1, Math.round(W / 9)), f.y1 - 6, 1.1); group.add(hk);
+    }
+    return;
+  }
   const frameMat = kit.paint(info, 0), panelMat = kit.paint(info, -14);
   const plain = f.kind === 'panel' || f.kind === 'false' && info.door !== 'shaker';
   // Short drawer fronts and plain panels are slabs in every style (as on real Shaker kitchens)
@@ -216,7 +246,7 @@ function addFront(group, kit, info, f) {
 }
 // Pull or knob for one front
 function addHardware(group, kit, f, cabIsUpper) {
-  if (f.kind === 'false' || f.kind === 'panel') return;
+  if (f.kind === 'false' || f.kind === 'panel' || f.kind === 'open') return;
   const T = FRONT_T, standoff = 1.1, W = f.x1 - f.x0, H = f.y1 - f.y0;
   const bar = (cx, cy, len, vertical) => {
     const rod = new THREE.Mesh(kit.cyl(0.22, len), kit.metal);
@@ -256,7 +286,7 @@ function buildCabinetFronts3D(cab, r, kit, p) {
   const info = doorStyleInfo(cab.styleOverride || p.style);
   const group = new THREE.Group();
   const upper = itemLevel(cab) === 'upper';
-  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || fr.upper || ((cab.type === 'tall' || cab.type === 'linenTall') && fr.y0 > 40)); });
+  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || fr.upper || (['tall', 'linenTall'].includes(cab.type) && fr.y0 > 40)); });
   // An oven / microwave-drawer cabinet with nothing in it yet: show the dark opening
   if (cab.type === 'ovenTall' || cab.type === 'mwDrawerBase') {
     const o = builtInOpening(r, cab);

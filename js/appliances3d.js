@@ -333,6 +333,12 @@ function buildAppliance3D(r, app, kit, frontKit, p) {
       glassShade.position.set(0, b + 7, 3.5); g.add(glassShade);
       break;
     }
+    case 'tv': {                                        // 7.4b: thin panel, black glass screen
+      body(kit.dark, L, R, b, top, 0.5, D);
+      _abox(g, kit, kit.glass, L + 0.4, R - 0.4, b + 0.4, top - 0.4, D, D + 0.05, false);
+      _abox(g, kit, kit.dark, -6, 6, b + (top - b) / 2 - 6, b + (top - b) / 2 + 6, 0, 0.5, false);   // wall mount
+      break;
+    }
     case 'floatingShelf': {                              // a stack of shelves (7.3), in the chosen finish
       const s = shelfStack(app), fk = shelfFinish(app), F = SHELF_FINISHES[fk];
       const m = fk === 'cabinet' ? frontKit.paint(style, -4)
