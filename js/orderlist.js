@@ -41,15 +41,15 @@ function orderStyle(p, cab) {
 function buildOrderList(p) {
   return p.rooms.map(r => {
     const groups = new Map();
-    r.cabinets.slice().sort((a, b) => (a.itemNum || 0) - (b.itemNum || 0)).forEach(cab => {
+    quoteCabinets(r).slice().sort((a, b) => (a.itemNum || 0) - (b.itemNum || 0)).forEach(cab => {   // incl. bump-out casing filler (7.1)
       if (!CATALOG[cab.type]) return;
       const st = orderStyle(p, cab);
       const filler = isFiller(cab.type);
       const fp = filler ? fillerPriceParts(cab.width) : null;
       const hinge = needsHinge(cab) ? (HINGE_LABEL[cab.hinge] || 'SPECIFY') : '';
       const desc = filler
-        ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}`
-        : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '');
+        ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}` + (cab._casingFor ? ' (bump-out casing)' : '')
+        : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '') + (cab.wallOffset ? `, set out ${fmtFrac(cab.wallOffset)} from wall` : '');
       const key = [orderSku(cab), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : ''].join('|');
       if (!groups.has(key)) groups.set(key, {
         qty: 0, sku: orderSku(cab), desc,

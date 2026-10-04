@@ -258,3 +258,12 @@ The demo **Sample Kitchen** was corrected so it passes (3" filler at the blind c
 Claude tested locally: sample passes (0 problems/warnings); a deliberately bad layout lists every rule; L-shaped room; click-to-locate; Free-tier teaser; no console errors.
 - [ ] Open your real jobs: does the list make sense? Anything it flags that a pro would call fine? (Tell Claude and the numbers get tuned.)
 - [ ] Click a few lines: the right piece gets selected and its area flashes on the plan.
+
+### 7.1 Wall offset (bump-out) + "Case in this fridge" (built 2026-10-04)
+- Double-click any cabinet → **Wall offset** (inches, fractions OK): the box moves out from the wall at its normal depth. Plan, 3D, doors, countertop, crown, placement and Design Check all follow. The elevation notes "out 12" from wall".
+- The gap behind is **cased in with filler** on each side a neighbour doesn't already hide (fridge panels, a tall, an equally bumped neighbour). Drawn in plan (grey strips) and 3D (cabinet finish), and added to the **quote and order list** as filler stock on its own line ("Bump-out casing for W3615", e.g. 12" deep = 2× FL6).
+- Double-click a **refrigerator** → **Case in this fridge**: fridge end panels on each open side (if there's 3/4" of room) and any upper above it brought out flush with the 24" run. The toast says what it did, and if a side had no room.
+- Not included: a bottom panel under a bumped-out upper (only the sides are cased). Corner units (lazy susan, diagonal corner wall) always stay against the wall.
+Claude tested locally: fridge case-in (panel + W3615 out 12"), casing counted only on the open side, order list "2× FL6 … (bump-out casing)", 3D casing, Design Check clean, no console errors.
+- [ ] On a real job: double-click the upper over the fridge → Wall offset 12 → check plan, 3D, elevation note, and the quote line.
+- [ ] Double-click the fridge → Case in this fridge.

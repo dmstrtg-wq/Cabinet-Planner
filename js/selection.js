@@ -123,6 +123,8 @@ function openItemPopover(item, clientX, clientY) {
       html += row('Height', `<select data-f="height" ${selStyle}>${CATALOG[item.type].heights.map(h => opt(h, h + '"', h === item.height)).join('')}</select>`);
     if (needsHinge(item))
       html += row('Hinge side', `<select data-f="hinge" ${selStyle}>${opt('', 'Specify…', !item.hinge)}${opt('L', 'Left', item.hinge === 'L')}${opt('R', 'Right', item.hinge === 'R')}</select>`);
+    if (canBumpOut(item))
+      html += row('Wall offset', inch('wallOffset', item.wallOffset || 0).replace('value=', 'title="How far it stands out from the wall (the gap is cased in with filler)" value='));
     html += row('Door style', `<select data-f="styleOverride" ${selStyle}>${opt('', 'Project default', !item.styleOverride)}${getStyles().map(s => opt(s.code, s.name, s.code === item.styleOverride)).join('')}</select>`);
   } else {
     const acat = APPLIANCES[item.type];
@@ -134,6 +136,8 @@ function openItemPopover(item, clientX, clientY) {
     const fin = applianceFinishOptions(item.type);
     if (fin.length)
       html += row('Finish', `<select data-f="finish" ${selStyle}>${fin.map(([k, l]) => opt(k, l, k === applianceFinish(item))).join('')}</select>`);
+    if (item.type === 'refrigerator')
+      html += `<button data-act="casefridge" style="width:100%;margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border,#e2e8f0);background:#fff;cursor:pointer;font-weight:600;font-size:12px;" title="End panels on both sides, and the upper above brought out flush with the 24&quot; run">Case in this fridge</button>`;
   }
   html += row('Notes', `<input data-f="note" type="text" ${selStyle} value="${escHtml(item.note || '')}" placeholder="Optional">`);
   const btn = 'style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border,#e2e8f0);background:#fff;cursor:pointer;font-weight:600;font-size:12px;"';
@@ -160,6 +164,12 @@ function openItemPopover(item, clientX, clientY) {
     const act = e.target.dataset.act; if (!act) return;
     if (act === 'close') closeItemPopover();
     else if (act === 'dup') duplicateItem(item);
+    else if (act === 'casefridge') {
+      const did = caseInFridge(activeRoom(), item);
+      closeItemPopover(); persist(); renderAll(); renderCutList();
+      if (state.viewMode === '3d') renderIsometric();
+      showMoveTip(did.length ? 'Fridge cased in: ' + did.join(', ') : 'Already cased in (or no room for panels)');
+    }
     else if (act === 'more') { closeItemPopover(); isCab ? openEditModal(item) : openEditApplianceModal(item); }
     else if (act === 'del') { closeItemPopover(); deleteItem(item); }
   });
@@ -173,6 +183,7 @@ function applyItemEdit(item, field, value) {
   else if (field === 'styleOverride') item.styleOverride = value || null;
   else if (field === 'hinge') item.hinge = value || null;
   else if (field === 'variant') item.variant = value || null;
+  else if (field === 'wallOffset') item.wallOffset = Math.max(0, Math.min(36, parseInches(value) || 0)) || null;   // 7.1 bump-out
   else if (field === 'finish') item.finish = value || null;
   else if (field === 'height' && APPLIANCES[item.type]) {
     item.height = parseFloat(value);

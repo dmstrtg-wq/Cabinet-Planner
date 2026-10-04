@@ -241,6 +241,10 @@ function renderElevation() {
     const lbl = orderSku(cab), tw = ctx.measureText(lbl).width + 6;
     ctx.fillStyle = PDF ? '#FFFFFF' : swatchIsDark(si.swatch) ? 'rgba(15,23,42,0.35)' : 'rgba(255,255,255,0.7)'; ctx.fillRect(lx - tw/2, ly - 7, tw, 14);
     ctx.fillStyle = txtColor; ctx.fillText(lbl, lx, ly);
+    if (cab.wallOffset > 0) {          // 7.1: set out from the wall (casing filler behind)
+      ctx.font = '600 8px sans-serif'; ctx.fillStyle = PDF ? '#333333' : '#0F766E'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(`out ${fmtFrac(cab.wallOffset)} from wall`, x + cW/2, y + 3);
+    }
     if (upper) {
       const bIn = cab.wallBottom != null ? cab.wallBottom : 54;
       if (bIn !== 54) { ctx.font = '600 8px sans-serif'; ctx.fillStyle = PDF ? '#333333' : '#f59e0b'; ctx.textBaseline = 'top'; ctx.fillText(`↑${bIn}" from floor`, x + cW/2, y + cH + 3); }

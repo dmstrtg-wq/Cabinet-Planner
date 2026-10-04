@@ -216,7 +216,7 @@ function computeDesignIssues(r) {
       const atLevel = w => items.filter(i => i.wall === w && (level === 'upper' ? itemLevel(i) === 'upper' : _dcIsFloor(r, i)));
       const A = atLevel(w1).find(i => distFromCorner(i, s1, L1) < 0.5);          // the piece in the corner
       if (!A || cornerInfo(r, A) || !_dcHasFront(A)) return;
-      const depthA = A.depth || itemDepth(A);
+      const depthA = (A.depth || itemDepth(A)) + (A.wallOffset || 0);   // a bumped-out piece reaches further
       const B = atLevel(w2).filter(i => distFromCorner(i, s2, L2) >= depthA - 0.5).sort((m, n) => distFromCorner(m, s2, L2) - distFromCorner(n, s2, L2))[0];
       if (!B || !_dcHasFront(B)) return;
       const clear = distFromCorner(B, s2, L2) - depthA;

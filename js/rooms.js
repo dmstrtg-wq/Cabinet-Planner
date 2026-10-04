@@ -293,13 +293,82 @@ function itemDepth(item) {
 // Axis-aligned footprint of a wall item in room inches: { x, y, w, h }.
 function itemRect(r, item, depth = itemDepth(item)) {
   const f = wallFrame(r, item.wall); if (!f) return null;
-  const off = item.offset || 0;
-  const ax = f.start[0] + f.dir[0] * off, ay = f.start[1] + f.dir[1] * off;          // start along wall
+  const off = item.offset || 0, d0 = item.wallOffset || 0;                            // d0: brought out from the wall (7.1)
+  const ax = f.start[0] + f.dir[0] * off + f.inward[0] * d0, ay = f.start[1] + f.dir[1] * off + f.inward[1] * d0;   // start along wall
   const bx = ax + f.dir[0] * item.width, by = ay + f.dir[1] * item.width;             // end along wall
   const cx = ax + f.inward[0] * depth,   cy = ay + f.inward[1] * depth;               // pushed into room
   const xs = [ax, bx, cx], ys = [ay, by, cy];
   const x = Math.min(...xs), y = Math.min(...ys);
   return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+// ════════════════════════════
+// WALL OFFSET / BUMP-OUT (Build Plan 7.1)
+// ════════════════════════════
+// A cabinet can be brought out from the wall (cab.wallOffset, inches). The box keeps its
+// normal depth; the gap behind it is cased in with filler on any side a neighbour doesn't
+// already hide — e.g. a 12" upper over the fridge brought out 12" to sit flush with the
+// 24" run. Corner units (lazy susan, diagonal corner wall) always sit against the wall.
+function canBumpOut(cab) { return !!CATALOG[cab.type] && !['lazysusan', 'diagWall'].includes(cab.type); }
+// → [{ cab, side: 'start'|'end', depth, height, bottom }]  depth = how far from the wall it runs
+function casingPieces(r, cab) {
+  const off = cab.wallOffset || 0;
+  if (off <= 0.01 || !canBumpOut(cab) || isFiller(cab.type)) return [];
+  const [bot, top] = itemVerticalRange(cab), len = wallLength(r, cab.wall);
+  const a = cab.offset || 0, b = a + cab.width;
+  const same = r.cabinets.filter(c => c.id !== cab.id && c.wall === cab.wall && rangesOverlap(itemVerticalRange(c), [bot, top]));
+  const out = [];
+  [['start', a], ['end', b]].forEach(([side, edge]) => {
+    if (side === 'start' ? edge < 0.1 : edge > len - 0.1) return;                     // against the side wall
+    const nb = same.find(c => side === 'start' ? Math.abs((c.offset || 0) + c.width - edge) < 0.1 : Math.abs((c.offset || 0) - edge) < 0.1);
+    // A neighbour hides the gap as far out as it reaches (its own gap is cased on its far side)
+    const hidden = nb ? (nb.wallOffset || 0) + itemDepth(nb) : 0;
+    const depth = Math.round((off - hidden) * 16) / 16;
+    if (depth > 0.01) out.push({ cab, side, depth, height: top - bot, bottom: bot });
+  });
+  return out;
+}
+// Where a casing piece sits in plan: a 3/4" strip just inside the cabinet's side, from
+// where the neighbour stops hiding the gap out to the back of the box
+function casingRect(r, pc) {
+  const f = wallFrame(r, pc.cab.wall); if (!f) return null;
+  const a = pc.cab.offset || 0, b = a + pc.cab.width, off = pc.cab.wallOffset || 0;
+  const [t0, t1] = pc.side === 'start' ? [a, a + 0.75] : [b - 0.75, b];
+  const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
+  return rectOfPts([P(t0, off - pc.depth), P(t1, off - pc.depth), P(t0, off), P(t1, off)]);
+}
+// Cabinets as priced on a quote: the room's cabinets, plus the casing filler for any
+// bumped-out ones (priced as filler stock, like any filler). Virtual — never saved.
+function quoteCabinets(room) {
+  const extra = [];
+  room.cabinets.forEach(c => casingPieces(room, c).forEach(pc => extra.push({
+    id: `${c.id}:case:${pc.side}`, type: 'filler3', wall: c.wall, width: pc.depth, height: pc.height,
+    depth: 0.75, styleOverride: c.styleOverride || null, note: `Bump-out casing for ${itemLabel(c)}`, _casingFor: c.id,
+  })));
+  return room.cabinets.concat(extra);
+}
+// "Case in this fridge": a fridge end panel on each open side, and the uppers above it
+// brought out flush with the 24" run. Returns a short summary for the toast.
+function caseInFridge(r, fridge) {
+  const did = [];
+  const a = fridge.offset || 0, b = a + fridge.width, len = wallLength(r, fridge.wall);
+  const panelH = defaultCabHeight('fridgePanel', r);
+  let added = 0, blocked = 0;
+  [a - 0.75, b].forEach(at => {
+    const already = r.cabinets.some(c => c.type === 'fridgePanel' && c.wall === fridge.wall && Math.abs((c.offset || 0) - at) < 0.5);
+    if (already || at < -0.01 || at + 0.75 > len + 0.01) return;      // panel there already, or the side wall
+    const cand = { id: uid(), type: 'fridgePanel', wall: fridge.wall, width: 0.75, height: panelH, depth: CATALOG.fridgePanel.depth,
+      note: '', offset: Math.round(at * 1000) / 1000, wallBottom: null, glassDoors: false, styleOverride: null, itemNum: nextItemNum(r) };
+    if (!placementIssue(r, cand)) { r.cabinets.push(cand); added++; } else blocked++;
+  });
+  if (added) did.push(added === 2 ? 'end panels both sides' : 'end panel on one side');
+  if (blocked) did.push(`no room for a panel on ${blocked === 2 ? 'either side' : 'one side'} (leave 3/4")`);
+  r.cabinets.filter(c => c.wall === fridge.wall && itemLevel(c) === 'upper' && canBumpOut(c)
+    && (c.offset || 0) < b - 0.5 && (c.offset || 0) + c.width > a + 0.5).forEach(u => {
+    const want = Math.max(0, CATALOG.base.depth - itemDepth(u));
+    if ((u.wallOffset || 0) !== want) { u.wallOffset = want; did.push(`${itemLabel(u)} brought out ${fmtFrac(want)}`); }
+  });
+  return did;
 }
 
 function renderWallButtons() {

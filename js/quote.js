@@ -10,7 +10,7 @@ function renderSummary(r) {
   const el = document.getElementById('summary-table');
   if (!r || !r.cabinets.length) { el.innerHTML = ''; return; }
   const groups = {};
-  r.cabinets.forEach(c => {
+  quoteCabinets(r).forEach(c => {          // incl. bump-out casing filler (7.1)
     const k = `${c.type}|${c.width}|${c.height}`;
     if (!groups[k]) groups[k] = { type:c.type, width:c.width, height:c.height, count:0, totalPrice:0, unpriced:false };
     groups[k].count++;
@@ -162,7 +162,7 @@ function refreshQuoteTotals() {
   const p = activeProj(); if (!p) return;
   const tax = getTax();
   let cabSubtotal = 0, unpricedCount = 0;
-  p.rooms.forEach(r => r.cabinets.forEach(c => {
+  p.rooms.forEach(r => quoteCabinets(r).forEach(c => {
     const pr = cabinetPrice(c);
     if (pr != null) cabSubtotal += pr; else unpricedCount++;
   }));
@@ -171,7 +171,7 @@ function refreshQuoteTotals() {
   const beforeTax  = cabSubtotal + jcTotal + trimTotal;
   const taxAmt    = beforeTax * tax;
   const total     = beforeTax + taxAmt;
-  const cabCount  = p.rooms.reduce((n,r) => n + r.cabinets.length, 0);
+  const cabCount  = p.rooms.reduce((n,r) => n + quoteCabinets(r).length, 0);
   const el = document.getElementById('quote-totals-preview'); if (!el) return;
   el.innerHTML = `
     <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
@@ -197,7 +197,7 @@ function checkCompanyProfile() {
 function quoteSignature(p, total) {
   const items = p.rooms.map(r => [
     r.name,
-    r.cabinets.map(c => [c.type, c.width, c.height, c.depth, c.styleOverride || '', !!c.glassDoors, c.note || '']),
+    r.cabinets.map(c => [c.type, c.width, c.height, c.depth, c.styleOverride || '', !!c.glassDoors, c.note || ''].concat(c.wallOffset ? [c.wallOffset] : [])),   // (offset only when set, so older fingerprints don't change)
     (r.appliances || []).map(a => [a.type, a.width, a.price ?? null, a.note || '']),
   ]);
   const parts = [p.style, items, p.jobCosts || [], p.trimItems || [], Math.round(total * 100)];
@@ -215,7 +215,7 @@ function printQuote() {
   if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Quote Export'); return; }
   if (!checkCompanyProfile()) return;
   const p = activeProj(); if (!p) return;
-  const unpricedCabs = p.rooms.reduce((n, room) => n + room.cabinets.filter(c => cabinetPrice(c) == null).length, 0);
+  const unpricedCabs = p.rooms.reduce((n, room) => n + quoteCabinets(room).filter(c => cabinetPrice(c) == null).length, 0);
   if (unpricedCabs > 0) {
     const proceed = confirm(
       `${unpricedCabs} cabinet${unpricedCabs === 1 ? '' : 's'} on this floor plan ${unpricedCabs === 1 ? "doesn't" : "don't"} have a price set for ` +
@@ -238,11 +238,12 @@ function printQuote() {
   p.rooms.forEach(room => {
     if (!room.cabinets.length) return;
     cabRows += `<tr class="room-hdr"><td colspan="6">${escHtml(room.name)}</td></tr>`;
-    room.cabinets.forEach(c => {
+    quoteCabinets(room).forEach(c => {          // incl. bump-out casing filler (7.1)
       const price = cabinetPrice(c);
       if (price != null) cabSubtotal += price;
       const styleLabel = c.styleOverride ? ` [${c.styleOverride}]` : '';
-      const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '');
+      const cabLabel = CATALOG[c.type].label + styleLabel + (c.glassDoors ? ' + Glass Doors' : '')
+        + (c.wallOffset ? ` (out ${fmtFrac(c.wallOffset)} from wall)` : '') + (c._casingFor ? ' — bump-out casing' : '');
       const priceCell = price != null ? fmtMoney(price) : '<span style="color:#64748b;font-style:italic;">N/A</span>';
       // # = the item number tagged on the floor plan and elevations (3.5)
       cabRows += `<tr><td class="num">${c.itemNum || ''}</td><td>${cabLabel}</td><td>${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D</td><td>${c.wall.charAt(0).toUpperCase()+c.wall.slice(1)}</td><td>${escHtml(c.note||'—')}</td><td class="amt">${priceCell}</td></tr>`;

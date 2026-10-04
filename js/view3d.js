@@ -281,8 +281,8 @@ function renderIsometric() {
   }
 
   // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
-  function cabPos(wall, offset, width, depth) {
-    const rc = itemRect(r, { wall, offset, width }, depth);
+  function cabPos(wall, offset, width, depth, wallOffset = 0) {
+    const rc = itemRect(r, { wall, offset, width, wallOffset }, depth);
     if (!rc) return { x0: offset, z0: 0, w: width, d: depth };
     return { x0: rc.x, z0: rc.y, w: rc.w, d: rc.h };
   }
@@ -323,19 +323,24 @@ function renderIsometric() {
     const h   = cab.height || cat.heights?.[0] || 30;
     const dep = cab.depth  || cat.depth || 24;
     const baseY = itemVerticalRange(cab)[0];   // uppers at their bottom, fillers wherever they sit, bases on the floor
-    const pos = cabPos(cab.wall, off, cab.width, dep);
+    const pos = cabPos(cab.wall, off, cab.width, dep, cab.wallOffset || 0);
     const baseCol = doorStyleInfo(cab.styleOverride || _p3d?.style).swatch;   // per-cabinet style wins
 
     let _m;
     if (hasToeKick(cab)) {
       // Recessed toe kick: the box starts 4.5" up, with a darker kick board set back 3"
       _m = addBox(pos.x0, TOE_KICK_H, pos.z0, pos.w, h - TOE_KICK_H, pos.d, baseCol);
-      const kick = cabPos(cab.wall, off, cab.width, dep - TOE_RECESS);
+      const kick = cabPos(cab.wall, off, cab.width, dep - TOE_RECESS, cab.wallOffset || 0);
       addBox(kick.x0, 0, kick.z0, kick.w, TOE_KICK_H, kick.d, '#' + shade3D(baseCol, -70).toString(16).padStart(6, '0'));
     } else {
       _m = addBox(pos.x0, baseY, pos.z0, pos.w, h, pos.d, baseCol);
     }
     if (_m) _m.userData.itemId = cab.id; // for selection highlight
+    // Bumped out from the wall (7.1): filler casing on its open sides, in the cabinet's finish
+    casingPieces(r, cab).forEach(pc => {
+      const cr = casingRect(r, pc); if (!cr) return;
+      addBox(cr.x, pc.bottom, cr.y, cr.w, pc.height, cr.h, '#' + shade3D(baseCol, -6).toString(16).padStart(6, '0'));
+    });
     // Doors, drawer fronts and hardware in the cabinet's door style (fronts3d.js)
     const fronts = buildCabinetFronts3D(cab, r, _frontKit, _p3d);
     if (fronts) root.add(fronts);

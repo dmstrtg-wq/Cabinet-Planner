@@ -350,6 +350,42 @@ This phase is the moat. See 4.0 for where these tasks slot into the build order.
 
 ---
 
+### Phase 7 — Field feedback (Dan + family, all in the trade, 2026-10-04)
+
+Notes from Dan's dad, sister and brother-in-law. Each item below is checked against the decision filter (1.1). Verified against the code on 2026-10-04: floating shelves already exist (an appliance-type item with its own price box on the quote, widths 24–42"); the add form already offers a 24"-deep upper "over fridge/appliance"; the project already has a Pulls/Knobs **look** setting (3D/elevation only, not priced); there is no trash/waste cabinet.
+
+**7.1 Wall offset (bump-out) + fridge enclosure** — Accurate + Convincing · Moat · small
+- Any cabinet can be moved out from the wall by a set amount ("Wall offset", edited by double-click, like Hinge side). The box stays its normal depth; the gap behind is cased in with filler/scribe on the exposed sides, as installers do (e.g. a 12" upper over the fridge brought out flush with the 24" run, or deeper).
+- Fridge enclosure: tall panels/filler casing both sides of the fridge, with the upper over it brought flush.
+- Shows in plan, elevation, 3D, Design Check and the order list. Filler used to case the sides is counted on the quote (see open question).
+
+**7.2 Hardware & accessories on the quote, counted from the plan** — Accurate · Moat · medium
+- Auto-count from the actual fronts (frontLayout): pulls/knobs per door and drawer (per the project's hardware choice, with a "knobs on doors + pulls on drawers" option), drawer slides per drawer, trash pull-outs per waste cabinet. Hinges assumed included with the cabinets.
+- New cabinet type: **Waste base** (single trash, or double trash + recycle) with its pull-out kit counted.
+- Other add-ons worth offering (Dan to pick): roll-out trays, spice/tray-divider pull-outs, cutlery/utensil inserts, under-cabinet LED lighting, soft-close upgrades (where not included), shelf pins/extra shelves, touch-up kit.
+- Quantities are suggestions the rep can edit on the quote before printing.
+
+**7.3 Shelving** — Convincing · Parity · small
+- Floating shelves exist; make them any length (not just 24–42"), choose depth/thickness and finish, and allow a stack of several. Any room. Priced on the quote (custom work), not in the price sheet.
+
+**7.4 Room types with their own catalogs** — Faster + Convincing · Moat (whole-job quoting) · large
+- **Bathroom:** vanities single and double (sink count), shower, tub, toilet, mirror, medicine cabinet, sconces/lighting. Linen tower.
+- **Hallway:** linen/storage cabinets, bench/locker units.
+- **Living room:** entertainment center (base + wall units around a TV opening, open shelves).
+- When a room's type is set, the catalog shows that room's items first, with a starter preset. Fixtures (toilet, tub, shower) are scale references and placement only (not quoted unless the company adds a price).
+- Overlaps Phase 4.3/4.4 (multi-room jobs, room templates). Rooms already exist as tabs, so this can start before the Phase 4 rebuild.
+
+**7.5 Kitchen extras (tables, chairs/stools, countertop appliances)** — Convincing · Parity · medium
+- Scale references for the 3D and plan (dining table, chairs, bar stools at an island, coffee maker/mixer/toaster on counters). Looks only, not quoted.
+- Note: Section 1 lists "general furniture libraries (beyond a few scale references like stools/table)" as out of scope. This item stays within that line: a small set of references, not a furniture catalog.
+
+**Order (confirmed by Dan 2026-10-04):** 7.1 → 7.2 → 7.3 → 7.4 (Bathroom first) → 7.5, with 5.6 (share link) and 5.8 (AI price import) discussed alongside 7.2.
+
+**Decisions (Dan, 2026-10-04):**
+- Hardware & accessory prices are **typed on the quote as each-prices** (custom items); the planner supplies the counts and does the math. No price-sheet rows for them.
+- Drawer slides: a **company setting** "Slides included with cabinets" (on = not counted; off = one slide pair per drawer on the quote).
+- Bump-out casing filler is **added to the quote automatically** as filler stock (existing 3"/6" stock pricing), on its own line.
+
 ## 5. Testing checklist (run at the end of every task)
 
 - [ ] Existing saved projects load and look the same (or better, if the task was visual).

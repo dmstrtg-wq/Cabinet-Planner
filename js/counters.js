@@ -78,7 +78,7 @@ function counterRuns(r) {
   roomWalls(r).forEach(wall => {
     groupRuns(wallItemsWithReturns(r, wall).filter(coversCounter)).forEach(run => {   // incl. a corner LS's other leg
       const cabs = run.items.filter(i => CATALOG[i.type]);
-      const depth = Math.max(...run.items.map(i => CATALOG[i.type] ? (i.depth || CATALOG[i.type].depth) : 24));
+      const depth = Math.max(...run.items.map(i => (CATALOG[i.type] ? (i.depth || CATALOG[i.type].depth) : 24) + (i.wallOffset || 0)));   // a bumped-out base pushes the top out too
       const top = cabs.length ? Math.max(...cabs.map(i => itemVerticalRange(i)[1])) : 34.5;
       const ends = runEndsFree(r, wall, [0, top], run.a, run.b);
       const a = run.a - (ends.startFree ? END_PANEL_T + COUNTER_SIDE : 0), b = run.b + (ends.endFree ? END_PANEL_T + COUNTER_SIDE : 0);
@@ -112,11 +112,13 @@ function upperRuns(r) {
   const out = [];
   roomWalls(r).forEach(wall => {
     const uppers = wallItemsWithReturns(r, wall).filter(i => CATALOG[i.type] && itemLevel(i) === 'upper' && i.type !== 'fridgePanel');
+    // grouped by top height and by how far the fronts stand out (a bumped-out upper gets its own crown run)
     const byTop = new Map();
-    uppers.forEach(i => { const t = itemVerticalRange(i)[1]; (byTop.get(t) || byTop.set(t, []).get(t)).push(i); });
-    byTop.forEach((items, top) => groupRuns(items).forEach(run => {
+    uppers.forEach(i => { const k = itemVerticalRange(i)[1] + '|' + ((i.depth || 12) + (i.wallOffset || 0)); (byTop.get(k) || byTop.set(k, []).get(k)).push(i); });
+    byTop.forEach((items, key) => groupRuns(items).forEach(run => {
+      const top = parseFloat(key);
       const bottom = Math.min(...run.items.map(i => itemVerticalRange(i)[0]));
-      const depth = Math.max(...run.items.map(i => i.depth || 12));
+      const depth = Math.max(...run.items.map(i => (i.depth || 12) + (i.wallOffset || 0)));
       out.push({ wall, a: run.a, b: run.b, top, bottom, depth, ...runEndsFree(r, wall, [bottom, top], run.a, run.b) });
     }));
   });
@@ -127,7 +129,7 @@ function tallRuns(r) {
   const out = [];
   roomWalls(r).forEach(wall => groupRuns(wallItems(r, wall).filter(i => TALL_TYPES.includes(i.type))).forEach(run => {
     const top = Math.max(...run.items.map(i => i.height));
-    out.push({ wall, a: run.a, b: run.b, top, bottom: 0, depth: Math.max(...run.items.map(i => i.depth || 24)), ...runEndsFree(r, wall, [0, top], run.a, run.b) });
+    out.push({ wall, a: run.a, b: run.b, top, bottom: 0, depth: Math.max(...run.items.map(i => (i.depth || 24) + (i.wallOffset || 0))), ...runEndsFree(r, wall, [0, top], run.a, run.b) });
   }));
   return out;
 }

@@ -189,7 +189,7 @@ async function exportPDF(btn) {
   if (!checkCompanyProfile()) return;
   const p = activeProj();
   if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
-  const unpricedCabs = p.rooms.reduce((n, room) => n + room.cabinets.filter(c => cabinetPrice(c) == null).length, 0);
+  const unpricedCabs = p.rooms.reduce((n, room) => n + quoteCabinets(room).filter(c => cabinetPrice(c) == null).length, 0);
   if (unpricedCabs > 0) {
     const proceed = confirm(
       `${unpricedCabs} cabinet${unpricedCabs === 1 ? '' : 's'} on this floor plan ${unpricedCabs === 1 ? "doesn't" : "don't"} have a price set for ` +
@@ -390,12 +390,13 @@ async function exportPDF(btn) {
   p.rooms.forEach(room => {
     if (!room.cabinets.length) return;
     cabRows.push([{content:room.name,colSpan:5,styles:{fillColor:[240,232,224],fontStyle:'bold',fontSize:8,textColor:[100,75,42]}}]);
-    room.cabinets.forEach(c => {
+    quoteCabinets(room).forEach(c => {          // incl. bump-out casing filler (7.1)
       const pr=cabinetPrice(c); if (pr!=null) cabSub+=pr;
       const cat=CATALOG[c.type];
       cabRows.push([
         String(c.itemNum || ''),     // # = item number on the plans (3.5)
-        (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':''),
+        (cat?cat.label:c.type)+(c.styleOverride?` [${c.styleOverride}]`:'')+(c.glassDoors?' +Glass':'')
+          +(c.wallOffset?` (out ${fmtFrac(c.wallOffset)} from wall)`:'')+(c._casingFor?` — ${c.note}`:''),
         `${fmtFrac(c.width)}W × ${fmtFrac(c.height)}H × ${c.depth}"D`,
         c.wall.charAt(0).toUpperCase()+c.wall.slice(1),
         pr!=null ? {content:'$'+pr.toFixed(2),styles:{halign:'right',fontStyle:'bold'}}

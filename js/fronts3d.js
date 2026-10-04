@@ -243,7 +243,7 @@ function buildCabinetFronts3D(cab, r, kit, p) {
     if (!o.filled) addPiece(group, kit, kit.cavity || (kit.cavity = new THREE.MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.9 })),
       -cab.width / 2 + 1.5, cab.width / 2 - 1.5, o.y0, o.y1, -0.6, 0.05);
   }
-  const t = (cab.offset || 0) + cab.width / 2, d = cab.depth || CATALOG[cab.type].depth;
+  const t = (cab.offset || 0) + cab.width / 2, d = (cab.depth || CATALOG[cab.type].depth) + (cab.wallOffset || 0);   // + bump-out (7.1)
   group.position.set(f.start[0] + f.dir[0] * t + f.inward[0] * d, 0, f.start[1] + f.dir[1] * t + f.inward[1] * d);
   group.rotation.y = Math.atan2(f.inward[0], f.inward[1]);   // local +z → into the room
   return group;

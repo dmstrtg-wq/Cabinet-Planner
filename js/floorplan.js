@@ -325,6 +325,14 @@ function renderCanvas() {
     }
     const _rc = itemRect(r, { ...cab, wall }, cab.depth); if (!_rc) return;
     const x = RX + _rc.x*scale, y = RY + _rc.y*scale, w = _rc.w*scale, h = _rc.h*scale;
+    // Bumped out from the wall (7.1): the casing filler on its open sides, and the gap behind
+    if (cab.wallOffset > 0) {
+      const back = itemRect(r, { ...cab, wall, wallOffset: 0 }, cab.wallOffset);
+      if (back) { ctx.save(); ctx.strokeStyle = 'rgba(100,116,139,0.6)'; ctx.setLineDash([2, 2]); ctx.lineWidth = 1;
+        ctx.strokeRect(RX + back.x*scale, RY + back.y*scale, back.w*scale, back.h*scale); ctx.restore(); }
+      casingPieces(r, cab).forEach(pc => { const cr = casingRect(r, pc); if (!cr) return;
+        ctx.fillStyle = '#9CA3AF'; ctx.fillRect(RX + cr.x*scale, RY + cr.y*scale, Math.max(1.5, cr.w*scale), Math.max(1.5, cr.h*scale)); });
+    }
     if (_fitIds.has(cab.id)) _flagRects.push({x, y, w, h});
 
     if (isCorner) {
