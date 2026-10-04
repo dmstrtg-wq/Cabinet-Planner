@@ -422,6 +422,7 @@ async function exportPDF(btn) {
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac=APPLIANCES[a.type]||{};
+      if (ac.fixture && !(a.price>0)) return;              // bath fixtures only when priced (7.4)
       const has = a.price!=null && a.price>0; if (has) appSub+=a.price;
       const shelfInfo = a.type === 'floatingShelf' ? ((n => (n > 1 ? ` x${n}` : '') + `, ${fmtFrac(itemDepth(a))} deep`)(shelfStack(a).n)) : '';
       appRows.push([String(a.itemNum || ''), (ac.label||a.type) + shelfInfo, fmtFrac(a.width), a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—',

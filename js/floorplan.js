@@ -492,7 +492,27 @@ function renderCanvas() {
       else { ctx.beginPath(); ctx.moveTo(x,y+h*0.5); ctx.lineTo(x+w,y+h*0.5); ctx.stroke(); }
       ctx.setLineDash([]);
     }
-    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.8,10))}px sans-serif`;
+    // Bathroom fixture symbols (7.4), drawn in the fixture's own frame (wall side = "back")
+    if (['toilet', 'tub', 'shower'].includes(app.type)) {
+      const f = wallFrame(r, wall);
+      const P = (t, d) => { const q = [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d]; return [RX + q[0]*scale, RY + q[1]*scale]; };
+      const a0 = app.offset || 0, a1 = a0 + app.width, D = itemDepth(app);
+      ctx.save(); ctx.strokeStyle = '#64748B'; ctx.lineWidth = 1.2;
+      if (app.type === 'toilet') {
+        const c0 = P(a0 + 1, 0), c1 = P(a1 - 1, 8);                                  // tank
+        ctx.strokeRect(Math.min(c0[0], c1[0]), Math.min(c0[1], c1[1]), Math.abs(c1[0]-c0[0]), Math.abs(c1[1]-c0[1]));
+        const cc = P((a0 + a1) / 2, 18), along = Math.abs(f.dir[0]) > 0.5;          // bowl
+        ctx.beginPath(); ctx.ellipse(cc[0], cc[1], (along ? 7.5 : 10) * scale, (along ? 10 : 7.5) * scale, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (app.type === 'tub') {
+        const c0 = P(a0 + 3, 3), c1 = P(a1 - 3, D - 3);
+        ctx.beginPath(); ctx.roundRect(Math.min(c0[0], c1[0]), Math.min(c0[1], c1[1]), Math.abs(c1[0]-c0[0]), Math.abs(c1[1]-c0[1]), 6 * scale); ctx.stroke();
+      } else {
+        const q = [P(a0, 0), P(a1, D), P(a1, 0), P(a0, D)];                          // shower: the plan "X"
+        ctx.beginPath(); ctx.moveTo(...q[0]); ctx.lineTo(...q[1]); ctx.moveTo(...q[2]); ctx.lineTo(...q[3]); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.fillStyle = acat.fixture ? '#334155' : '#fff'; ctx.font=`bold ${Math.max(7,Math.min(scale*1.8,10))}px sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(acat.abbr, x+w/2, y+h/2);
   }

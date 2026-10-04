@@ -22,6 +22,7 @@ const DESIGN_RULES = {
   upperAboveCounter: 18,                                // bottom of uppers over a countertop
   hoodAboveCooktop: 24,                                 // bottom of a hood over the cooking surface
   cornerClearance: 1.5,                                 // filler where two runs meet so doors/drawers clear
+  toilet: { side: 15, front: 21, frontComfort: 30 },     // bathroom (7.4): centre to a side obstruction; clear space in front (code / recommended)
   minOverlap: 6,                                        // runs must face each other at least this much to form an aisle
 };
 const DC_LEVELS = { problem: { label: 'Problem', color: '#DC2626' }, warning: { label: 'Warning', color: '#D97706' }, tip: { label: 'Tip', color: '#2563EB' } };
@@ -98,7 +99,8 @@ function computeDesignIssues(r) {
   // ── 2. Aisles between runs that face each other, and between runs and islands
   const floorByWall = {}; walls.forEach(w => { floorByWall[w] = items.filter(i => i.wall === w && _dcIsFloor(r, i)); });
   const aisles = new Map();      // key → { gap, a, b, rect }
-  walls.forEach((wa, ia) => {
+  const isKitchen = roomKind(r) === 'kitchen';                          // (kitchen aisle guidelines; bathrooms have their own rules)
+  if (isKitchen) walls.forEach((wa, ia) => {
     const fa = wallFrame(r, wa); if (!fa) return;
     const targets = [...islands];
     walls.forEach((wb, ib) => {
@@ -228,6 +230,32 @@ function computeDesignIssues(r) {
       }
     });
   }));
+
+  // ── 7b. Bathrooms (7.4): toilet clearances
+  items.filter(i => i.type === 'toilet').forEach(T => {
+    const f = wallFrame(r, T.wall); if (!f) return;
+    const len = wallLength(r, T.wall), a = T.offset || 0, ctr = a + T.width / 2, depthT = itemDepth(T);
+    let left = ctr, right = len - ctr, front = Infinity;
+    const others = [...items.filter(i => i.id !== T.id && i.wall && _dcIsFloor(r, i)), ...islands];
+    others.forEach(o => {
+      const so = _dcSpan(f, rectsOf(o));
+      if (so.o0 < depthT - 0.5 && so.o1 > 0.5) {                      // beside it
+        if (so.a1 <= ctr + 0.01) left = Math.min(left, ctr - so.a1);
+        else if (so.a0 >= ctr - 0.01) right = Math.min(right, so.a0 - ctr);
+      } else if (so.o0 >= depthT - 0.5 && so.a0 < a + T.width - 0.5 && so.a1 > a + 0.5) front = Math.min(front, so.o0 - depthT);   // in front
+    });
+    walls.forEach(w => {                                               // the wall it faces
+      const fb = wallFrame(r, w); if (!fb || f.inward[0] * fb.inward[0] + f.inward[1] * fb.inward[1] > -0.99) return;
+      const d = _dcOut(f, fb.start) - depthT; if (d > 0) front = Math.min(front, d);
+    });
+    const side = Math.min(left, right);
+    if (side < R.toilet.side)
+      add('problem', 'wc-side:' + T.id, `Toilet is ${_dcIn(side)} from its centre to the side`, `Code minimum is ${R.toilet.side}" from the centre of the toilet to a wall, vanity or tub (18" is more comfortable).`, [T]);
+    if (front < R.toilet.front)
+      add('problem', 'wc-front:' + T.id, `Only ${_dcIn(front)} clear in front of the toilet`, `Code minimum is ${R.toilet.front}" of clear floor in front (${R.toilet.frontComfort}" recommended).`, [T]);
+    else if (front < R.toilet.frontComfort)
+      add('tip', 'wc-front:' + T.id, `${_dcIn(front)} clear in front of the toilet`, `${R.toilet.frontComfort}" is the recommended clear space.`, [T]);
+  });
 
   // ── 7. Ordering tips: single doors with no hinge side yet
   const noHinge = r.cabinets.filter(c => needsHinge(c) && !c.hinge);

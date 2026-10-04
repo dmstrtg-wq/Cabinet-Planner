@@ -425,6 +425,7 @@
             <button type="button" data-cat="corner" onclick="setPaletteCategory('corner')">Corner</button>
             <button type="button" data-cat="fill" onclick="setPaletteCategory('fill')">Fillers &amp; Panels</button>
             <button type="button" data-cat="app" onclick="setPaletteCategory('app')">Appliances</button>
+            <button type="button" data-cat="bath" onclick="setPaletteCategory('bath')">Bath</button>
           </div>
           <div id="palette-items" class="palette-items"></div>
         </div>
@@ -487,6 +488,7 @@
             <option value="vanity">Vanity</option>
             <option value="drawerBase">Drawer Base (3-drawer)</option>
             <option value="mwDrawerBase">Microwave Drawer Base</option>
+            <option value="linenTall">Linen Tower (bath)</option>
             <option value="cornerBase">Corner Base (Blind)</option>
             <option value="lazysusan">Lazy Susan Corner</option>
             <option value="diagWall">Diagonal Corner Wall</option>
@@ -537,6 +539,10 @@
             <option value="microwaveDrawer">Microwave Drawer (in its base)</option>
             <option value="beverageCooler">Beverage Cooler (UC)</option>
             <option value="floatingShelf">Floating Shelf</option>
+            <optgroup label="Bathroom">
+              <option value="toilet">Toilet</option><option value="tub">Bathtub (alcove)</option><option value="shower">Shower</option>
+              <option value="mirror">Mirror</option><option value="medicineCabinet">Medicine Cabinet</option><option value="sconce">Wall Sconce</option>
+            </optgroup>
           </select>
           <select id="app-width" class="cp-select" onchange="refreshPlacementOffsets()"><option value="">— Width —</option></select>
           <select id="app-height-sel" class="cp-select hidden"><option value="">— Height —</option></select>
@@ -778,7 +784,9 @@
       <div class="form-group"><label>Customer Phone</label><input type="tel" id="np-phone" placeholder="(555) 000-0000"></div>
       <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(on quote)</span></label><input type="text" id="np-company" placeholder=""></div>
     </div>
-    <div class="form-group"><label>Project Type</label><select id="np-type"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
+    <div class="form-group"><label>Project Type</label><select id="np-type" onchange="syncStarterOption('np')"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
+    <div class="form-group" id="np-starter-group" style="display:none;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
+      <input type="checkbox" id="np-starter" checked> Start with a bathroom layout (vanity, mirror, sconces, toilet, tub or shower — sized to the room)</label></div>
     <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
     <div class="form-row">
       <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder=""></div>
@@ -840,6 +848,13 @@
   <div class="modal">
     <h3>Add Room</h3>
     <div class="form-group"><label>Room Name</label><input type="text" id="ar-name" placeholder=""></div>
+    <div class="form-row">
+      <div class="form-group"><label for="ar-kind">Room Type</label><select id="ar-kind" onchange="syncStarterOption('ar')">
+        <option value="kitchen">Kitchen</option><option value="bath">Bathroom</option><option value="hall">Hallway</option>
+        <option value="living">Living room</option><option value="laundry">Laundry</option><option value="other">Other</option></select></div>
+      <div class="form-group" id="ar-starter-group" style="display:none;align-self:end;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
+        <input type="checkbox" id="ar-starter" checked> Start with a bathroom layout</label></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" value="120" min="12" max="1200"></div>
       <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" value="120" min="12" max="1200"></div>

@@ -54,12 +54,15 @@ function createProject() {
   const customer = document.getElementById('np-customer').value.trim();
   if (!customer) { document.getElementById('np-customer').focus(); return; }
   const dims = readRoomDimFields('np'); if (!dims) return;
+  const npType = document.getElementById('np-type').value;
   const room = {
-    id: uid(), name: document.getElementById('np-type').value,
+    id: uid(), name: npType,
+    kind: /bath|vanity/i.test(npType) ? 'bath' : /laundry/i.test(npType) ? 'laundry' : /other/i.test(npType) ? 'other' : 'kitchen',
     walls: dims.walls,
     ceilingHeight: dims.ceilingHeight,
     cabinets: [], openings: []
   };
+  if (room.kind === 'bath' && document.getElementById('np-starter')?.checked) bathStarterLayout(room);
   const proj = {
     id: newId(), customer,
     phone:   document.getElementById('np-phone').value.trim(),
@@ -167,8 +170,69 @@ function renameProject(id) {
 // ════════════════════════════
 // ROOM
 // ════════════════════════════
+// Show the "start with a bathroom layout" option only for bathrooms (7.4)
+function syncStarterOption(prefix) {
+  const kindEl = document.getElementById(prefix === 'np' ? 'np-type' : 'ar-kind');
+  const isBath = prefix === 'np' ? /bath|vanity/i.test(kindEl.value) : kindEl.value === 'bath';
+  const g = document.getElementById(prefix + '-starter-group'); if (g) g.style.display = isBath ? '' : 'none';
+}
+// A starter bathroom sized to the room (7.4): tub (or a shower if the end wall is too short)
+// across the west wall; on the north wall a toilet with code clearance from the tub, then the
+// vanity (double sink at 60"+), a mirror and two sconces over it, a cabinet over the toilet,
+// and a linen tower if there's room. Everything is ordinary items — move, resize or delete.
+function bathStarterLayout(r) {
+  let n = 0;
+  const cab = (type, wall, width, offset, extra = {}) => ({ id: uid(), type, wall, width, offset, height: defaultCabHeight(type, r),
+    depth: CATALOG[type].depth, note: '', wallBottom: null, glassDoors: false, styleOverride: null, itemNum: ++n, ...extra });
+  const app = (type, wall, width, offset, extra = {}) => ({ id: uid(), type, wall, width, offset, height: APPLIANCES[type].height,
+    note: '', customElevBottom: null, price: null, itemNum: ++n, ...extra });
+  const pick = (list, max) => list.filter(v => v <= max + 0.01).pop();
+  r.cabinets = r.cabinets || []; r.appliances = r.appliances || [];
+  const west = r.walls.west, north = r.walls.north;
+  // Bathing: a tub that fits the end wall, else a 48" (or smaller) shower
+  const tubW = west >= 59.9 && west <= 74 ? pick(APPLIANCES.tub.widths, west) : null;
+  let bathDepth = 0;
+  if (tubW) { r.appliances.push(app('tub', 'west', tubW, Math.max(0, (west - tubW) / 2))); bathDepth = APPLIANCES.tub.depth; }
+  else { const sw = pick(APPLIANCES.shower.widths, Math.min(48, west)); if (sw) { r.appliances.push(app('shower', 'west', sw, 0, { depth: 36 })); bathDepth = 36; } }
+  // Toilet: 15" from the tub/shower to its centre (code minimum), plus a little
+  const toiletOff = bathDepth + 6;
+  if (toiletOff + 20 <= north) r.appliances.push(app('toilet', 'north', 20, toiletOff));
+  r.cabinets.push(cab('wall', 'north', 24, toiletOff - 2, { height: 30, depth: 12, wallBottom: 60 }));   // over-the-toilet cabinet
+  // Vanity: 15" from the toilet's centre to the vanity's edge, as wide as fits (leave room for a linen tower if wide)
+  const vOff = toiletOff + 10 + 15;
+  const room4linen = north - vOff >= 60 + 18 ? 18 : 0;
+  const vW = pick(CATALOG.vanity.widths, north - vOff - room4linen);
+  if (vW) {
+    const dbl = vW >= 60;
+    r.cabinets.push(cab('vanity', 'north', vW, vOff, { sinks: dbl ? 2 : 1 }));
+    // A mirror over each bowl. Sconces flank the mirrors when there's 7" beside them (and
+    // stay inside the vanity's width); otherwise one sconce goes centred above the mirror.
+    const bays = dbl ? [[vOff, vOff + vW / 2], [vOff + vW / 2, vOff + vW]] : [[vOff, vOff + vW]];
+    const mirrors = bays.map(([a0, a1]) => {
+      const bay = a1 - a0, mW = pick(APPLIANCES.mirror.widths, bay - 14) || pick(APPLIANCES.mirror.widths, bay - 2);
+      if (!mW) return null;
+      const m = app('mirror', 'north', mW, a0 + (bay - mW) / 2); r.appliances.push(m); return m;
+    }).filter(Boolean);
+    const lo = vOff - 1, hi = vOff + vW - 6;                          // where a sconce may go
+    const spots = [];
+    mirrors.forEach((m, k) => {
+      const left = m.offset - 7, right = m.offset + m.width + 1;
+      const next = mirrors[k + 1];
+      if (left >= lo && (k === 0)) spots.push(left);
+      if (next) { const mid = (m.offset + m.width + next.offset) / 2 - 3; if (next.offset - (m.offset + m.width) >= 7) spots.push(mid); }
+      else if (right <= hi) spots.push(right);
+    });
+    if (spots.length >= mirrors.length + 1) spots.forEach(x => r.appliances.push(app('sconce', 'north', 6, x)));
+    else mirrors.forEach(m => r.appliances.push(app('sconce', 'north', 6, m.offset + m.width / 2 - 3,
+      { customElevBottom: itemVerticalRange(m)[1] + 3 })));
+    if (room4linen) r.cabinets.push(cab('linenTall', 'north', 18, vOff + vW, { hinge: 'L' }));
+  }
+  r.cabinets.filter(c => needsHinge(c) && !c.hinge).forEach(c => { c.hinge = 'L'; });
+}
 function openAddRoomModal() {
   document.getElementById('ar-name').value = '';
+  const k = document.getElementById('ar-kind'); if (k) k.value = 'kitchen';
+  syncStarterOption('ar');
   setRoomDimFields('ar', ROOM_DIM_DEFAULTS);
   openModal('modal-add-room');
   setTimeout(() => document.getElementById('ar-name').focus(), 50);
@@ -177,8 +241,10 @@ function addRoom() {
   const p = activeProj(); if (!p) return;
   const arShape = document.querySelector('input[name="ar-shape"]:checked')?.value || 'rect';
   const dims = readRoomDimFields('ar'); if (!dims) return;
+  const kind = document.getElementById('ar-kind')?.value || 'kitchen';
   const room = {
-    id: uid(), name: document.getElementById('ar-name').value.trim() || 'Room',
+    id: uid(), name: document.getElementById('ar-name').value.trim() || ROOM_KINDS[kind] || 'Room',
+    kind,
     shape: arShape,
     walls: dims.walls,
     ceilingHeight: dims.ceilingHeight,
@@ -191,6 +257,7 @@ function addRoom() {
       depth:  parseInt(document.getElementById('ar-cut-depth').value)  || 48,
     };
   }
+  if (kind === 'bath' && arShape !== 'L' && document.getElementById('ar-starter')?.checked) bathStarterLayout(room);
   p.rooms.push(room);
   state.activeRoomId = room.id;
   // Reset ar-shape radio to rect for next time
@@ -288,7 +355,7 @@ function wallFrame(r, wall) {
 function itemDepth(item) {
   if (item.type === 'diagWall') return 12;    // diagonal corner uppers: 12" sides, always
   if (CATALOG[item.type]) return item.depth || CATALOG[item.type].depth;
-  if (item.type === 'floatingShelf' && item.depth) return item.depth;          // shelves pick their depth (7.3)
+  if (item.depth && APPLIANCES[item.type] && (APPLIANCES[item.type].depths || item.type === 'floatingShelf')) return item.depth;   // shelves, showers pick their depth
   return APPLIANCES[item.type]?.depth || 24;
 }
 // Floating shelves (7.3): a stack of `stack` shelves, `spacing` apart (bottom to bottom),
@@ -598,7 +665,7 @@ function defaultCabHeight(type, r) {
   const upper = ceiling >= 120 ? 42 : ceiling >= 108 ? 36 : 30;
   let want = cat.heights[0];
   if (type === 'wall' || type === 'diagWall') want = upper;
-  else if (type === 'tall' || type === 'ovenTall' || type === 'fridgePanel') want = 54 + upper;
+  else if (type === 'tall' || type === 'ovenTall' || type === 'linenTall' || type === 'fridgePanel') want = 54 + upper;
   return cat.heights.includes(want) ? want : cat.heights[0];
 }
 // Height band an item fills on its wall, in inches from the floor. Two items only
@@ -1092,7 +1159,7 @@ function onPricingToggle(fromToolbar) {
   document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
-function renderAll() { renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); if (typeof renderDesignCheck === 'function') renderDesignCheck(); }
+function renderAll() { if (typeof syncPaletteToRoom === 'function') syncPaletteToRoom(); renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); if (typeof renderDesignCheck === 'function') renderDesignCheck(); }
 
 // ════════════════════════════
 // STYLE PANEL

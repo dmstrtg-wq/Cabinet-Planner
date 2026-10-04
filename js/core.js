@@ -497,7 +497,7 @@ const CATALOG = {
   wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[12,15,18,30,36,42], depth:12, color:'#93C5FD', abbr:'W',  basePrice: w => w*3.8 },
   tall:       { label:'Tall/Pantry', widths:[15,18,24,30],                  heights:[84,90,96], depth:24, color:'#1D4ED8', abbr:'WP', basePrice: w => w*11  },
   sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB', basePrice: w => w*4.8 },
-  vanity:     { label:'Vanity',      widths:[24,30,36,48,60],               heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
+  vanity:     { label:'Vanity',      widths:[24,30,36,48,60,72],            heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
   drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
   cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB',  basePrice: w => w*6  },
   lazysusan:   { label:'Lazy Susan',            widths:[33,36],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
@@ -511,6 +511,8 @@ const CATALOG = {
   // priced from the price sheet, the appliance placed inside it keeps its own price.
   ovenTall:     { label:'Oven Cabinet',          widths:[27,30,33],  heights:[84,90,96],          depth:24, color:'#1E3A8A', abbr:'OC',  basePrice: w => w*12 },
   mwDrawerBase: { label:'Microwave Drawer Base', widths:[24,30],     heights:[34.5],              depth:24, color:'#7C3AED', abbr:'MDB', basePrice: w => w*5  },
+  // Bathroom (7.4)
+  linenTall:    { label:'Linen Tower',           widths:[15,18,24],  heights:[84,90,96],          depth:21, color:'#0E7490', abbr:'LT',  basePrice: w => w*10 },
 };
 const STYLES = [
   {tier:'Gold',     code:'AW', name:'Ice White Shaker',      swatch:'#F2F1EE'},
@@ -645,7 +647,26 @@ const APPLIANCES = {
   // Built-ins: these sit inside their cabinet (builtIn = the cabinet type that holds them)
   wallOven:        { label:'Wall Oven',                 widths:[27,30],       heights:[29,51], height:29, depth:24, color:'#374151', abbr:'WO',  wallMount:false, elevBottom:32, elevBottomFor: a => (a.height || 29) >= 50 ? 20 : 32, elevBottomOptions:[16,20,24,28,32,36,40], builtIn:'ovenTall' },
   microwaveDrawer: { label:'Microwave Drawer',          widths:[24,30],       height:15,             depth:24, color:'#4B5563', abbr:'MWD', wallMount:false, elevBottom:18.5, builtIn:'mwDrawerBase' },
+  // Bathroom fixtures (7.4): placed for layout and looks. They only go on the quote if a
+  // price is entered (fixture:true). Sizes are common US sizes.
+  toilet:          { label:'Toilet',                    widths:[20],          height:30,             depth:28, color:'#E5E7EB', abbr:'WC',  wallMount:false, elevBottom:0,  fixture:true },
+  tub:             { label:'Bathtub (alcove)',          widths:[60,66,72],    height:20,             depth:30, color:'#E5E7EB', abbr:'TUB', wallMount:false, elevBottom:0,  fixture:true },
+  shower:          { label:'Shower',                    widths:[32,36,42,48,60], height:78,          depth:36, color:'#BAE6FD', abbr:'SHW', wallMount:false, elevBottom:0,  fixture:true, depths:[32,36,42,48] },
+  mirror:          { label:'Mirror',                    widths:[24,30,36,48,60], heights:[30,36,42], height:36, depth:1, color:'#CBD5E1', abbr:'MIR', wallMount:true, elevBottom:42, elevBottomOptions:[36,38,40,42,44,46,48], fixture:true },
+  medicineCabinet: { label:'Medicine Cabinet',          widths:[15,20,24,30], height:26,             depth:5,  color:'#94A3B8', abbr:'MC',  wallMount:true,  elevBottom:44, elevBottomOptions:[40,42,44,46,48], fixture:true },
+  sconce:          { label:'Wall Sconce',               widths:[6],           height:12,             depth:6,  color:'#FDE68A', abbr:'SC',  wallMount:true,  elevBottom:66, elevBottomOptions:[60,62,64,66,68,70,72], fixture:true },
 };
+// What kind of room a room is (7.4): stored as room.kind, or worked out from its name
+const ROOM_KINDS = { kitchen: 'Kitchen', bath: 'Bathroom', hall: 'Hallway', living: 'Living room', laundry: 'Laundry', other: 'Other' };
+function roomKind(r) {
+  if (r && ROOM_KINDS[r.kind]) return r.kind;
+  const n = ((r && r.name) || '').toLowerCase();
+  if (/bath|powder|vanity|ensuite|en-suite/.test(n)) return 'bath';
+  if (/hall|entry|mud/.test(n)) return 'hall';
+  if (/living|family|den|media|entertain|great room/.test(n)) return 'living';
+  if (/laundry|utility/.test(n)) return 'laundry';
+  return 'kitchen';
+}
 // Cabinets an appliance may sit inside (so they don't count as overlapping): built-ins in
 // their own cabinet, and a cooktop dropped into the counter over a base cabinet.
 const APPLIANCE_HOSTS = { wallOven: ['ovenTall'], microwaveDrawer: ['mwDrawerBase'], cooktop: ['base', 'drawerBase'] };
@@ -943,7 +964,7 @@ function cabinetPrice(cab) {
   if (ov != null) {
     if (typeof ov === 'object') {
       // Per-size, per-finish table from an uploaded price sheet.
-      const sizeKey = (cab.type === 'wall' || cab.type === 'tall' || cab.type === 'ovenTall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
+      const sizeKey = (cab.type === 'wall' || cab.type === 'tall' || cab.type === 'ovenTall' || cab.type === 'linenTall') ? `${cab.width}x${cab.height}` : `${cab.width}`;
       const bySize = ov[sizeKey];
       if (bySize && typeof bySize === 'object') {
         const styleCode = cab.styleOverride || activeProj()?.style || 'AW';

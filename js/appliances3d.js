@@ -283,6 +283,56 @@ function buildAppliance3D(r, app, kit, frontKit, p) {
       _ahandle(g, kit, R - 1.6, h * 0.6, D, Math.min(14, h * 0.4), true);
       break;
     }
+    // ── Bathroom fixtures (7.4) ──
+    case 'toilet': {
+      const china = kit.china || (kit.china = new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.22, metalness: 0.02 }));
+      body(china, L + 1, R - 1, 15, 30, 0, 8);                                    // tank
+      _abox(g, kit, china, L + 0.5, R - 0.5, 29.5, 31, -0.2, 8.6);               // tank lid
+      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(7.5, 5.5, 15, 24), china);   // bowl, oval
+      bowl.scale.set(1, 1, 1.35); bowl.position.set(0, 7.5, 8 + 10); bowl.castShadow = true; g.add(bowl);
+      const seat = new THREE.Mesh(new THREE.TorusGeometry(6.6, 1.1, 8, 24), new THREE.MeshStandardMaterial({ color: 0xd6d2ca, roughness: 0.35 }));
+      seat.rotation.x = Math.PI / 2; seat.scale.set(1, 1.35, 1); seat.position.set(0, 15.4, 18); g.add(seat);
+      _abox(g, kit, kit.steel, R - 4, R - 2, 26, 26.6, 8.6, 9.6, false);          // flush lever
+      break;
+    }
+    case 'tub': {
+      const china = kit.china || (kit.china = new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.22, metalness: 0.02 }));
+      body(china, L, R, 0, h, 0, D);                                              // tub body + apron
+      _abox(g, kit, kit.water || (kit.water = new THREE.MeshStandardMaterial({ color: 0xdfe9ee, roughness: 0.15, metalness: 0.05 })), L + 3, R - 3, h - 0.05, h + 0.02, 3, D - 3, false);   // basin
+      _abox(g, kit, kit.steel, L + 4, L + 7, h + 12, h + 13, 0, 4);               // spout
+      break;
+    }
+    case 'shower': {
+      const tray = kit.china || (kit.china = new THREE.MeshStandardMaterial({ color: 0xe9e6df, roughness: 0.22, metalness: 0.02 }));
+      const glass = kit.showerGlass || (kit.showerGlass = new THREE.MeshStandardMaterial({ color: 0xd8ecf3, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.28 }));
+      body(tray, L, R, 0, 4, 0, D);                                               // base / curb
+      _abox(g, kit, glass, L, R, 4, h, D - 0.4, D, false);                        // glass front
+      _abox(g, kit, kit.steel, L, R, h - 0.6, h, D - 0.6, D, false);              // header
+      _abox(g, kit, kit.steel, -1, 1, 62, 64, 0, 6);                              // shower arm + head
+      _abox(g, kit, kit.steel, -3, 3, 60.5, 61.5, 4, 7, false);
+      _ahandle(g, kit, R - 3, 40, D, 12, true);                                   // door pull
+      break;
+    }
+    case 'mirror': {                                    // (no reflections in this scene: a light, slightly lit glass reads as mirror)
+      const silver = kit.mirrorGlass || (kit.mirrorGlass = new THREE.MeshStandardMaterial({ color: 0xe3ebf1, roughness: 0.04, metalness: 0.15, emissive: 0x9fb3c2, emissiveIntensity: 0.25 }));
+      body(kit.dark, L, R, b, top, 0, 0.75);                                      // frame
+      _abox(g, kit, silver, L + 1, R - 1, b + 1, top - 1, 0.75, 1, false);
+      break;
+    }
+    case 'medicineCabinet': {
+      const silver = kit.mirrorGlass || (kit.mirrorGlass = new THREE.MeshStandardMaterial({ color: 0xe3ebf1, roughness: 0.04, metalness: 0.15, emissive: 0x9fb3c2, emissiveIntensity: 0.25 }));
+      body(kit.finish('white'), L, R, b, top, 0, D - 0.4);
+      _abox(g, kit, silver, L + 0.4, R - 0.4, b + 0.4, top - 0.4, D - 0.4, D, false);   // mirrored door
+      break;
+    }
+    case 'sconce': {
+      const shade = kit.shade || (kit.shade = new THREE.MeshStandardMaterial({ color: 0xfff4d6, emissive: 0xffe2a0, emissiveIntensity: 0.6, roughness: 0.6 }));
+      body(kit.steel, -2, 2, b + 3, b + 7, 0, 0.6);                               // backplate
+      _abox(g, kit, kit.steel, -0.4, 0.4, b + 4.6, b + 5.4, 0.6, 3.5, false);    // arm
+      const glassShade = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.6, 6, 16), shade);
+      glassShade.position.set(0, b + 7, 3.5); g.add(glassShade);
+      break;
+    }
     case 'floatingShelf': {                              // a stack of shelves (7.3), in the chosen finish
       const s = shelfStack(app), fk = shelfFinish(app), F = SHELF_FINISHES[fk];
       const m = fk === 'cabinet' ? frontKit.paint(style, -4)

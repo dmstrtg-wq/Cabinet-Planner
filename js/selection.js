@@ -121,6 +121,8 @@ function openItemPopover(item, clientX, clientY) {
     html += row('Width', `<select data-f="width" ${selStyle}>${CATALOG[item.type].widths.map(w => opt(w, w + '"', w === item.width)).join('')}</select>`);
     if (CATALOG[item.type].heights.length > 1)
       html += row('Height', `<select data-f="height" ${selStyle}>${CATALOG[item.type].heights.map(h => opt(h, h + '"', h === item.height)).join('')}</select>`);
+    if (item.type === 'vanity' && item.width >= 47.9)
+      html += row('Sinks', `<select data-f="sinks" ${selStyle}>${opt('1', 'Single sink', item.sinks !== 2)}${opt('2', 'Double sink', item.sinks === 2)}</select>`);
     if (needsHinge(item))
       html += row('Hinge side', `<select data-f="hinge" ${selStyle}>${opt('', 'Specify…', !item.hinge)}${opt('L', 'Left', item.hinge === 'L')}${opt('R', 'Right', item.hinge === 'R')}</select>`);
     if (item.type === 'base')
@@ -148,6 +150,8 @@ function openItemPopover(item, clientX, clientY) {
     const fin = applianceFinishOptions(item.type);
     if (fin.length)
       html += row('Finish', `<select data-f="finish" ${selStyle}>${fin.map(([k, l]) => opt(k, l, k === applianceFinish(item))).join('')}</select>`);
+    if (acat.depths && item.type !== 'floatingShelf')
+      html += row('Depth', `<select data-f="appDepth" ${selStyle}>${acat.depths.map(d => opt(d, d + '"', d === itemDepth(item))).join('')}</select>`);
     if (item.type === 'refrigerator')
       html += `<button data-act="casefridge" style="width:100%;margin-top:6px;padding:6px 8px;border-radius:6px;border:1px solid var(--border,#e2e8f0);background:#fff;cursor:pointer;font-weight:600;font-size:12px;" title="End panels on both sides, and the upper above brought out flush with the 24&quot; run">Case in this fridge</button>`;
   }
@@ -195,6 +199,8 @@ function applyItemEdit(item, field, value) {
   else if (field === 'styleOverride') item.styleOverride = value || null;
   else if (field === 'hinge') item.hinge = value || null;
   else if (field === 'variant') item.variant = value || null;
+  else if (field === 'sinks') item.sinks = value === '2' ? 2 : 1;                       // 7.4 double vanity
+  else if (field === 'appDepth') item.depth = parseFloat(value) || null;                  // 7.4 shower depth
   else if (field === 'trash') item.trash = ['single', 'double'].includes(value) ? value : null;   // 7.2
   else if (field === 'wallOffset') item.wallOffset = Math.max(0, Math.min(36, parseInches(value) || 0)) || null;   // 7.1 bump-out
   else if (field === 'finish') item.finish = value || null;

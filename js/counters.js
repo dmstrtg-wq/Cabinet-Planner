@@ -37,7 +37,13 @@ function coversCounter(i) {
   if (CATALOG[i.type]) return COUNTER_CAB_TYPES.includes(i.type) || isFloorFiller(i);
   return UNDER_COUNTER_APPS.includes(i.type);
 }
-const TALL_TYPES = ['tall', 'ovenTall'];
+const TALL_TYPES = ['tall', 'ovenTall', 'linenTall'];
+// Vanity tops get their bowls (7.4): one centred, or two for a double vanity — as sink-sized spots
+function vanityBowls(v) {
+  const a = v.offset || 0, w = v.width;
+  if (v.sinks === 2 && w >= 47.9) { const half = w / 2; return [{ offset: a + half / 2 - 11, width: 22 }, { offset: a + half + half / 2 - 11, width: 22 }]; }
+  return [{ offset: a + w / 2 - 11, width: 22 }];
+}
 function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || TALL_TYPES.includes(cab.type) || isFloorFiller(cab); }
 function roomWalls(r) { return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])]; }
 
@@ -83,7 +89,7 @@ function counterRuns(r) {
       const ends = runEndsFree(r, wall, [0, top], run.a, run.b);
       const a = run.a - (ends.startFree ? END_PANEL_T + COUNTER_SIDE : 0), b = run.b + (ends.endFree ? END_PANEL_T + COUNTER_SIDE : 0);
       out.push({ wall, a, b, fullA: a, fullB: b,   // fullA/B: before corner trimming (elevations see the corner piece end-on)
-        depth: depth + COUNTER_FRONT, top, sinks: run.items.filter(i => i.type === 'sink'), ...ends, cabA: run.a, cabB: run.b });
+        depth: depth + COUNTER_FRONT, top, sinks: run.items.filter(i => i.type === 'sink').concat(run.items.filter(i => i.type === 'vanity').flatMap(vanityBowls)), ...ends, cabA: run.a, cabB: run.b });
     });
   });
   // Corners: two runs overlap where they meet. The longer run keeps the corner; the

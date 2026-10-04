@@ -100,6 +100,15 @@ function buildWall3D(wallName, lengthAxisSize, ceiling, openings, color) {
   return mesh;
 }
 
+// Ray-cast point-in-polygon (polygon = [[x,z],…]) — which side of an L-room edge is the room
+function _pointInPoly(pt, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, zi] = poly[i], [xj, zj] = poly[j];
+    if ((zi > pt[1]) !== (zj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - zi) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
 // Floor reference grid (12" squares)
 function buildFloorGrid3D(roomW, roomD) {
   const pts = [];
@@ -259,14 +268,17 @@ function renderIsometric() {
         : (ax < 0.1 ? 'west'  : Math.abs(ax-roomW)<0.1 ? 'east'  : 'step1');
       const mesh = buildWall3D(wallName, length, ceiling, openings, wallColors[wallName]||0xF4F6F8);
       tagCutaway(mesh, wallName);
+      // The extrusion runs +z (horizontal edges) or −x (vertical edges). Shift a wall back by
+      // its thickness when the room is on that side, so it always stands OUTSIDE the room —
+      // otherwise it covered the first 3.5" in front of the north/east walls and hid mirrors,
+      // sconces and anything else shallow mounted on them.
       if (horiz) {
-        // Natural position: interior face sits exactly at the polygon edge z-value.
-        // ExtrudeGeometry extrudes outward (away from interior) — no corner gaps.
-        mesh.position.set(Math.min(ax,bx), 0, az);
+        const roomBelow = _pointInPoly([(ax + bx) / 2, az + 1], poly);
+        mesh.position.set(Math.min(ax,bx), 0, roomBelow ? az - WT : az);
       } else {
         mesh.rotation.y = -Math.PI/2;
-        // Natural position: interior face at the polygon edge x-value.
-        mesh.position.set(ax, 0, Math.min(az,bz));
+        const roomLeft = _pointInPoly([ax - 1, (az + bz) / 2], poly);
+        mesh.position.set(roomLeft ? ax + WT : ax, 0, Math.min(az,bz));
       }
       root.add(mesh);
     }
@@ -274,10 +286,12 @@ function renderIsometric() {
     // Natural positions: interior face sits at the room boundary.
     // ExtrudeGeometry gives each wall 3D thickness so perpendicular walls can't z-fight at corners.
     // polygonOffset on the material handles any remaining wall/cabinet coplanarity.
-    addWall3D('north', roomW, 0,     0,     0);           // interior face at z=0
-    addWall3D('south', roomW, 0,     roomD, 0);           // interior face at z=roomD
-    addWall3D('west',  roomD, 0,     0,     -Math.PI/2);  // interior face at x=0
-    addWall3D('east',  roomD, roomW, 0,     -Math.PI/2);  // interior face at x=roomW
+    // (the extrusion runs +z / −x, so north and east are shifted back by their thickness —
+    // they used to stand 3.5" INSIDE the room and hid anything shallow mounted on them)
+    addWall3D('north', roomW, 0,          -WT,   0);           // interior face at z=0
+    addWall3D('south', roomW, 0,          roomD, 0);           // interior face at z=roomD
+    addWall3D('west',  roomD, 0,          0,     -Math.PI/2);  // interior face at x=0
+    addWall3D('east',  roomD, roomW + WT, 0,     -Math.PI/2);  // interior face at x=roomW
   }
 
   // Convert wall+offset to 3D x,z position (x=width axis, z=depth axis)
@@ -400,7 +414,8 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
     if (finish === 'panel') drawDoorPanel(ctx, X, Y, W, H, opts.styleCode, s, PDF);
   };
   const isHood = app.type === 'hood';
-  if (!isHood && app.type !== 'floatingShelf') rect(body, x, y, aW, aH, LINE);   // (shelves: only the boards, wall between)
+  const FIXTURE_FACE = ['toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce'];   // drawn below, shape by shape
+  if (!isHood && app.type !== 'floatingShelf' && !FIXTURE_FACE.includes(app.type)) rect(body, x, y, aW, aH, LINE);   // (shelves: only the boards, wall between)
 
   if (app.type === 'refrigerator') {
     const v = applianceVariant(app), kick = 3 * s;
@@ -482,6 +497,32 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
       for (let i = 1; i <= 3; i++) { const ly = y + f + (aH - TOE_KICK_H * s - 2 * f) * i / 4; ctx.beginPath(); ctx.moveTo(x + f, ly); ctx.lineTo(x + aW - f, ly); ctx.stroke(); }
     }
     bar(x + aW - 1.6 * s, y + aH * 0.4, Math.min(14 * s, aH * 0.4), true);
+  } else if (app.type === 'toilet') {                 // bathroom fixtures (7.4)
+    const CH = PDF ? '#FFFFFF' : '#F7F7F5';
+    rect(CH, x + 1 * s, y, aW - 2 * s, 15 * s, LINE);                                   // tank
+    ctx.beginPath(); ctx.ellipse(x + aW / 2, botY - 11 * s, aW / 2 - 1 * s, 4.5 * s, 0, 0, Math.PI * 2);   // bowl rim
+    ctx.fillStyle = CH; ctx.fill(); ctx.strokeStyle = LINE; ctx.lineWidth = 1 * k; ctx.stroke();
+    rect(CH, x + aW * 0.28, botY - 9 * s, aW * 0.44, 9 * s, LINE);                      // pedestal
+  } else if (app.type === 'tub') {
+    const CH = PDF ? '#FFFFFF' : '#F7F7F5';
+    rect(CH, x, y, aW, aH, LINE); rect(null, x + 1.5 * s, y + 1.5 * s, aW - 3 * s, 2 * s, LINE);   // apron + rim
+    rect(STEEL, x + 4 * s, y - 13 * s, 3 * s, 1 * s);                                     // spout
+  } else if (app.type === 'shower') {
+    rect(PDF ? '#FFFFFF' : '#F7F7F5', x, botY - 4 * s, aW, 4 * s, LINE);                 // curb
+    rect(PDF ? '#F5F9FB' : 'rgba(186,230,253,0.35)', x, y, aW, aH - 4 * s, LINE);        // glass
+    ctx.strokeStyle = PDF ? '#999' : 'rgba(3,105,161,0.35)'; ctx.lineWidth = 1 * k;
+    ctx.beginPath(); ctx.moveTo(x + aW * 0.5, y); ctx.lineTo(x + aW * 0.5, botY - 4 * s); ctx.stroke();   // door seam
+    rect(STEEL, x + aW / 2 - 3 * s, botY - 62 * s, 6 * s, 1.2 * s);                      // head
+    bar(x + aW * 0.5 + 2.5 * s, botY - 40 * s, 12 * s, true);
+  } else if (app.type === 'mirror' || app.type === 'medicineCabinet') {
+    rect(app.type === 'mirror' ? DARK : (PDF ? '#FFFFFF' : '#F1F1EF'), x, y, aW, aH, LINE);
+    rect(PDF ? '#EEF3F6' : '#C8D3DC', x + 1 * s, y + 1 * s, aW - 2 * s, aH - 2 * s, LINE);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1 * k;                    // a glint
+    ctx.beginPath(); ctx.moveTo(x + aW * 0.2, y + aH * 0.75); ctx.lineTo(x + aW * 0.45, y + aH * 0.25); ctx.stroke();
+  } else if (app.type === 'sconce') {
+    rect(STEEL, x + aW / 2 - 2 * s, y + 3 * s, 4 * s, 4 * s);
+    ctx.beginPath(); ctx.moveTo(x + aW / 2 - 2.2 * s, y + 4 * s); ctx.lineTo(x + aW / 2 + 2.2 * s, y + 4 * s); ctx.lineTo(x + aW / 2 + 2.6 * s, y + 10 * s); ctx.lineTo(x + aW / 2 - 2.6 * s, y + 10 * s); ctx.closePath();
+    ctx.fillStyle = PDF ? '#FFFFFF' : '#FFF4D6'; ctx.fill(); ctx.strokeStyle = LINE; ctx.stroke();
   } else if (app.type === 'floatingShelf') {           // each shelf in the stack (7.3)
     const st = shelfStack(app), fk = shelfFinish(app);
     const col = PDF ? '#FFFFFF' : fk === 'cabinet' ? ((getStyles().find(x => x.code === opts.styleCode) || {}).swatch || '#F2F1EE') : SHELF_FINISHES[fk].color;

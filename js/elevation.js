@@ -206,7 +206,7 @@ function renderElevation() {
           ctx.fillText(f.trash === 'double' ? 'trash + recycle' : 'trash', fx + fw/2, fy + fh - 3);
         }
       } else if (f.kind === 'door') {
-        const hUp = upper || f.upper || (cab.type === 'tall' && f.y0 > 40);
+        const hUp = upper || f.upper || ((cab.type === 'tall' || cab.type === 'linenTall') && f.y0 > 40);
         const hx = f.hinge === 'R' ? sx(f.x0 + 1.75) : sx(f.x1 - 1.75);
         const hyIn = hUp ? f.y0 + 3 : f.y1 - 3.5, len = Math.min(4, H * 0.4);
         if (doorKnobs) { ctx.beginPath(); ctx.arc(hx, sy(hyIn), 0.65*scale, 0, Math.PI*2); ctx.fill(); }

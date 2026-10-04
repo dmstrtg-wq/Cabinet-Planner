@@ -14,8 +14,8 @@
 // fillers and panels don't.
 function needsHinge(cab) {
   const w = cab.width;
-  if (cab.type === 'base' || cab.type === 'wall') return w <= 21;
-  if (cab.type === 'tall') return w <= 18;
+  if (cab.type === 'base' || cab.type === 'wall' || cab.type === 'vanity') return w <= 21;
+  if (cab.type === 'tall' || cab.type === 'linenTall') return w <= 18;
   return cab.type === 'cornerBase' || cab.type === 'diagWall';
 }
 const HINGE_LABEL = { L: 'Left', R: 'Right' };

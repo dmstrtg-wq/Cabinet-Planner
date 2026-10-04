@@ -256,6 +256,7 @@ function printQuote() {
   p.rooms.forEach(room => {
     (room.appliances||[]).forEach(a => {
       const ac = APPLIANCES[a.type];
+      if (ac && ac.fixture && !(a.price > 0)) return;     // bath fixtures only go on the quote when priced (7.4)
       const hasPrice = a.price != null && a.price > 0;
       if (hasPrice) appSubtotal += a.price;
       const shelfInfo = a.type === 'floatingShelf' ? ((n => (n > 1 ? ` ×${n}` : '') + `, ${fmtFrac(itemDepth(a))} deep, ${SHELF_FINISHES[shelfFinish(a)].label.toLowerCase()}`)(shelfStack(a).n)) : '';

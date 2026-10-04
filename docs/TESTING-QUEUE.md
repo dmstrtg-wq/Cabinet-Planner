@@ -285,3 +285,17 @@ Claude tested locally: counts on a known layout (9 doors / 7 drawers; 16 pulls, 
 Double-click a floating shelf: **Length** (any, fractions OK, 6–240"), **Depth** 8/10/12/14", **Thickness** 1½–3", **Shelves** 1–6 with **Spacing** (bottom to bottom), **Bottom from floor**, **Finish** (natural wood, walnut, match the cabinets, white, black). Works on any wall in any room. Price stays on the quote line (custom work), and the quote line reads e.g. "Floating Shelf ×4, 10" deep, walnut". A stack can't overlap uppers (placement rules use the whole stack).
 Claude tested locally: 4-shelf walnut stack + single shelf in elevation/3D/plan, popover fields, overlap rule. No console errors.
 - [ ] Add a floating shelf, make it 3 shelves at 12" spacing, change finish → check elevation, 3D and the quote line.
+- 7.3 live check (2026-10-04, "ZZ Claude Test"): 3-shelf walnut stack, quote line "Floating Shelf ×3, 10" deep, walnut — $300". No quote history created.
+
+### 7.4a Bathrooms (built 2026-10-04)
+- **Room types:** Add Room has a **Room Type** (Kitchen, Bathroom, Hallway, Living room, Laundry, Other); a new project's type sets its first room. Older rooms are typed from their name ("Bathroom", "Powder", "Vanity"… → bath).
+- **Start with a bathroom layout** (ticked by default for bathrooms): sized to the room. A tub across the end wall (or a 48" shower if it doesn't fit), a toilet with code clearance, a cabinet over the toilet, a vanity as wide as fits (double sink at 60"+), mirror(s), sconces, and a linen tower if there's room. All ordinary items you can move, resize or delete.
+- **Catalog → Bath** (opens by itself in a bathroom): Vanity (now up to 72"), **Linen Tower** (priced like Tall, 84/90/96 — add to your price sheet), Toilet, Bathtub, Shower (depth 32–48"), Mirror, Medicine Cabinet, Wall Sconce, Floating Shelf. Also in the sidebar Add forms.
+- **Double vanity:** double-click a vanity 48"+ → Sinks: Single / Double. Doors | drawer bank | doors, two bowls in the top.
+- **Fixtures** (toilet, tub, shower, mirror, medicine cabinet, sconce) are placed for layout/looks. They go on the quote **only if you give them a price** (double-click → More… → Price).
+- **Design Check for bathrooms:** toilet 15" from its centre to anything beside it, 21" clear in front (30" recommended = tip). Kitchen aisle rules no longer apply to bathrooms.
+- **3D fix found along the way:** the north and east walls stood 3½" INSIDE the room in 3D (south/west were correct), hiding anything shallow on them (mirrors, sconces, medicine cabinets) and burying the back of every cabinet on those walls. All walls now stand outside the room, rectangle and L-shaped.
+Claude tested locally: starter layouts for 8'×5', 10'×8', 12'×9', 9'×5'6" rooms (no placement problems, Design Check clean), plan symbols (toilet, tub, shower X), elevation, 3D, quote rule (unpriced fixtures off, priced mirror on), kitchen sample still renders. All 30 scripts compile; no runtime errors.
+- [ ] New project → type Bathroom → keep "Start with a bathroom layout" → look at plan, elevation, 3D.
+- [ ] Add Room → Bathroom on an existing job; try a double vanity.
+- [ ] Your kitchens in 3D: cabinets on the north/east walls now sit right against the wall (check nothing looks off).

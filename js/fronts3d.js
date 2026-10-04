@@ -60,6 +60,16 @@ function frontLayout(cab, r) {
   switch (cab.type) {
     case 'base': case 'vanity': case 'sink': {
       const y0 = TOE_KICK_H, dTop = top - TOP_DRAWER_H;
+      if (cab.type === 'vanity' && cab.sinks === 2 && w >= 47.9) {   // double vanity (7.4): doors | drawer bank | doors
+        const bank = w >= 66 ? 18 : 15, side = (w - bank) / 2, bx0 = L + side, bx1 = R - side, third = (top - y0) / 3;
+        [[L, bx0], [bx1, R]].forEach(([a, b]) => {
+          out.push({ x0: a + g / 2, x1: b - g / 2, y0: dTop + g / 2, y1: top - g / 2, kind: 'false' });
+          doorsAcross(a, b, y0 + g / 2, dTop - g / 2, false);
+        });
+        [[top - third, top], [y0 + third, top - third], [y0, y0 + third]].forEach(([a, b]) =>
+          out.push({ x0: bx0 + g / 2, x1: bx1 - g / 2, y0: a + g / 2, y1: b - g / 2, kind: 'drawer' }));
+        break;
+      }
       if (cab.type === 'base' && cab.trash) {             // trash pull-out (7.2): top drawer over one tall pull-out front
         out.push({ x0: L + g / 2, x1: R - g / 2, y0: dTop + g / 2, y1: top - g / 2, kind: 'drawer' });
         out.push({ x0: L + g / 2, x1: R - g / 2, y0: y0 + g / 2, y1: dTop - g / 2, kind: 'drawer', trash: cab.trash });
@@ -116,7 +126,7 @@ function frontLayout(cab, r) {
       if (top - o.y1 > 3) out.push({ x0: L + g / 2, x1: R - g / 2, y0: o.y1 + g / 2, y1: top - g / 2, kind: 'drawer' });
       break;
     }
-    case 'tall': {
+    case 'tall': case 'linenTall': {
       const split = TOE_KICK_H + (top - TOE_KICK_H) * 0.56;
       doorsAcross(L, R, TOE_KICK_H + g / 2, split - g / 2, w <= 18.01);
       doorsAcross(L, R, split + g / 2, top - g / 2, w <= 18.01);
@@ -246,7 +256,7 @@ function buildCabinetFronts3D(cab, r, kit, p) {
   const info = doorStyleInfo(cab.styleOverride || p.style);
   const group = new THREE.Group();
   const upper = itemLevel(cab) === 'upper';
-  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || fr.upper || (cab.type === 'tall' && fr.y0 > 40)); });
+  layout.forEach(fr => { addFront(group, kit, info, fr); addHardware(group, kit, fr, upper || fr.upper || ((cab.type === 'tall' || cab.type === 'linenTall') && fr.y0 > 40)); });
   // An oven / microwave-drawer cabinet with nothing in it yet: show the dark opening
   if (cab.type === 'ovenTall' || cab.type === 'mwDrawerBase') {
     const o = builtInOpening(r, cab);

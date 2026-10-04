@@ -181,7 +181,8 @@ const PALETTE_CATEGORIES = [
   { id: 'tall',   label: 'Tall',              types: ['tall', 'ovenTall'] },
   { id: 'corner', label: 'Corner',            types: ['cornerBase', 'lazysusan', 'diagWall'] },
   { id: 'fill',   label: 'Fillers & Panels',  types: ['filler3', 'filler6', 'fridgePanel'] },
-  { id: 'app',    label: 'Appliances',        types: Object.keys(APPLIANCES) },
+  { id: 'app',    label: 'Appliances',        types: Object.keys(APPLIANCES).filter(k => !APPLIANCES[k].fixture) },
+  { id: 'bath',   label: 'Bath',              types: ['vanity', 'linenTall', 'toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce', 'floatingShelf'] },
 ];
 let paletteCategory = 'all';
 
@@ -213,6 +214,14 @@ function renderPalette() {
   box._entries = list;
 }
 function setPaletteCategory(id) { paletteCategory = id; renderPalette(); }
+// Opening a bathroom shows the Bath items first; back in a kitchen, everything (7.4)
+let _palRoomId = null;
+function syncPaletteToRoom() {
+  const r = activeRoom(); if (!r || r.id === _palRoomId) return;
+  _palRoomId = r.id;
+  const want = roomKind(r) === 'bath' ? 'bath' : (paletteCategory === 'bath' ? 'all' : paletteCategory);
+  if (want !== paletteCategory) setPaletteCategory(want);
+}
 
 // A new cabinet/appliance record for a palette entry (same fields the Add forms create)
 function makePaletteItem(entry, wall, offset) {
