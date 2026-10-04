@@ -258,7 +258,8 @@ function printQuote() {
       const ac = APPLIANCES[a.type];
       const hasPrice = a.price != null && a.price > 0;
       if (hasPrice) appSubtotal += a.price;
-      appRows += `<tr><td class="num">${a.itemNum || ''}</td><td>${ac.label}</td><td>${a.width}"</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`;
+      const shelfInfo = a.type === 'floatingShelf' ? ((n => (n > 1 ? ` ×${n}` : '') + `, ${fmtFrac(itemDepth(a))} deep, ${SHELF_FINISHES[shelfFinish(a)].label.toLowerCase()}`)(shelfStack(a).n)) : '';
+      appRows += `<tr><td class="num">${a.itemNum || ''}</td><td>${ac.label}${shelfInfo}</td><td>${fmtFrac(a.width)}</td><td>${a.wall.charAt(0).toUpperCase()+a.wall.slice(1)}</td><td>${escHtml(a.note||'—')}</td><td class="amt">${hasPrice ? fmtMoney(a.price) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`;
     });
   });
 

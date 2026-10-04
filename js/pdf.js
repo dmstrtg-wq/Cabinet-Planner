@@ -423,7 +423,8 @@ async function exportPDF(btn) {
     (room.appliances||[]).forEach(a => {
       const ac=APPLIANCES[a.type]||{};
       const has = a.price!=null && a.price>0; if (has) appSub+=a.price;
-      appRows.push([String(a.itemNum || ''), ac.label||a.type, a.width+'"', a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—',
+      const shelfInfo = a.type === 'floatingShelf' ? ((n => (n > 1 ? ` x${n}` : '') + `, ${fmtFrac(itemDepth(a))} deep`)(shelfStack(a).n)) : '';
+      appRows.push([String(a.itemNum || ''), (ac.label||a.type) + shelfInfo, fmtFrac(a.width), a.wall.charAt(0).toUpperCase()+a.wall.slice(1), a.note||'—',
         has ? {content:'$'+a.price.toFixed(2),styles:{halign:'right',fontStyle:'bold'}} : {content:'N/A',styles:{halign:'right',fontStyle:'italic',textColor:[148,163,184]}}]);
     });
   });

@@ -639,7 +639,9 @@ const APPLIANCES = {
   cooktop:         { label:'Cooktop',                   widths:[30,36],       height:4,              depth:21, color:'#1F2937', abbr:'CTP', wallMount:false, elevBottom:32 },
   hood:            { label:'Range Hood',                widths:[30,36,42],    height:18,             depth:20, color:'#9CA3AF', abbr:'RH',  wallMount:true,  elevBottom:60 },
   beverageCooler:  { label:'Beverage Cooler (UC)',      widths:[18,24,30,36], height:34.5,           depth:24, color:'#60A5FA', abbr:'BEV', wallMount:false, elevBottom:0  },
-  floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42], height:2.5,            depth:12, color:'#D97706', abbr:'FSH', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84] },
+  // Floating shelves (7.3): any length, depth, thickness, a stack of several, any room — custom work, priced on the quote
+  floatingShelf:   { label:'Floating Shelf',            widths:[24,30,36,42,48,60,72], height:2.5,     depth:12, color:'#D97706', abbr:'FSH', wallMount:true,  elevBottom:60, elevBottomOptions:[36,42,48,54,60,66,72,78,84],
+                     depths:[8,10,12,14], thicknesses:[1.5,2,2.5,3] },
   // Built-ins: these sit inside their cabinet (builtIn = the cabinet type that holds them)
   wallOven:        { label:'Wall Oven',                 widths:[27,30],       heights:[29,51], height:29, depth:24, color:'#374151', abbr:'WO',  wallMount:false, elevBottom:32, elevBottomFor: a => (a.height || 29) >= 50 ? 20 : 32, elevBottomOptions:[16,20,24,28,32,36,40], builtIn:'ovenTall' },
   microwaveDrawer: { label:'Microwave Drawer',          widths:[24,30],       height:15,             depth:24, color:'#4B5563', abbr:'MWD', wallMount:false, elevBottom:18.5, builtIn:'mwDrawerBase' },
@@ -655,6 +657,8 @@ const APPLIANCE_FINISHES = {
   panel:     { label: 'Panel-ready (door style)' },
 };
 const PANEL_READY_TYPES = ['refrigerator', 'dishwasher', 'beverageCooler'];
+const SHELF_FINISHES = { wood: { label: 'Natural wood', color: '#B07A45', grain: true }, walnut: { label: 'Walnut', color: '#5C3B22', grain: true },
+  cabinet: { label: 'Match the cabinets' }, white: { label: 'White', color: '#F2F1EE' }, black: { label: 'Black', color: '#2B2B2B' } };
 const FINISHED_APPLIANCES = ['refrigerator', 'range', 'dishwasher', 'microwave', 'hood', 'beverageCooler', 'wallOven', 'microwaveDrawer'];
 const APPLIANCE_VARIANTS = {
   refrigerator: { french: 'French door', sxs: 'Side-by-side', top: 'Top freezer' },

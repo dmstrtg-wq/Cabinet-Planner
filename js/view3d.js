@@ -353,7 +353,7 @@ function renderIsometric() {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const g = buildAppliance3D(r, app, _appKit, _frontKit, _p3d); if (!g) return;
     root.add(g);
-    const pos = cabPos(app.wall, app.offset || 0, app.width, acat.depth || 24);
+    const pos = cabPos(app.wall, app.offset || 0, app.width, itemDepth(app));
     addLabel(acat.abbr || '', pos.x0+pos.w/2, itemVerticalRange(app)[1]+3, pos.z0+pos.d/2, { fontSize:24, scale:0.045 });
   });
 
@@ -400,7 +400,7 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
     if (finish === 'panel') drawDoorPanel(ctx, X, Y, W, H, opts.styleCode, s, PDF);
   };
   const isHood = app.type === 'hood';
-  if (!isHood) rect(body, x, y, aW, aH, LINE);
+  if (!isHood && app.type !== 'floatingShelf') rect(body, x, y, aW, aH, LINE);   // (shelves: only the boards, wall between)
 
   if (app.type === 'refrigerator') {
     const v = applianceVariant(app), kick = 3 * s;
@@ -482,8 +482,10 @@ function drawApplianceFace(ctx, app, acat, x, y, aW, aH, scale, opts = {}) {
       for (let i = 1; i <= 3; i++) { const ly = y + f + (aH - TOE_KICK_H * s - 2 * f) * i / 4; ctx.beginPath(); ctx.moveTo(x + f, ly); ctx.lineTo(x + aW - f, ly); ctx.stroke(); }
     }
     bar(x + aW - 1.6 * s, y + aH * 0.4, Math.min(14 * s, aH * 0.4), true);
-  } else if (app.type === 'floatingShelf') {
-    rect(PDF ? '#FFFFFF' : '#B07A45', x, y, aW, aH, LINE);
+  } else if (app.type === 'floatingShelf') {           // each shelf in the stack (7.3)
+    const st = shelfStack(app), fk = shelfFinish(app);
+    const col = PDF ? '#FFFFFF' : fk === 'cabinet' ? ((getStyles().find(x => x.code === opts.styleCode) || {}).swatch || '#F2F1EE') : SHELF_FINISHES[fk].color;
+    for (let k = 0; k < st.n; k++) rect(col, x, botY - (k * st.spacing + st.t) * s, aW, st.t * s, LINE);
   }
 
   if (opts.label !== false) {

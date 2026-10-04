@@ -325,7 +325,8 @@ function renderElevation() {
   (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a)).forEach(app => {
     const acat = APPLIANCES[app.type]; if (!acat) return;
     const aW   = app.width * scale;
-    const aH   = (app.height || acat.height) * scale;
+    const [aBot, aTop] = itemVerticalRange(app);
+    const aH   = (aTop - aBot) * scale;              // (a shelf stack spans all its shelves)
     const x    = eX(app.offset||0, app.width);
     const botY = floorY - itemVerticalRange(app)[0] * scale; // bottom edge Y
     const y    = botY - aH;                        // top edge Y

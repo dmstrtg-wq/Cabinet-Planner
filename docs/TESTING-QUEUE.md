@@ -279,3 +279,9 @@ Claude tested locally: fridge case-in (panel + W3615 out 12"), casing counted on
 Claude tested locally: counts on a known layout (9 doors / 7 drawers; 16 pulls, 7+9 split, or 16 knobs; 6 slide pairs with slides off, since the trash front's slides come with its kit), totals with an $899 dishwasher, order list section, elevation look, Quote window rows. No console errors. (Printing is blocked in demo, so the printed quote/PDF get checked live after the push.)
 - [ ] Profile → untick "Drawer slides come with our cabinets" → Quote window shows a slides line.
 - [ ] Set a base to Trash + recycle → see it in 3D/elevation and as a kit line on the quote.
+- 7.2 live check (2026-10-04, "ZZ Claude Test"): quote_settings column exists; trash + recycle on a B24, knobs on doors; $231 of hardware matched on the Quote window, printed quote, PDF and order list. No quote history created.
+
+### 7.3 Floating shelves (built 2026-10-04)
+Double-click a floating shelf: **Length** (any, fractions OK, 6–240"), **Depth** 8/10/12/14", **Thickness** 1½–3", **Shelves** 1–6 with **Spacing** (bottom to bottom), **Bottom from floor**, **Finish** (natural wood, walnut, match the cabinets, white, black). Works on any wall in any room. Price stays on the quote line (custom work), and the quote line reads e.g. "Floating Shelf ×4, 10" deep, walnut". A stack can't overlap uppers (placement rules use the whole stack).
+Claude tested locally: 4-shelf walnut stack + single shelf in elevation/3D/plan, popover fields, overlap rule. No console errors.
+- [ ] Add a floating shelf, make it 3 shelves at 12" spacing, change finish → check elevation, 3D and the quote line.

@@ -288,8 +288,16 @@ function wallFrame(r, wall) {
 function itemDepth(item) {
   if (item.type === 'diagWall') return 12;    // diagonal corner uppers: 12" sides, always
   if (CATALOG[item.type]) return item.depth || CATALOG[item.type].depth;
+  if (item.type === 'floatingShelf' && item.depth) return item.depth;          // shelves pick their depth (7.3)
   return APPLIANCES[item.type]?.depth || 24;
 }
+// Floating shelves (7.3): a stack of `stack` shelves, `spacing` apart (bottom to bottom),
+// each `height` thick. The stack's span is what other pieces can't overlap.
+function shelfStack(item) {
+  const n = Math.max(1, Math.min(6, Math.round(item.stack || 1)));
+  return { n, spacing: n > 1 ? Math.max(4, item.spacing || 12) : 0, t: item.height || 2.5 };
+}
+function shelfFinish(item) { return SHELF_FINISHES[item.shelfFinish] ? item.shelfFinish : 'wood'; }
 // Axis-aligned footprint of a wall item in room inches: { x, y, w, h }.
 function itemRect(r, item, depth = itemDepth(item)) {
   const f = wallFrame(r, item.wall); if (!f) return null;
@@ -604,6 +612,7 @@ function itemVerticalRange(item) {
   }
   const acat = APPLIANCES[item.type] || {};
   const b = item.customElevBottom ?? (acat.elevBottomFor ? acat.elevBottomFor(item) : acat.elevBottom) ?? 0;
+  if (item.type === 'floatingShelf') { const s = shelfStack(item); return [b, b + (s.n - 1) * s.spacing + s.t]; }
   return [b, b + (item.height || acat.height || 0)];
 }
 // 'upper' or 'base' — which run a new piece of this type belongs to
@@ -871,7 +880,7 @@ function openEditApplianceModal(app) {
   // Width options
   const ws = document.getElementById('edit-app-width');
   ws.innerHTML = '';
-  acat.widths.forEach(w => {
+  [...new Set([...acat.widths, app.width])].sort((m, n) => m - n).forEach(w => {   // (a shelf can be any length)
     const o = document.createElement('option'); o.value = w;
     o.textContent = `${w}" wide`;
     if (w === app.width) o.selected = true;

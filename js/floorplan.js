@@ -461,8 +461,8 @@ function renderCanvas() {
 
   function drawAppOnFloor(app, wall) {
     const acat = APPLIANCES[app.type]; if (!acat) return;
-    const aW = app.width*scale, aD = acat.depth*scale, aOff = (app.offset||0)*scale;
-    const _ra = itemRect(r, { ...app, wall }, acat.depth); if (!_ra) return;
+    const aW = app.width*scale, aD = itemDepth(app)*scale, aOff = (app.offset||0)*scale;
+    const _ra = itemRect(r, { ...app, wall }, itemDepth(app)); if (!_ra) return;
     const x = RX + _ra.x*scale, y = RY + _ra.y*scale, w = _ra.w*scale, h = _ra.h*scale;
     if (_fitIds.has(app.id)) _flagRects.push({x, y, w, h});
     // A wall oven / microwave drawer is inside its cabinet: in plan you see the cabinet,

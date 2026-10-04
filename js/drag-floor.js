@@ -31,7 +31,7 @@
     }
     for (const app of (r.appliances||[])) {
       const acat=APPLIANCES[app.type]; if(!acat || !layerShowsItem(app)) continue;
-      const _ra = itemRect(r, app, acat.depth); if (!_ra) continue;
+      const _ra = itemRect(r, app, itemDepth(app)); if (!_ra) continue;
       const x=RX+_ra.x*scale, y=RY+_ra.y*scale, w=_ra.w*scale, h=_ra.h*scale;
       if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
     }

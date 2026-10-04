@@ -30,7 +30,7 @@
     const eX = (offset, width) => flip ? WX + WW - (offset + width)*scale : WX + offset*scale;
     const hitApp = app => {
       const acat = APPLIANCES[app.type]; if (!acat) return false;
-      const aW = app.width*scale, aH = (app.height||acat.height)*scale;
+      const aW = app.width*scale, aH = (itemVerticalRange(app)[1] - itemVerticalRange(app)[0])*scale;
       const x  = eX(app.offset||0, app.width);
       const y  = floorY - itemVerticalRange(app)[0]*scale - aH;
       return mx>=x&&mx<=x+aW&&my>=y&&my<=y+aH;

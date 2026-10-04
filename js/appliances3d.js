@@ -105,7 +105,7 @@ function _awindow(g, kit, x0, x1, y0, y1, face) { _abox(g, kit, kit.glass, x0, x
 function buildAppliance3D(r, app, kit, frontKit, p) {
   const acat = APPLIANCES[app.type]; if (!acat) return null;
   const f = wallFrame(r, app.wall); if (!f) return null;
-  const w = app.width, h = app.height || acat.height, D = acat.depth || 24;
+  const w = app.width, h = app.height || acat.height, D = itemDepth(app);
   const [b, top] = itemVerticalRange(app);
   const finish = applianceFinish(app);
   const panel = finish === 'panel';
@@ -283,9 +283,13 @@ function buildAppliance3D(r, app, kit, frontKit, p) {
       _ahandle(g, kit, R - 1.6, h * 0.6, D, Math.min(14, h * 0.4), true);
       break;
     }
-    case 'floatingShelf':
-      body(kit.wood, L, R, b, top, 0, D);
+    case 'floatingShelf': {                              // a stack of shelves (7.3), in the chosen finish
+      const s = shelfStack(app), fk = shelfFinish(app), F = SHELF_FINISHES[fk];
+      const m = fk === 'cabinet' ? frontKit.paint(style, -4)
+        : new THREE.MeshStandardMaterial({ color: F.color, roughness: F.grain ? 0.7 : 0.45, metalness: 0.02, map: F.grain ? woodGrainTexture() : null });
+      for (let k = 0; k < s.n; k++) body(m, L, R, b + k * s.spacing, b + k * s.spacing + s.t, 0, D);
       break;
+    }
     default:
       body(kit.finish('stainless'), L, R, b, top, 0, D);
   }

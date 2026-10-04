@@ -130,6 +130,16 @@ function openItemPopover(item, clientX, clientY) {
     html += row('Door style', `<select data-f="styleOverride" ${selStyle}>${opt('', 'Project default', !item.styleOverride)}${getStyles().map(s => opt(s.code, s.name, s.code === item.styleOverride)).join('')}</select>`);
   } else {
     const acat = APPLIANCES[item.type];
+    if (item.type === 'floatingShelf') {                  // 7.3: any length, depth, thickness, a stack, a finish
+      const st = shelfStack(item);
+      html += row('Length (in)', inch('width', item.width));
+      html += row('Depth', `<select data-f="depth" ${selStyle}>${acat.depths.map(d => opt(d, d + '"', d === itemDepth(item))).join('')}</select>`);
+      html += row('Thickness', `<select data-f="height" ${selStyle}>${acat.thicknesses.map(t => opt(t, fmtFrac(t), t === st.t)).join('')}</select>`);
+      html += row('Shelves', `<select data-f="stack" ${selStyle}>${[1, 2, 3, 4, 5, 6].map(n => opt(n, n === 1 ? '1 shelf' : n + ' shelves', n === st.n)).join('')}</select>`);
+      if (st.n > 1) html += row('Spacing (in)', inch('spacing', st.spacing).replace('value=', 'title="Bottom of one shelf to the bottom of the next" value='));
+      html += row('Bottom from floor', inch('customElevBottom', itemVerticalRange(item)[0]));
+      html += row('Finish', `<select data-f="shelfFinish" ${selStyle}>${Object.entries(SHELF_FINISHES).map(([k, f]) => opt(k, f.label, k === shelfFinish(item))).join('')}</select>`);
+    } else
     html += row('Width', `<select data-f="width" ${selStyle}>${acat.widths.map(w => opt(w, w + '"', w === item.width)).join('')}</select>`);
     if (acat.heights)
       html += row('Size', `<select data-f="height" ${selStyle}>${acat.heights.map(h => opt(h, applianceHeightLabel(item.type, h), h === (item.height || acat.height))).join('')}</select>`);
@@ -160,7 +170,7 @@ function openItemPopover(item, clientX, clientY) {
     const f = e.target.dataset.f; if (!f) return;
     applyItemEdit(item, f, e.target.value);
     // Type changes the valid widths/heights, so rebuild the popover in place
-    if (f === 'type' || f === 'width') { const b = pop.getBoundingClientRect(); openItemPopover(item, b.left - 12, b.top - 12); }
+    if (f === 'type' || f === 'width' || f === 'stack') { const b = pop.getBoundingClientRect(); openItemPopover(item, b.left - 12, b.top - 12); }
   });
   pop.addEventListener('click', e => {
     const act = e.target.dataset.act; if (!act) return;
@@ -188,6 +198,14 @@ function applyItemEdit(item, field, value) {
   else if (field === 'trash') item.trash = ['single', 'double'].includes(value) ? value : null;   // 7.2
   else if (field === 'wallOffset') item.wallOffset = Math.max(0, Math.min(36, parseInches(value) || 0)) || null;   // 7.1 bump-out
   else if (field === 'finish') item.finish = value || null;
+  else if (item.type === 'floatingShelf' && ['width', 'depth', 'stack', 'spacing', 'customElevBottom', 'shelfFinish'].includes(field)) {   // 7.3
+    if (field === 'width') item.width = Math.max(6, Math.min(240, parseInches(value) || item.width));
+    else if (field === 'depth') item.depth = parseFloat(value) || 12;
+    else if (field === 'stack') { item.stack = Math.max(1, Math.min(6, parseInt(value) || 1)); if (item.stack > 1 && !item.spacing) item.spacing = 12; }
+    else if (field === 'spacing') item.spacing = Math.max(4, Math.min(36, parseInches(value) || 12));
+    else if (field === 'customElevBottom') item.customElevBottom = Math.max(0, parseInches(value) || 0);
+    else item.shelfFinish = SHELF_FINISHES[value] ? value : 'wood';
+  }
   else if (field === 'height' && APPLIANCES[item.type]) {
     item.height = parseFloat(value);
     if (APPLIANCES[item.type].elevBottomFor) item.customElevBottom = null;   // single ↔ double oven: its own height from the floor
