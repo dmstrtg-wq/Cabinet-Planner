@@ -688,6 +688,8 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel sheet from your supplier and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
         </div>
 
+        <div id="pi-pending" style="display:none;margin-bottom:18px;"></div>
+
         <div class="section">
           <div class="section-head">
             <div class="section-title">Import a Supplier Price List</div>
@@ -2327,6 +2329,7 @@ async function init() {
   renderSubscription();
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
+  if (typeof piRenderPending === 'function') piRenderPending();   // open price questions (5.8b)
 
   // Stats
   const projs = projects || [];

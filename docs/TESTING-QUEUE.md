@@ -343,3 +343,15 @@ Claude tested locally with a made-up "Acme" list and a simulated AI (no API key 
 - Wall cabinets now come in **24" high** (e.g. W3624 over a fridge). Price sheet template has the new rows — re-download it if you price by template.
 Claude tested locally: W3624 prices by width × height, order code W3624, plan/elevation/3D draw with no errors.
 - [ ] Add a 36×24 wall cabinet over a fridge; check elevation + quote.
+- 5.8 live check (2026-10-05, Claude on Dan's Gold account, stopped before Save): made-up "Acme Test" list (48 lines, cover sheet, title rows, section headings, Group A/B/C list prices, × 0.45). Real AI: layout read correctly in 4s (noted list prices); 39 items matched in ~9s, 3 calls, ≈ $0.016. 31 matched, 2 needs a look (VDB15 — no 15" vanity in planner; fridge end panel flagged unsure), 6 skipped (24"-deep fridge wall + full-height-door variants, wall blind corner, crown, toe kick, roll-out tray). Prices checked exact (B15 A $186 × 0.45 = $83.70). Account unchanged afterwards; no errors.
+
+### 5.8b step 1 — any spreadsheet layout + questions pop-up (built 2026-10-05)
+**Setup:** run `supabase-price-import-2.sql` (adds `price_import_state` for open questions), then push.
+- Reads every sheet you tick; finds side-by-side item/price tables (HCI has three per page), finish-group title rows ("WHITE SHAKER", "BLUE, HUNTER GREEN & ARCTIC SHAKER", "Pricing Gold"), price-column labels ("Gold", "PR, PS"), finish columns, or the sheet name as the group. Layout is editable under "How the file is laid out".
+- Finish groups → finishes: exact name; tier ("Pricing Gold" → every Gold finish); codes ("PR, PS"); or split "Blue, Hunter Green & Arctic Shaker" into three new finishes. When two groups price the same finish, the more specific one wins (PR, PS over Gold).
+- $5 rule: same code listed twice within $5 → higher price, no question; over $5 → question.
+- **Questions pop-up** after matching, one at a time, each with Suggested fix / Manual fix / Skip for now: new finish that looks like an existing one ("Gray" vs "Grey"), size/type the planner doesn't have, AI unsure, two prices > $5 apart (suggests the price that fits between the neighbouring sizes, else the higher), two codes for the same cabinet, wider cabinet cheaper than a narrower one by > $5 (per finish group), two equally specific groups disagreeing by > $5.
+- Skip for now → saved as an **open question**; My Pricing shows a yellow "Open price questions" bar → answer later (set type/size, edit prices, Save / Leave it out / Skip).
+- PDFs: not yet (next step) — the importer says so.
+Claude tested locally (simulated AI): HCI-style workbook (3 tables, 3 finish groups, Gray→Grey question, OC duplicate within $5 auto-resolved, DB18 duplicate > $5, W3042 out of order in all groups, B39 skipped → open question → left out from My Pricing), Matrix-style workbook on an owner account (tier → Gold finishes, PR/PS precedence, conflicting groups question). All scripts compile; no errors.
+- [ ] After setup + push: Claude re-runs the live check with the real AI.

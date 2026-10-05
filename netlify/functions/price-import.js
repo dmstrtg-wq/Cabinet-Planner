@@ -4,7 +4,7 @@
  *
  * POST /.netlify/functions/price-import
  * Headers: Authorization: Bearer <supabase-access-token>
- * Body: { importId, step: 'structure', rows: [[cell,…],…] }              → which columns are what
+ * Body: { importId, step: 'structure', sheet, rows: [[cell,…],…], textRows: [{row,text}] } → tables, columns, finish groups
  *    or { importId, step: 'map', header: [..], items: [{ i, sku, desc, extra }] } → type/size per item
  *
  * What this function deliberately does NOT do:
@@ -32,7 +32,7 @@ const MODEL = process.env.PRICE_IMPORT_MODEL || 'claude-haiku-4-5-20251001';
 const IMPORTS_PER_DAY = 10;
 const CALLS_PER_DAY = 400;
 const MAX_BODY = 200 * 1024;
-const MAX_STRUCT_ROWS = 40, MAX_COLS = 40, MAX_CELL = 80;
+const MAX_STRUCT_ROWS = 45, MAX_COLS = 40, MAX_CELL = 60;
 const MAX_MAP_ITEMS = 30;
 // Netlify cuts a normal function off at ~10s; stop the AI call first so we can answer cleanly
 // and the browser can retry with a smaller batch.
@@ -141,53 +141,71 @@ exports.handler = async (event) => {
   return json(200, { ...res, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0, model: MODEL } });
 };
 
-// ── Step 1: which row is the header, which columns hold the item code, description and prices ──
+// ── Step 1: the layout of one sheet/page — its tables, columns and finish groups ──
+// A supplier list can have several tables side by side (HCI: three item/price pairs per page),
+// one price column per finish or price group (Matrix: "Gold | PR, PS"), a finish column
+// (one row per finish), and title rows naming the finish group the prices below apply to
+// ("BLUE, HUNTER GREEN & ARCTIC SHAKER", "Pricing Gold").
 function structureRequest(body) {
   if (!Array.isArray(body.rows) || !body.rows.length) throw new Error('No rows sent');
   const rows = body.rows.slice(0, MAX_STRUCT_ROWS).map(r => (Array.isArray(r) ? r : []).slice(0, MAX_COLS).map(c => clip(c, MAX_CELL)));
+  const textRows = (Array.isArray(body.textRows) ? body.textRows : []).slice(0, 200)
+    .map(t => ({ row: Number.isInteger(t.row) ? t.row : -1, text: clip(t.text, 80) })).filter(t => t.row >= 0 && t.text);
+  const sheet = clip(body.sheet, 60);
   const ncols = Math.max(...rows.map(r => r.length));
-  const grid = rows.map((r, i) => `${i}: ` + r.map((c, j) => `[${j}] ${c}`).join(' | ')).join('\n');
+  const grid = rows.map((r, i) => `${i}: ` + r.map((c, j) => c ? `[${j}] ${c}` : '').filter(Boolean).join(' | ')).join('\n');
   const intOrNull = { anyOf: [{ type: 'integer' }, { type: 'null' }] };
   return {
     count: rows.length,
-    maxTokens: 1200,
-    system: 'You read the first rows of a cabinet supplier\'s price list and describe its layout. ' +
+    maxTokens: 1500,
+    system: 'You read the first rows of a kitchen cabinet supplier\'s price list and describe its layout. ' +
       'Answer only through the tool. Use null when a column does not exist. Never guess prices.',
-    prompt: 'These are the first rows of a kitchen cabinet supplier price list. Each line is "row: [column] value | …".\n\n' + grid +
-      '\n\nWork out:\n' +
-      '- headerRow: the row index holding the column names (null if there is none).\n' +
-      '- skuCol: the column with the supplier item code / SKU / model number (e.g. B15, W3030).\n' +
-      '- descCol: the column with the item description, if any.\n' +
-      '- widthCol / heightCol: separate width or height columns, if any.\n' +
-      '- layout "wide" if each finish, door style, collection or price group has its own price column; ' +
-      '"long" if there is one price column and another column says which finish/door style the row is for.\n' +
-      '- wide: priceCols = every column holding a price, with the finish / door style / price group name its header gives.\n' +
-      '- long: finishCol and priceCol.\n' +
-      '- notes: one short sentence on anything a person should check (e.g. "prices are per price group A–E", "list price, not net").',
+    prompt: (sheet ? `Sheet name: ${sheet}\n` : '') +
+      'First rows (each line is "row: [column] value | …"; empty cells left out):\n' + grid +
+      (textRows.length ? '\n\nRows further down that have no prices (row: text) — some may be finish-group titles:\n' + textRows.map(t => `${t.row}: ${t.text}`).join('\n') : '') +
+      '\n\nDescribe the layout:\n' +
+      '- headerRow: row holding column names, or null.\n' +
+      '- tables: one entry per item/price table. Several tables can sit side by side, each with its own item-code ' +
+      'column (SKU like B15, W3030, DB18) and price column(s). For each: skuCol, descCol, widthCol/heightCol if separate, ' +
+      'priceCols (every price column of that table; label = the finish / door style / price group named in its header, ' +
+      'e.g. "Gold", "PR, PS", "White" — empty string if the header just says Price/Cost/Net or there is none), and ' +
+      'finishCol if a column says which finish each row is for.\n' +
+      '- groupTitles: rows that name the finish(es), door style(s), collection or price tier the prices BELOW them apply to ' +
+      '(e.g. "WHITE SHAKER", "BLUE, HUNTER GREEN & ARCTIC SHAKER", "Pricing Gold"). Give the row and the name as written. ' +
+      'Section headings that name a cabinet category ("WALL CABINETS", "BASE CABINETS", "ACCESSORIES", "Glass Doors") are NOT finish groups.\n' +
+      '- sheetIsGroup: true if the sheet name itself is the finish/door style the whole sheet prices.\n' +
+      '- notes: one short sentence on anything a person should check.',
     tool: {
       name: 'describe_layout',
       description: 'Describe the price list layout.',
       input_schema: {
         type: 'object',
         properties: {
-          headerRow: intOrNull, skuCol: intOrNull, descCol: intOrNull, widthCol: intOrNull, heightCol: intOrNull,
-          layout: { type: 'string', enum: ['wide', 'long'] },
-          priceCols: { type: 'array', items: { type: 'object', properties: { col: { type: 'integer' }, finish: { type: 'string' } }, required: ['col', 'finish'] } },
-          finishCol: intOrNull, priceCol: intOrNull,
+          headerRow: intOrNull,
+          tables: { type: 'array', items: { type: 'object', properties: {
+            skuCol: { type: 'integer' }, descCol: intOrNull, widthCol: intOrNull, heightCol: intOrNull, finishCol: intOrNull,
+            priceCols: { type: 'array', items: { type: 'object', properties: { col: { type: 'integer' }, label: { type: 'string' } }, required: ['col'] } },
+          }, required: ['skuCol', 'priceCols'] } },
+          groupTitles: { type: 'array', items: { type: 'object', properties: { row: { type: 'integer' }, name: { type: 'string' } }, required: ['row', 'name'] } },
+          sheetIsGroup: { type: 'boolean' },
           notes: { type: 'string' },
         },
-        required: ['layout', 'skuCol'],
+        required: ['tables'],
       },
     },
     clean(x) {
-      const col = v => (Number.isInteger(v) && v >= 0 && v < ncols) ? v : null;
+      const col = v => (Number.isInteger(v) && v >= 0 && v < Math.max(ncols, MAX_COLS)) ? v : null;
+      const okRows = new Set([...rows.map((_, i) => i), ...textRows.map(t => t.row)]);
       return {
         headerRow: Number.isInteger(x.headerRow) && x.headerRow >= 0 && x.headerRow < rows.length ? x.headerRow : null,
-        skuCol: col(x.skuCol), descCol: col(x.descCol), widthCol: col(x.widthCol), heightCol: col(x.heightCol),
-        layout: x.layout === 'long' ? 'long' : 'wide',
-        priceCols: (Array.isArray(x.priceCols) ? x.priceCols : []).filter(p => col(p.col) != null).slice(0, MAX_COLS)
-          .map(p => ({ col: p.col, finish: clip(p.finish, 60) })),
-        finishCol: col(x.finishCol), priceCol: col(x.priceCol),
+        tables: (Array.isArray(x.tables) ? x.tables : []).filter(t => col(t.skuCol) != null).slice(0, 12).map(t => ({
+          skuCol: t.skuCol, descCol: col(t.descCol), widthCol: col(t.widthCol), heightCol: col(t.heightCol), finishCol: col(t.finishCol),
+          priceCols: (Array.isArray(t.priceCols) ? t.priceCols : []).filter(p => col(p.col) != null && p.col !== t.skuCol).slice(0, 20)
+            .map(p => ({ col: p.col, label: clip(p.label, 60) })),
+        })).filter(t => t.priceCols.length),
+        groupTitles: (Array.isArray(x.groupTitles) ? x.groupTitles : []).filter(g => okRows.has(g.row)).slice(0, 100)
+          .map(g => ({ row: g.row, name: clip(g.name, 80) })).filter(g => g.name),
+        sheetIsGroup: !!x.sheetIsGroup,
         notes: clip(x.notes, 300),
       };
     },
