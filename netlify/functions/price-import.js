@@ -6,11 +6,15 @@
  * Headers: Authorization: Bearer <supabase-access-token>
  * Body: { importId, step: 'structure', sheet, rows: [[cell,…],…], textRows: [{row,text}] } → tables, columns, finish groups
  *    or { importId, step: 'map', header: [..], items: [{ i, sku, desc, extra }] } → type/size per item
+ *    or { importId, step: 'triage', image, page, context } → is this scanned page a price page; its finish group
+ *    or { importId, step: 'page', image, page, context } → every price on a scanned page (5.8b)
  *
  * What this function deliberately does NOT do:
- *   • it never sees or returns prices as answers — the browser reads prices straight from the
- *     file, so an AI mistake can only mis-file a row (which the review screen shows), never
- *     invent a number;
+ *   • for spreadsheets and text PDFs it never returns prices — the browser reads them straight
+ *     from the file, so an AI mistake can only mis-file a row (which the review screen shows).
+ *     Scanned pages are the exception: there the AI has to read the numbers off the picture, so
+ *     the browser reads every page twice (a third time when they disagree) and anything more
+ *     than $5 apart becomes a question for the person;
  *   • it never writes pricing — nothing is saved until the user confirms the review screen,
  *     and that save goes through the user's own row-level access like every other setting;
  *   • the Anthropic key stays here (Netlify env var), never in the browser.
@@ -21,22 +25,25 @@
  * on every request, and every call is logged to price_import_log (no price data, just counts).
  *
  * Env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY
- *   optional: PRICE_IMPORT_MODEL (default claude-haiku-4-5-20251001)
+ *   optional: PRICE_IMPORT_MODEL (default claude-haiku-4-5-20251001) — layout, item codes, page triage
+ *             PRICE_IMPORT_VISION_MODEL (default claude-sonnet-5) — reading prices off scanned pages
  */
 
 const { createClient } = require('@supabase/supabase-js');
 
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const MODEL = process.env.PRICE_IMPORT_MODEL || 'claude-haiku-4-5-20251001';
+const VISION_MODEL = process.env.PRICE_IMPORT_VISION_MODEL || 'claude-sonnet-5';
 
 const IMPORTS_PER_DAY = 10;
-const CALLS_PER_DAY = 400;
-const MAX_BODY = 200 * 1024;
+const CALLS_PER_DAY = 600;
+const MAX_BODY = 200 * 1024;          // text steps
+const MAX_IMAGE_BODY = 5 * 1024 * 1024; // page images (Netlify's limit is 6 MB)
 const MAX_STRUCT_ROWS = 45, MAX_COLS = 40, MAX_CELL = 60;
 const MAX_MAP_ITEMS = 30;
-// Netlify cuts a normal function off at ~10s; stop the AI call first so we can answer cleanly
-// and the browser can retry with a smaller batch.
-const AI_TIMEOUT_MS = 9000;
+// Netlify stops a normal function at 60s; stop the AI call first so we can answer cleanly
+// and the browser can retry (smaller batch, or the faster model for a page).
+const AI_TIMEOUT_MS = 25000, AI_PAGE_TIMEOUT_MS = 55000;
 
 // Cabinet types the planner prices — keys must match CABINET_TYPES in profile.html.
 const TYPES = {
@@ -69,7 +76,7 @@ const json = (statusCode, obj) => ({ statusCode, headers: { 'Content-Type': 'app
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
   if (!process.env.ANTHROPIC_API_KEY) return json(503, { error: 'AI import is not set up yet (missing ANTHROPIC_API_KEY).' });
-  if ((event.body || '').length > MAX_BODY) return json(413, { error: 'Request too large.' });
+  if ((event.body || '').length > MAX_IMAGE_BODY) return json(413, { error: 'Request too large.' });
 
   const authHeader = event.headers.authorization || event.headers.Authorization;
   if (!authHeader?.startsWith('Bearer ')) return json(401, { error: 'Missing auth token' });
@@ -81,7 +88,8 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body); } catch { return json(400, { error: 'Invalid JSON' }); }
   const importId = clip(body.importId, 64);
   if (!/^[A-Za-z0-9-]{8,64}$/.test(importId)) return json(400, { error: 'Missing import id' });
-  if (!['structure', 'map'].includes(body.step)) return json(400, { error: 'Unknown step' });
+  if (!['structure', 'map', 'triage', 'page'].includes(body.step)) return json(400, { error: 'Unknown step' });
+  if (!['triage', 'page'].includes(body.step) && (event.body || '').length > MAX_BODY) return json(413, { error: 'Request too large.' });
 
   // Silver + Gold only (Dan, 2026-10-05)
   const { data: profile } = await db.from('company_profiles').select('subscription_tier').eq('user_id', userId).single();
@@ -101,13 +109,14 @@ exports.handler = async (event) => {
   if ((recent || []).length >= CALLS_PER_DAY) return json(429, { error: 'Too many requests today. Try again tomorrow.' });
 
   let req;
-  try { req = body.step === 'structure' ? structureRequest(body) : mapRequest(body); }
+  try { req = ({ structure: structureRequest, map: mapRequest, triage: triageRequest, page: pageRequest })[body.step](body); }
   catch (e) { return json(400, { error: e.message }); }
+  const model = req.model || MODEL;
 
   let res, ok = false, usage = {};
   try {
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), AI_TIMEOUT_MS);
+    const timer = setTimeout(() => ctl.abort(), req.timeout || AI_TIMEOUT_MS);
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       signal: ctl.signal,
@@ -116,29 +125,33 @@ exports.handler = async (event) => {
         'anthropic-version': '2023-06-01',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ model: MODEL, max_tokens: req.maxTokens, system: req.system,
-        tools: [req.tool], tool_choice: { type: 'tool', name: req.tool.name },
-        messages: [{ role: 'user', content: req.prompt }] }),
+      body: JSON.stringify({ model, max_tokens: req.maxTokens, system: req.system,
+        ...(req.tool ? { tools: [req.tool], tool_choice: { type: 'tool', name: req.tool.name } } : {}),
+        messages: [{ role: 'user', content: req.content || req.prompt }] }),
     });
     clearTimeout(timer);
     const out = await r.json();
     usage = out.usage || {};
     if (!r.ok) throw new Error(out?.error?.message || `AI error ${r.status}`);
-    const call = (out.content || []).find(c => c.type === 'tool_use');
-    if (!call) throw new Error('AI gave no answer');
-    res = req.clean(call.input);
+    if (req.tool) {
+      const call = (out.content || []).find(c => c.type === 'tool_use');
+      if (!call) throw new Error('AI gave no answer');
+      res = req.clean(call.input);
+    } else {
+      res = req.clean((out.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n'), out.stop_reason);
+    }
     ok = true;
   } catch (e) {
     res = { error: e.name === 'AbortError' ? 'timeout' : (e.message || 'AI error') };
   }
 
   await db.from('price_import_log').insert({
-    user_id: userId, import_id: importId, step: body.step, model: MODEL,
+    user_id: userId, import_id: importId, step: body.step, model,
     items: req.count, input_tokens: usage.input_tokens || 0, output_tokens: usage.output_tokens || 0, ok,
   });
 
   if (!ok) return json(res.error === 'timeout' ? 504 : 502, res);
-  return json(200, { ...res, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0, model: MODEL } });
+  return json(200, { ...res, usage: { input: usage.input_tokens || 0, output: usage.output_tokens || 0, model } });
 };
 
 // ── Step 1: the layout of one sheet/page — its tables, columns and finish groups ──
@@ -234,7 +247,10 @@ function mapRequest(body) {
       '- Give h (height) only for: ' + HEIGHT_TYPES.join(', ') + '. Otherwise h = null.\n' +
       '- Variants of a size (left/right hinge, butt doors, full-height door, 1 vs 2 drawers, deeper/shallower versions, ' +
       'glass-ready) still map to the same type and size; put the variant in "v" (e.g. "full height door", "24 deep"). Leave v empty for the plain standard item.\n' +
-      '- Wall cabinets that are not 12" deep (e.g. 24" deep refrigerator walls W3624X24) are type wall with v "24 deep".\n' +
+      '- Leading zeros are part of the size: W0930 = 9 wide x 30 high, B09 = 9 wide.\n' +
+      '- Depth only counts when the code gives a THIRD size number or a depth suffix: W362424 or W3624X24 = 36 wide, 24 high, ' +
+      '24 deep → v "24 deep". A plain W3624 is 36 wide x 24 high at the normal 12" depth → v empty. 12 as the third number ' +
+      '(W361224, WDC243012) is the normal wall depth → v empty.\n' +
       '- c = "high" only when the code or description clearly states the type and size; otherwise "low".\n' +
       (header.length ? '\nColumn names in this file: ' + header.join(' | ') + '\n' : '') +
       '\nItems (index, item code, description, other columns):\n' + lines,
@@ -265,6 +281,77 @@ function mapRequest(body) {
           v: clip(m.v, 60), c: m.c === 'high' ? 'high' : 'low',
         })),
       };
+    },
+  };
+}
+
+// ── Scanned pages (PDF pages without text, or photos/screenshots of a price list) ──
+function pageImage(body) {
+  const img = String(body.image || '');
+  const m = img.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!m) throw new Error('Missing page image');
+  return { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } };
+}
+const pageNum = body => (Number.isInteger(body.page) && body.page > 0 && body.page < 10000) ? body.page : null;
+
+// Quick look at a small copy of the page: does it hold prices, and does it name the finish
+// group / door style / price tier for the prices on it (and on the pages after it)?
+function triageRequest(body) {
+  const image = pageImage(body), n = pageNum(body), context = clip(body.context, 80);
+  return {
+    count: 1,
+    maxTokens: 300,
+    content: [image, { type: 'text', text:
+      `Page ${n || '?'} of a kitchen cabinet supplier's price list or catalog.` +
+      (context ? ` Earlier pages were for the finish group "${context}".` : '') +
+      '\nhasPrices: does this page have a table of item codes with prices?\n' +
+      'group: if the page names the finish(es), door style(s), collection or price tier its prices are for — or that the ' +
+      'next pages are for, like a section cover "Pricing Gold" or a title bar "WHITE SHAKER" — give that name as written; ' +
+      'otherwise an empty string. Category headings like "Wall Cabinets" or "Accessories" are not finish groups.' }],
+    system: 'You sort the pages of cabinet price lists. Answer only through the tool.',
+    tool: {
+      name: 'page_info', description: 'What this page is.',
+      input_schema: { type: 'object', properties: { hasPrices: { type: 'boolean' }, group: { type: 'string' } }, required: ['hasPrices'] },
+    },
+    clean: x => ({ hasPrices: !!x.hasPrices, group: clip(x.group, 80) }),
+  };
+}
+
+// Read every price off one page. Plain tab-separated lines (fewer tokens than JSON, so a dense
+// page fits in time). The browser reads each page twice and compares.
+function pageRequest(body) {
+  const image = pageImage(body), n = pageNum(body), context = clip(body.context, 80);
+  const fast = body.fast === true;   // retry with the faster model after a timeout
+  return {
+    count: 1,
+    model: fast ? MODEL : VISION_MODEL,
+    timeout: AI_PAGE_TIMEOUT_MS,
+    maxTokens: 8000,
+    system: 'You transcribe kitchen cabinet supplier price lists exactly. Accuracy matters more than anything: a wrong digit ' +
+      'puts a wrong price on a customer quote. Never guess a digit — leave out any price you cannot read clearly.',
+    content: [image, { type: 'text', text:
+      `This is page ${n || '?'} of a cabinet price list.` +
+      (context ? ` If the page itself doesn't say which finish group / door style / price tier its prices are for, it's "${context}" (from an earlier page).` : '') +
+      '\n\nTranscribe EVERY price on the page. One line per price, tab-separated, no header, no other text:\n' +
+      'GROUP\tITEM CODE\tCOLUMN\tPRICE\tSECTION\n' +
+      '- GROUP: the finish / door style / price tier the price is for (the page title such as "WHITE SHAKER", or the group given above).\n' +
+      '- ITEM CODE: exactly as printed, including spaces and symbols (e.g. "WF3 30", "REP1.5*96*24", "W3030B"). Ignore footnote superscripts.\n' +
+      '- COLUMN: the header of the price column when a table has more than one price column for the same item ' +
+      '(e.g. "Gold" and "PR, PS", or "White" / "Brown" / "Black/Oak"); empty when the table has a single price column. ' +
+      'Headers like "30-inch Wall" that name a size group, not a finish, are not COLUMN — leave empty.\n' +
+      '- PRICE: the number as printed, digits and decimal point only (e.g. 1159 or 66.80). Skip cells that are blank, "X", "N/A", "-" or "Call".\n' +
+      '- SECTION: the table title the item sits under (e.g. "Wall Cabinets", "Bridge Cabinets", "Accessories").\n' +
+      'Work table by table, row by row, left to right, so nothing is missed.' }],
+    clean(text, stop) {
+      const rows = [];
+      String(text || '').split(/\r?\n/).forEach(line => {
+        const f = line.split('\t');
+        if (f.length < 4) return;
+        const sku = clip(f[1], 60), price = parseFloat(String(f[3]).replace(/[$,\s]/g, ''));
+        if (!sku || !/\d/.test(sku) || !(price > 0 && price < 100000)) return;
+        rows.push({ group: clip(f[0], 80), sku, col: clip(f[2], 40), price: Math.round(price * 100) / 100, section: clip(f[4], 60) });
+      });
+      return { rows: rows.slice(0, 1500), truncated: stop === 'max_tokens' };
     },
   };
 }
