@@ -41,13 +41,13 @@ const AI_TIMEOUT_MS = 9000;
 // Cabinet types the planner prices — keys must match CABINET_TYPES in profile.html.
 const TYPES = {
   base:         'Base cabinet, door(s) and usually one top drawer. SKUs like B12, B15, B36, "Base 1 door 1 drawer".',
-  drawerBase:   'Drawer base, all drawers (2, 3 or 4 drawer). SKUs like DB18, 3DB18, DB24-3.',
-  sink:         'Sink base. SKUs like SB30, SB36.',
+  drawerBase:   'Drawer base, all drawers. SKUs like DB18, 3DB18, DB24-3. The 3-drawer base is the standard one (v empty); 2- or 4-drawer versions (2DB24, 4DB18) get v "2 drawer" / "4 drawer".',
+  sink:         'Sink base. SKUs like SB30, SB36. Farmhouse/apron sink bases (FSB36, ASB33) are type sink with v "farmhouse".',
   cornerBase:   'Blind corner base. SKUs like BBC36, BLB39, BCB42, "Blind base corner".',
-  lazysusan:    'Lazy susan / corner base with turntable. SKUs like LS33, LS36, LSB36.',
-  vanity:       'Bathroom vanity base (not a sink base). SKUs like V24, V30, VSB36, VDB.',
+  lazysusan:    'Lazy susan / corner base with turntable. SKUs like LS33, LS36, LSB36, BLS33, BLS36 (Base Lazy Susan).',
+  vanity:       'Bathroom vanity base. SKUs like V24, V30, VSB2421 / VSB36 (vanity sink base, the standard one), VDB (vanity drawer base: v "drawers"), VSD (vanity sink + drawers combo: v "combo").',
   wall:         'Standard wall (upper) cabinet, width AND height. SKUs like W1530 (15 wide 30 high), W3036, W3012, W3615.',
-  diagWall:     'Diagonal corner wall cabinet. SKUs like WDC2430, DCW2436.',
+  diagWall:     'Diagonal corner wall cabinet, width AND height. SKUs like WDC2430, DCW2436, WDC243012 (24 wide 30 high 12 deep). Glass-door versions (WDCG…) are skip.',
   tall:         'Pantry / utility tall cabinet, width AND height. SKUs like U1884, UT2490, PC1896.',
   ovenTall:     'Tall oven cabinet, width AND height. SKUs like OC3384, OV3090.',
   mwDrawerBase: 'Base cabinet for a microwave drawer. SKUs like MDB24, MWDB30.',
@@ -165,10 +165,12 @@ function structureRequest(body) {
       (textRows.length ? '\n\nRows further down that have no prices (row: text) — some may be finish-group titles:\n' + textRows.map(t => `${t.row}: ${t.text}`).join('\n') : '') +
       '\n\nDescribe the layout:\n' +
       '- headerRow: row holding column names, or null.\n' +
-      '- tables: one entry per item/price table. Several tables can sit side by side, each with its own item-code ' +
+      '- tables: one entry per item/price table, listed ONCE by its columns even if the same columns repeat under ' +
+      'every finish group further down. Several tables can sit side by side, each with its own item-code ' +
       'column (SKU like B15, W3030, DB18) and price column(s). For each: skuCol, descCol, widthCol/heightCol if separate, ' +
       'priceCols (every price column of that table; label = the finish / door style / price group named in its header, ' +
-      'e.g. "Gold", "PR, PS", "White" — empty string if the header just says Price/Cost/Net or there is none), and ' +
+      'e.g. "Gold", "PR, PS", "White" — empty string if the header just says Price/Cost/Net or there is none, and ' +
+      'empty when the finish comes from a title row instead), and ' +
       'finishCol if a column says which finish each row is for.\n' +
       '- groupTitles: rows that name the finish(es), door style(s), collection or price tier the prices BELOW them apply to ' +
       '(e.g. "WHITE SHAKER", "BLUE, HUNTER GREEN & ARCTIC SHAKER", "Pricing Gold"). Give the row and the name as written. ' +

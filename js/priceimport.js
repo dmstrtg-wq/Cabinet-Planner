@@ -198,7 +198,7 @@ async function piReadLayout() {
     }
     const titles = new Map((s.groupTitles || []).map(g => [g.row, g.name]));
     PI.layouts[name] = {
-      headerRow: s.headerRow, tables: (s.tables || []).map(t => ({ ...t, priceCols: t.priceCols.map(p => ({ col: p.col, label: p.label || '' })) })),
+      headerRow: s.headerRow, tables: piCleanTables(s.tables || [], [...titles.values(), name]),
       sheetIsGroup: !!s.sheetIsGroup, note,
       // every text-only row can be switched on/off as a finish-group title; the AI's picks start on
       candidates: [...textRows.map(t => ({ row: t.row, name: titles.get(t.row) || t.text, on: titles.has(t.row) })),
@@ -208,6 +208,24 @@ async function piReadLayout() {
   if (fatal) { showToast(fatal); PI.step = 'file'; piRender(); return; }
   piExtract();
   PI.step = 'columns'; piRender();
+}
+
+// Tidy the AI's table list so one mistake can't put a price under the wrong finish group:
+// a table listed once per finish group becomes one table (the group comes from the title
+// rows), and a price-column label that just repeats a group title or the sheet name is dropped.
+function piCleanTables(tables, groupNames) {
+  const groups = new Set(groupNames.map(n => piNorm(n)).filter(Boolean));
+  const seen = new Map();
+  tables.forEach(t => {
+    const pcs = t.priceCols.map(p => ({ col: p.col, label: groups.has(piNorm(p.label || '')) ? '' : (p.label || '') }));
+    const key = `${t.skuCol}|${pcs.map(p => p.col).sort((a, b) => a - b).join(',')}|${t.finishCol ?? ''}`;
+    const prev = seen.get(key);
+    if (!prev) { seen.set(key, { ...t, priceCols: pcs }); return; }
+    // same columns seen again: keep a label only if every copy agrees on it
+    prev.priceCols.forEach(p => { const q = pcs.find(x => x.col === p.col); if (!q || piNorm(q.label) !== piNorm(p.label)) p.label = ''; });
+    ['descCol', 'widthCol', 'heightCol'].forEach(k => { if (prev[k] == null && t[k] != null) prev[k] = t[k]; });
+  });
+  return [...seen.values()];
 }
 
 // If the AI can't be reached: header row with item/price words, every SKU-looking column

@@ -33,7 +33,8 @@ function supplierSku(cab, styleCode) {
   let type = cab.type, sizeKey;
   if (isFiller(cab.type)) { const st = fillerPriceParts(cab.width).stock; type = 'filler' + st; sizeKey = `${st}`; }
   else sizeKey = PRICE_BY_HEIGHT.includes(cab.type) ? `${cab.width}x${cab.height}` : `${cab.width}`;
-  return (map[type] && map[type][sizeKey] && map[type][sizeKey][styleCode]) || null;
+  const byType = map[type] || {};
+  return (byType[sizeKey] && byType[sizeKey][styleCode]) || (byType[`${cab.width}`] && byType[`${cab.width}`][styleCode]) || null;
 }
 function orderSku(cab, styleCode) {
   const own = supplierSku(cab, styleCode);

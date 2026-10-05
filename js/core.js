@@ -520,7 +520,9 @@ const CATALOG = {
   bench:        { label:'Bench Seat Base',       widths:[24,30,36,48], heights:[18],              depth:18, color:'#A16207', abbr:'BN',  basePrice: w => w*4  },
 };
 // Cabinet types priced per width × height on the price sheet (the rest per width)
-const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker'];
+// (diagWall joined 2026-10-05 — suppliers price 30/36/42-high diagonal walls differently; a
+// width-only price saved before then still applies as a fallback.)
+const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker', 'diagWall'];
 // (STYLES — the owner-only supplier catalog — lives in js/owner-styles.js)
 // Returns company-specific styles if set, otherwise generic defaults
 const DEFAULT_STYLES = [
@@ -975,7 +977,7 @@ function cabinetPrice(cab) {
     if (typeof ov === 'object') {
       // Per-size, per-finish table from an uploaded price sheet.
       const sizeKey = PRICE_BY_HEIGHT.includes(cab.type) ? `${cab.width}x${cab.height}` : `${cab.width}`;
-      const bySize = ov[sizeKey];
+      const bySize = ov[sizeKey] || ov[`${cab.width}`];   // width-only fallback (older sheets)
       if (bySize && typeof bySize === 'object') {
         const styleCode = cab.styleOverride || activeProj()?.style || 'AW';
         if (bySize[styleCode] != null) base = parseFloat(bySize[styleCode]);
