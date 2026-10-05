@@ -687,6 +687,16 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel sheet from your supplier and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
         </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-title">Import a Supplier Price List</div>
+            <button id="ai-import-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="piOpen()">✨ Import Supplier Price List</button>
+          </div>
+          <div class="card" style="padding:18px 22px;font-size:13px;color:var(--muted);line-height:1.6;">
+            Skip the template: drop in your supplier's price list exactly as they sent it (Excel or CSV) and our AI matches every item code to your cabinet types, sizes and finishes. You review every match before anything is saved, and prices are always read straight from your file. Buy from more than one supplier? Import each one — their finishes and prices stay separate. <strong>Silver and Gold plans.</strong>
+          </div>
+        </div>
       </div>
 
       <!-- TEAM -->
@@ -1844,6 +1854,9 @@ function renderPfStyles(styles) {
       <input type="text" value="${esc(s.code || '')}" placeholder="Code"
         oninput="_pfStyles[${i}].code=this.value.toUpperCase()" autocomplete="off"
         style="width:70px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);">
+      <input type="text" value="${esc(s.supplier || '')}" placeholder="Supplier (optional)" aria-label="Supplier"
+        oninput="_pfStyles[${i}].supplier=this.value.trim()||undefined" autocomplete="off"
+        style="width:150px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--text);background:var(--bg);">
       <button type="button" onclick="_pfStyles.splice(${i},1);renderPfStyles(_pfStyles);"
         style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0 4px;">✕</button>
     </div>
@@ -1910,6 +1923,12 @@ const FILES_BUCKET = 'company-files';
 function applyFilesTabTierGating() {
   const plBtn = document.getElementById('pricelist-upload-btn');
   const locked = !canAccess('silver');
+  const aiBtn = document.getElementById('ai-import-btn');
+  if (aiBtn) {
+    aiBtn.style.opacity = locked ? '0.45' : '';
+    aiBtn.style.cursor  = locked ? 'not-allowed' : '';
+    aiBtn.title         = locked ? 'Supplier price-list import requires the Silver or Gold plan' : '';
+  }
   if (plBtn) {
     plBtn.style.opacity = locked ? '0.45' : '';
     plBtn.style.cursor  = locked ? 'not-allowed' : '';
@@ -2094,7 +2113,7 @@ const CABINET_WIDTHS = {
   filler3:     [3],
   filler6:     [6],
 };
-const CABINET_HEIGHTS = { wall: [12,15,18,30,36,42], tall: [84,90,96], ovenTall: [84,90,96], linenTall: [84,90,96], mediaBase: [24,30], openTall: [84,90,96], locker: [84,90,96] }; // only types that vary by height (priced per width × height)
+const CABINET_HEIGHTS = { wall: [12,15,18,24,30,36,42], tall: [84,90,96], ovenTall: [84,90,96], linenTall: [84,90,96], mediaBase: [24,30], openTall: [84,90,96], locker: [84,90,96] }; // only types that vary by height (priced per width × height)
 
 // Generic placeholder finishes — mirrors DEFAULT_STYLES in app.html. Used to build a
 // company's price sheet template when they haven't set up their own style list yet.
@@ -2105,6 +2124,8 @@ const DEFAULT_STYLES = [
   { code:'NW', name:'Natural Wood' },
 ];
 function companyStyles() {
+  // Same finish list the planner shows (incl. the built-in catalog on owner accounts) — see priceimport.js
+  if (typeof companyFinishes === 'function') return companyFinishes();
   const cs = companyProfile.custom_styles;
   return (cs && Array.isArray(cs) && cs.length > 0) ? cs : DEFAULT_STYLES;
 }
@@ -2166,7 +2187,9 @@ async function tryOpenPriceMapping(file) {
 
     const headers = grid[0].map(h => String(h).trim());
     if (headers[0] !== 'Cabinet Type' || headers[1] !== 'Width (in)' || headers[2] !== 'Height (in)') {
-      showToast("That doesn't look like our price sheet template — download the template below, fill it in, then upload that.");
+      // Not our template — most likely a supplier's own price list, which the AI import can read (5.8)
+      if (typeof piOpen === 'function' && confirm("That isn't our price sheet template — it looks like a supplier's own price list.\n\nWant the AI import to read it? You'll review every match before anything is saved.")) piOpen(file);
+      else showToast("Saved as a file only. To use it for pricing, use Import Supplier Price List, or fill in our template.");
       return;
     }
 
@@ -2424,6 +2447,8 @@ init();
   applyA11y();
 })();
 </script>
+<script src="/js/owner-styles.js" data-categories="essential"></script>
+<script src="/js/priceimport.js" data-categories="essential"></script>
 
 </body>
 </html>

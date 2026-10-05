@@ -320,3 +320,26 @@ Claude tested locally: living rooms 14'/10'/8' and halls 6'8"/5' (no placement p
 - Shown in plan and 3D (not elevations). Nothing here is quoted or ordered, even if a price is typed.
 Claude tested locally: island stools, round table + chairs, all four countertop appliances placed on the counter, 3D, popover/duplicate/delete, quote total unaffected. All scripts compile; no errors.
 - [ ] On a kitchen with an island: add stools, a table with chairs and a coffee maker; look in 3D.
+
+### 5.8 AI supplier price-list import (built 2026-10-05) — Silver + Gold
+**Setup before it works live (Dan):**
+1. Run `supabase-price-import.sql` in the Supabase SQL Editor (adds `supplier_skus` + the `price_import_log` table).
+2. Create an Anthropic API key (console.anthropic.com → API Keys; add a payment method and set a monthly spend limit, e.g. $20).
+3. Netlify → Site configuration → Environment variables → add `ANTHROPIC_API_KEY` (mark it secret). Then push / redeploy.
+**What it does:** Profile → My Pricing → **✨ Import Supplier Price List**. Pick the file (Excel/CSV, as the supplier sent it), name the supplier, set the list-price multiplier (1 = the list is your cost; 0.42 = you pay 42% of list) → the AI finds the columns → you connect each price column (or each finish in a "finish" column) to one or more finishes (existing, or new ones tagged with that supplier) → the AI reads each item code → review: **Needs a look / Matched / Skipped** → Save shows new / changed / unchanged counts and the biggest changes before anything is written.
+- Prices are read straight from the file in the browser; the AI never supplies a number.
+- Sizes the planner doesn't have (e.g. a B39) go to "Needs a look"; variants (full-height door, left/right, 24" deep) are skipped when the plain item exists; the same code listed twice at different prices shows both and you pick.
+- Multiple suppliers: each import only touches the finishes it prices. New finishes show grouped under the supplier name in the planner's style picker. Finish names auto-match only within the same supplier.
+- Owner accounts (Dan, sister): imported finishes are added **after** the built-in catalog, never replacing it.
+- Supplier item codes are saved and used on the **Order List** for that size + finish (falls back to our generic code).
+- Old template upload: a non-template file now offers to open the AI import instead of being rejected.
+- Company Settings → Door Styles / Finishes has a new **Supplier** box on each finish.
+- Limits: 10 imports per account per day, Silver/Gold only, account owner only. Dan sees the AI cost of each import at the bottom of the review screen.
+Claude tested locally with a made-up "Acme" list and a simulated AI (no API key yet): wide layout with title rows, section headings, "$210.00"/"N/A" cells, a duplicate code at two prices, variant codes, an off-size B39, moulding/unknown items, price group feeding two finishes, 0.5 multiplier, long layout (finish column) on an owner account, save contents, quote prices and order-list codes in the planner. All scripts compile; no errors.
+- [ ] After setup: import a real supplier list on the Gold test account; spot-check 10 prices against the file; run a quote.
+- [ ] Silver account: button works; Free account: button greyed out.
+
+### 24" wall cabinet height (added 2026-10-05)
+- Wall cabinets now come in **24" high** (e.g. W3624 over a fridge). Price sheet template has the new rows — re-download it if you price by template.
+Claude tested locally: W3624 prices by width × height, order code W3624, plan/elevation/3D draw with no errors.
+- [ ] Add a 36×24 wall cabinet over a fridge; check elevation + quote.

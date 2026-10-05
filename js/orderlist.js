@@ -25,7 +25,19 @@ const HINGE_LABEL = { L: 'Left', R: 'Right' };
 // ════════════════════════════
 const _num = v => String(Math.round(v * 10000) / 10000);         // 1.375, 34.5, 36
 const _whole = v => fmtFrac(v).replace('"', '').replace(' ', '-');  // 1-3/8 for codes
-function orderSku(cab) {
+// The supplier's own item code, when a price-list import (5.8) saved one for this exact
+// type + size + finish (fillers: the stock piece); otherwise our generic code below.
+function supplierSku(cab, styleCode) {
+  const map = companyProfile.supplier_skus;
+  if (!map || !styleCode) return null;
+  let type = cab.type, sizeKey;
+  if (isFiller(cab.type)) { const st = fillerPriceParts(cab.width).stock; type = 'filler' + st; sizeKey = `${st}`; }
+  else sizeKey = PRICE_BY_HEIGHT.includes(cab.type) ? `${cab.width}x${cab.height}` : `${cab.width}`;
+  return (map[type] && map[type][sizeKey] && map[type][sizeKey][styleCode]) || null;
+}
+function orderSku(cab, styleCode) {
+  const own = supplierSku(cab, styleCode);
+  if (own) return own;
   const cat = CATALOG[cab.type];
   if (isFiller(cab.type)) return 'FL' + fillerPriceParts(cab.width).stock;
   if (cab.type === 'fridgePanel') return 'FEP' + _whole(cab.height);
@@ -51,9 +63,9 @@ function buildOrderList(p) {
         ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}` + (cab._casingFor ? ' (bump-out casing)' : '')
         : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '') + (cab.trash ? `, trash pull-out (${cab.trash === 'double' ? 'trash + recycle' : 'single'})` : '')
           + (cab.wallOffset ? `, set out ${fmtFrac(cab.wallOffset)} from wall` : '');
-      const key = [orderSku(cab), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : '', cab.trash || '', cab.wallOffset || ''].join('|');
+      const key = [orderSku(cab, st.code), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : '', cab.trash || '', cab.wallOffset || ''].join('|');
       if (!groups.has(key)) groups.set(key, {
-        qty: 0, sku: orderSku(cab), desc,
+        qty: 0, sku: orderSku(cab, st.code), desc,
         w: filler ? fp.stock : cab.width, h: cab.height, d: cab.depth || CATALOG[cab.type].depth,
         styleName: st.name, styleCode: st.code, hinge, items: [], notes: [],
       });

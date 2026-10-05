@@ -336,6 +336,8 @@ This phase is the moat. See 4.0 for where these tasks slot into the build order.
 - Decide before building (Dan): data handling (supplier price lists are confidential; they're sent to Anthropic's API), per-account upload limits and measured cost per upload, which tier gets it, and file types for v1 (recommend CSV/XLSX first, PDF later).
 - Security: auth required, rate-limited per account, file size/type limits, API key never client-side, and the function only ever writes the caller's own `company_profiles` row.
 - Done when: a real supplier price list from one of Dan's brands imports with a clear review, and the confirmed prices quote correctly.
+- **Decisions + status (Dan, 2026-10-05):** Silver + Gold. Excel/CSV first, PDF later. Must handle dealers with several suppliers, each with its own finish pricing. Framework **built 2026-10-05** (`netlify/functions/price-import.js`, `js/priceimport.js`, `js/owner-styles.js`, `supabase-price-import.sql`): AI only reads layout + item codes, prices come straight from the file, list-price multiplier, price-group columns can feed several finishes, finishes tagged by supplier, supplier SKUs feed the order list, 10 imports/day. Waiting on: Dan's API key + SQL, then a real supplier list to tune against.
+- Known gap found while building: the planner's wall cabinet heights are 12/15/18/30/36/42 — no **24"** (common over-fridge height, e.g. W3624). **Added 2026-10-05 (Dan):** wall heights now 12/15/18/24/30/36/42 (planner + price sheet template).
 
 ### Phase 6 — Protect the lead funnel
 
