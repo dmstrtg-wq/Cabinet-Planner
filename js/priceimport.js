@@ -130,9 +130,9 @@ function piOpen(file) {
   document.getElementById('pi-overlay').classList.add('open');
   if (file) piLoadFile(file); else piRender();
 }
-function piClose() {
+function piClose(force) {
   if (PI && ['matching', 'saving', 'reading', 'loading', 'triage', 'readingPages'].includes(PI.step)) return;
-  if (PI && ['questions', 'review'].includes(PI.step) && !confirm('Close without saving? Nothing from this price list will be saved.')) return;
+  if (PI && !force && ['questions', 'review', 'columns', 'pages', 'confirm'].includes(PI.step)) { PI.prevStep = PI.step; PI.step = 'closeAsk'; piRender(); return; }
   document.getElementById('pi-overlay').classList.remove('open');
   PI = null;
 }
@@ -299,6 +299,26 @@ async function piPool(list, n, fn) {
   if (stop) throw stop;
 }
 
+// A page heading only counts as a finish group if it isn't a product category or a brand
+// ("Fillers and Moldings", "Forevermark", the supplier's own name) — those would otherwise
+// replace the real tier ("Pricing Platinum") for every page after them.
+const PI_CATEGORY = /\b(cabinets?|wall|base|tall|pantr|vanit|fillers?|moldings?|mouldings?|panels?|doors?|decor|accessor|hoods?|valances?|legs?|corbels?|appliques?|glass|pull ?outs?|toe ?kick|crown|shel(f|ves)|trim|hardware|specification|assembly|warranty|ordering|features?)\b/i;
+function piGroupOk(g) {
+  g = String(g || '').trim();
+  if (!g) return false;
+  if (PI_CATEGORY.test(g) && !/\b(shaker|finish|style|color|colour|tier|gold|platinum|titanium|silver|bronze)\b/i.test(g)) return false;
+  if (PI.supplier && piNorm(g) === piNorm(PI.supplier)) return false;
+  return true;
+}
+
+// Once a tier is running, only a heading that itself looks like a tier or finish takes over
+// (a logo or a stray title in the middle of the Platinum pages doesn't).
+function piReplacesGroup(t) {
+  if (/\b(pricing|price|tier|line|series|collection|shaker|panel|slab|raised|flat|inset|mission|beaded|finish|style|colou?r|gold|platinum|titanium|silver|bronze)\b/i.test(t)) return true;
+  const n = piNorm(t);
+  return companyFinishes().some(f => piNorm(f.name) === n || f.code === t.trim());
+}
+
 // Find the price pages (scanned ones) and the finish group each one is for
 async function piFindPricePages() {
   const scans = PI.pages.filter(p => !p.text);
@@ -308,7 +328,9 @@ async function piFindPricePages() {
       if (!pg.triaged) {
         try {
           const r = await piCall({ step: 'triage', page: pg.n, image: await piPageImage(pg, PI_TRIAGE_PX, 0.7) });
-          pg.hasPrices = r.hasPrices; pg.title = r.group; pg.triaged = true;
+          pg.hasPrices = r.hasPrices; pg.triaged = true;
+          pg.title = (r.groupKind === 'finish_or_tier' || !r.groupKind) && piGroupOk(r.group) ? r.group : '';
+          pg.sectionEnd = r.groupKind === 'category' && /\b(pricing|section)\b/i.test(r.group || '');   // "Pricing Glass Doors" closes the tier before it
         } catch (e) {
           if ([429, 403, 503].includes(e.status)) throw e;
           pg.hasPrices = true; pg.title = ''; pg.triaged = true;   // couldn't tell — keep it, the person can untick it
@@ -320,10 +342,10 @@ async function piFindPricePages() {
   // a finish group named on one page carries on to the pages after it until another is named
   let cur = '';
   PI.pages.forEach(pg => {
-    if (pg.text) return;
-    if (pg.title) cur = pg.title;
+    if (pg.sectionEnd) cur = '';
+    if (pg.title && (!cur || piReplacesGroup(pg.title))) cur = pg.title;
     if (!pg.groupEdited) pg.group = cur;
-    pg.use = !!pg.hasPrices;
+    if (!pg.text) pg.use = !!pg.hasPrices;
   });
   PI.step = 'pages'; piRender();
 }
@@ -359,14 +381,14 @@ async function piReadPages() {
         const reads = await Promise.all([piReadPage(pg, img), piReadPage(pg, img)]);
         let m = piMergeReads(reads, pg);
         if (m.disputed || reads.some(r => r.truncated)) { reads.push(await piReadPage(pg, img)); m = piMergeReads(reads, pg); }
-        pg.read = m.rows; pg.readCount = reads.length; pg.failed = reads.every(r => r.failed);
+        pg.read = m.rows; pg.readCount = reads.length; pg.failed = reads.every(r => r.failed) || !m.rows.length;
       }
       PI.progress.done++; piUpdateProgress();
     });
   } catch (e) { showToast(e.message); PI.step = 'pages'; piRender(); return; }
   PI.visionRows = PI.pages.filter(p => p.read).flatMap(p => p.read);
   const failed = PI.pages.filter(p => p.use && p.failed).map(p => p.n);
-  if (failed.length) showToast(`Page${failed.length > 1 ? 's' : ''} ${failed.join(', ')} couldn't be read — go back to try again, or untick ${failed.length > 1 ? 'them' : 'it'}.`);
+  PI.failedPages = failed;
   failed.forEach(n => { const pg = PI.pages.find(p => p.n === n); pg.read = null; });
   piExtract();
   PI.step = 'columns'; piRender();
@@ -383,8 +405,9 @@ async function piReadPage(pg, img) {
 // them. With two reads, any disagreement or a line only one read found asks for a third read;
 // after that, two out of three is enough; anything else is "disputed" (a question later).
 function piMergeReads(reads, pg) {
+  reads.forEach(r => { if (!r.failed) r.rows = (r.rows || []).map(x => ({ ...x, col: piCleanCol(x.col) })).filter(x => x.col !== null); });
   const ok = reads.filter(r => !r.failed);
-  const groupOf = r => pg.groupEdited ? pg.group : (r.group || pg.group);   // the person's edit wins
+  const groupOf = () => pg.group;   // the finish group is decided per page (and can be edited), never per line
   const keyOf = r => [piNorm(groupOf(r)), r.sku.toUpperCase().replace(/\s+/g, ''), piNorm(r.col)].join('|');
   const maps = ok.map(r => {
     const m = new Map();
@@ -408,6 +431,15 @@ function piMergeReads(reads, pg) {
     rows.push({ page: pg.n, group: groupOf(x), sku: x.sku, col: x.col, section: x.section, price: price != null ? price : Math.max(...present), reads: vals, disputed: isDisputed });
   });
   return { rows, disputed };
+}
+// A COLUMN label must name finishes or a tier: drop size headings ("30\" Wall"), and throw
+// the line away when a number landed there (the price was probably shifted on that line).
+function piCleanCol(col) {
+  col = String(col || '').trim();
+  if (!col) return '';
+  if (/^\$?\s*[\d,]+(\.\d+)?$/.test(col)) return null;
+  if (/\d+\s*("|”|''|in\b|inch)/i.test(col) || /\b(wall|base|tall|high|deep|wide|width|height|depth|price|cost|net|list)\b/i.test(col)) return '';
+  return col.split(/\s*,\s*/).join(', ');
 }
 const piReadSuggest = reads => Math.max(...reads.filter(v => v != null));
 
@@ -464,7 +496,7 @@ async function piLayoutSheets(names) {
       s = piGuessLayout(grid);
       note = "The AI couldn't read this sheet's layout, so this is a best guess — check it below.";
     }
-    const titles = new Map((s.groupTitles || []).map(g => [g.row, g.name]));
+    const titles = new Map((s.groupTitles || []).filter(g => piGroupOk(g.name)).map(g => [g.row, g.name]));
     PI.layouts[name] = {
       headerRow: s.headerRow, tables: piCleanTables(s.tables || [], [...titles.values(), name]),
       sheetIsGroup: !!s.sheetIsGroup, note,
@@ -539,6 +571,7 @@ function piExtract() {
       let group = '';
       for (const t of titles) { if (t.row < ri) group = t.name; else break; }
       if (!group && L.sheetIsGroup) group = name;
+      if (!group && PI.kind === 'pdf') { const pg = PI.pages.find(p => 'Page ' + p.n === name); if (pg) group = pg.group; }   // text page in a PDF: the tier from the pages around it
       L.tables.forEach(T => {
         const sku = piCell(r, T.skuCol);
         if (!sku || sku.length > 60 || !/\d/.test(sku)) return;   // item codes carry a size; headings don't
@@ -556,7 +589,7 @@ function piExtract() {
   (PI.visionRows || []).forEach(v => {
     const pg = PI.pages.find(p => p.n === v.page && p.use);
     if (!pg) return;
-    rows.push({ sheet: 'Page ' + v.page, page: v.page, r: -1, sku: v.sku, desc: v.section || '', extra: '', src: piSourceLabel(pg.groupEdited ? pg.group : v.group, '', v.col), price: v.price, reads: v.reads, disputed: v.disputed });
+    rows.push({ sheet: 'Page ' + v.page, page: v.page, r: -1, sku: v.sku, desc: v.section || '', extra: '', src: piSourceLabel(pg.group, '', v.col), price: v.price, reads: v.reads, disputed: v.disputed });
   });
   PI.rows = rows;
   const counts = new Map();
@@ -578,7 +611,8 @@ function piSuggestRefs(label) {
   const parts = label.split(' · ');
   const last = parts[parts.length - 1];
   const codes = last.split(/\s*(?:,|&|\/|\band\b)\s*/i).map(x => x.trim()).filter(Boolean);
-  if (codes.length && codes.every(c => /^[A-Z0-9]{2,3}$/.test(c) && fin.some(f => f.code === c))) return codes;
+  // a list of finish codes ("PR, PS", "AE/AA/AH"): existing finishes by code, the rest new
+  if (codes.length && codes.every(c => /^[A-Z][A-Z0-9]{1,2}$/.test(c))) return codes.map(c => fin.some(f => f.code === c) ? c : 'new:' + c);
   const tier = parts[0].replace(/pricing|price|tier|series|level/ig, '').trim().toLowerCase();
   if (tier && parts.length === 1) { const t = fin.filter(f => (f.tier || '').toLowerCase() === tier); if (t.length) return t.map(f => f.code); }
   if (label === 'Price') return ['new:' + PI.supplier];
@@ -693,6 +727,7 @@ async function piMatchItems() {
   await Promise.all(workers);
   if (stop) showToast(stop);
   PI.items.filter(it => !it.t && !it.aiError).forEach(it => { it.aiError = 'Not read.'; });
+  PI.items.forEach(piFillSize);
   piStartQuestions();
 }
 
@@ -722,14 +757,19 @@ function piItemPriceInfo(it) {
     refs.forEach(ref => (opts[ref] = opts[ref] || []).push({ src, cost, n: refs.length }));
   });
   const prices = {}, conflicts = [];
+  const groupOf = src => ((piSources().find(x => x.id === src) || {}).label || '').split(' · ')[0].toLowerCase();
   Object.entries(opts).forEach(([ref, list]) => {
-    const n = Math.min(...list.map(o => o.n));
-    const ties = list.filter(o => o.n === n);
+    // within one finish group (tier) the more specific column wins ("PR, PS" over "Gold");
+    // between different groups nothing wins automatically
+    const byGroup = new Map();
+    list.forEach(o => { const g = groupOf(o.src), cur = byGroup.get(g); if (!cur || o.n < cur[0].n) byGroup.set(g, [o]); else if (o.n === cur[0].n) cur.push(o); });
+    const ties = [...byGroup.values()].flat();
     const pref = it.prefer && it.prefer[ref] && ties.find(o => o.src === it.prefer[ref]);
     if (pref) { prices[ref] = pref.cost; return; }
     const hi = Math.max(...ties.map(o => o.cost)), lo = Math.min(...ties.map(o => o.cost));
     prices[ref] = hi;
     if (hi - lo > PI_TOL) conflicts.push({ ref, opts: ties });
+    else if (byGroup.size > 1 && !(it.prefer && it.prefer[ref])) conflicts.push({ ref, opts: ties, groups: true });   // two tiers both claim this finish
   });
   return { prices, conflicts };
 }
@@ -739,9 +779,11 @@ function piStatuses() {
   PI.items.forEach(it => {
     if (it.deferred) return st.set(it, ['later', 'Saved as an open question — finish it from My Pricing', 'later']);
     if (it.exclude) return st.set(it, ['skip', 'Left out by you']);
-    if (!it.t) return st.set(it, ['look', (it.aiError || 'Not read yet') + ' Set the cabinet type and size.', 'size']);
+    if (!it.t) return st.set(it, ['look', (it.aiError || "The AI couldn't tell what this is.") + ' Set the cabinet type and size.', 'low']);
     if (it.t === 'skip') return st.set(it, ['skip', 'Not something the planner prices' + (it.v ? ` (${it.v})` : '')]);
-    const sz = piSizeIssue(it); if (sz) return st.set(it, ['look', sz, 'size']);
+    // a size the planner doesn't have can't be quoted anyway — left out, no question (Dan, 2026-10-05)
+    if (it.w == null || (CABINET_HEIGHTS[it.t] && it.h == null)) { if (!it.confirmed) return st.set(it, ['look', `Couldn't read the size from the code — set it`, 'low']); }
+    const sz = piSizeIssue(it); if (sz) return st.set(it, ['skip', sz + ' — left out', 'size']);
     if (!Object.keys(piItemPrices(it)).length) return st.set(it, ['skip', 'No price in the finish groups you connected']);
     if (it.dupPrice && !it.confirmed) return st.set(it, ['look', `Listed more than once with prices more than $${PI_TOL} apart`, 'price']);
     if (it.readIssue && !it.readOk) return st.set(it, ['look', `The reads of page ${Object.values(it.readIssue)[0].page} don't agree on this price (more than $${PI_TOL} apart, or one read missed it)`, 'read']);
@@ -755,20 +797,22 @@ function piStatuses() {
   cand.forEach(it => Object.keys(piItemPrices(it)).forEach(ref => {
     const k = `${it.t}|${piSizeKey(it)}|${ref}`; (groups.get(k) || groups.set(k, []).get(k)).push(it);
   }));
-  const beaten = new Map(), unsettled = new Map();
+  // No question when nothing settles it either: the standard-looking one (shortest code) is
+  // picked automatically and the review shows "picked X over Y", where it can be changed.
+  const beaten = new Map(), autoWon = new Map();
   groups.forEach(list => {
     if (list.length < 2) return;
     const picked = list.filter(x => x.pick), plain = list.filter(x => !x.v);
-    const win = picked.length === 1 ? picked[0] : (picked.length === 0 && plain.length === 1 ? plain[0] : null);
-    list.forEach(x => {
-      if (win && x !== win) beaten.set(x, win);
-      else if (!win) unsettled.set(x, list);
-    });
+    let win = picked.length === 1 ? picked[0] : (picked.length === 0 && plain.length === 1 ? plain[0] : null);
+    if (!win) {
+      win = (plain.length ? plain : list).slice().sort((a, b) => a.sku.length - b.sku.length || a.sku.localeCompare(b.sku))[0];
+      autoWon.set(win, [...new Set([...(autoWon.get(win) || []), ...list.filter(x => x !== win).map(x => x.sku)])]);
+    }
+    list.forEach(x => { if (x !== win) beaten.set(x, win); });
   });
   const ok = [];
   cand.forEach(it => {
     if (beaten.has(it)) return st.set(it, ['skip', `Same cabinet as ${beaten.get(it).sku} — the planner uses that one`, 'dup']);
-    if (unsettled.has(it)) return st.set(it, ['look', `Same cabinet as ${unsettled.get(it).filter(x => x !== it).map(x => x.sku).join(', ')} — keep one`, 'dup']);
     if (it.c === 'low' && !it.confirmed) return st.set(it, ['look', "The AI wasn't sure what this is", 'low']);
     ok.push(it);
   });
@@ -791,7 +835,7 @@ function piStatuses() {
   ok.forEach(it => {
     const os = odd.get(it);
     if (os) return st.set(it, ['look', os.map(o => `${piRefName(o.ref)}: ${piMoney(o.cost)} is less than the narrower ${o.prev.it.sku} (${piMoney(o.prev.cost)})`).join('; ') + ' — possible typo in the price list', 'order', os]);
-    st.set(it, ['ok', [it.v ? `Variant: ${it.v}` : '', ...(it.notes || [])].filter(Boolean).join(' · ')]);
+    st.set(it, ['ok', [it.v ? `Variant: ${it.v}` : '', autoWon.has(it) ? `Picked over ${autoWon.get(it).join(', ')} (same planner cabinet) — Edit to change` : '', ...(it.notes || [])].filter(Boolean).join(' · ')]);
   });
   return st;
 }
@@ -819,44 +863,74 @@ function piPlan(st) {
 }
 
 // ════════════════════════════
-// QUESTIONS — one at a time: suggested fix · manual fix · skip for now
+// QUESTIONS — grouped: one screen per kind (and per page for disagreeing reads). Every line
+// comes pre-filled with the suggested fix, so a screen is usually one click ("Use these");
+// any line can be changed by hand or skipped for now.
 // ════════════════════════════
-function piStartQuestions() {
-  const st = piStatuses(), qs = [];
-  // Finish questions: a new finish whose name looks like one the company already has
-  const seen = new Set();
-  Object.values(PI.targets).flat().forEach(ref => {
-    if (!ref.startsWith('new:') || seen.has(ref)) return;
-    seen.add(ref);
-    const n = piNorm(ref.slice(4));
-    const like = piUsableFinishes().find(f => { const m = piNorm(f.name); return m === n || (m.length > 5 && (m.includes(n) || n.includes(m))); });
-    if (like) qs.push({ kind: 'style', ref, like: like.code });
+// Sizes the AI left out, straight from the code: OC3384B → 33 × 84, B15 → 15; fillers and
+// fridge panels have one size in the planner.
+function piFillSize(it) {
+  if (!it.t || it.t === 'skip') return;
+  const fixed = { filler3: 3, filler6: 6, fridgePanel: 0.75 }[it.t];
+  if (fixed) { it.w = fixed; it.h = null; return; }
+  const d = (it.sku.toUpperCase().replace(/^[^0-9]*/, '').match(/^\d+/) || [''])[0];
+  if (it.w == null && d.length >= 2) it.w = +d.slice(0, 2);
+  if (CABINET_HEIGHTS[it.t] && it.h == null && d.length >= 4) it.h = +d.slice(2, 4);
+}
+const PI_CARD_TEXT = {
+  style: ['New finishes that look like ones you have', "If it's the same door, its prices should go to your existing finish instead of creating a second one."],
+  read: ["The two reads of this page don't agree", `Lines where the AI's reads differ by more than $${PI_TOL}, or only one read found the line. The suggested price is the higher reading — check it against the page.`],
+  price: ['Listed more than once at different prices', `The same item code appears with prices more than $${PI_TOL} apart. Suggested: the price that fits between the neighbouring sizes, otherwise the higher one.`],
+  which: ['Two finish groups price the same finish', 'Two groups (e.g. two tiers) give the same finish different prices. Suggested: the higher price.'],
+  order: ['Prices that look out of line', `A wider cabinet costs more than $${PI_TOL} less than a narrower one — possibly a typo in the price list. Suggested: keep the price list's price.`],
+  low: ["Items the AI wasn't sure about", 'Check the cabinet type and size (pre-filled with the best guess).'],
+};
+const PI_CARD_ORDER = ['style', 'read', 'price', 'which', 'order', 'low'];
+// Build the cards for everything that still needs an answer (and isn't on a card yet)
+function piCollectCards() {
+  const st = piStatuses();
+  PI.cards = PI.cards || [];
+  const onCard = new Set(PI.cards.filter(c => !c.done).flatMap(c => c.items || []));
+  const fresh = {};
+  PI.items.forEach(it => {
+    const s = st.get(it);
+    if (s[0] !== 'look' || onCard.has(it)) return;
+    const key = s[2] === 'read' ? 'read:' + Object.values(it.readIssue)[0].page : s[2];
+    (fresh[key] = fresh[key] || { kind: s[2], page: s[2] === 'read' ? Object.values(it.readIssue)[0].page : null, items: [] }).items.push(it);
   });
-  PI.items.forEach(it => { const s = st.get(it); if (s[0] === 'look') qs.push({ kind: s[2], it }); });
-  PI.questions = qs; PI.qi = 0;
-  PI.step = qs.length ? 'questions' : 'review';
+  // finish look-alikes (asked once per import)
+  if (!PI.styleAsked) {
+    PI.styleAsked = true;
+    const refs = [];
+    [...new Set(Object.values(PI.targets).flat())].forEach(ref => {
+      if (!ref.startsWith('new:')) return;
+      const n = piNorm(ref.slice(4));
+      const like = piUsableFinishes().find(f => { const m = piNorm(f.name); return m === n || (m.length > 5 && (m.includes(n) || n.includes(m))); });
+      if (like) refs.push({ ref, like: like.code });
+    });
+    if (refs.length) fresh.style = { kind: 'style', refs };
+  }
+  Object.values(fresh).sort((x, y) => PI_CARD_ORDER.indexOf(x.kind) - PI_CARD_ORDER.indexOf(y.kind) || (x.page || 0) - (y.page || 0))
+    .forEach(c => PI.cards.push(c));
+}
+function piStartQuestions() {
+  PI.cards = []; PI.styleAsked = false;
+  piCollectCards();
+  PI.ci = PI.cards.findIndex(c => !c.done);
+  PI.step = PI.ci >= 0 ? 'questions' : 'review';
   PI.tab = 'ok';
   piRender();
 }
-const piOpenQuestions = () => (PI.questions || []).filter(q => !q.answer);
-function piAnswer(how) {
-  const q = PI.questions[PI.qi];
-  if (!q) return;
-  q.answer = how;
-  piNextQuestion();
-}
-function piNextQuestion() {
-  // an answer can settle other questions too (keeping one of two look-alike codes settles both)
-  const st = piStatuses();
-  PI.questions.forEach(q => { if (!q.answer && q.it && st.get(q.it)[0] !== 'look') q.answer = 'settled'; });
-  const next = PI.questions.findIndex((q, i) => i > PI.qi && !q.answer);
-  const any = PI.questions.findIndex(q => !q.answer);
-  if (next >= 0) PI.qi = next;
-  else if (any >= 0) PI.qi = any;
-  else { PI.step = 'review'; PI.tab = 'ok'; }
+const piOpenCards = () => (PI.cards || []).filter(c => !c.done);
+function piNextCard() {
+  piCollectCards();   // answers can raise new issues — they join the list now, not at the end
+  const next = PI.cards.findIndex((c, i) => i > PI.ci && !c.done);
+  const any = PI.cards.findIndex(c => !c.done);
+  PI.ci = next >= 0 ? next : any;
+  if (PI.ci < 0) { PI.step = 'review'; PI.tab = 'ok'; }
   piRender();
 }
-function piQBack() { if (PI.qi > 0) { PI.qi--; piRender(); } }
+function piCardBack() { if (PI.ci > 0) { PI.ci--; piRender(); } }
 // A sensible price when a code is listed at two prices: the one that fits between the
 // narrower and wider sizes of the same line; if there aren't any, the higher one.
 function piSuggestAlt(it, src) {
@@ -865,69 +939,81 @@ function piSuggestAlt(it, src) {
   const lower = same.filter(x => x.w < it.w).sort((a, b) => b.w - a.w)[0], upper = same.filter(x => x.w > it.w).sort((a, b) => a.w - b.w)[0];
   if (lower || upper) {
     const fits = alts.filter(p => (!lower || p >= lower.prices[src] - PI_TOL) && (!upper || p <= upper.prices[src] + PI_TOL));
-    if (fits.length === 1) return { price: fits[0], why: `fits between ${lower ? lower.sku : '—'} and ${upper ? upper.sku : '—'}` };
+    if (fits.length === 1) return fits[0];
   }
-  return { price: Math.max(...alts), why: 'the higher price, so a quote never comes in low' };
+  return Math.max(...alts);
 }
-function piFixSuggested() {
-  const q = PI.questions[PI.qi], it = q.it;
-  if (q.kind === 'style') Object.keys(PI.targets).forEach(k => { PI.targets[k] = [...new Set(PI.targets[k].map(r => r === q.ref ? q.like : r))]; });
-  else if (q.kind === 'size') it.exclude = true;
-  else if (q.kind === 'low') { it.confirmed = true; it.c = 'high'; }
-  else if (q.kind === 'price') { Object.keys(it.alts).forEach(src => { it.prices[src] = piSuggestAlt(it, src).price; }); it.confirmed = true; }
-  else if (q.kind === 'dup') { const w = piDupWinner(it); PI.items.forEach(x => { if (x.t === w.t && piSizeKey(x) === piSizeKey(w)) x.pick = false; }); w.pick = true; }
-  else if (q.kind === 'order') it.orderOk = true;
-  else if (q.kind === 'read') { Object.entries(it.readIssue).forEach(([src, ri]) => { it.manual[src] = piReadSuggest(ri.reads); }); it.readOk = true; }
-  else if (q.kind === 'which') { it.prefer = it.prefer || {}; piItemPriceInfo(it).conflicts.forEach(c => { it.prefer[c.ref] = c.opts.slice().sort((a, b) => b.cost - a.cost)[0].src; }); }
-  piAnswer('suggested');
+// The lines of a card: [{ it, fields:[{ id, label, value, kind:'price'|'pick'|'type'|'finish', options? }] }]
+function piCardLines(card) {
+  const st = piStatuses();
+  if (card.kind === 'style') return card.refs.map((r, k) => ({ key: 's' + k, ref: r,
+    fields: [{ id: 'f', kind: 'finish', value: r.like }] }));
+  return card.items.filter(it => st.get(it)[0] === 'look' || card.done).map(it => {
+    const label = src => (piSources().find(x => x.id === src) || {}).label || '';
+    let fields = [];
+    if (card.kind === 'read') fields = Object.entries(it.readIssue).map(([src, ri]) => ({ id: src, kind: 'price', label: label(src), value: piReadSuggest(ri.reads),
+      hint: ri.reads.map((v, k) => `read ${k + 1}: ${v == null ? 'missed' : piMoney(v)}`).join(' · ') }));
+    else if (card.kind === 'price') fields = Object.keys(it.alts || {}).map(src => ({ id: src, kind: 'price', label: label(src), value: piRound(piSuggestAlt(it, src) * PI.multiplier),
+      hint: 'listed at ' + it.alts[src].map(v => piMoney(piRound(v * PI.multiplier))).join(' / ') }));
+    else if (card.kind === 'order') fields = [...new Set((st.get(it)[3] || []).map(o => Object.keys(it.prices).find(sid => (PI.targets[sid] || []).includes(o.ref))).filter(Boolean))]
+      .map(src => { const o = (st.get(it)[3] || []).find(o => (PI.targets[src] || []).includes(o.ref)); return { id: src, kind: 'price', label: label(src), value: o.cost, hint: `narrower ${o.prev.it.sku} is ${piMoney(o.prev.cost)}` }; });
+    else if (card.kind === 'which') fields = piItemPriceInfo(it).conflicts.map(c => {
+      const best = c.opts.slice().sort((a, b) => b.cost - a.cost)[0];
+      return { id: c.ref, kind: 'pick', label: piRefName(c.ref), value: best.src, options: c.opts.map(o => [o.src, `${label(o.src)} — ${piMoney(o.cost)}`]) };
+    });
+    else if (card.kind === 'low') fields = [{ id: 'type', kind: 'type' }];
+    return { key: 'i' + it.i, it, fields };
+  });
 }
-function piDupWinner(it) {
-  const st = piStatuses(), list = PI.items.filter(x => x.t === it.t && x.t && piSizeKey(x) === piSizeKey(it) && st.get(x)[2] === 'dup');
-  return list.slice().sort((a, b) => a.sku.length - b.sku.length || a.sku.localeCompare(b.sku))[0] || it;
+// "Use these": apply every line's value (or skip the ticked ones)
+function piApplyCard() {
+  const card = PI.cards[PI.ci];
+  const val = (key, id) => { const el = document.querySelector(`#pi-body [data-k="${key}"][data-f="${CSS.escape(id)}"]`); return el ? el.value : null; };
+  const skip = key => { const el = document.querySelector(`#pi-body [data-skip="${key}"]`); return el && el.checked; };
+  for (const L of piCardLines(card)) {
+    if (card.kind === 'style') {
+      const v = skip(L.key) ? L.ref.ref : val(L.key, 'f');
+      if (v && v !== L.ref.ref) Object.keys(PI.targets).forEach(k => { PI.targets[k] = [...new Set(PI.targets[k].map(r => r === L.ref.ref ? v : r))]; });
+      continue;
+    }
+    const it = L.it;
+    if (skip(L.key)) { it.deferred = true; it.deferKind = card.kind; continue; }
+    if (card.kind === 'low') {
+      if (!it.t || (it.t !== 'skip' && piSizeIssue(it) && it.w == null)) { showToast(`Set the type and size for ${it.sku}, or tick "skip".`); return; }
+      it.confirmed = true; it.c = 'high'; it.aiError = '';
+      continue;
+    }
+    for (const f of L.fields) {
+      const v = val(L.key, f.id);
+      if (f.kind === 'price') {
+        const n = parseFloat(v);
+        if (!(n > 0)) { showToast(`Type a price for ${it.sku}, or tick "skip".`); return; }
+        if (card.kind === 'order' && Math.abs(n - f.value) < 0.005) continue;   // kept the list's price
+        it.manual[f.id] = piRound(n);
+      } else if (f.kind === 'pick') { it.prefer = it.prefer || {}; it.prefer[f.id] = v; }
+    }
+    if (card.kind === 'read') it.readOk = true;
+    if (card.kind === 'price') { it.dupPrice = false; it.confirmed = true; }
+    if (card.kind === 'order') it.orderOk = true;
+  }
+  card.done = true;
+  piNextCard();
 }
-function piFixSkip() {
-  const q = PI.questions[PI.qi];
-  if (q.it) q.it.deferred = true;
-  piAnswer('skipped');
+function piSkipCard() {
+  const card = PI.cards[PI.ci];
+  if (card.kind !== 'style') piCardLines(card).forEach(L => { L.it.deferred = true; L.it.deferKind = card.kind; });
+  card.done = true;
+  piNextCard();
 }
-// Manual fixes
-function piQSetType(field, val) {
-  const it = PI.questions[PI.qi].it;
-  if (field === 't') { it.t = val || null; if (!CABINET_HEIGHTS[val]) it.h = null; }
+function piCardSetType(i, field, val) {
+  const it = PI.items[i];
+  if (field === 't') { it.t = val || null; if (!CABINET_HEIGHTS[val]) it.h = null; if (it.t) piFillSize(it); }
   else it[field] = val === '' ? null : parseFloat(val);
   piRender();
 }
-function piQApplyType() {
-  const it = PI.questions[PI.qi].it;
-  if (!it.t) { showToast('Pick a cabinet type (or "Not a cabinet").'); return; }
-  if (it.t !== 'skip' && piSizeIssue(it)) { showToast('Pick a width' + (CABINET_HEIGHTS[it.t] ? ' and height' : '') + ' the planner uses.'); return; }
-  it.confirmed = true; it.c = 'high'; it.aiError = '';
-  piAnswer('manual');
-}
-function piQApplyPrice() {
-  const q = PI.questions[PI.qi], it = q.it;
-  let okAny = false;
-  document.querySelectorAll('#pi-body [data-man-src]').forEach(inp => {
-    const v = parseFloat(inp.value);
-    if (v > 0) { it.manual[inp.dataset.manSrc] = piRound(v); okAny = true; }
-  });
-  if (!okAny) { showToast('Type a price first.'); return; }
-  it.confirmed = true; it.orderOk = true; it.dupPrice = false; it.readOk = true;
-  piAnswer('manual');
-}
-function piQPrefer(ref, src) {
-  const it = PI.questions[PI.qi].it;
-  it.prefer = it.prefer || {}; it.prefer[ref] = src;
-  if (!piItemPriceInfo(it).conflicts.length) piAnswer('manual'); else piRender();
-}
-function piQKeep(i) { const w = PI.items[i]; PI.items.forEach(x => { if (x.t === w.t && piSizeKey(x) === piSizeKey(w)) x.pick = false; }); w.pick = true; piAnswer('manual'); }
-function piQStyleManual(val) {
-  const q = PI.questions[PI.qi];
-  if (!val) return;
-  let ref = val;
-  if (val === '__new') { const name = (prompt('Name for the new finish:', q.ref.slice(4)) || '').trim(); if (!name) return; ref = 'new:' + name; }
-  Object.keys(PI.targets).forEach(k => { PI.targets[k] = [...new Set(PI.targets[k].map(r => r === q.ref ? ref : r))]; });
-  piAnswer('manual');
+function piDupWinner(it) {
+  const list = PI.items.filter(x => x.t === it.t && x.t && piSizeKey(x) === piSizeKey(it));
+  return list.slice().sort((a, b) => a.sku.length - b.sku.length || a.sku.localeCompare(b.sku))[0] || it;
 }
 
 // Review-table row actions
@@ -943,12 +1029,10 @@ function piConfirm(i) { const it = PI.items[i]; it.confirmed = true; it.c = 'hig
 function piToggleExclude(i) { const it = PI.items[i]; it.exclude = !it.exclude; it.deferred = false; piRender(); }
 function piTab(t) { PI.tab = t; PI.editing = null; piRender(); }
 function piReopenQuestions() {
-  // re-ask anything still unsettled (incl. new flags from edits on the review screen)
-  const st = piStatuses();
-  PI.items.forEach(it => { const s = st.get(it); if (s[0] === 'look' && !PI.questions.some(q => q.it === it && !q.answer)) PI.questions.push({ kind: s[2], it }); });
-  const any = PI.questions.findIndex(q => !q.answer);
+  piCollectCards();
+  const any = PI.cards.findIndex(c => !c.done);
   if (any < 0) { showToast('No open questions.'); return; }
-  PI.qi = any; PI.step = 'questions'; piRender();
+  PI.ci = any; PI.step = 'questions'; piRender();
 }
 
 // ════════════════════════════
@@ -967,7 +1051,7 @@ async function piSave() {
     plan.changed.slice().sort((a, b) => Math.abs(b.price - b.was) - Math.abs(a.price - a.was)).slice(0, 8)
       .forEach(r => lines.push(`  ${r.it.sku} ${piRefName(r.ref)}: ${piMoney(r.was)} → ${piMoney(r.price)}`));
   }
-  if (!confirm(lines.join('\n'))) return;
+  if (PI.step !== 'confirm') { PI.confirmLines = lines; PI.step = 'confirm'; piRender(); return; }
 
   PI.step = 'saving'; piRender();
   const cols = ['price_overrides', 'custom_styles', 'supplier_skus', 'price_import_state'];
@@ -1024,7 +1108,7 @@ async function piSave() {
       Object.entries(piItemPrices(it)).forEach(([ref, p]) => { prices[refCode[ref] || ref] = p; });
       const alts = {};
       Object.entries(it.alts || {}).forEach(([src, list]) => (PI.targets[src] || []).forEach(ref => { alts[refCode[ref] || ref] = list.map(p => piRound(p * PI.multiplier)); }));
-      keep.push({ key: it.key, sku: it.sku, desc: it.desc, issue: st.get(it)[1] && st.get(it)[0] === 'look' ? st.get(it)[1] : (piOpenQuestionText(it) || 'Skipped for now'),
+      keep.push({ key: it.key, sku: it.sku, desc: it.desc, issue: st.get(it)[0] === 'look' ? st.get(it)[1] : piOpenQuestionText(it),
         t: it.t, w: it.w, h: it.h, prices, alts, at: new Date().toISOString() });
     });
     sup.pending = keep.slice(0, 500);
@@ -1040,12 +1124,10 @@ async function piSave() {
   PI.step = 'done'; piRender();
   piRenderPending();
 }
-// The reason an item was skipped for now (its question's text)
+// The reason an item was skipped for now
 function piOpenQuestionText(it) {
-  const q = (PI.questions || []).find(x => x.it === it);
-  if (!q) return '';
-  return { size: 'Not a size or type the planner has', low: "The AI wasn't sure what this is", price: `Listed at prices more than $${PI_TOL} apart`,
-    dup: 'Another code looks like the same cabinet', which: 'Two finish groups give this finish different prices', read: "The page reads didn't agree on this price", order: 'Price looks out of line with the other sizes' }[q.kind] || '';
+  return { read: "The page reads didn't agree on this price", price: `Listed at prices more than $${PI_TOL} apart`, which: 'Two finish groups give this finish different prices',
+    order: 'Price looks out of line with the other sizes', low: "The AI wasn't sure what this is" }[it.deferKind] || 'Skipped for now';
 }
 
 // ════════════════════════════
@@ -1199,11 +1281,11 @@ function piRender() {
   if (!PI) return;
   document.getElementById('pi-title').textContent = 'Import a supplier price list';
   const steps = ['1 · Price list', '2 · Finishes', '3 · Questions', '4 · Review', '5 · Saved'];
-  const at = { file: 0, loading: 0, reading: 0, triage: 0, pages: 0, readingPages: 0, columns: 1, matching: 2, questions: 2, review: 3, saving: 3, done: 4 }[PI.step];
+  const at = { confirm: 3, closeAsk: 3, file: 0, loading: 0, reading: 0, triage: 0, pages: 0, readingPages: 0, columns: 1, matching: 2, questions: 2, review: 3, saving: 3, done: 4 }[PI.step];
   document.getElementById('pi-steps').innerHTML = steps.map((l, i) => `<span class="${i === at ? 'on' : ''}">${l}</span>`).join('');
   const body = document.getElementById('pi-body'), foot = document.getElementById('pi-foot');
   const cost = (PI.usage.calls && currentUser && currentUser.id === PI_ADMIN_ID) ? piCostText() : '';
-  const fn = { file: piViewFile, loading: piViewProgress, triage: piViewProgress, readingPages: piViewProgress, pages: piViewPages, reading: piViewBusy, columns: piViewColumns, matching: piViewMatching, questions: piViewQuestion, review: piViewReview, saving: piViewBusy, done: piViewDone }[PI.step];
+  const fn = { confirm: piViewConfirm, closeAsk: piViewCloseAsk, file: piViewFile, loading: piViewProgress, triage: piViewProgress, readingPages: piViewProgress, pages: piViewPages, reading: piViewBusy, columns: piViewColumns, matching: piViewMatching, questions: piViewQuestion, review: piViewReview, saving: piViewBusy, done: piViewDone }[PI.step];
   const [b, f] = fn();
   body.innerHTML = b;
   foot.innerHTML = (cost ? `<span class="sum">${cost}</span>` : '') + f;
@@ -1262,7 +1344,7 @@ function piViewPages() {
       <img src="${p.thumb}" alt="Page ${p.n}" style="width:100%;border-radius:4px;display:block;cursor:pointer;${p.use ? '' : 'opacity:.45;'}" onclick="piTogglePage(${p.n})">
       <label style="display:flex;gap:6px;align-items:center;font-size:12px;font-weight:700;margin-top:4px;"><input type="checkbox" ${p.use ? 'checked' : ''} onchange="piTogglePage(${p.n})"> Page ${p.n}
         <span style="font-weight:400;color:var(--muted);">${p.text ? 'text' : 'scan'}</span></label>
-      ${!p.text && p.use ? `<input type="text" value="${esc(p.group)}" placeholder="finish group" title="Which finishes this page prices" onchange="piSetPageGroup(${p.n},this.value)" style="width:100%;margin-top:4px;padding:4px 6px !important;font-size:11px !important;">` : ''}</div>`).join('');
+      ${p.use ? `<input type="text" value="${esc(p.group)}" placeholder="finish group" title="Which finishes this page prices" onchange="piSetPageGroup(${p.n},this.value)" style="width:100%;margin-top:4px;padding:4px 6px !important;font-size:11px !important;">` : ''}</div>`).join('');
   return [`
     <p style="margin-bottom:8px;"><b>${used.length}</b> of ${PI.pages.length} pages look like price pages and are ticked. Untick anything that isn't, or tick a page that was missed. For scanned pages, check the <b>finish group</b> under each (e.g. "Pricing Gold", "White Shaker") — it says which finishes the page's prices are for.</p>
     ${scans.length ? `<div class="pi-note">${scans.length} scanned page${scans.length === 1 ? '' : 's'}: each is read twice by the AI (a third time if the reads disagree), and any price that still differs by more than $${PI_TOL} becomes a question. Estimated AI cost: about $${cost < 1 ? cost.toFixed(2) : cost.toFixed(0)}.</div>` : ''}
@@ -1270,6 +1352,14 @@ function piViewPages() {
     `<button class="btn btn-ghost" onclick="PI.step='file';piRender()">← Back</button><button class="btn btn-primary" ${used.length ? '' : 'disabled'} onclick="piReadPages()">Read ${used.length} page${used.length === 1 ? '' : 's'} →</button>`];
 }
 
+function piViewConfirm() {
+  return [`<div style="padding:10px 4px;font-size:14px;line-height:1.7;white-space:pre-wrap;">${esc(PI.confirmLines.join('\n'))}</div>`,
+    `<button class="btn btn-ghost" onclick="PI.step='review';piRender()">← Back to review</button><button class="btn btn-primary" onclick="piSave()">Yes, save</button>`];
+}
+function piViewCloseAsk() {
+  return [`<div style="padding:30px 4px;font-size:15px;"><b>Close without saving?</b><br><span style="color:var(--muted);font-size:13px;">Nothing from this price list will be saved, and reading it again uses the AI again.</span></div>`,
+    `<button class="btn btn-ghost" onclick="PI.step=PI.prevStep;piRender()">Keep working</button><button class="btn btn-primary" onclick="piClose(true)">Close</button>`];
+}
 function piViewBusy() {
   const msg = PI.step === 'saving' ? 'Saving your prices…' : `Reading the layout of ${piUsedSheets().length > 1 ? piUsedSheets().length + ' sheets' : 'your price list'}…`;
   return [`<div style="padding:40px;text-align:center;color:var(--muted);font-size:14px;">${msg}</div>`, ''];
@@ -1311,6 +1401,7 @@ function piViewColumns() {
     <p style="font-size:12px;margin-bottom:8px;">A group can price several finishes — e.g. "Blue, Hunter Green &amp; Arctic Shaker", or a tier like "Gold". When two groups price the same finish, the more specific one wins (e.g. "PR, PS" over "Gold"). Yellow = a new finish will be created under ${esc(PI.supplier)}.</p>
     <table class="pi-grid" style="margin-bottom:16px;"><thead><tr><th style="width:280px;">Finish group in the file</th><th>Saves as finish</th></tr></thead><tbody>${srcRows || '<tr><td colspan="2" style="color:var(--muted);">No prices found yet — check the layout below.</td></tr>'}</tbody></table>
     ${sheetsHtml ? `<details ${piSources().length ? '' : 'open'}><summary style="font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">How the file is laid out (tables, columns, finish-group titles)</summary>${sheetsHtml}</details>` : ''}
+    ${(PI.failedPages || []).length ? `<div class="pi-note">Page${PI.failedPages.length > 1 ? 's' : ''} ${PI.failedPages.join(', ')} couldn't be read, so ${PI.failedPages.length > 1 ? 'they are' : 'it is'} left out. Go back to read ${PI.failedPages.length > 1 ? 'them' : 'it'} again.</div>` : ''}
     ${PI.kind === 'pdf' && PI.pages.some(p => p.read) ? `<div style="font-size:12px;color:var(--muted);">Scanned pages read: ${PI.pages.filter(p => p.read).map(p => `page ${p.n} (${p.read.length} prices${p.readCount > 2 ? ', 3 reads' : ''})`).join(', ')}. Wrong finish group on a page? Go back and fix it under the page.</div>` : ''}`,
     `<button class="btn btn-ghost" onclick="PI.step=PI.kind==='pdf'?'pages':'file';piRender()">← Back</button><button class="btn btn-primary" onclick="piMatchItems()">Match items →</button>`];
 }
@@ -1320,71 +1411,37 @@ function piViewMatching() {
     <div style="font-size:12px;color:var(--muted);" id="pi-progress-n">${PI.done || 0} of ${PI.items.length}</div></div>`, ''];
 }
 function piViewQuestion() {
-  const q = PI.questions[PI.qi];
-  const total = PI.questions.length, left = piOpenQuestions().length;
-  const head = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Question ${PI.qi + 1} of ${total} · ${left} still open. Nothing is saved until the review screen.</div>`;
-  const nav = `<button class="btn btn-ghost" ${PI.qi ? '' : 'disabled'} onclick="piQBack()">← Back</button><button class="btn btn-ghost" onclick="PI.step='review';piRender()">Go to review</button>`;
-  if (!q) return [head, nav];
-  const answered = q.answer ? `<div class="pi-note" style="background:#f0fdfa;border-color:#99f6e4;color:#115e59;">Answered (${{ skipped: 'skipped for now', settled: 'settled by an earlier answer' }[q.answer] || q.answer + ' fix'}). You can change it below.</div>` : '';
-  if (q.kind === 'style') {
-    const like = companyFinishes().find(f => f.code === q.like) || {};
-    const fin = piUsableFinishes();
-    return [head + answered + `<div class="pi-q">
-      <div style="font-size:16px;font-weight:800;margin-bottom:4px;">New finish “${esc(q.ref.slice(4))}” looks like your “${esc(like.name)}”</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">If they're the same door, its prices should go to your existing finish instead of creating a second one.</div>
-      <div class="pi-opt"><h5>Suggested fix</h5><button class="btn btn-primary" onclick="piFixSuggested()">Use my “${esc(like.name)}”</button></div>
-      <div class="pi-opt"><h5>Manual fix</h5><select onchange="piQStyleManual(this.value)"><option value="">Save as…</option>${fin.map(f => `<option value="${esc(f.code)}">${esc(f.name)} · ${esc(f.code)}</option>`).join('')}<option value="__new">A new finish with a different name…</option></select></div>
-      <div class="pi-opt"><h5>Skip for now</h5><button class="btn btn-ghost" onclick="piAnswer('skipped')">Keep it as a new finish</button></div></div>`, nav];
-  }
-  const it = q.it, st = piStatuses().get(it);
-  const prices = piItemPrices(it);
-  const priceList = Object.entries(prices).map(([ref, p]) => `<span class="pi-price">${esc(piRefName(ref))} ${piMoney(p)}</span>`).join(' ');
-  let issue = st[0] === 'look' ? st[1] : (st[1] || 'Settled.');
-  let suggested = '', manual = '';
-  if (q.kind === 'size' || q.kind === 'low') {
-    suggested = q.kind === 'size'
-      ? `<button class="btn btn-primary" onclick="piFixSuggested()">Leave it out of the planner's pricing</button><div style="font-size:11px;color:var(--muted);margin-top:6px;">The planner can't place this size, so a price for it would never be used.</div>`
-      : `<button class="btn btn-primary" onclick="piFixSuggested()">Yes — it's a ${esc(piItemLabel(it))}</button>`;
-    manual = `${piTypeSelects(it, 'piQSetType')} <button class="btn btn-ghost" style="margin-left:6px;" onclick="piQApplyType()">Use this</button>`;
-  } else if (q.kind === 'price') {
-    const parts = Object.entries(it.alts || {}).map(([src, list]) => {
-      const sg = piSuggestAlt(it, src), label = (piSources().find(s => s.id === src) || {}).label || '';
-      return { src, label, list, sg };
-    });
-    issue = `Listed more than once at different prices: ` + parts.map(p => `${p.label}: ${p.list.map(x => piMoney(x)).join(' / ')}`).join('; ');
-    suggested = `<button class="btn btn-primary" onclick="piFixSuggested()">Use ${parts.map(p => piMoney(p.sg.price)).join(' / ')}</button><div style="font-size:11px;color:var(--muted);margin-top:6px;">${esc(parts.map(p => p.sg.why).join('; '))}</div>`;
-    manual = parts.map(p => `<div style="margin-bottom:4px;">${esc(p.label)}: <input type="number" step="0.01" min="0" data-man-src="${esc(p.src)}" placeholder="price" style="width:110px;"></div>`).join('') + `<button class="btn btn-ghost" onclick="piQApplyPrice()">Use my price</button><div style="font-size:11px;color:var(--muted);margin-top:4px;">Type your actual cost.</div>`;
-  } else if (q.kind === 'dup') {
-    const list = PI.items.filter(x => x.t === it.t && x.t && piSizeKey(x) === piSizeKey(it) && piStatuses().get(x)[2] === 'dup');
-    const w = piDupWinner(it);
-    suggested = `<button class="btn btn-primary" onclick="piFixSuggested()">Keep ${esc(w.sku)} (the standard one)</button>`;
-    manual = list.map(x => `<button class="btn btn-ghost" style="margin:0 6px 6px 0;" onclick="piQKeep(${x.i})">Keep ${esc(x.sku)} — ${esc(x.desc || '')} ${Object.values(piItemPrices(x)).slice(0, 1).map(p => piMoney(p)).join('')}</button>`).join('');
-  } else if (q.kind === 'read') {
-    const parts = Object.entries(it.readIssue).map(([src, ri]) => ({ src, ri, label: (piSources().find(x => x.id === src) || {}).label || '' }));
-    const page = PI.pages.find(p => p.n === parts[0].ri.page);
-    issue = parts.map(p => `${p.label}: ` + p.ri.reads.map((v, k) => `read ${k + 1} ${v == null ? 'missed it' : piMoney(v)}`).join(' · ')).join('; ');
-    suggested = `<button class="btn btn-primary" onclick="piFixSuggested()">Use ${parts.map(p => piMoney(piReadSuggest(p.ri.reads))).join(' / ')}</button><div style="font-size:11px;color:var(--muted);margin-top:6px;">The higher reading, so a quote never comes in low — check it against the page.</div>`;
-    manual = parts.map(p => `<div style="margin-bottom:4px;">${esc(p.label)}: <input type="number" step="0.01" min="0" data-man-src="${esc(p.src)}" placeholder="price on the page" style="width:140px;"></div>`).join('') + `<button class="btn btn-ghost" onclick="piQApplyPrice()">Use my price</button>`;
-    if (page && (page.full || page.thumb)) manual += `<div style="margin-top:10px;"><a href="#" onclick="piShowPage(${page.n});return false;" style="font-size:12px;font-weight:700;color:var(--accent);">Open page ${page.n} to check ↗</a></div>`;
-  } else if (q.kind === 'which') {
-    const cf = piItemPriceInfo(it).conflicts;
-    suggested = `<button class="btn btn-primary" onclick="piFixSuggested()">Use the higher price${cf.length > 1 ? 's' : ''}</button><div style="font-size:11px;color:var(--muted);margin-top:6px;">So a quote never comes in low.</div>`;
-    manual = cf.map(c => `<div style="margin-bottom:6px;"><b>${esc(piRefName(c.ref))}:</b> ${c.opts.map(o => `<button class="btn btn-ghost" style="margin:2px 4px;" onclick="piQPrefer('${piJs(c.ref)}','${piJs(o.src)}')">${esc((piSources().find(x => x.id === o.src) || {}).label || '')} — ${piMoney(o.cost)}</button>`).join('')}</div>`).join('');
-  } else if (q.kind === 'order') {
-    const os = st[3] || [];
-    // one price box per finish group that's out of line (a group can feed several finishes)
-    const srcs = [...new Set(os.map(o => Object.keys(it.prices).find(sid => (PI.targets[sid] || []).includes(o.ref))).filter(Boolean))];
-    suggested = `<button class="btn btn-primary" onclick="piFixSuggested()">Keep the price list's price${srcs.length > 1 ? 's' : ''}</button><div style="font-size:11px;color:var(--muted);margin-top:6px;">Worth a quick check with the supplier — it may be a typo.</div>`;
-    manual = srcs.map(sid => `<div style="margin-bottom:4px;">${esc((piSources().find(x => x.id === sid) || {}).label || '')}: <input type="number" step="0.01" min="0" data-man-src="${esc(sid)}" placeholder="price" style="width:110px;"></div>`).join('') + `<button class="btn btn-ghost" onclick="piQApplyPrice()">Use my price</button>`;
-  }
-  return [head + answered + `<div class="pi-q">
-    <div style="font-size:12px;color:var(--muted);">${esc(it.where)}</div>
-    <div style="font-size:16px;font-weight:800;margin:2px 0;">${esc(it.sku)} <span style="font-weight:400;color:var(--muted);font-size:13px;">${esc(it.desc || '')}</span></div>
-    <div style="font-size:12px;margin-bottom:6px;">${it.t ? 'Read as: <b>' + esc(piItemLabel(it)) + '</b>' + (it.v ? ` (${esc(it.v)})` : '') : ''} ${priceList ? '· ' + priceList : ''}</div>
-    <div class="pi-why" style="font-size:13px;margin-bottom:14px;">${esc(issue)}</div>
-    <div class="pi-opt"><h5>Suggested fix</h5>${suggested}</div>
-    <div class="pi-opt"><h5>Manual fix</h5>${manual}</div>
-    <div class="pi-opt"><h5>Skip for now</h5><button class="btn btn-ghost" onclick="piFixSkip()">Skip for now</button><span style="font-size:11px;color:var(--muted);margin-left:8px;">Not priced yet — saved as an open question you can finish later from My Pricing.</span></div></div>`, nav];
+  const card = PI.cards[PI.ci];
+  const total = PI.cards.length, left = piOpenCards().length;
+  const nav = `<button class="btn btn-ghost" ${PI.ci ? '' : 'disabled'} onclick="piCardBack()">← Back</button><button class="btn btn-ghost" onclick="PI.step='review';piRender()">Go to review</button>`;
+  if (!card) return ['', nav];
+  const lines = piCardLines(card);
+  const [title, help] = PI_CARD_TEXT[card.kind] || ['Questions', ''];
+  const page = card.page ? PI.pages.find(p => p.n === card.page) : null;
+  const head = `<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Screen ${PI.ci + 1} of ${total} · ${left} left · nothing is saved until the review screen</div>
+    <div style="font-size:16px;font-weight:800;">${esc(title)}${page ? ` — page ${page.n}` : ''} <span style="font-weight:400;color:var(--muted);font-size:13px;">(${lines.length} line${lines.length === 1 ? '' : 's'})</span></div>
+    <div style="font-size:12px;color:var(--muted);margin:2px 0 12px;">${esc(help)}</div>
+    ${card.done ? '<div class="pi-note" style="background:#f0fdfa;border-color:#99f6e4;color:#115e59;">Answered. You can change it and press "Use these" again.</div>' : ''}`;
+  const fin = piUsableFinishes();
+  const rows = lines.map(L => {
+    if (card.kind === 'style') return `<tr><td><b>${esc(L.ref.ref.slice(4))}</b><div style="font-size:11px;color:var(--muted);">new · ${esc(PI.supplier)}</div></td>
+      <td><select data-k="${L.key}" data-f="f">${fin.map(f => `<option value="${esc(f.code)}" ${f.code === L.ref.like ? 'selected' : ''}>Use my ${esc(f.name)} · ${esc(f.code)}</option>`).join('')}<option value="${esc(L.ref.ref)}">Keep as a new finish</option></select></td>
+      <td style="white-space:nowrap;"><label style="font-size:12px;font-weight:400;"><input type="checkbox" data-skip="${L.key}"> Keep new</label></td></tr>`;
+    const it = L.it;
+    const ctl = L.fields.map(f => {
+      if (f.kind === 'price') return `<div style="margin-bottom:4px;"><span style="font-size:11px;color:var(--muted);">${esc(f.label)}</span><br><input type="number" step="0.01" min="0" data-k="${L.key}" data-f="${esc(f.id)}" value="${f.value}" style="width:110px;"> <span style="font-size:11px;color:var(--muted);">${esc(f.hint || '')}</span></div>`;
+      if (f.kind === 'pick') return `<div style="margin-bottom:4px;"><span style="font-size:11px;color:var(--muted);">${esc(f.label)}</span><br><select data-k="${L.key}" data-f="${esc(f.id)}">${f.options.map(([v, l]) => `<option value="${esc(v)}" ${v === f.value ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>`;
+      return piTypeSelects(it, 'piCardSetType', it.i);
+    }).join('');
+    return `<tr><td style="min-width:150px;"><b>${esc(it.sku)}</b><div style="font-size:11px;color:var(--muted);max-width:220px;">${esc(it.desc || '')}${it.where ? ' · ' + esc(it.where) : ''}</div>
+        ${card.kind !== 'low' && it.t ? `<div style="font-size:11px;">${esc(piItemLabel(it))}</div>` : ''}</td>
+      <td>${ctl}</td><td style="white-space:nowrap;"><label style="font-size:12px;font-weight:400;"><input type="checkbox" data-skip="${L.key}"> Skip for now</label></td></tr>`;
+  }).join('');
+  const table = `<table class="pi-grid"><tbody>${rows || '<tr><td style="color:var(--muted);">Nothing left on this screen.</td></tr>'}</tbody></table>`;
+  const body = page && (page.full || page.thumb)
+    ? `<div style="display:flex;gap:14px;flex-wrap:wrap;"><div style="flex:1 1 360px;max-height:62vh;overflow:auto;">${table}</div><div style="flex:1 1 420px;max-height:62vh;overflow:auto;border:1px solid var(--border);border-radius:8px;"><img src="${page.full || page.thumb}" alt="Page ${page.n}" style="width:100%;display:block;"></div></div>`
+    : table;
+  return [head + body, nav + `<button class="btn btn-ghost" onclick="piSkipCard()">${card.kind === 'style' ? 'Keep them all as new' : 'Skip all for now'}</button><button class="btn btn-primary" onclick="piApplyCard()">Use these${lines.length > 1 ? ` (${lines.length})` : ''} →</button>`];
 }
 function piViewReview() {
   const st = piStatuses(), plan = piPlan(st);
@@ -1410,7 +1467,7 @@ function piViewReview() {
     return `<tr><td><b>${esc(it.sku)}</b><div style="font-size:11px;color:var(--muted);max-width:240px;">${esc(it.desc)}</div></td>
       <td>${mapCell}${why ? `<div class="pi-why">${esc(why)}</div>` : ''}</td><td>${priceHtml || '—'}</td><td style="white-space:nowrap;">${acts.join('')}</td></tr>`;
   }).join('');
-  const open = piOpenQuestions().length + by.look.length;
+  const open = piOpenCards().length + by.look.length;
   const sum = `<b>${plan.rows.length}</b> price${plan.rows.length === 1 ? '' : 's'} ready: ${plan.fresh} new, <span class="${plan.changed.length ? 'pi-up' : ''}">${plan.changed.length} changed</span>, ${plan.same} unchanged${plan.newFinishes.length ? ` · ${plan.newFinishes.length} new finish${plan.newFinishes.length === 1 ? '' : 'es'}` : ''}${PI.multiplier !== 1 ? ` · price × ${PI.multiplier}` : ''}`;
   return [`
     <div style="font-size:13px;">${sum}. Only <b>Matched</b> items are priced; <b>Open questions</b> are saved to finish later.</div>

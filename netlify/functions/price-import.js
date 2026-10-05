@@ -307,13 +307,17 @@ function triageRequest(body) {
       '\nhasPrices: does this page have a table of item codes with prices?\n' +
       'group: if the page names the finish(es), door style(s), collection or price tier its prices are for — or that the ' +
       'next pages are for, like a section cover "Pricing Gold" or a title bar "WHITE SHAKER" — give that name as written; ' +
-      'otherwise an empty string. Category headings like "Wall Cabinets" or "Accessories" are not finish groups.' }],
+      'otherwise an empty string.\n' +
+      'groupKind: "finish_or_tier" only for a door style / color / finish / price tier name. Use "category" for headings that ' +
+      'name kinds of products ("Wall Cabinets", "Fillers and Moldings", "Decor Doors and Panels", "Glass Doors", "Accessories", ' +
+      '"Vanities"), "brand" for a company or brand name or logo ("Forevermark", the supplier\'s name), "none" if there is no group.' }],
     system: 'You sort the pages of cabinet price lists. Answer only through the tool.',
     tool: {
       name: 'page_info', description: 'What this page is.',
-      input_schema: { type: 'object', properties: { hasPrices: { type: 'boolean' }, group: { type: 'string' } }, required: ['hasPrices'] },
+      input_schema: { type: 'object', properties: { hasPrices: { type: 'boolean' }, group: { type: 'string' },
+        groupKind: { type: 'string', enum: ['finish_or_tier', 'category', 'brand', 'none'] } }, required: ['hasPrices'] },
     },
-    clean: x => ({ hasPrices: !!x.hasPrices, group: clip(x.group, 80) }),
+    clean: x => ({ hasPrices: !!x.hasPrices, group: clip(x.group, 80), groupKind: x.groupKind || 'none' }),
   };
 }
 
@@ -331,27 +335,28 @@ function pageRequest(body) {
       'puts a wrong price on a customer quote. Never guess a digit — leave out any price you cannot read clearly.',
     content: [image, { type: 'text', text:
       `This is page ${n || '?'} of a cabinet price list.` +
-      (context ? ` If the page itself doesn't say which finish group / door style / price tier its prices are for, it's "${context}" (from an earlier page).` : '') +
+      (context ? ` Its prices are for the finish group "${context}".` : '') +
       '\n\nTranscribe EVERY price on the page. One line per price, tab-separated, no header, no other text:\n' +
-      'GROUP\tITEM CODE\tCOLUMN\tPRICE\tSECTION\n' +
-      '- GROUP: the finish / door style / price tier the price is for (the page title such as "WHITE SHAKER", or the group given above).\n' +
+      'ITEM CODE\tCOLUMN\tPRICE\tSECTION\n' +
       '- ITEM CODE: exactly as printed, including spaces and symbols (e.g. "WF3 30", "REP1.5*96*24", "W3030B"). Ignore footnote superscripts.\n' +
-      '- COLUMN: the header of the price column when a table has more than one price column for the same item ' +
-      '(e.g. "Gold" and "PR, PS", or "White" / "Brown" / "Black/Oak"); empty when the table has a single price column. ' +
-      'Headers like "30-inch Wall" that name a size group, not a finish, are not COLUMN — leave empty.\n' +
+      '- COLUMN: ONLY when one item has two or more prices side by side for different finishes/tiers: the header of that ' +
+      'price column (e.g. "Gold" and "PR, PS", "Platinum" and "AR, AZ, PH", "White" / "Brown" / "Black/Oak"). Otherwise ' +
+      'leave it empty. Never put a size heading ("30\" Wall", "15\" Wall"), a table title, or a number in COLUMN.\n' +
       '- PRICE: the number as printed, digits and decimal point only (e.g. 1159 or 66.80). Skip cells that are blank, "X", "N/A", "-" or "Call".\n' +
       '- SECTION: the table title the item sits under (e.g. "Wall Cabinets", "Bridge Cabinets", "Accessories").\n' +
       'Work table by table, row by row, left to right, so nothing is missed.' }],
     clean(text, stop) {
       const rows = [];
       String(text || '').split(/\r?\n/).forEach(line => {
-        const f = line.split('\t');
-        if (f.length < 4) return;
-        const sku = clip(f[1], 60), price = parseFloat(String(f[3]).replace(/[$,\s]/g, ''));
-        if (!sku || !/\d/.test(sku) || !(price > 0 && price < 100000)) return;
-        rows.push({ group: clip(f[0], 80), sku, col: clip(f[2], 40), price: Math.round(price * 100) / 100, section: clip(f[4], 60) });
+        line = line.trim().replace(/^\|\s*|\s*\|$/g, '');
+        if (!line || /^[-|:\s]+$/.test(line)) return;                 // markdown table rule
+        const f = line.includes('\t') ? line.split('\t') : line.split(/\s*\|\s*/);
+        if (f.length < 3) return;
+        const sku = clip(f[0], 60), price = parseFloat(String(f[2]).replace(/[$,\s]/g, ''));
+        if (!sku || !/\d/.test(sku) || !(price > 0 && price < 100000) || !/^\$?\s*[\d,]+(\.\d+)?$/.test(String(f[2]).trim())) return;
+        rows.push({ sku, col: clip(f[1], 40), price: Math.round(price * 100) / 100, section: clip(f[3], 60) });
       });
-      return { rows: rows.slice(0, 1500), truncated: stop === 'max_tokens' };
+      return { rows: rows.slice(0, 1500), truncated: stop === 'max_tokens', ...(rows.length ? {} : { sample: clip(text, 300) }) };
     },
   };
 }
