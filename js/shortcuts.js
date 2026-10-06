@@ -49,6 +49,7 @@ function showShortcutSheet() {
 }
 
 document.addEventListener('keydown', e => {
+  if (READ_ONLY) return;   // share link: no editing shortcuts
   if (!activeProj() || document.getElementById('project-view')?.classList.contains('hidden')) return;
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;

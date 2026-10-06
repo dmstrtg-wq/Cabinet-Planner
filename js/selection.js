@@ -19,6 +19,7 @@ function getSelectedItem() {
 // Select an item (or pass null to clear). The side panel and elevation follow the
 // item's wall, so whichever view you switch to shows the same thing highlighted.
 function selectItem(id) {
+  if (READ_ONLY && id) return;
   closeItemPopover();
   selectedItemId = id || null;
   const it = getSelectedItem();
@@ -93,6 +94,7 @@ function closeItemPopover() {
 function _popoverOutside(e) { if (_popover && !_popover.contains(e.target)) closeItemPopover(); }
 
 function openItemPopover(item, clientX, clientY) {
+  if (READ_ONLY) return;
   const r = activeRoom(); if (!r || !item) return;
   if (selectedItemId !== item.id) selectItem(item.id);
   closeItemPopover();

@@ -411,3 +411,25 @@ Claude tested locally: demo kitchen at $100/cabinet, 25% → Quote window $1,700
 Claude tested locally: closed link page, branded start, homeowner's own designs (not the demo kitchen), send with design + company + summary, lead → project import (HTML stripped, lead linked), Company Settings save (slug from name, finishes, link + button code). All scripts compile.
 - [ ] After setup: turn on the link on a Gold account, open it in a private window, design + send, then Open design from Leads.
 - Found during this session: Dan's saved Matrix import has junk finishes "30\" Wall" / "36\" Wall" / "42\" Wall" (from text-page column headings — now filtered) and "Titanium Plus", and is missing base/sink/drawer/tall prices. → revisit the importer tomorrow (Dan) after Sam's test.
+
+### Leads: accept into the planner + new-lead alerts (2026-10-05, Dan's report) — no SQL (uses 6.1's columns)
+Dan's report: a demo "Connect with a Pro" lead emailed only the size, and couldn't be opened as a project.
+- Every lead now carries the **whole design** when the sender had one open (demo or design link).
+- The **email** (network leads) now includes a **design description** (room size, every cabinet per wall, island, finish) and an **Accept lead** link → `/app?lead=<id>` (sign in if asked) → it becomes a project.
+- **Accept** works for any lead: with a design → that design; without → the homeowner's details + a placeholder 10'×8' Kitchen (notes say so). Accepting twice just opens the same project.
+- **Planner sidebar: "🔔 New leads (n)"** — appears when there are leads not accepted and not marked handled; opens an inbox with **Accept → open as project** and **Mark handled**. Re-checks every 5 minutes and when you come back to the tab; pops a toast when a new one arrives. (The admin sees unassigned network leads + their own.)
+- **Profile → Leads**: "Accept → planner" on every lead you can act on; the Leads menu item shows the new-lead count.
+- Fixed: summary said "12' × 0' room" for L-shaped rooms.
+Claude tested locally: demo send (design attached, email fields include details + accept link), alert on Dan's real account (read-only: 2 new leads — Dan's Oct 5 test and an old Sep 11 test), inbox view, Accept on a stand-in lead without a design (project + notes + lead linked; database stubbed — nothing written to Dan's account; project list verified unchanged).
+- [ ] After push: send a demo lead with a kitchen open → check the email has the design text + Accept link → click it → project opens. Then "Mark handled" or delete the two old test leads.
+
+### 5.6 Customer share link (built 2026-10-05) — Gold
+**Setup:** run `supabase-share-links.sql`, then push.
+- In a project: **Share** (top bar, computer/tablet) or **Quote → Share with customer** (works on phones too) → choose what they see (design only / + quote total / + itemized quote) and how long the link works (7/30/90 days or no expiry) → **Create link** → Copy link / Preview.
+- Prices can't be shared while any cabinet has no price (the total would leave it out) — the window says how many.
+- The customer's link: your logo/name/phone bar, 3D / Floor Plan / Elevation, **View quote** (if shared), **Approve this design** (types their name; clearly says it's not a contract). Nothing can be moved, edited or saved.
+- After approval: their bar shows "✓ Approved by …"; your project's activity log gets "Design approved by …"; the planner's 🔔 alert shows it ("Open project" / "Got it").
+- **Update link**: same link, fresh copy after you change the design. If they'd already approved and the design/price changed, you're warned first and they're asked to approve again. **Turn off link**: stops working immediately. The Share window shows views and last opened.
+Claude tested locally (stand-ins for the database; nothing written to Dan's account): customer view (bar, 3D, itemized quote $2,040 = 17 × $100 + 20%), view-only (drag/double-click/Delete change nothing), approve flow, Share window (create, unpriced block, approved → update asks first → approval cleared). All scripts compile.
+- [ ] After setup: price a test project fully, share it with the itemized quote, open the link on your phone, approve, and check the alert + activity log.
+- Note: Dan's "ZZ Claude Test" project's finish is "4W" (a junk Matrix-import finish) — fix during the finishes cleanup.

@@ -948,6 +948,7 @@ function removeIsland(id) {
 }
 // ── Island Edit Modal ──
 function openEditIslandModal(isl) {
+  if (READ_ONLY) return;
   document.getElementById('edit-isl-id').value    = isl.id;
   document.getElementById('edit-isl-width').value = isl.width;
   document.getElementById('edit-isl-depth').value = isl.depth;

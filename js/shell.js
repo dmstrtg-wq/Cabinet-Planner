@@ -111,6 +111,7 @@ document.addEventListener('keydown', e => {
 (async () => {
   // Demo mode: skip login, boot straight into the app with a local-only session
   if (HOME_PRO) { await homeStart(); return; }   // homeowner mode (js/homeowner.js)
+  if (SHARE_TOKEN) { await shareStart(); return; }   // customer's share link (js/share.js)
   if (IS_DEMO) {
     currentUser = null;
     showApp();
@@ -230,6 +231,26 @@ function toggleFaq(btn) {
 }
 
 /* ── CONNECT WITH A PRO ── */
+// Plain-text description of a design for the lead email: rooms, sizes, finish, and the
+// cabinets on each wall (so the email is useful even before anyone opens the planner)
+function designDetails(p) {
+  if (!p) return '';
+  const ft = v => `${Math.floor(v / 12)}'${v % 12 ? Math.round(v % 12) + '"' : ''}`;
+  const style = (getStyles().find(s => s.code === p.style) || {}).name || p.style || '';
+  return p.rooms.map(r => {
+    const w = r.walls || {};
+    const lines = [`${r.name || 'Room'} — ${ft(w.north || w.south || 0)} × ${ft(w.east || w.west || 0)}, ceiling ${r.ceilingHeight || 96}"`];
+    roomWalls(r).forEach(wall => {
+      const cabs = (r.cabinets || []).filter(c => c.wall === wall).sort((a, b) => a.offset - b.offset);
+      const apps = (r.appliances || []).filter(a => a.wall === wall);
+      if (!cabs.length && !apps.length) return;
+      lines.push(`  ${wall[0].toUpperCase() + wall.slice(1)} wall: ` + [...cabs.map(c => `${(CATALOG[c.type] || {}).label || c.type} ${c.width}"`), ...apps.map(a => (APPLIANCES[a.type] || {}).label || a.type)].join(', '));
+    });
+    (r.islands || []).forEach(i => lines.push(`  Island ${i.width}" × ${i.depth}"`));
+    return lines.join('\n');
+  }).join('\n') + (style ? `\nFinish: ${style}` : '');
+}
+
 async function submitProLead() {
   const name  = (document.getElementById('lead-name').value  || '').trim();
   const email = (document.getElementById('lead-email').value || '').trim();
@@ -253,18 +274,22 @@ async function submitProLead() {
     return;
   }
 
-  // Homeowner mode (6.1): the whole design goes to the company whose link this is
+  // The whole design goes with the lead, so whoever gets it can accept it straight into
+  // their planner (6.1). On a company's design link a design is required; on the demo's
+  // "Connect with a Pro" it's sent whenever there is one.
   let design = null;
-  if (HOME_PRO) {
-    const p = activeProj();
-    if (!p || !p.rooms.some(r => (r.cabinets || []).length)) {
-      errEl.textContent = 'Add some cabinets to your design first, then send it.';
-      errEl.style.display = 'block';
-      return;
-    }
-    try { design = homeDesignPayload(p); }
-    catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; return; }
+  const dp = activeProj();
+  const hasCabs = dp && dp.rooms.some(r => (r.cabinets || []).length);
+  if (HOME_PRO && !hasCabs) {
+    errEl.textContent = 'Add some cabinets to your design first, then send it.';
+    errEl.style.display = 'block';
+    return;
   }
+  if (hasCabs) {
+    try { design = homeDesignPayload(dp); }
+    catch (e) { if (HOME_PRO) { errEl.textContent = e.message; errEl.style.display = 'block'; return; } }
+  }
+  const leadId = (crypto.randomUUID ? crypto.randomUUID() : null);
 
   btn.disabled = true; btn.textContent = 'Sending…';
 
@@ -276,7 +301,7 @@ async function submitProLead() {
     if (p) {
       const cabCount = p.rooms.reduce((n, r) => n + (r.cabinets || []).length, 0);
       planSummary = `${p.type || 'Kitchen'}: ${p.rooms.map(r => r.name || 'Room').join(', ')} — ${cabCount} cabinet${cabCount === 1 ? '' : 's'}` +
-        (p.rooms[0] && p.rooms[0].walls ? `, ${Math.round((p.rooms[0].walls.north || 0) / 12 * 10) / 10}' × ${Math.round((p.rooms[0].walls.east || 0) / 12 * 10) / 10}' room` : '');
+        (p.rooms[0] && p.rooms[0].walls ? (w => `, ${Math.round((w.north || w.south || 0) / 12 * 10) / 10}' × ${Math.round((w.east || w.west || 0) / 12 * 10) / 10}' room`)(p.rooms[0].walls) : '');   // (L-shaped rooms can have a 0 on one side)
     }
   } catch(e) {}
 
@@ -296,6 +321,21 @@ async function submitProLead() {
   // Two independent channels; the lead counts as delivered if either one lands.
   let emailSent = false, saved = false;
 
+  // Supabase first — stores the lead (and design) for the Leads tab; the email below links to it
+  // (supabase-js reports failures via the returned error, it doesn't throw)
+  try {
+    const { error } = await db.from('leads').insert({
+      ...(leadId ? { id: leadId } : {}),
+      name, email, phone, zip, note,
+      plan_summary: planSummary,
+      floor_plan_dataurl: floorPlanDataUrl,
+      design,
+      ...(HOME_PRO ? { company_id: HOME_LISTING.user_id, source: 'design_link' } : {}),
+    });
+    if (error) { console.warn('Lead Supabase insert error:', error); if (/Too many|already sent/.test(error.message || '')) errEl.dataset.msg = error.message; }
+    else saved = true;
+  } catch(e) { console.warn('Lead Supabase insert error:', e); }
+
   // Netlify Forms — sends email notification to site owner (network leads only: a lead sent
   // to one company through its design link belongs to that company, not to us)
   if (!HOME_PRO) try {
@@ -305,25 +345,14 @@ async function submitProLead() {
       body: new URLSearchParams({
         'form-name': 'cabinet-pro-lead',
         name, email, phone, zip, note,
-        plan_summary: planSummary
+        plan_summary: planSummary,
+        design_details: designDetails(dp),
+        accept_lead: saved && leadId ? `${location.origin}/app?lead=${leadId}` : 'Open the Leads tab in your profile',
       }).toString()
     });
     emailSent = res.ok;
     if (!res.ok) console.warn('Lead Netlify submit failed:', res.status);
   } catch(e) { console.warn('Lead Netlify submit error:', e); }
-
-  // Supabase — stores lead for the admin Leads view in profile.html
-  // (supabase-js reports failures via the returned error, it doesn't throw)
-  try {
-    const { error } = await db.from('leads').insert({
-      name, email, phone, zip, note,
-      plan_summary: planSummary,
-      floor_plan_dataurl: floorPlanDataUrl,
-      ...(HOME_PRO ? { company_id: HOME_LISTING.user_id, source: 'design_link', design } : {}),
-    });
-    if (error) { console.warn('Lead Supabase insert error:', error); if (/Too many|already sent/.test(error.message || '')) errEl.dataset.msg = error.message; }
-    else saved = true;
-  } catch(e) { console.warn('Lead Supabase insert error:', e); }
 
   if (!emailSent && !saved) {
     // Nothing got through — don't pretend it did. Keep the form filled so they can retry.

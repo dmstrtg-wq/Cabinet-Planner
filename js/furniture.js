@@ -172,6 +172,7 @@ function islandStoolsFromModal(side) {
 
 // Double-click a piece: size, which way it faces, add chairs (tables), duplicate, delete
 function openFurniturePopover(f, clientX, clientY) {
+  if (READ_ONLY) return;
   closeItemPopover();
   const def = FURNITURE[f.type];
   const pop = document.createElement('div');

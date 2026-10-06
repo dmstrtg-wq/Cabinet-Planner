@@ -174,6 +174,7 @@
   </div>
   <div class="sidebar-actions">
     <button id="new-project-btn">＋ New Project</button>
+    <button id="lead-alert-btn" class="hidden" onclick="openLeadInbox()" title="New leads and customer approvals">🔔 <span id="lead-alert-label">New leads</span> <span id="lead-alert-n" class="lead-alert-n"></span></button>
   </div>
   <div class="sidebar-label">My Projects</div>
   <div id="project-list"></div>
@@ -252,6 +253,7 @@
           </div>
           <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
           <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
+          <button class="btn btn-secondary" id="share-btn" onclick="openShareModal()" title="Send your customer a link to view the design in 3D and approve it (Gold)">Share</button>
           <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
           <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">Tips</button>
         </div>
@@ -1026,6 +1028,7 @@
 
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-quote')">Close</button>
+      <button class="btn btn-secondary" id="quote-share-btn" onclick="closeModal('modal-quote');openShareModal()">Share with customer</button>
       <button class="btn btn-primary" onclick="printQuote()">Print / Save PDF</button>
     </div>
   </div>
@@ -1217,6 +1220,7 @@
 <script src="/js/hardware.js" data-categories="essential"></script>
 <script src="/js/furniture.js" data-categories="essential"></script>
 <script src="/js/homeowner.js" data-categories="essential"></script>
+<script src="/js/share.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->
@@ -1227,7 +1231,22 @@
   <input type="text" name="zip">
   <textarea name="note"></textarea>
   <input type="hidden" name="plan_summary">
+  <textarea name="design_details"></textarea>
+  <input type="text" name="accept_lead">
 </form>
+
+<!-- New leads inbox (homeowner.js) -->
+<div id="modal-lead-inbox" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="New leads and approvals">
+  <div class="modal" style="width:560px;max-width:96vw;">
+    <h3>What's new</h3>
+    <p style="font-size:13px;color:#64748b;margin:0 0 6px;">Customers who approved a design you shared, and homeowners waiting to hear from you. <b>Accept</b> turns a lead into a project (with their design, when they sent one).</p>
+    <div id="lead-inbox-list" style="max-height:60vh;overflow:auto;"></div>
+    <div class="modal-footer">
+      <a href="/profile#leads" class="btn btn-secondary" style="text-decoration:none;">All leads</a>
+      <button class="btn btn-primary" onclick="closeModal('modal-lead-inbox')">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- Connect with a Pro modal -->
 <div id="modal-pro-lead" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Connect with a Cabinet Pro">

@@ -1306,6 +1306,20 @@ function leadsEsc(str) {
 const LEADS_ADMIN_EMAIL = 'dmstrtg@gmail.com'; // matches the leads_admin_* RLS policies
 let isLeadsAdmin = false, listedPros = [];
 
+// "Leads (3)" in the side menu: leads not accepted into a project yet and not marked contacted
+function setLeadsBadge(n) {
+  const link = document.getElementById('leads-nav-link');
+  let b = document.getElementById('leads-nav-badge');
+  if (!b) { b = document.createElement('span'); b.id = 'leads-nav-badge'; b.style.cssText = 'margin-left:auto;background:#f59e0b;color:#1f2937;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800;'; link.appendChild(b); }
+  b.textContent = n; b.style.display = n ? '' : 'none';
+}
+async function countNewLeads() {
+  if (!isLeadsAdmin && !canAccess('silver')) return;
+  let q = db.from('leads').select('id', { count: 'exact', head: true }).is('project_id', null).eq('contacted', false);
+  if (isLeadsAdmin) q = q.or(`company_id.is.null,company_id.eq.${effectiveOwnerId}`);
+  const { count, error } = await q;
+  if (!error) setLeadsBadge(count || 0);
+}
 async function loadLeads() {
   const emptyEl = document.getElementById('leads-empty');
   const loadingEl = document.getElementById('leads-loading');
@@ -1341,13 +1355,14 @@ async function loadLeads() {
           : 'No leads yet. Turn on your Find a Pro listing in Company Settings to start receiving quote requests from homeowners near you.');
     return;
   }
+  setLeadsBadge(data.filter(l => !l.project_id && !l.contacted && (!isLeadsAdmin || !l.company_id)).length);
   const tbody = document.getElementById('leads-tbody');
   tbody.innerHTML = data.map(lead => {
     const date = new Date(lead.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
     const thumb = (lead.floor_plan_dataurl
       ? `<img src="${lead.floor_plan_dataurl}" style="width:80px;height:auto;border-radius:4px;border:1px solid #e2e8f0;" alt="Floor plan thumbnail">`
-      : '—') + (lead.design   // homeowner design link (6.1): open the whole design as a project
-      ? `<div style="margin-top:6px;"><a href="/app?lead=${encodeURIComponent(lead.id)}" class="btn btn-primary" style="font-size:11px;padding:5px 10px;white-space:nowrap;">${lead.project_id ? 'Open project' : 'Open design'}</a></div>` : '');
+      : '—') + (isLeadsAdmin && lead.company_id ? '' :   // accept → becomes a project in the planner (with the design, when there is one)
+      `<div style="margin-top:6px;"><a href="/app?lead=${encodeURIComponent(lead.id)}" class="btn btn-primary" style="font-size:11px;padding:5px 10px;white-space:nowrap;">${lead.project_id ? 'Open project' : 'Accept → planner'}</a></div>`);
     const assign = isLeadsAdmin ? `<td class="leads-admin-col">
         <select onchange="assignLead('${lead.id}', this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:${lead.company_id ? '#f0fdfa' : '#fff'};max-width:180px;">
           <option value="">— Unassigned —</option>
@@ -2480,6 +2495,7 @@ async function init() {
     document.getElementById('leads-section-title').textContent = 'All Leads';
   }
   loadProListing();
+  countNewLeads();
 
   applyTeamRoleGates();
   applyHashTab();

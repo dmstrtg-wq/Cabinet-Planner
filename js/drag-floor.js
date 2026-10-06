@@ -16,6 +16,7 @@
     return { scale, RX:68, RY:68, RW:roomW*scale, RH:roomH*scale, r };
   }
   function hitTestCab(mx,my,info) {
+    if (READ_ONLY) return null;   // share link: clicks pan, never pick up a cabinet
     const {scale,RX,RY,RW,RH,r} = info;
     // Only what's visible (Layers) can be clicked; uppers first, since they draw on top of bases
     const isUpper = c => c.type === 'wall' || c.type === 'diagWall';

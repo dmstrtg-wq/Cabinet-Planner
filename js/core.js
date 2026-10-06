@@ -273,11 +273,15 @@ function _initVpEvents(view) {
 // It runs like the demo (no login, saved in this browser) with the pro tools hidden; see
 // js/homeowner.js.
 const HOME_PRO = (new URLSearchParams(location.search).get('pro') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40) || null;
-const IS_DEMO = new URLSearchParams(location.search).get('demo') === '1' || !!HOME_PRO;
+// Customer share link (5.6): /app?share=<token> — the customer's view-only copy of a design.
+// Also runs like the demo (no login), with every edit switched off (READ_ONLY) and nothing saved.
+const SHARE_TOKEN = (new URLSearchParams(location.search).get('share') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) || null;
+const READ_ONLY = !!SHARE_TOKEN;
+const IS_DEMO = new URLSearchParams(location.search).get('demo') === '1' || !!HOME_PRO || !!SHARE_TOKEN;
 function demoGate(action) {
   // Returns true if allowed, false + shows upgrade modal if blocked
   if (!IS_DEMO) return true;
-  if (HOME_PRO) return false;   // homeowners never see our upgrade offers — those tools are hidden
+  if (HOME_PRO || SHARE_TOKEN) return false;   // homeowners/customers never see our upgrade offers — those tools are hidden
   openModal('modal-upgrade');
   return false;
 }
@@ -407,6 +411,7 @@ function showApp() {
   document.getElementById('app-root').classList.remove('hidden');
   document.getElementById('user-email').textContent = currentUser ? currentUser.email : 'demo@mycabinetplanner.com';
   if (HOME_PRO) { document.body.classList.add('demo-mode', 'home-mode'); return; }
+  if (SHARE_TOKEN) { document.body.classList.add('demo-mode', 'share-mode'); return; }
   if (IS_DEMO) {
     document.body.classList.add('demo-mode');
     let dismissed = false;
@@ -545,6 +550,7 @@ const DEFAULT_STYLES = [
 function getStyles() {
   // Homeowner mode: the company's own finish names and colors (published with its design link)
   if (HOME_PRO) { const f = (window.HOME_LISTING && HOME_LISTING.finishes) || []; return f.length ? f : DEFAULT_STYLES; }
+  if (SHARE_TOKEN) { const f = (window.SHARE_DATA && SHARE_DATA.payload && SHARE_DATA.payload.styles) || []; return f.length ? f : DEFAULT_STYLES; }
   const raw = companyProfile.custom_styles;
   const cs = (raw && Array.isArray(raw)) ? raw : [];
   const order = [...new Set(cs.map(s => s.supplier || ''))];
@@ -738,6 +744,7 @@ function setSyncStatus(status) {
   lbl.textContent = status === 'saving' ? 'Saving…' : status === 'error' ? 'Error saving' : 'Saved';
 }
 function persist() {
+  if (READ_ONLY) return;   // a customer's share-link view never saves anything
   localStorage.setItem('cp_ui', JSON.stringify({
     activeProjectId: state.activeProjectId,
     activeRoomId: state.activeRoomId,
@@ -910,6 +917,7 @@ function restoreActiveProject() {
 async function loadAccountData() {
   await loadCompanyProfile();
   await loadProjects();
+  if (typeof startLeadAlerts === 'function') startLeadAlerts();   // 🔔 new leads (homeowner.js)
 }
 
 // ════════════════════════════

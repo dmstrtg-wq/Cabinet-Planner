@@ -24,6 +24,7 @@
   }
 
   function hitTestElevCab(mx, my, info) {
+    if (READ_ONLY) return null;   // share link: clicks pan, never pick up a cabinet
     const { scale, WX, WY, WH, WW, r, wall } = info;
     const floorY = WY + WH;
     const flip = wall === 'south' || wall === 'west';

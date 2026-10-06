@@ -776,3 +776,36 @@ body.home-mode #user-email,
 body.home-mode #designcheck-section,
 body.home-mode #demo-banner { display: none !important; }
 body.home-mode #connect-pro-btn { display: block; font-size: 13px; padding: 11px 14px; }
+
+/* New-lead alert (sidebar) */
+#lead-alert-btn { width: 100%; margin-top: 8px; padding: 9px 12px; border: none; border-radius: 8px; background: #f59e0b; color: #1f2937; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+#lead-alert-btn.hidden { display: none; }
+#lead-alert-btn:hover { background: #fbbf24; }
+.lead-alert-n { background: #1f2937; color: #fff; border-radius: 99px; padding: 1px 7px; font-size: 11px; }
+
+/* Customer share link (5.6): view-only — the company's bar on top, no editing tools */
+body.share-mode #sidebar,
+body.share-mode #cabinet-panel,
+body.share-mode .add-room-btn,
+body.share-mode .header-actions,
+body.share-mode #pv-status-pill,
+body.share-mode #measure-btn, body.share-mode #cutlist-btn, body.share-mode #tb-more-wrap,
+body.share-mode #summary-toggle-btn, body.share-mode #pdf-export-btn, body.share-mode #floor-plan-print-btn,
+body.share-mode .toolbar-pricing, body.share-mode #snap-add-btn,
+body.share-mode #demo-banner, body.share-mode #cutlist-panel { display: none !important; }
+body.share-mode #share-btn, body.demo-mode #share-btn, body.demo-mode #quote-share-btn { display: none !important; }
+#share-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #0f172a; color: #fff; position: relative; z-index: 40; }
+#share-bar .sb-co { display: flex; align-items: center; gap: 10px; min-width: 0; }
+#share-bar .sb-co img { height: 38px; width: auto; max-width: 120px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; }
+#share-bar .sb-name { font-weight: 800; font-size: 15px; }
+#share-bar .sb-sub { font-size: 12px; color: rgba(255,255,255,0.75); }
+#share-bar .sb-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#share-bar .sb-approved { background: #dcfce7; color: #166534; font-weight: 800; font-size: 12px; padding: 7px 12px; border-radius: 8px; }
+table.sq { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.sq th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; border-bottom: 1px solid var(--border); padding: 6px; position: sticky; top: 0; background: #fff; }
+table.sq td { padding: 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+table.sq td.n { color: #94a3b8; width: 26px; } table.sq .a { text-align: right; white-space: nowrap; font-weight: 600; }
+table.sq tr.sq-room td { background: #f8fafc; font-weight: 800; color: #0f766e; font-size: 11px; }
+.sq-tot { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 13px; }
+.sq-tot > div { display: flex; justify-content: space-between; padding: 3px 0; }
+.sq-tot .sq-total { font-size: 17px; font-weight: 800; color: #166534; }
