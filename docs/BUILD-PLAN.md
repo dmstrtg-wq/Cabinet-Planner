@@ -419,3 +419,22 @@ Notes from Dan's dad, sister and brother-in-law. Each item below is checked agai
 ## 7. Staying on track
 
 Before any detour, ask: **does this move us toward paying cabinet customers?** Run it through the decision filter in 1.1. If a request pulls toward general home design (furniture, electrical, outdoor), point back to Section 1 and ask Dan to confirm before building. If a trial company asks for something, that counts as strong evidence. If an Instagram competitor has it, that's weak evidence.
+
+### Phase 8 — AI design assistant (Dan's idea, 2026-10-05 — discussed, not started)
+
+**8.1 Chat to design** — Faster + Convincing · Moat · large
+- Requirements: a chat box in the planner. The user describes the room and layout in plain words ("12 by 10 kitchen, sink base 30 centered under the window on the north wall, dishwasher right of it…", or "make the cabinet left of the sink 15", "fill the rest with drawers", "change everything to Navy Shaker"). A Netlify function sends the words + the current layout (no customer contact details) to Claude with planner *tools* (set room, add/move/resize/remove cabinet or appliance by wall and position, fill gap, set finish, run Design Check). The planner applies the returned actions through its own rules (placementIssue, fill-gap solver, corner logic) — the AI never writes the design directly. Shows a preview ("9 cabinets, 3 appliances") → Apply / Undo (history.js); anything that doesn't fit is explained back.
+- Security/cost: auth + tier check server-side, per-account daily cap, size limits; ~1–3¢ per request.
+- Done when: a user can lay out a full kitchen from 2–4 messages and every placement passes the planner's own rules.
+
+**8.2 Voice** — Faster · Parity → Moat · small
+- Microphone button using the browser's speech recognition (free; Chrome/Edge/Safari), filling the chat box so misheard numbers can be fixed before sending. Paid transcription only if field use shows it's needed.
+
+**8.3 "Design it for me"** — Convincing · Moat · medium
+- From a loose brief ("L-shape with an island, lots of drawers, fridge near the door") propose a complete layout that passes Design Check, then let the user adjust.
+
+**8.4 Homeowner version** — Lead funnel · Moat · small (after 8.1–8.3)
+- The same assistant on a company's homeowner design link (6.1).
+
+Open decisions (Dan): which tiers get 8.1/8.2 (suggested Silver + Gold, maybe a limited taste in the demo); whether homeowners get it (8.4).
+

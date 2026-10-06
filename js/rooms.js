@@ -309,6 +309,7 @@ function addRoom() {
   renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
 }
 function deleteRoom(roomId) {
+  if (READ_ONLY) return;   // share link: view-only
   const p = activeProj();
   if (!p || p.rooms.length <= 1) { alert('A project must have at least one room.'); return; }
   if (!confirm('Delete this room and all its cabinets?')) return;

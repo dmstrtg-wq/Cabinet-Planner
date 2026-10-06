@@ -792,7 +792,7 @@ body.share-mode #pv-status-pill,
 body.share-mode #measure-btn, body.share-mode #cutlist-btn, body.share-mode #tb-more-wrap,
 body.share-mode #summary-toggle-btn, body.share-mode #pdf-export-btn, body.share-mode #floor-plan-print-btn,
 body.share-mode .toolbar-pricing, body.share-mode #snap-add-btn,
-body.share-mode #demo-banner, body.share-mode #cutlist-panel { display: none !important; }
+body.share-mode #demo-banner, body.share-mode #cutlist-panel, body.share-mode .room-tab-del { display: none !important; }
 body.share-mode #share-btn, body.demo-mode #share-btn, body.demo-mode #quote-share-btn { display: none !important; }
 #share-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 16px; background: #0f172a; color: #fff; position: relative; z-index: 40; }
 #share-bar .sb-co { display: flex; align-items: center; gap: 10px; min-width: 0; }
