@@ -461,14 +461,37 @@ async function piCall(body) {
 // ════════════════════════════
 // LAYOUT (step 1 of reading)
 // ════════════════════════════
+// How the list is priced (Dan, 2026-10-05):
+//   cost — what the company pays; quotes add the markup (as before)
+//   list — a list price the company pays a set % of (dealer multiplier) → stored as cost
+//   msrp — MSRP/retail; the company advertises at MSRP ± a %. The MSRP is stored as is, with the
+//          % per finish (quote_settings.priceBasis); quotes show MSRP × (1 + %) and no markup.
 function piReadSettings() {
   PI.supplier = (document.getElementById('pi-supplier').value || '').trim();
-  const mult = parseFloat(document.getElementById('pi-mult').value);
   if (!PI.supplier) { showToast('Name the supplier first — finishes and prices are kept per supplier.'); return false; }
-  if (!(mult > 0 && mult <= 5)) { showToast('The multiplier should be a number like 1 or 0.45.'); return false; }
-  PI.multiplier = mult;
+  const basis = (document.querySelector('input[name="pi-basis"]:checked') || {}).value;
+  if (!basis) { showToast('Say how this price list is priced — your cost, a list price, or MSRP.'); return false; }
+  PI.basis = basis;
+  if (basis === 'list') {
+    const mult = parseFloat(document.getElementById('pi-mult').value);
+    if (!(mult > 0 && mult < 1.5)) { showToast('Enter the % of list you pay as a number like 0.42 (= 42%).'); return false; }
+    PI.multiplier = mult;
+  } else PI.multiplier = 1;
+  if (basis === 'msrp') {
+    const adj = parseFloat(document.getElementById('pi-adj').value);
+    if (!isFinite(adj) || adj <= -100 || adj > 500) { showToast('Enter how far from MSRP you advertise, e.g. 0, -10 or 15.'); return false; }
+    PI.adj = adj;
+  }
   return true;
 }
+function piSetBasis(v) {   // re-render with the extra box, keeping what was typed
+  const val = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  if (val('pi-supplier') != null) PI.supplier = val('pi-supplier').trim();
+  if (val('pi-mult')) PI.multiplier = parseFloat(val('pi-mult')) || PI.multiplier;
+  if (val('pi-adj') != null && val('pi-adj') !== '') PI.adj = parseFloat(val('pi-adj'));
+  PI.basis = v; piRender();
+}
+const piBasisText = () => PI.basis === 'msrp' ? `MSRP ${PI.adj ? (PI.adj > 0 ? '+' : '') + PI.adj + '%' : ''}`.trim() : PI.basis === 'list' ? `list × ${PI.multiplier} = your cost` : 'your cost';
 async function piReadLayout() {
   if (!piReadSettings()) return;
   if (PI.kind === 'pdf') return piFindPricePages();
@@ -1046,6 +1069,13 @@ async function piSave() {
     `• ${plan.fresh} new`, `• ${plan.changed.length} changed from what you have now`, `• ${plan.same} the same as now`];
   if (plan.newFinishes.length) lines.push(`• New finishes: ${plan.newFinishes.map(r => r.slice(4)).join(', ')}`);
   if (later.length) lines.push(`• ${later.length} item${later.length === 1 ? '' : 's'} kept as open questions to finish later`);
+  lines.push('', PI.basis === 'msrp'
+    ? `Priced from MSRP: quotes will show MSRP ${PI.adj ? (PI.adj > 0 ? '+' : '−') + Math.abs(PI.adj) + '%' : '(as listed)'} for these finishes — your markup isn't added.`
+    : `Priced as your cost${PI.basis === 'list' ? ` (list × ${PI.multiplier})` : ''}: quotes add your markup.`);
+  // a finish that already has prices on the other basis switches entirely — say so
+  const codes = [...new Set(plan.rows.map(r => r.ref).filter(r => !r.startsWith('new:')))];
+  const switching = codes.filter(c => { const b = piBasisOf(c); return (b === 'msrp') !== (PI.basis === 'msrp') && piPriceCount(c) > 0; });
+  if (switching.length) lines.push(`⚠ ${switching.map(piRefName).join(', ')} already ha${switching.length === 1 ? 's' : 've'} prices saved as ${PI.basis === 'msrp' ? 'cost' : 'MSRP'}. After saving, ALL ${switching.length === 1 ? 'its' : 'their'} prices are treated as ${PI.basis === 'msrp' ? 'MSRP' : 'cost'}.`);
   if (plan.changed.length) {
     lines.push('', 'Biggest changes:');
     plan.changed.slice().sort((a, b) => Math.abs(b.price - b.was) - Math.abs(a.price - a.was)).slice(0, 8)
@@ -1054,7 +1084,7 @@ async function piSave() {
   if (PI.step !== 'confirm') { PI.confirmLines = lines; PI.step = 'confirm'; piRender(); return; }
 
   PI.step = 'saving'; piRender();
-  const cols = ['price_overrides', 'custom_styles', 'supplier_skus', 'price_import_state'];
+  const cols = ['price_overrides', 'custom_styles', 'supplier_skus', 'price_import_state', 'quote_settings'];
   let sel = await db.from('company_profiles').select(cols.join(', ')).eq('user_id', effectiveOwnerId).single();
   const missing = new Set();
   for (let tries = 0; sel.error && tries < 2; tries++) {   // columns from SQL that hasn't been run yet
@@ -1098,6 +1128,14 @@ async function piSave() {
 
   const row = { user_id: effectiveOwnerId, price_overrides: overrides, custom_styles: styles.length ? styles : null, updated_at: new Date().toISOString() };
   if (!missing.has('supplier_skus')) row.supplier_skus = skus;
+  if (!missing.has('quote_settings')) {
+    const qs = { ...(cur.quote_settings || {}) }, pb = { ...(qs.priceBasis || {}) };
+    [...new Set(plan.rows.map(r => refCode[r.ref] || r.ref))].forEach(code => {
+      if (PI.basis === 'msrp') pb[code] = { kind: 'msrp', adj: PI.adj || 0, supplier: PI.supplier };
+      else delete pb[code];   // cost is the default
+    });
+    qs.priceBasis = pb; row.quote_settings = qs;
+  }
   if (!missing.has('price_import_state') && later.length) {
     const state = { ...(cur.price_import_state || {}) };
     const sups = { ...(state.suppliers || {}) };
@@ -1123,6 +1161,13 @@ async function piSave() {
   PI.saved = { count: plan.rows.length, finishes: newRefs.length, later: later.length, skuColumn: !missing.has('supplier_skus'), stateColumn: !missing.has('price_import_state') };
   PI.step = 'done'; piRender();
   piRenderPending();
+  piRenderBasis();
+}
+function piBasisOf(code) { const pb = (companyProfile.quote_settings || {}).priceBasis || {}; return pb[code] ? pb[code].kind : 'cost'; }
+function piPriceCount(code) {
+  let n = 0; const po = companyProfile.price_overrides || {};
+  Object.values(po).forEach(t => { if (t && typeof t === 'object') Object.values(t).forEach(sz => { if (sz && typeof sz === 'object' && sz[code] != null) n++; }); });
+  return n;
 }
 // The reason an item was skipped for now
 function piOpenQuestionText(it) {
@@ -1149,6 +1194,39 @@ function piRenderPending() {
     <div style="flex:1;min-width:220px;font-size:13px;color:#78350f;"><b>Open price questions:</b> ${Object.entries(by).map(([s, n]) => `${esc(s)} (${n})`).join(', ')} — these items aren't priced yet.</div>
     <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="piOpenPending()">Answer them</button></div>`;
 }
+// MSRP-priced suppliers and the % they advertise at — editable any time (My Pricing tab)
+function piRenderBasis() {
+  const el = document.getElementById('pi-basis');
+  if (!el) return;
+  const pb = (companyProfile.quote_settings || {}).priceBasis || {};
+  const by = {};
+  Object.entries(pb).forEach(([code, b]) => { if (b && b.kind === 'msrp') (by[b.supplier || 'Other'] = by[b.supplier || 'Other'] || { codes: [], adj: b.adj || 0 }).codes.push(code); });
+  if (!Object.keys(by).length) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  const fin = companyFinishes();
+  el.innerHTML = `<div class="section-head"><div class="section-title">MSRP Pricing</div></div><div class="card" style="padding:14px 18px;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">These suppliers' prices were imported as MSRP. Quotes show MSRP adjusted by your % for their finishes (your quote markup isn't added).</div>
+    ${Object.entries(by).map(([sup, g]) => `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--border);font-size:13px;">
+      <div style="flex:1;min-width:220px;"><b>${esc(sup)}</b> <span style="color:var(--muted);font-size:12px;">${g.codes.map(c => esc((fin.find(f => f.code === c) || {}).name || c)).join(', ')}</span></div>
+      <label style="font-weight:400;">Advertise at MSRP <input type="number" step="0.5" min="-99" max="500" value="${g.adj}" id="pi-adj-${esc(sup).replace(/[^a-z0-9]/gi, '_')}" style="width:80px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;"> %</label>
+      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="piSaveAdj('${piJs(sup)}')">Save</button></div>`).join('')}</div>`;
+}
+async function piSaveAdj(sup) {
+  if (myTeamRole !== 'owner') { showToast('Only the account owner can manage pricing.'); return; }
+  const v = parseFloat(document.getElementById('pi-adj-' + sup.replace(/[^a-z0-9]/gi, '_')).value);
+  if (!isFinite(v) || v <= -100 || v > 500) { showToast('Enter a % like 0, -10 or 15.'); return; }
+  const { data: cur, error: e1 } = await db.from('company_profiles').select('quote_settings').eq('user_id', effectiveOwnerId).single();
+  if (e1) { showToast('Could not load your settings: ' + e1.message); return; }
+  const qs = { ...(cur.quote_settings || {}) }, pb = { ...(qs.priceBasis || {}) };
+  Object.keys(pb).forEach(c => { if (pb[c] && pb[c].kind === 'msrp' && (pb[c].supplier || 'Other') === sup) pb[c] = { ...pb[c], adj: v }; });
+  qs.priceBasis = pb;
+  const { data, error } = await db.from('company_profiles').upsert({ user_id: effectiveOwnerId, quote_settings: qs, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).select().single();
+  if (error) { showToast('Could not save: ' + error.message); return; }
+  companyProfile = data;
+  showToast(`${sup}: quotes now show MSRP ${v > 0 ? '+' : ''}${v}%.`);
+  piRenderBasis();
+}
+
 let PQ = null;
 function piOpenPending() {
   if (myTeamRole !== 'owner') { showToast('Only the account owner can manage pricing.'); return; }
@@ -1323,8 +1401,15 @@ function piViewFile() {
     <div class="pi-row"><label for="pi-supplier">Supplier</label><div><input type="text" id="pi-supplier" list="pi-sup-list" maxlength="40" value="${esc(PI.supplier)}" placeholder="e.g. Highland Cabinetry" style="width:260px;">
       <datalist id="pi-sup-list">${sups.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
       <div style="font-size:11px;color:var(--muted);margin-top:4px;">Finishes and prices are kept per supplier — importing another supplier never touches these.</div></div></div>
-    <div class="pi-row"><label for="pi-mult">Price multiplier</label><div><input type="number" id="pi-mult" step="0.001" min="0.01" max="5" value="${PI.multiplier}" style="width:110px;">
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Leave at 1 when the list shows your cost. For a list/retail price where you pay, say, 42% of list, enter 0.42. Your markup is still added on quotes.</div></div></div>
+    <div class="pi-row" style="align-items:start;"><label>How is this list priced?</label><div style="font-size:13px;line-height:1.5;">
+      <label style="font-weight:400;display:block;margin-bottom:6px;"><input type="radio" name="pi-basis" value="cost" ${PI.basis === 'cost' ? 'checked' : ''} onchange="piSetBasis('cost')"> <b>My cost</b> — what I pay the supplier. <span style="color:var(--muted);">Quotes add your markup.</span></label>
+      <label style="font-weight:400;display:block;margin-bottom:6px;"><input type="radio" name="pi-basis" value="msrp" ${PI.basis === 'msrp' ? 'checked' : ''} onchange="piSetBasis('msrp')"> <b>MSRP / retail</b> — I advertise off these prices.</label>
+      ${PI.basis === 'msrp' ? `<div style="margin:0 0 8px 24px;">I advertise at MSRP <input type="number" id="pi-adj" step="0.5" min="-99" max="500" value="${PI.adj != null ? PI.adj : 0}" style="width:80px;"> %
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">0 = MSRP · −10 = 10% below MSRP · 15 = 15% above. Every quote shows this price for these finishes; your markup isn't added on top. You can change the % later in My Pricing.</div></div>` : ''}
+      <label style="font-weight:400;display:block;"><input type="radio" name="pi-basis" value="list" ${PI.basis === 'list' ? 'checked' : ''} onchange="piSetBasis('list')"> <b>List price, and I pay a set % of it</b> (dealer multiplier)</label>
+      ${PI.basis === 'list' ? `<div style="margin:6px 0 0 24px;">I pay <input type="number" id="pi-mult" step="0.001" min="0.01" max="1.5" value="${PI.multiplier !== 1 ? PI.multiplier : ''}" placeholder="0.42" style="width:90px;"> × list
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">e.g. 0.42 if you pay 42% of list. That becomes your cost, and quotes add your markup.</div></div>` : ''}
+    </div></div>
     <div style="font-size:11px;color:var(--muted);">Privacy: the rows of this file are sent to our AI provider (Anthropic) to read them. They aren't used to train AI and we don't keep them after the import.</div>
     ${prev}`,
     `<button class="btn btn-ghost" onclick="piClose()">Cancel</button><button class="btn btn-primary" ${hasFile ? '' : 'disabled'} onclick="piReadLayout()">${PI.kind === 'pdf' ? 'Find the price pages →' : 'Read this price list →'}</button>`];
@@ -1468,12 +1553,12 @@ function piViewReview() {
       <td>${mapCell}${why ? `<div class="pi-why">${esc(why)}</div>` : ''}</td><td>${priceHtml || '—'}</td><td style="white-space:nowrap;">${acts.join('')}</td></tr>`;
   }).join('');
   const open = piOpenCards().length + by.look.length;
-  const sum = `<b>${plan.rows.length}</b> price${plan.rows.length === 1 ? '' : 's'} ready: ${plan.fresh} new, <span class="${plan.changed.length ? 'pi-up' : ''}">${plan.changed.length} changed</span>, ${plan.same} unchanged${plan.newFinishes.length ? ` · ${plan.newFinishes.length} new finish${plan.newFinishes.length === 1 ? '' : 'es'}` : ''}${PI.multiplier !== 1 ? ` · price × ${PI.multiplier}` : ''}`;
+  const sum = `<b>${plan.rows.length}</b> price${plan.rows.length === 1 ? '' : 's'} ready: ${plan.fresh} new, <span class="${plan.changed.length ? 'pi-up' : ''}">${plan.changed.length} changed</span>, ${plan.same} unchanged${plan.newFinishes.length ? ` · ${plan.newFinishes.length} new finish${plan.newFinishes.length === 1 ? '' : 'es'}` : ''}${PI.basis ? ` · priced as ${esc(piBasisText())}` : ''}`;
   return [`
     <div style="font-size:13px;">${sum}. Only <b>Matched</b> items are priced; <b>Open questions</b> are saved to finish later.</div>
     ${by.look.length ? `<div class="pi-note" style="margin-top:8px;">${by.look.length} item${by.look.length === 1 ? '' : 's'} still need${by.look.length === 1 ? 's' : ''} an answer — <button class="pi-link" onclick="piReopenQuestions()">answer them</button>, or they'll be kept as open questions.</div>` : ''}
     <div class="pi-tabs">${tabs.map(([k, l]) => `<button class="${PI.tab === k ? 'on' : ''}" onclick="piTab('${k}')">${l} (${by[k].length})</button>`).join('')}</div>
-    <table class="pi-grid"><thead><tr><th>Item code</th><th>Planner cabinet</th><th>Price per finish (your cost)</th><th></th></tr></thead>
+    <table class="pi-grid"><thead><tr><th>Item code</th><th>Planner cabinet</th><th>Price per finish (${PI.basis === 'msrp' ? 'MSRP' : 'your cost'})</th><th></th></tr></thead>
     <tbody>${rows || `<tr><td colspan="4" style="color:var(--muted);padding:18px;">None.</td></tr>`}</tbody></table>
     ${list.length > LIMIT ? `<div style="font-size:12px;color:var(--muted);margin-top:6px;">Showing the first ${LIMIT} of ${list.length}.</div>` : ''}`,
     `<button class="btn btn-ghost" onclick="PI.step='columns';piRender()">← Finishes</button>${open ? `<button class="btn btn-ghost" onclick="piReopenQuestions()">Questions (${open})</button>` : ''}<button class="btn btn-primary" ${plan.rows.length || by.later.length || by.look.length ? '' : 'disabled'} onclick="piSave()">Save ${plan.rows.length} price${plan.rows.length === 1 ? '' : 's'}</button>`];
@@ -1482,7 +1567,7 @@ function piViewDone() {
   const s = PI.saved;
   return [`<div style="padding:24px 4px;font-size:14px;line-height:1.7;">
     ✅ Saved <b>${s.count}</b> price${s.count === 1 ? '' : 's'} from <b>${esc(PI.supplier)}</b>${s.finishes ? ` and added ${s.finishes} finish${s.finishes === 1 ? '' : 'es'}` : ''}.<br>
-    New quotes use these prices right away (with your markup added). ${s.finishes ? 'You can set the color of new finishes in Company Settings → Door Styles / Finishes.' : ''}
+    New quotes use these prices right away ${PI.basis === 'msrp' ? `at MSRP ${PI.adj ? (PI.adj > 0 ? '+' : '−') + Math.abs(PI.adj) + '%' : ''} (no markup added — change the % in My Pricing)` : '(with your markup added)'}. ${s.finishes ? 'You can set the color of new finishes in Company Settings → Door Styles / Finishes.' : ''}
     ${s.later ? `<br>${s.later} open question${s.later === 1 ? '' : 's'} ${s.stateColumn ? 'saved — finish them any time from My Pricing.' : "couldn't be saved yet (run supabase-price-import-2.sql)."}` : ''}
     ${s.skuColumn ? '' : '<div class="pi-note" style="margin-top:12px;">Supplier item codes weren\'t saved — the database update for them (supabase-price-import.sql) hasn\'t been run yet.</div>'}</div>`,
     `<button class="btn btn-primary" onclick="piClose()">Done</button>`];

@@ -378,3 +378,15 @@ Dan's run (not saved): prices accurate (page 15: 26/26 exact) but 188 questions,
 - **Far fewer questions:** sizes the planner doesn't have are left out without asking (listed under Skipped); sizes the AI missed are filled from the code (OC3384B → 33×84; fillers/fridge panel fixed); look-alike codes for one planner cabinet are auto-picked (review shows "Picked over …", Edit to change); questions are **grouped** — one screen per kind, one per page for disagreeing reads (lines + page image), pre-filled with the suggestion → usually one click "Use these"; each line can be changed or skipped. New issues caused by an answer join the list immediately.
 Claude tested locally (simulated AI): Matrix PDF page groups (Platinum kept through "Forevermark"), label cleaning, AE/AA/AH matching + cross-tier question, HCI workbook → 3 screens, HCI screenshot → 1 read screen, Save → in-app confirm. All scripts compile.
 - [ ] After push: Dan re-runs the Matrix PDF (~$3–4 AI) and reports the number of question screens.
+- Dan re-ran the Matrix PDF after the fixes (2026-10-05): uploaded well; grouped questions much easier. Sam (sister) testing Matrix on her account tonight.
+
+### 5.8c Cost vs MSRP price lists (built 2026-10-05) — no SQL (uses quote_settings)
+- Import step 1 now asks **How is this list priced?** (must pick one):
+  - **My cost** → quotes add your markup (as before).
+  - **MSRP / retail** → "I advertise at MSRP __ %" (0 = MSRP, −10 = 10% under, 15 = over). MSRP is stored as listed; quotes show MSRP × (1 + %) for those finishes and the quote's Additional Markup is **not** added on top.
+  - **List price, and I pay a set % of it** (dealer multiplier, e.g. 0.42) → stored as cost; quotes add your markup.
+- Saved per finish in `company_profiles.quote_settings.priceBasis` ({kind:'msrp', adj, supplier}). Save screen says how quotes will price, and warns if a finish already has prices on the other basis (all its prices switch).
+- **Profile → My Pricing → MSRP Pricing:** change the % per supplier any time (no re-import).
+- Planner: Pricing panel shows a note under Additional Markup when any finish is MSRP-priced.
+Claude tested locally: must-pick basis, MSRP −10% import (confirm text, cost→MSRP warning, quote_settings keeps slidesIncluded), My Pricing % change to +5, planner prices (MSRP $220 at −10% → $198 with 20% markup ignored; cost $100 → $120). All scripts compile; no errors.
+- [ ] After push: import a small MSRP list, set −10%, check a quote line.

@@ -172,6 +172,9 @@ async function loadCompanyProfile() {
   const { data } = await db.from('company_profiles').select('*').eq('user_id', effectiveOwnerId).single();
   if (data) companyProfile = data;
   applyTierGates();
+  { const pb = (companyProfile.quote_settings || {}).priceBasis || {};   // MSRP-priced finishes ignore the markup (5.8c)
+    const note = document.getElementById('msrp-markup-note');
+    if (note) note.classList.toggle('hidden', !Object.values(pb).some(b => b && b.kind === 'msrp')); }
   // The style picker is first built before the account is known (generic starter styles).
   // Now that we know the account's finishes, rebuild it — otherwise every company sees the
   // starter list, picks a code its finishes don't have, and 3D/elevation/pricing can't use it.

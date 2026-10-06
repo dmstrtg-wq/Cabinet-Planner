@@ -964,6 +964,14 @@ function fillerPriceParts(width) {
   if (width <= 3) return { type: 'filler3', stock: 3, count: 1 };
   return { type: 'filler6', stock: 6, count: Math.ceil(width / 6 - 1e-9) };
 }
+// How a finish's prices were given (5.8c, Dan 2026-10-05). Default: the company's cost, and
+// the quote's markup is added. A finish imported from an MSRP list stores the MSRP itself plus
+// the % the company advertises at (−10 = 10% under MSRP); quotes show MSRP × that, and the
+// markup is NOT added on top. Kept per finish in company_profiles.quote_settings.priceBasis.
+function priceBasis(code) {
+  const pb = companyProfile.quote_settings && companyProfile.quote_settings.priceBasis;
+  return (pb && pb[code]) || null;
+}
 function cabinetPrice(cab) {
   const overrides = companyProfile.price_overrides;
   if (isFiller(cab.type) && !cab._fillerPiece) {
@@ -972,6 +980,7 @@ function cabinetPrice(cab) {
     return one == null ? null : one * f.count;   // markup already applied per piece
   }
   const ov = overrides && overrides[cab.type];
+  const styleCode = cab.styleOverride || activeProj()?.style || 'AW';
   let base = null;
   if (ov != null) {
     if (typeof ov === 'object') {
@@ -979,7 +988,6 @@ function cabinetPrice(cab) {
       const sizeKey = PRICE_BY_HEIGHT.includes(cab.type) ? `${cab.width}x${cab.height}` : `${cab.width}`;
       const bySize = ov[sizeKey] || ov[`${cab.width}`];   // width-only fallback (older sheets)
       if (bySize && typeof bySize === 'object') {
-        const styleCode = cab.styleOverride || activeProj()?.style || 'AW';
         if (bySize[styleCode] != null) base = parseFloat(bySize[styleCode]);
       }
     } else {
@@ -990,7 +998,9 @@ function cabinetPrice(cab) {
   }
   if (base == null) return null;
   const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
-  return (base + glassAddon) * (1 + getMarkup());
+  const b = priceBasis(styleCode);
+  const factor = (b && b.kind === 'msrp') ? 1 + (parseFloat(b.adj) || 0) / 100 : 1 + getMarkup();
+  return (base + glassAddon) * factor;
 }
 
 // ════════════════════════════

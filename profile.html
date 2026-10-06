@@ -689,6 +689,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
         </div>
 
         <div id="pi-pending" style="display:none;margin-bottom:18px;"></div>
+        <div id="pi-basis" class="section" style="display:none;"></div>
 
         <div class="section">
           <div class="section-head">
@@ -696,7 +697,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
             <button id="ai-import-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="piOpen()">✨ Import Supplier Price List</button>
           </div>
           <div class="card" style="padding:18px 22px;font-size:13px;color:var(--muted);line-height:1.6;">
-            Skip the template: drop in your supplier's price list exactly as they sent it (Excel or CSV) and our AI matches every item code to your cabinet types, sizes and finishes. You review every match before anything is saved, and prices are always read straight from your file. Buy from more than one supplier? Import each one — their finishes and prices stay separate. <strong>Silver and Gold plans.</strong>
+            Skip the template: drop in your supplier's price list exactly as they sent it (Excel, CSV, PDF, or photos of the pages) and our AI matches every item code to your cabinet types, sizes and finishes. Works with cost, list or MSRP price lists. You review everything before it's saved. Buy from more than one supplier? Import each one — their finishes and prices stay separate. <strong>Silver and Gold plans.</strong>
           </div>
         </div>
       </div>
@@ -2330,6 +2331,7 @@ async function init() {
   applyFilesTabTierGating();
   loadCompanyFiles('price_list');
   if (typeof piRenderPending === 'function') piRenderPending();   // open price questions (5.8b)
+  if (typeof piRenderBasis === 'function') piRenderBasis();       // MSRP-priced suppliers (5.8c)
 
   // Stats
   const projs = projects || [];
