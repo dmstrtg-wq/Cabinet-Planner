@@ -269,10 +269,15 @@ function _initVpEvents(view) {
 // ════════════════════════════
 // DEMO MODE
 // ════════════════════════════
-const IS_DEMO = new URLSearchParams(location.search).get('demo') === '1';
+// Homeowner mode (6.1): /app?pro=<design link name> — a homeowner designing for one company.
+// It runs like the demo (no login, saved in this browser) with the pro tools hidden; see
+// js/homeowner.js.
+const HOME_PRO = (new URLSearchParams(location.search).get('pro') || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40) || null;
+const IS_DEMO = new URLSearchParams(location.search).get('demo') === '1' || !!HOME_PRO;
 function demoGate(action) {
   // Returns true if allowed, false + shows upgrade modal if blocked
   if (!IS_DEMO) return true;
+  if (HOME_PRO) return false;   // homeowners never see our upgrade offers — those tools are hidden
   openModal('modal-upgrade');
   return false;
 }
@@ -332,7 +337,7 @@ function openDemoSampleOnLoad() {
 }
 // First visit only (no demo projects saved yet) — returning visitors keep their work.
 function seedDemoIfFirstVisit() {
-  if (!IS_DEMO || localStorage.getItem('cp_demo_projects') !== null) return;
+  if (!IS_DEMO || HOME_PRO || localStorage.getItem('cp_demo_projects') !== null) return;
   localStorage.setItem('cp_demo_projects', JSON.stringify([buildDemoSampleProject()]));
   openDemoSampleOnLoad();
 }
@@ -401,6 +406,7 @@ function showApp() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-root').classList.remove('hidden');
   document.getElementById('user-email').textContent = currentUser ? currentUser.email : 'demo@mycabinetplanner.com';
+  if (HOME_PRO) { document.body.classList.add('demo-mode', 'home-mode'); return; }
   if (IS_DEMO) {
     document.body.classList.add('demo-mode');
     let dismissed = false;
@@ -465,6 +471,7 @@ async function handleSignIn() {
   await resolveTeamContext();
   await loadAccountData();
   openProjectFromUrl();
+  if (typeof openLeadFromUrl === 'function') openLeadFromUrl();   // homeowner design → project (6.1)
   maybeStartTour();
 }
 async function handleForgotPassword() {
@@ -536,6 +543,8 @@ const DEFAULT_STYLES = [
 // shown grouped under it (the style panel groups by `tier`). On an owner account, imported
 // finishes are added after the built-in catalog instead of replacing it.
 function getStyles() {
+  // Homeowner mode: the company's own finish names and colors (published with its design link)
+  if (HOME_PRO) { const f = (window.HOME_LISTING && HOME_LISTING.finishes) || []; return f.length ? f : DEFAULT_STYLES; }
   const raw = companyProfile.custom_styles;
   const cs = (raw && Array.isArray(raw)) ? raw : [];
   const order = [...new Set(cs.map(s => s.supplier || ''))];
@@ -750,6 +759,7 @@ function isLocalOnly() { return IS_DEMO || !currentUser || !canAccess('silver');
 // Each signed-in account gets its own key so two logins on one browser never share
 // projects. Anonymous demo keeps the original key.
 function localProjectsKey() {
+  if (HOME_PRO) return 'cp_home_' + HOME_PRO;   // a homeowner's designs for this company
   return (IS_DEMO || !currentUser) ? 'cp_demo_projects' : 'cp_projects_' + currentUser.id;
 }
 function readLocalProjects() {
@@ -758,7 +768,7 @@ function readLocalProjects() {
   // One-time carry-over: before per-account keys, signed-in Free users saved under the
   // demo key. Free accounts only (never uploaded to a paid account, since that key can
   // also hold anonymous demo projects), and only if this account has never had a key.
-  if (saved === null && key !== 'cp_demo_projects' && isLocalOnly()) saved = localStorage.getItem('cp_demo_projects');
+  if (saved === null && key !== 'cp_demo_projects' && !HOME_PRO && isLocalOnly()) saved = localStorage.getItem('cp_demo_projects');
   try { return saved ? JSON.parse(saved).map(migrateProject) : []; } catch (e) { return []; }
 }
 function writeLocalProjects(projects) {

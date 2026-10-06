@@ -538,7 +538,8 @@ function piCleanTables(tables, groupNames) {
   const groups = new Set(groupNames.map(n => piNorm(n)).filter(Boolean));
   const seen = new Map();
   tables.forEach(t => {
-    const pcs = t.priceCols.map(p => ({ col: p.col, label: groups.has(piNorm(p.label || '')) ? '' : (p.label || '') }));
+    // a label that repeats a group title, or is a size heading ("30\" Wall"), isn't a finish
+    const pcs = t.priceCols.map(p => ({ col: p.col, label: groups.has(piNorm(p.label || '')) ? '' : (piCleanCol(p.label) || '') }));
     const key = `${t.skuCol}|${pcs.map(p => p.col).sort((a, b) => a - b).join(',')}|${t.finishCol ?? ''}`;
     const prev = seen.get(key);
     if (!prev) { seen.set(key, { ...t, priceCols: pcs }); return; }

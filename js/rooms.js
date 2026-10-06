@@ -47,11 +47,18 @@ function openNewProjectModal() {
     US_STATES.forEach(([code,name]) => { const o=document.createElement('option'); o.value=code; o.textContent=`${name} (${code})`; sel.appendChild(o); });
   }
   sel.value = '';
+  if (HOME_PRO) {   // homeowner mode (6.1): no customer/company fields — just the room
+    document.getElementById('np-company').value = (window.HOME_LISTING && HOME_LISTING.company_name) || '';
+    document.getElementById('np-title').textContent = 'Start your design';
+    document.getElementById('np-create-btn').textContent = 'Start designing →';
+    openModal('modal-new-project');
+    return;
+  }
   openModal('modal-new-project');
   setTimeout(() => document.getElementById('np-customer').focus(), 50);
 }
 function createProject() {
-  const customer = document.getElementById('np-customer').value.trim();
+  const customer = HOME_PRO ? `My ${document.getElementById('np-type').value.toLowerCase()} design` : document.getElementById('np-customer').value.trim();
   if (!customer) { document.getElementById('np-customer').focus(); return; }
   const dims = readRoomDimFields('np'); if (!dims) return;
   const npType = document.getElementById('np-type').value;

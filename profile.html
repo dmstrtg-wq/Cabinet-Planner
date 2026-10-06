@@ -654,6 +654,42 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
 
         <div class="section">
           <div class="section-head">
+            <div class="section-title">Homeowner Design Link</div>
+            <span id="dl-save-status" style="font-size:12px;font-weight:600;"></span>
+          </div>
+          <div class="card" style="padding:24px;">
+            <div id="dl-locked" style="display:none;font-size:13px;color:var(--muted);line-height:1.6;">
+              Put a <strong>“Design your kitchen”</strong> button on your own website. Homeowners design their kitchen with your finishes (no prices shown) and send it straight to your Leads tab, ready for you to open, adjust and quote. Included with the <strong>Gold</strong> plan.
+              <div style="margin-top:12px;"><a href="#subscription" class="btn btn-primary" style="font-size:12px;padding:7px 14px;">See Plans</a></div>
+            </div>
+            <div id="dl-form">
+              <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:6px;">
+                <input type="checkbox" id="dl-on" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
+                <span style="font-size:14px;font-weight:700;">Turn on my homeowner design link</span>
+              </label>
+              <div style="font-size:12px;color:var(--muted);margin:0 0 16px 30px;line-height:1.6;">Homeowners design with your door styles and finishes — never your prices — then send the design to you. It lands in your Leads tab with the whole design attached.</div>
+              <div class="form-group"><label>Link name</label>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;"><span style="color:var(--muted);">mycabinetplanner.com/app?pro=</span>
+                <input type="text" id="dl-slug" maxlength="40" placeholder="your-company" style="width:220px;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div>
+                <div style="font-size:11px;color:var(--muted);margin-top:5px;">Letters, numbers and dashes. Changing it later breaks links you've already shared.</div>
+              </div>
+              <div id="dl-share" style="display:none;margin:4px 0 16px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--bg);">
+                <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Your link</div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><code id="dl-url" style="font-size:12px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;word-break:break-all;"></code>
+                  <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="copyDesignLink('url')">Copy link</button>
+                  <a id="dl-try" class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" target="_blank" rel="noopener">Try it</a></div>
+                <div style="font-size:12px;font-weight:700;margin:12px 0 6px;">Button for your website <span style="font-weight:400;color:var(--muted);">(paste into your site's HTML)</span></div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><code id="dl-snippet" style="font-size:11px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;word-break:break-all;max-width:100%;"></code>
+                  <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="copyDesignLink('snippet')">Copy button code</button></div>
+              </div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Your company name, logo, phone, email and website — and your finish names and colors — are shown to homeowners and refreshed each time you save here. Save again after you change your finishes.</div>
+              <button class="btn btn-primary" onclick="saveDesignLink()">Save Design Link</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
             <div class="section-title">Door Styles / Finishes</div>
           </div>
           <div class="card" style="padding:24px;">
@@ -802,7 +838,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
       <!-- LEADS (admin only — Dan's view) -->
       <div class="tab-panel" data-tab="leads">
         <div class="tab-title">Leads</div>
-        <div class="tab-desc" id="leads-desc">Homeowners near you who asked for a quote through Find a Pro.</div>
+        <div class="tab-desc" id="leads-desc">Homeowners who asked for a quote through Find a Pro or your homeowner design link.</div>
         <div class="section">
           <div class="section-head"><div class="section-title" id="leads-section-title">Your Leads</div></div>
           <div class="card" style="padding:0;overflow:hidden;">
@@ -1308,9 +1344,10 @@ async function loadLeads() {
   const tbody = document.getElementById('leads-tbody');
   tbody.innerHTML = data.map(lead => {
     const date = new Date(lead.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    const thumb = lead.floor_plan_dataurl
+    const thumb = (lead.floor_plan_dataurl
       ? `<img src="${lead.floor_plan_dataurl}" style="width:80px;height:auto;border-radius:4px;border:1px solid #e2e8f0;" alt="Floor plan thumbnail">`
-      : '—';
+      : '—') + (lead.design   // homeowner design link (6.1): open the whole design as a project
+      ? `<div style="margin-top:6px;"><a href="/app?lead=${encodeURIComponent(lead.id)}" class="btn btn-primary" style="font-size:11px;padding:5px 10px;white-space:nowrap;">${lead.project_id ? 'Open project' : 'Open design'}</a></div>` : '');
     const assign = isLeadsAdmin ? `<td class="leads-admin-col">
         <select onchange="assignLead('${lead.id}', this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:${lead.company_id ? '#f0fdfa' : '#fff'};max-width:180px;">
           <option value="">— Unassigned —</option>
@@ -1319,7 +1356,7 @@ async function loadLeads() {
         </select></td>` : '';
     return `<tr>
       <td style="white-space:nowrap;font-size:12px;color:var(--muted);">${date}</td>
-      <td style="font-weight:600;">${leadsEsc(lead.name)}</td>
+      <td style="font-weight:600;">${leadsEsc(lead.name)}${lead.source === 'design_link' ? '<div style="font-size:10px;font-weight:700;color:#0f766e;margin-top:2px;">From your design link</div>' : ''}</td>
       <td><a href="mailto:${leadsEsc(lead.email)}" style="color:var(--accent);">${leadsEsc(lead.email)}</a>${lead.note ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">${leadsEsc(lead.note)}</div>` : ''}</td>
       <td>${lead.phone ? `<a href="tel:${leadsEsc(String(lead.phone).replace(/[^\d+]/g,''))}" style="color:var(--accent);">${leadsEsc(lead.phone)}</a>` : '—'}</td>
       <td>${leadsEsc(lead.zip) || '—'}</td>
@@ -1356,6 +1393,7 @@ async function loadProListing() {
   if (error) console.warn('Listing load error:', error);
   proListing = data || null;
   renderProListing();
+  renderDesignLink();
 }
 
 function renderProListing() {
@@ -1373,6 +1411,69 @@ function renderProListing() {
   st.innerHTML = l.listed
     ? `<span style="color:#15803d;font-weight:700;">● Listed</span> — homeowners within ${l.service_radius_miles || 25} miles of ${leadsEsc(l.service_zip || '')} can find you and request a quote.`
     : 'Not listed — homeowners can\'t find you yet.';
+}
+
+// ── Homeowner design link (6.1, Gold) ──
+const designSlugFrom = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+function designLinkUrl(slug) { return `${location.origin}/app?pro=${encodeURIComponent(slug)}`; }
+function renderDesignLink() {
+  const locked = !canAccess('gold');
+  document.getElementById('dl-locked').style.display = locked ? '' : 'none';
+  document.getElementById('dl-form').style.display   = locked ? 'none' : '';
+  if (locked) return;
+  const l = proListing || {};
+  document.getElementById('dl-on').checked = !!l.design_link;
+  document.getElementById('dl-slug').value = l.design_slug || designSlugFrom(companyProfile.company_name);
+  const on = !!(l.design_link && l.design_slug);
+  document.getElementById('dl-share').style.display = on ? '' : 'none';
+  if (on) {
+    const url = designLinkUrl(l.design_slug);
+    document.getElementById('dl-url').textContent = url;
+    document.getElementById('dl-try').href = url;
+    document.getElementById('dl-snippet').textContent = designLinkSnippet(url);
+  }
+}
+function designLinkSnippet(url) {
+  return `<a href="${url}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 22px;background:#0f766e;color:#fff;border-radius:8px;font-family:sans-serif;font-weight:700;text-decoration:none;">Design your kitchen</a>`;
+}
+async function copyDesignLink(what) {
+  const text = document.getElementById(what === 'url' ? 'dl-url' : 'dl-snippet').textContent;
+  try { await navigator.clipboard.writeText(text); showToast(what === 'url' ? 'Link copied.' : 'Button code copied.'); }
+  catch (e) { showToast('Copy didn\'t work — select the text and copy it.'); }
+}
+async function saveDesignLink() {
+  const statusEl = document.getElementById('dl-save-status');
+  statusEl.style.color = '#b91c1c';
+  if (myTeamRole !== 'owner') { statusEl.textContent = 'Only the account owner can change this.'; return; }
+  if (!canAccess('gold')) { showToast('The homeowner design link is a Gold plan feature.'); return; }
+  const on = document.getElementById('dl-on').checked;
+  const slug = designSlugFrom(document.getElementById('dl-slug').value);
+  const name = (companyProfile.company_name || '').trim();
+  if (!name) { statusEl.textContent = 'Add your company name in Company Info first.'; return; }
+  if (on && slug.length < 3) { statusEl.textContent = 'Pick a link name of at least 3 letters.'; return; }
+  statusEl.style.color = 'var(--muted)'; statusEl.textContent = 'Saving…';
+  // Finish names and colors only — never prices
+  const fin = (typeof companyFinishes === 'function' ? companyFinishes() : companyStyles())
+    .map(f => ({ code: f.code, name: f.name, swatch: f.swatch || null, tier: f.tier || f.supplier || null })).slice(0, 200);
+  const row = {
+    user_id: effectiveOwnerId, design_link: on, design_slug: slug || null, finishes: fin,
+    company_name: name,
+    phone: companyProfile.phone || null, email: companyProfile.email || null, website: companyProfile.website || null,
+    logo_url: companyProfile.logo_url || null, city: companyProfile.city || null, state: companyProfile.state || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await db.from('pro_listings').upsert(row, { onConflict: 'user_id' }).select().single();
+  if (error) {
+    statusEl.style.color = '#b91c1c';
+    statusEl.textContent = /duplicate|unique/i.test(error.message || '') ? 'That link name is taken — try another.'
+      : /design_link|design_slug|finishes/.test(error.message || '') ? 'Run supabase-homeowner-mode.sql in Supabase first.'
+      : 'Error: ' + error.message;
+    return;
+  }
+  proListing = data;
+  statusEl.style.color = '#15803d'; statusEl.textContent = on ? '✓ Saved — your link is live' : '✓ Saved — link turned off';
+  setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  renderDesignLink();
 }
 
 async function saveProListing() {

@@ -794,21 +794,22 @@
 
 <div id="modal-new-project" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="New Project">
   <div class="modal">
-    <h3>New Project</h3>
-    <div class="form-group"><label>Customer Name *</label><input type="text" id="np-customer" placeholder=""></div>
-    <div class="form-row">
+    <h3 id="np-title">New Project</h3>
+    <p class="np-home" style="font-size:13px;color:#64748b;margin:0 0 14px;">Pick what you're designing and measure the room wall to wall. You can change everything later.</p>
+    <div class="form-group np-pro"><label>Customer Name *</label><input type="text" id="np-customer" placeholder=""></div>
+    <div class="form-row np-pro">
       <div class="form-group"><label>Customer Phone</label><input type="tel" id="np-phone" placeholder="(555) 000-0000"></div>
       <div class="form-group"><label>Your Company Name <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(on quote)</span></label><input type="text" id="np-company" placeholder=""></div>
     </div>
     <div class="form-group"><label>Project Type</label><select id="np-type" onchange="syncStarterOption('np')"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group" id="np-starter-group" style="display:none;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
       <input type="checkbox" id="np-starter" checked> Start with a bathroom layout (vanity, mirror, sconces, toilet, tub or shower — sized to the room)</label></div>
-    <div class="form-group"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
-    <div class="form-row">
+    <div class="form-group np-pro"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
+    <div class="form-row np-pro">
       <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder=""></div>
       <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
     </div>
-    <div class="form-group"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
+    <div class="form-group np-pro"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
     <div class="section-divider">First Room Dimensions</div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" value="120" min="12" max="1200"></div>
@@ -822,7 +823,7 @@
     <div id="np-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-new-project')">Cancel</button>
-      <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+      <button class="btn btn-primary" id="np-create-btn" onclick="createProject()">Create Project</button>
     </div>
   </div>
 </div>
@@ -1215,6 +1216,7 @@
 <script src="/js/designcheck.js" data-categories="essential"></script>
 <script src="/js/hardware.js" data-categories="essential"></script>
 <script src="/js/furniture.js" data-categories="essential"></script>
+<script src="/js/homeowner.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->
@@ -1230,8 +1232,9 @@
 <!-- Connect with a Pro modal -->
 <div id="modal-pro-lead" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Connect with a Cabinet Pro">
   <div class="modal" style="width:480px;">
-    <h3>Connect with a Cabinet Pro</h3>
-    <p style="font-size:13px;color:#64748b;margin:0 0 16px;">Tell us about your project and a local cabinet professional in our network will reach out to you.</p>
+    <h3 id="lead-modal-title">Connect with a Cabinet Pro</h3>
+    <p id="lead-modal-intro" style="font-size:13px;color:#64748b;margin:0 0 16px;">Tell us about your project and a local cabinet professional in our network will reach out to you.</p>
+    <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;"><label for="lead-website">Website</label><input type="text" id="lead-website" tabindex="-1" autocomplete="off"></div>
     <div class="form-group">
       <label for="lead-name">Your Name *</label>
       <input type="text" id="lead-name" class="cp-input" placeholder="Jane Smith" autocomplete="name">
@@ -1254,7 +1257,7 @@
       <label for="lead-note">About your project</label>
       <textarea id="lead-note" class="cp-input" rows="3" placeholder="e.g. Full kitchen remodel, ~$15k budget, looking to start in the fall…" style="resize:vertical;font-family:inherit;"></textarea>
     </div>
-    <p style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.5;">By submitting, you agree to be contacted by a cabinet professional in our network. We don't sell your information to third parties.</p>
+    <p id="lead-modal-legal" style="font-size:11px;color:#64748b;margin:0 0 12px;line-height:1.5;">By submitting, you agree to be contacted by a cabinet professional in our network. We don't sell your information to third parties.</p>
     <div id="lead-error" style="color:#dc2626;font-size:12px;margin-bottom:8px;display:none;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-pro-lead')">Cancel</button>

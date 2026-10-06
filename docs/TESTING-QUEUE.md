@@ -399,3 +399,15 @@ Claude tested locally: must-pick basis, MSRP −10% import (confirm text, cost�
 - Changing the markup changes the total, so it counts as a new quote revision (as before).
 Claude tested locally: demo kitchen at $100/cabinet, 25% → Quote window $1,700 + $425 = $2,125; printed quote B24 $125, total $2,125, no "markup" text; saved on the project; sidebar box gone.
 - [ ] After push: open a priced job's Quote window, set a markup, close/reopen the planner — it should still be there.
+
+### 6.1 Homeowner mode — design link (built 2026-10-05) — Gold
+**Setup:** run `supabase-homeowner-mode.sql`, then push.
+- **Profile → Company Settings → Homeowner Design Link** (Gold): tick "Turn on", pick the link name, Save → copy the link or the "Design your kitchen" button code for your website. Saving also publishes your finish names and colors (never prices) — save again after changing finishes.
+- **The link** (`/app?pro=<name>`): your logo and name, a simple "Start your design" (type + room size), the catalog, door styles = your finishes, Floor Plan / Elevation / 3D. No prices, quote, order list, job status, design check or account buttons. Designs stay in the homeowner's browser.
+- **Send my design to …** (sidebar, header, phone bottom bar): name, email, ZIP required → lands in **your** Leads tab ("From your design link") with the whole design. Not emailed to the platform admin.
+- **Leads tab → Open design**: creates a project (status Lead, homeowner's name/phone, email + ZIP + note in Notes) and opens it; the lead then shows "Open project".
+- Safety: the link only works while you're Gold and it's on; leads can only go to such companies; spam trap field; 30 leads/company/hour and 3/email/10 min limits; text from homeowners is stripped of HTML.
+- Also fixed: the "Connect with a Pro" plan summary always said "0 cabinets".
+Claude tested locally: closed link page, branded start, homeowner's own designs (not the demo kitchen), send with design + company + summary, lead → project import (HTML stripped, lead linked), Company Settings save (slug from name, finishes, link + button code). All scripts compile.
+- [ ] After setup: turn on the link on a Gold account, open it in a private window, design + send, then Open design from Leads.
+- Found during this session: Dan's saved Matrix import has junk finishes "30\" Wall" / "36\" Wall" / "42\" Wall" (from text-page column headings — now filtered) and "Titanium Plus", and is missing base/sink/drawer/tall prices. → revisit the importer tomorrow (Dan) after Sam's test.

@@ -110,6 +110,7 @@ document.addEventListener('keydown', e => {
 
 (async () => {
   // Demo mode: skip login, boot straight into the app with a local-only session
+  if (HOME_PRO) { await homeStart(); return; }   // homeowner mode (js/homeowner.js)
   if (IS_DEMO) {
     currentUser = null;
     showApp();
@@ -126,6 +127,7 @@ document.addEventListener('keydown', e => {
     await resolveTeamContext();
     await loadAccountData();
     openProjectFromUrl();
+    if (typeof openLeadFromUrl === 'function') openLeadFromUrl();   // homeowner design → project (6.1)
     maybeStartTour();
       if (pendingAuthType === 'invite' || pendingAuthType === 'recovery') {
       openModal('modal-set-password');
@@ -238,6 +240,8 @@ async function submitProLead() {
   const btn   = document.getElementById('lead-submit-btn');
 
   errEl.style.display = 'none';
+  // Spam trap: a hidden field people never see; bots fill it in. Pretend it worked.
+  if ((document.getElementById('lead-website') || {}).value) { closeModal('modal-pro-lead'); return; }
   if (!name || !email || !zip) {
     errEl.textContent = 'Name, email, and ZIP are required.';
     errEl.style.display = 'block';
@@ -249,17 +253,30 @@ async function submitProLead() {
     return;
   }
 
+  // Homeowner mode (6.1): the whole design goes to the company whose link this is
+  let design = null;
+  if (HOME_PRO) {
+    const p = activeProj();
+    if (!p || !p.rooms.some(r => (r.cabinets || []).length)) {
+      errEl.textContent = 'Add some cabinets to your design first, then send it.';
+      errEl.style.display = 'block';
+      return;
+    }
+    try { design = homeDesignPayload(p); }
+    catch (e) { errEl.textContent = e.message; errEl.style.display = 'block'; return; }
+  }
+
   btn.disabled = true; btn.textContent = 'Sending…';
 
-  // Build plan summary from current project
+  // Build plan summary from current project (rooms keep their cabinets in r.cabinets —
+  // this used to count r.walls[].cabinets, which doesn't exist, so it always said 0)
   let planSummary = '';
   try {
     const p = activeProj();
-    const r = activeRoom();
-    if (p && r) {
-      const walls = r.walls || [];
-      const cabCount = walls.reduce((s, w) => s + (w.cabinets || []).length, 0);
-      planSummary = `${p.customer || 'Untitled project'} — ${r.name || 'Room'}: ${walls.length} wall(s), ${cabCount} cabinet(s)`;
+    if (p) {
+      const cabCount = p.rooms.reduce((n, r) => n + (r.cabinets || []).length, 0);
+      planSummary = `${p.type || 'Kitchen'}: ${p.rooms.map(r => r.name || 'Room').join(', ')} — ${cabCount} cabinet${cabCount === 1 ? '' : 's'}` +
+        (p.rooms[0] && p.rooms[0].walls ? `, ${Math.round((p.rooms[0].walls.north || 0) / 12 * 10) / 10}' × ${Math.round((p.rooms[0].walls.east || 0) / 12 * 10) / 10}' room` : '');
     }
   } catch(e) {}
 
@@ -279,8 +296,9 @@ async function submitProLead() {
   // Two independent channels; the lead counts as delivered if either one lands.
   let emailSent = false, saved = false;
 
-  // Netlify Forms — sends email notification to site owner
-  try {
+  // Netlify Forms — sends email notification to site owner (network leads only: a lead sent
+  // to one company through its design link belongs to that company, not to us)
+  if (!HOME_PRO) try {
     const res = await fetch('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -300,14 +318,17 @@ async function submitProLead() {
     const { error } = await db.from('leads').insert({
       name, email, phone, zip, note,
       plan_summary: planSummary,
-      floor_plan_dataurl: floorPlanDataUrl
+      floor_plan_dataurl: floorPlanDataUrl,
+      ...(HOME_PRO ? { company_id: HOME_LISTING.user_id, source: 'design_link', design } : {}),
     });
-    if (error) console.warn('Lead Supabase insert error:', error); else saved = true;
+    if (error) { console.warn('Lead Supabase insert error:', error); if (/Too many|already sent/.test(error.message || '')) errEl.dataset.msg = error.message; }
+    else saved = true;
   } catch(e) { console.warn('Lead Supabase insert error:', e); }
 
   if (!emailSent && !saved) {
     // Nothing got through — don't pretend it did. Keep the form filled so they can retry.
-    errEl.textContent = "We couldn't send your info just now. Please try again in a moment.";
+    errEl.textContent = errEl.dataset.msg || "We couldn't send your info just now. Please try again in a moment.";
+    delete errEl.dataset.msg;
     errEl.style.display = 'block';
     btn.disabled = false; btn.textContent = 'Send My Info';
     return;
@@ -319,7 +340,10 @@ async function submitProLead() {
   });
   btn.disabled = false; btn.textContent = 'Send My Info';
   closeModal('modal-pro-lead');
-  alert('Thanks! A cabinet pro will be in touch soon.');
+  if (HOME_PRO) {
+    const L = HOME_LISTING;
+    alert(`Sent! ${L.company_name} has your design and will be in touch.` + (L.phone ? `\n\nWant to talk sooner? Call ${L.phone}.` : ''));
+  } else alert('Thanks! A cabinet pro will be in touch soon.');
 }
 
 
