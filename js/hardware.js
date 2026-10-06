@@ -84,16 +84,17 @@ function hardwareTotal(p) { return hardwareQuoteLines(p).reduce((s, l) => s + (l
 
 // One place for the money, so the printed quote, the PDF and the Quote window agree
 function quoteTotals(p) {
-  let cab = 0, unpriced = 0, app = 0;
+  let cab = 0, cabBase = 0, unpriced = 0, app = 0;
   p.rooms.forEach(r => {
-    quoteCabinets(r).forEach(c => { const pr = cabinetPrice(c); if (pr != null) cab += pr; else unpriced++; });
+    quoteCabinets(r).forEach(c => { const pr = cabinetPrice(c); if (pr != null) { cab += pr; cabBase += cabinetPrice(c, { noMarkup: true }); } else unpriced++; });
     (r.appliances || []).forEach(a => { if (a.price != null && a.price > 0 && !(APPLIANCES[a.type] || {}).decor) app += a.price; });
   });
   const jc = (p.jobCosts || []).filter(x => x.label || x.amount).reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
   const trim = (p.trimItems || []).filter(t => t.label || t.unitPrice).reduce((s, t) => s + (parseFloat(t.qty) || 0) * (parseFloat(t.unitPrice) || 0), 0);
   const hw = hardwareTotal(p);
   const beforeTax = cab + app + jc + trim + hw, tax = beforeTax * getTax();
-  return { cab, unpriced, app, jc, trim, hw, beforeTax, tax, total: beforeTax + tax };
+  // cab includes the markup (cabinets only); cabBase/markup split it for the Quote window
+  return { cab, cabBase, markup: cab - cabBase, unpriced, app, jc, trim, hw, beforeTax, tax, total: beforeTax + tax };
 }
 
 // ════════════════════════════

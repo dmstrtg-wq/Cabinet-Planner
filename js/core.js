@@ -951,7 +951,9 @@ function fmtFrac(v) {
   return (neg ? '-' : '') + (whole || !frac ? whole : '') + (whole && frac ? ' ' : '') + frac + '"';
 }
 const fmtMoney = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-function getMarkup() { return (parseFloat(document.getElementById('markup-pct').value) || 0) / 100; }
+// Markup % lives on the project (set at the bottom of the Quote window; Dan 2026-10-05). It was a
+// sidebar box that reset to 0 on every reload, so a re-printed quote could change.
+function getMarkup() { const p = activeProj(); return ((p && parseFloat(p.markupPct)) || 0) / 100; }
 function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
 function pricingOn() { return document.getElementById('pricing-toggle').checked; }
 // Returns the price for this cabinet, or null if there's no price on file for its exact
@@ -972,11 +974,12 @@ function priceBasis(code) {
   const pb = companyProfile.quote_settings && companyProfile.quote_settings.priceBasis;
   return (pb && pb[code]) || null;
 }
-function cabinetPrice(cab) {
+// opts.noMarkup → the price before the project's markup (the Quote window shows markup as its own line)
+function cabinetPrice(cab, opts) {
   const overrides = companyProfile.price_overrides;
   if (isFiller(cab.type) && !cab._fillerPiece) {
     const f = fillerPriceParts(cab.width);
-    const one = cabinetPrice({ ...cab, type: f.type, width: f.stock, _fillerPiece: true });
+    const one = cabinetPrice({ ...cab, type: f.type, width: f.stock, _fillerPiece: true }, opts);
     return one == null ? null : one * f.count;   // markup already applied per piece
   }
   const ov = overrides && overrides[cab.type];
@@ -999,7 +1002,7 @@ function cabinetPrice(cab) {
   if (base == null) return null;
   const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
   const b = priceBasis(styleCode);
-  const factor = (b && b.kind === 'msrp') ? 1 + (parseFloat(b.adj) || 0) / 100 : 1 + getMarkup();
+  const factor = (b && b.kind === 'msrp') ? 1 + (parseFloat(b.adj) || 0) / 100 : 1 + (opts && opts.noMarkup ? 0 : getMarkup());
   return (base + glassAddon) * factor;
 }
 

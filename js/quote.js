@@ -159,6 +159,17 @@ function removeTrimRow(i) {
   persist(); renderTrimRows(); refreshQuoteTotals();
 }
 
+function setQuoteMarkup(v) {
+  const p = activeProj(); if (!p) return;
+  const n = parseFloat(v);
+  p.markupPct = isFinite(n) ? Math.max(0, Math.min(500, n)) : 0;
+  persist(); refreshQuoteTotals(); renderAll();
+}
+// Does this project use any finish priced from MSRP (no markup on those)?
+function usesMsrp(p) {
+  const codes = new Set([p.style, ...p.rooms.flatMap(r => r.cabinets.map(c => c.styleOverride).filter(Boolean))]);
+  return [...codes].some(c => { const b = priceBasis(c); return b && b.kind === 'msrp'; });
+}
 function refreshQuoteTotals() {
   const p = activeProj(); if (!p) return;
   const tax = getTax();
@@ -169,7 +180,9 @@ function refreshQuoteTotals() {
   const cabCount  = p.rooms.reduce((n,r) => n + quoteCabinets(r).length, 0);
   const el = document.getElementById('quote-totals-preview'); if (!el) return;
   el.innerHTML = `
-    <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(cabSubtotal)}</span></div>
+    <div class="qtp-row"><span>Cabinets (${cabCount} items)</span><span>${fmtMoney(T.cabBase)}</span></div>
+    <div class="qtp-row"><span><label for="quote-markup">Markup</label> <input type="number" id="quote-markup" min="0" max="500" step="1" value="${escHtml(String(p.markupPct || 0))}" onchange="setQuoteMarkup(this.value)" style="width:64px;padding:2px 6px;font-size:13px;"> %
+      <span style="display:block;font-size:10px;color:var(--text-muted);font-weight:400;">Cabinets only. Built into the cabinet prices on your customer's quote — it isn't shown to them as a line.${usesMsrp(p) ? ' Finishes priced from MSRP use their MSRP % instead.' : ''}</span></span><span>${fmtMoney(T.markup)}</span></div>
     ${T.app>0?`<div class="qtp-row"><span>Appliances</span><span>${fmtMoney(T.app)}</span></div>`:''}
     ${T.hw>0?`<div class="qtp-row"><span>Hardware &amp; Accessories</span><span>${fmtMoney(T.hw)}</span></div>`:''}
     ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}

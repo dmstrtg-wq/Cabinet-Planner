@@ -390,3 +390,12 @@ Claude tested locally (simulated AI): Matrix PDF page groups (Platinum kept thro
 - Planner: Pricing panel shows a note under Additional Markup when any finish is MSRP-priced.
 Claude tested locally: must-pick basis, MSRP −10% import (confirm text, cost→MSRP warning, quote_settings keeps slidesIncluded), My Pricing % change to +5, planner prices (MSRP $220 at −10% → $198 with 20% markup ignored; cost $100 → $120). All scripts compile; no errors.
 - [ ] After push: import a small MSRP list, set −10%, check a quote line.
+
+### Markup moved to the Quote window (2026-10-05, Dan) — no SQL
+- The **Additional Markup %** box is gone from the sidebar. The markup is now set at the bottom of the **Quote window** (Quote Summary): Cabinets (at your price) → **Markup [ % ] $amount** → Total.
+- Saved **per project** (`p.markupPct`). Before, the sidebar box reset to 0 on every reload, so a re-printed quote could come out different.
+- Cabinets only (Dan). Finishes priced from MSRP use their MSRP % instead (the Quote window says so when the project uses one).
+- Customer's printed quote / PDF: markup stays **built into the cabinet prices** — no "markup" line (Dan).
+- Changing the markup changes the total, so it counts as a new quote revision (as before).
+Claude tested locally: demo kitchen at $100/cabinet, 25% → Quote window $1,700 + $425 = $2,125; printed quote B24 $125, total $2,125, no "markup" text; saved on the project; sidebar box gone.
+- [ ] After push: open a priced job's Quote window, set a markup, close/reopen the planner — it should still be there.
