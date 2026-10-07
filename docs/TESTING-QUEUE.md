@@ -434,3 +434,13 @@ Claude tested locally (stand-ins for the database; nothing written to Dan's acco
 - [ ] After setup: price a test project fully, share it with the itemized quote, open the link on your phone, approve, and check the alert + activity log.
 - Note: Dan's "ZZ Claude Test" project's finish is "4W" (a junk Matrix-import finish) — fix during the finishes cleanup.
 - 5.6 live check (2026-10-05, Claude on Dan's account, "ZZ Claude Test" only): created a real design-only link (prices correctly blocked — 9 unpriced cabinets), opened it as the customer (bar, 3D, both rooms, no quote button), approved as "Claude Test (delete me)" → thank-you, bar + phone tab "Approved"; planner alert "New 3" (2 leads + approval) + toast; activity log line in database and planner; Share window showed 1 view + approval; Got it cleared it; Turn off link → customer page "This link isn't active". Fixed after: room tab "×" hidden and room delete blocked on share links (uncommitted). Prices views not tested live (needs a fully priced project — Dan's price list is his to change).
+
+### 5.5 Pro export package (built 2026-10-06) — Silver+ — no SQL, push only
+**Export PDF** (top bar) now opens a small window: page size **Letter or Tabloid (11×17)**, which quote this is, and a warning if any cabinet has no price. **Create PDF** makes one file:
+- **Cover:** your logo, name, address/phone; "<Project type> Design"; quote number (or **Draft**); customer, address, date, door style, rooms, total; a contents list with page numbers.
+- **Every room** (not just the open one): floor plan + each wall elevation. Blank walls (nothing on them) are skipped.
+- **3D views** page (the ones added to the quote), cut list, **itemized quote** (all rooms, appliances, hardware, job costs, trim). Totals come from the same place as the Quote window, so they match exactly. Markup is built into cabinet prices.
+- Your profile **terms** (only if you set some), then signature lines. "Page X of Y" and a footer on every page.
+- Quote number: only a quote you marked as sent, and that hasn't changed since, gets its number (with revision). Anything else says **Draft**, so the file never claims a version the customer didn't get. Exporting doesn't lock or version the quote.
+Claude tested locally (demo, 2 rooms, stand-in company info): Letter = 14 pages, Tabloid = 11, all pages drawn, rooms restored after export.
+- [ ] After push: on a real priced project with 3D views added to the quote → Export PDF (Letter) → check the cover, every room, the 3D page and that the total matches the Quote window. Then try Tabloid.

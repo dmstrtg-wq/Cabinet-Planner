@@ -319,6 +319,7 @@ This phase is the moat. See 4.0 for where these tasks slot into the build order.
 **5.5 Pro export package**
 - Requirements: a one-click PDF with a cover page (company logo, customer, address, date, quote version), floor plan, every wall elevation, 3D snapshots, itemized quote, terms (company profile terms only), and a signature line. Page size selectable (Letter / Tabloid).
 - Done when: the package prints cleanly and matches on-screen data exactly.
+- **Status:** built 2026-10-06 — Export PDF became the package (`js/pdf.js`: exportPDF → size picker → buildExportPackage). Cover + contents, every room's floor plan and non-blank elevations, 3D views, cut list, itemized quote from quoteTotals(), profile terms, signatures; Letter/Tabloid. Quote # only when the sent quote is unchanged, otherwise "Draft". Silver+ (same gate as the old Export PDF).
 
 **5.6 Customer share link**
 - Requirements: generate a view-only link for the homeowner with 3D (orbit + camera presets), elevations, and the quote. An "Approve" button records name, timestamp, and quote version, and logs to the activity log.
