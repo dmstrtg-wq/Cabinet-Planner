@@ -605,6 +605,12 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 </label>
                 <div style="font-size:11px;color:var(--muted);margin-top:4px;">Untick this if slides are an add-on: quotes will then count one pair of slides per drawer under Hardware &amp; Accessories (you type the price on each quote).</div>
               </div>
+              <div style="margin-top:14px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                  <input type="checkbox" id="cp-alert-emails" checked> Email alerts: new leads and design approvals
+                </label>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">We email the address above (or your login email if it's blank) when a lead comes in for you or a customer approves a design you shared.</div>
+              </div>
             </div>
 
             <div style="margin-top:8px;">
@@ -1945,6 +1951,7 @@ function applyCompanyData(company) {
   document.getElementById('cp-website').value = company?.website     || '';
   document.getElementById('cp-terms').value   = company?.terms_and_conditions || '';
   document.getElementById('cp-slides-included').checked = (company?.quote_settings || {}).slidesIncluded !== false;
+  document.getElementById('cp-alert-emails').checked = company?.alert_emails !== false;
   if (pendingLogoDataUrl === null) updateLogoPreview(company?.logo_url || '');
 
   document.getElementById('overview-company-line').textContent = company?.company_name
@@ -2012,6 +2019,7 @@ async function saveCompanySettings() {
     custom_styles:         (() => { const s = _pfStyles.filter(s => s.name.trim()); return s.length ? s : null; })(),
     // Quote settings (7.2) — needs the quote_settings column (supabase-quote-settings.sql)
     quote_settings:        { ...((companyProfile && companyProfile.quote_settings) || {}), slidesIncluded: document.getElementById('cp-slides-included').checked },
+    alert_emails:          document.getElementById('cp-alert-emails').checked,   // supabase-email-alerts.sql
     updated_at:            new Date().toISOString(),
   };
   if (pendingLogoDataUrl !== null) profile.logo_url = pendingLogoDataUrl || null;
@@ -2020,6 +2028,11 @@ async function saveCompanySettings() {
   // Before the quote_settings column exists, save everything else rather than failing
   if (error && /quote_settings/.test(error.message || '')) {
     delete profile.quote_settings;
+    ({ data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single());
+  }
+  // Same before the alert_emails column exists
+  if (error && /alert_emails/.test(error.message || '')) {
+    delete profile.alert_emails;
     ({ data, error } = await db.from('company_profiles').upsert(profile, { onConflict: 'user_id' }).select().single());
   }
   if (error) {

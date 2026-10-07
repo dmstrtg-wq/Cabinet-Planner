@@ -444,3 +444,14 @@ Claude tested locally (stand-ins for the database; nothing written to Dan's acco
 - Quote number: only a quote you marked as sent, and that hasn't changed since, gets its number (with revision). Anything else says **Draft**, so the file never claims a version the customer didn't get. Exporting doesn't lock or version the quote.
 Claude tested locally (demo, 2 rooms, stand-in company info): Letter = 14 pages, Tabloid = 11, all pages drawn, rooms restored after export.
 - [ ] After push: on a real priced project with 3D views added to the quote → Export PDF (Letter) → check the cover, every room, the 3D page and that the total matches the Quote window. Then try Tabloid.
+
+### Email alerts to companies (built 2026-10-06) — needs Resend setup + SQL + push
+**What:** the company gets an email when (1) a homeowner sends a design from its design link, (2) the admin assigns it a network lead, (3) a customer approves a shared design. Network leads with no company still go to the admin through the Netlify form email (unchanged).
+- Lead email: name, email, phone, ZIP, design summary, message, floor-plan picture attached, **Accept lead → open in the planner** button; replying goes straight to the homeowner.
+- Approval email: project, who approved, date, quote version, **Open the project** button. Says it's a design approval, not a contract.
+- Sent to the email on Company Settings (or the login email if blank). **Company Settings → "Email alerts"** checkbox turns them off.
+- Each lead (per company) and each approval is emailed once.
+**Setup (Dan):** Resend account → verify mycabinetplanner.com (DNS records) → API key → Netlify env var `RESEND_API_KEY` → run `supabase-email-alerts.sql` → push.
+Claude tested locally (function run in the browser with a stand-in database and email service): lead email (fields, reply-to, attachment, HTML escaping), approval email, repeat calls send nothing, bad id rejected, alerts off respected. Profile page loads with the new checkbox.
+- [ ] After setup: send a lead from your homeowner design link (private window) → email arrives with the Accept button + floor plan. Approve a share link on ZZ Claude Test → approval email arrives. Untick Email alerts → no email.
+- If nothing arrives: Supabase SQL `select status_code, content, created from net._http_response order by created desc limit 5;` and Netlify → Functions → notify logs.
