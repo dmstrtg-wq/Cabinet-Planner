@@ -505,37 +505,36 @@ async function handleSignOut() {
 // CATALOG
 // ════════════════════════════
 const CATALOG = {
-  base:       { label:'Base',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[34.5],     depth:24, color:'#3B82F6', abbr:'B',  basePrice: w => w*4.2 },
-  wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[12,15,18,24,30,36,42], depth:12, color:'#93C5FD', abbr:'W',  basePrice: w => w*3.8 },
-  tall:       { label:'Tall/Pantry', widths:[15,18,24,30],                  heights:[84,90,96], depth:24, color:'#1D4ED8', abbr:'WP', basePrice: w => w*11  },
-  sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB', basePrice: w => w*4.8 },
-  vanity:     { label:'Vanity',      widths:[24,30,36,48,60,72],            heights:[34.5],     depth:21, color:'#22C55E', abbr:'V',  basePrice: w => w*5.2 },
-  drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB', basePrice: w => w*5.5 },
-  cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB',  basePrice: w => w*6  },
-  lazysusan:   { label:'Lazy Susan',            widths:[33,36],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS',  basePrice: w => w*7  },
+  base:       { label:'Base',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[34.5],     depth:24, color:'#3B82F6', abbr:'B'},
+  wall:       { label:'Wall',        widths:[9,12,15,18,21,24,27,30,33,36], heights:[12,15,18,24,30,36,42], depth:12, color:'#93C5FD', abbr:'W'},
+  tall:       { label:'Tall/Pantry', widths:[15,18,24,30],                  heights:[84,90,96], depth:24, color:'#1D4ED8', abbr:'WP'},
+  sink:       { label:'Sink Base',   widths:[24,27,30,33,36,42],            heights:[34.5],     depth:24, color:'#06B6D4', abbr:'SB'},
+  vanity:     { label:'Vanity',      widths:[24,30,36,48,60,72],            heights:[34.5],     depth:21, color:'#22C55E', abbr:'V'},
+  drawerBase: { label:'Drawer Base', widths:[12,15,18,21,24,30,36],         heights:[34.5],     depth:24, color:'#A855F7', abbr:'DB'},
+  cornerBase:  { label:'Corner Base',           widths:[36,39,42],  heights:[34.5],              depth:24, color:'#F59E0B', abbr:'CB'},
+  lazysusan:   { label:'Lazy Susan',            widths:[33,36],        heights:[34.5],              depth:24, color:'#F97316', abbr:'LS'},
   // Fillers: any width/height, anywhere on the wall (widths/heights below are just the
   // starting sizes). Priced as the stock piece they're ripped from — see fillerPriceParts().
-  filler3:     { label:'Filler',                widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 15, filler:true, stock:3 },
-  filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL',  basePrice: () => 20, filler:true, stock:6 },
-  fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', basePrice: () => 45  },
-  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:12, color:'#7DD3FC', abbr:'DCW', basePrice: w => w*5  },
+  filler3:     { label:'Filler',                widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL', filler:true, stock:3 },
+  filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL', filler:true, stock:6 },
+  fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP'},
+  diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:12, color:'#7DD3FC', abbr:'DCW'},
   // Cabinets that hold a built-in appliance (Build Plan 3.3, Dan 2026-10-02): the cabinet is
   // priced from the price sheet, the appliance placed inside it keeps its own price.
-  ovenTall:     { label:'Oven Cabinet',          widths:[27,30,33],  heights:[84,90,96],          depth:24, color:'#1E3A8A', abbr:'OC',  basePrice: w => w*12 },
-  mwDrawerBase: { label:'Microwave Drawer Base', widths:[24,30],     heights:[34.5],              depth:24, color:'#7C3AED', abbr:'MDB', basePrice: w => w*5  },
+  ovenTall:     { label:'Oven Cabinet',          widths:[27,30,33],  heights:[84,90,96],          depth:24, color:'#1E3A8A', abbr:'OC'},
+  mwDrawerBase: { label:'Microwave Drawer Base', widths:[24,30],     heights:[34.5],              depth:24, color:'#7C3AED', abbr:'MDB'},
   // Bathroom (7.4)
-  linenTall:    { label:'Linen Tower',           widths:[15,18,24],  heights:[84,90,96],          depth:21, color:'#0E7490', abbr:'LT',  basePrice: w => w*10 },
+  linenTall:    { label:'Linen Tower',           widths:[15,18,24],  heights:[84,90,96],          depth:21, color:'#0E7490', abbr:'LT'},
   // Living room / hallway (7.4b)
-  mediaBase:    { label:'Media Base',            widths:[24,30,36,48,60,72], heights:[24,30],      depth:18, color:'#0F766E', abbr:'MB',  basePrice: w => w*5  },
-  openTall:     { label:'Open Bookcase',         widths:[18,24,30,36], heights:[84,90,96],         depth:12, color:'#65A30D', abbr:'BC',  basePrice: w => w*8  },
-  locker:       { label:'Locker / Mudroom Unit', widths:[15,18,24],  heights:[84,90,96],          depth:18, color:'#B45309', abbr:'LK',  basePrice: w => w*10 },
-  bench:        { label:'Bench Seat Base',       widths:[24,30,36,48], heights:[18],              depth:18, color:'#A16207', abbr:'BN',  basePrice: w => w*4  },
+  mediaBase:    { label:'Media Base',            widths:[24,30,36,48,60,72], heights:[24,30],      depth:18, color:'#0F766E', abbr:'MB'},
+  openTall:     { label:'Open Bookcase',         widths:[18,24,30,36], heights:[84,90,96],         depth:12, color:'#65A30D', abbr:'BC'},
+  locker:       { label:'Locker / Mudroom Unit', widths:[15,18,24],  heights:[84,90,96],          depth:18, color:'#B45309', abbr:'LK'},
+  bench:        { label:'Bench Seat Base',       widths:[24,30,36,48], heights:[18],              depth:18, color:'#A16207', abbr:'BN'},
 };
 // Cabinet types priced per width × height on the price sheet (the rest per width)
 // (diagWall joined 2026-10-05 — suppliers price 30/36/42-high diagonal walls differently; a
 // width-only price saved before then still applies as a fallback.)
 const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker', 'diagWall'];
-// (STYLES — the owner-only supplier catalog — lives in js/owner-styles.js)
 // Returns company-specific styles if set, otherwise generic defaults
 const DEFAULT_STYLES = [
   {code:'WS', name:'White Shaker',   swatch:'#F5F4F0'},
@@ -543,10 +542,8 @@ const DEFAULT_STYLES = [
   {code:'ES', name:'Espresso',       swatch:'#3B2314'},
   {code:'NW', name:'Natural Wood',   swatch:'#C9A96D'},
 ];
-// (OWNER_USER_IDS lives in js/owner-styles.js, next to the catalog it unlocks)
 // Finishes added by a supplier price-list import (5.8) carry a `supplier` name; they're
-// shown grouped under it (the style panel groups by `tier`). On an owner account, imported
-// finishes are added after the built-in catalog instead of replacing it.
+// shown grouped under it (the style panel groups by `tier`).
 function getStyles() {
   // Homeowner mode: the company's own finish names and colors (published with its design link)
   if (HOME_PRO) { const f = (window.HOME_LISTING && HOME_LISTING.finishes) || []; return f.length ? f : DEFAULT_STYLES; }
@@ -556,11 +553,8 @@ function getStyles() {
   const order = [...new Set(cs.map(s => s.supplier || ''))];
   const own = cs.map(s => (s.supplier && !s.tier) ? { ...s, tier: s.supplier } : s)
     .sort((a, b) => order.indexOf(a.supplier || '') - order.indexOf(b.supplier || ''));
-  if (OWNER_USER_IDS.includes(effectiveOwnerId)) {
-    if (!own.length) return STYLES;
-    if (own.some(s => s.supplier)) { const codes = new Set(own.map(s => s.code)); return [...STYLES.filter(s => !codes.has(s.code)), ...own]; }
-    return own;
-  }
+  // Every account's finishes are its own saved list (the owner accounts' supplier catalog was
+  // moved into their saved list on 2026-10-07, so supplier names never ship in public code).
   return own.length ? own : DEFAULT_STYLES;
 }
 
@@ -620,6 +614,9 @@ function drawDoorPanel(ctx, x, y, w, h, code, scale, PDF) {
 // ════════════════════════════
 // US STATE SALES TAX RATES (base state rate %)
 // ════════════════════════════
+// State BASE sales-tax rates. Legacy only: projects made before tax was saved per project showed
+// these, so openProject() copies the rate onto them once to keep their totals unchanged. New
+// projects use the company default (real rates include local tax, which this table lacks).
 const STATE_TAX = {
   AL:4.0,AK:0.0,AZ:5.6,AR:6.5,CA:7.25,CO:2.9,CT:6.35,DE:0.0,FL:6.0,GA:4.0,
   HI:4.0,ID:6.0,IL:6.25,IN:7.0,IA:6.0,KS:6.5,KY:6.0,LA:4.45,ME:5.5,MD:6.0,
@@ -775,8 +772,13 @@ function readLocalProjects() {
   // One-time carry-over: before per-account keys, signed-in Free users saved under the
   // demo key. Free accounts only (never uploaded to a paid account, since that key can
   // also hold anonymous demo projects), and only if this account has never had a key.
-  if (saved === null && key !== 'cp_demo_projects' && !HOME_PRO && isLocalOnly()) saved = localStorage.getItem('cp_demo_projects');
-  try { return saved ? JSON.parse(saved).map(migrateProject) : []; } catch (e) { return []; }
+  // (The demo's built-in Sample Kitchen never comes along — only designs the person made.)
+  let carried = false;
+  if (saved === null && key !== 'cp_demo_projects' && !HOME_PRO && isLocalOnly()) { saved = localStorage.getItem('cp_demo_projects'); carried = true; }
+  try {
+    const list = saved ? JSON.parse(saved).map(migrateProject) : [];
+    return carried || key !== 'cp_demo_projects' ? list.filter(p => p.id !== DEMO_SAMPLE_ID) : list;
+  } catch (e) { return []; }
 }
 function writeLocalProjects(projects) {
   localStorage.setItem(localProjectsKey(), JSON.stringify(projects));
@@ -972,7 +974,21 @@ const fmtMoney = v => '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
 // Markup % lives on the project (set at the bottom of the Quote window; Dan 2026-10-05). It was a
 // sidebar box that reset to 0 on every reload, so a re-printed quote could change.
 function getMarkup() { const p = activeProj(); return ((p && parseFloat(p.markupPct)) || 0) / 100; }
-function getTax()    { return (parseFloat(document.getElementById('tax-pct').value)    || 0) / 100; }
+// Sales tax: saved on each project (p.taxPct). A new project starts from the company's default
+// (Company Settings → quote_settings.taxPct). Nothing is looked up or assumed.
+function companyTaxPct() { const v = parseFloat(((companyProfile && companyProfile.quote_settings) || {}).taxPct); return isFinite(v) ? v : 0; }
+function projectTaxPct(p) { if (!p) return 0; const v = parseFloat(p.taxPct); return isFinite(v) ? v : companyTaxPct(); }
+function getTax()    { return projectTaxPct(activeProj()) / 100; }
+function setProjectTax(v) {
+  const p = activeProj(); if (!p) return;
+  const n = parseFloat(v);
+  p.taxPct = isFinite(n) ? Math.max(0, Math.min(30, n)) : null;
+  const el = document.getElementById('tax-pct'); if (el) el.value = projectTaxPct(p);
+  persist(); renderAll(); if (typeof refreshQuoteTotals === 'function') refreshQuoteTotals();
+}
+// Glass doors on a wall cabinet: the company's own upcharge % (Company Settings). Not set →
+// null, and that cabinet shows N/A rather than a guessed price.
+function glassUpchargePct() { const v = parseFloat(((companyProfile && companyProfile.quote_settings) || {}).glassPct); return isFinite(v) ? v : null; }
 function pricingOn() { return document.getElementById('pricing-toggle').checked; }
 // Returns the price for this cabinet, or null if there's no price on file for its exact
 // size + finish combination. We never substitute a guessed/default price here — a company's
@@ -1018,7 +1034,12 @@ function cabinetPrice(cab, opts) {
     }
   }
   if (base == null) return null;
-  const glassAddon = (cab.type === 'wall' && cab.glassDoors) ? base * 0.58 : 0;
+  let glassAddon = 0;
+  if (cab.type === 'wall' && cab.glassDoors) {
+    const g = glassUpchargePct();
+    if (g == null) return null;            // no glass upcharge set → N/A, never a guess
+    glassAddon = base * g / 100;
+  }
   const b = priceBasis(styleCode);
   const factor = (b && b.kind === 'msrp') ? 1 + (parseFloat(b.adj) || 0) / 100 : 1 + (opts && opts.noMarkup ? 0 : getMarkup());
   return (base + glassAddon) * factor;

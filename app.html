@@ -442,7 +442,7 @@
           </div>
           <div id="pricing-opts" class="hidden">
             <div style="font-size:10px;color:#64748b;margin-bottom:6px;">Cabinet prices include the project's markup — set it at the bottom of the Quote window.</div>
-            <div class="markup-row"><label for="tax-pct">Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="renderAll()" style="width:70px;"></div>
+            <div class="markup-row"><label for="tax-pct">Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="setProjectTax(this.value)" style="width:70px;"></div>
           </div>
         </div>
         <div class="cp-section" style="flex-shrink:0">
@@ -1127,7 +1127,7 @@
     <div class="faq-section">
       <button class="faq-q" onclick="toggleFaq(this)">Getting started <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>How do I start a job?</strong><br>Click <strong>＋ New Project</strong> at the top of the left sidebar. Enter the customer, project type and room size. You can start from a starter layout.</p>
+        <p><strong>How do I start a job?</strong><br>Click <strong>＋ New Project</strong> at the top of the left sidebar. Enter the customer, project type and room size. Bathroom projects can start from a ready-made layout.</p>
         <p><strong>How do I add another room?</strong><br>Click <strong>＋ Room</strong> next to the room tabs and pick a room type and size. One project can hold a kitchen, baths, laundry and more; the quote adds them all up.</p>
         <p><strong>Where do I put my logo, address and terms?</strong><br>Click <strong>Company</strong> at the bottom of the left sidebar. Your logo, contact info and terms print on every quote and PDF.</p>
       </div>
@@ -1167,7 +1167,6 @@
 
 <!-- App code, in load order. Classic scripts sharing one global scope (no build step).
      data-categories="essential" keeps Termly's cookie auto-blocker from blocking them. -->
-<script src="/js/owner-styles.js" data-categories="essential"></script>
 <script src="/js/core.js" data-categories="essential"></script>
 <script src="/js/rooms.js" data-categories="essential"></script>
 <script src="/js/sidebar.js" data-categories="essential"></script>

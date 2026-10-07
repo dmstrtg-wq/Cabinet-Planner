@@ -450,9 +450,9 @@ async function buildExportPackage(btn, sizeKey) {
   qTable('APPLIANCES', ['#','Appliance','Width','Wall','Notes','Price'], appRows, {0:{cellWidth:8,halign:'center',textColor:[100,116,139]}});
   if (hardwareQuoteLines(p).length) { if (y > PH - 30) y = newPage('Quote'); y = addHardwareToPdf(doc, p, MAR, y); }
   qTable('ADDITIONAL JOB COSTS', ['Description','Amount'],
-    (p.jobCosts||[]).filter(jc => jc.label || jc.amount).map(jc => [jc.label || 'Additional Cost', {content:'$'+(parseFloat(jc.amount)||0).toFixed(2),styles:{halign:'right'}}]), {1:{cellWidth:35}});
+    quoteJobCosts(p).map(jc => [jc.label || 'Additional Cost', {content:'$'+(parseFloat(jc.amount)||0).toFixed(2),styles:{halign:'right'}}]), {1:{cellWidth:35}});
   qTable('TRIM & MATERIALS', ['Item','Qty','Unit Price','Total'],
-    (p.trimItems||[]).filter(t => t.label || t.unitPrice).map(t => [t.label || 'Trim Item', t.qty || 1, '$'+(parseFloat(t.unitPrice)||0).toFixed(2),
+    quoteTrimItems(p).map(t => [t.label || 'Trim Item', t.qty || 1, '$'+(parseFloat(t.unitPrice)||0).toFixed(2),
       {content:'$'+((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0)).toFixed(2),styles:{halign:'right'}}]), {3:{cellWidth:35}});
 
   // Totals — the same quoteTotals() the Quote window shows (markup is built into cabinet prices)

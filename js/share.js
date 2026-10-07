@@ -107,8 +107,8 @@ function shareSnapshot(p, showPrices) {
         appliances: (r.appliances || []).filter(a => a.price > 0 && !(APPLIANCES[a.type] || {}).decor).map(a => ({ n: a.itemNum || '', label: (APPLIANCES[a.type] || {}).label || a.type, price: a.price })),
       })).filter(r => r.cabinets.length || r.appliances.length);
       quote.hardware = hardwareQuoteLines(p).map(l => ({ label: l.label, qty: l.qty, total: l.total }));
-      quote.jobCosts = (p.jobCosts || []).filter(x => x.label || x.amount).map(x => ({ label: x.label || 'Additional cost', amount: parseFloat(x.amount) || 0 }));
-      quote.trim = (p.trimItems || []).filter(t => t.label || t.unitPrice).map(t => ({ label: t.label || 'Trim', qty: parseFloat(t.qty) || 0, total: (parseFloat(t.qty) || 0) * (parseFloat(t.unitPrice) || 0) }));
+      quote.jobCosts = quoteJobCosts(p).map(x => ({ label: x.label || 'Additional cost', amount: parseFloat(x.amount) || 0 }));
+      quote.trim = quoteTrimItems(p).map(t => ({ label: t.label || 'Trim', qty: parseFloat(t.qty) || 0, total: (parseFloat(t.qty) || 0) * (parseFloat(t.unitPrice) || 0) }));
       quote.sub = { cabinets: T.cab, appliances: T.app, hardware: T.hw, jobCosts: T.jc, trim: T.trim };
       quote.terms = cp.terms_and_conditions || '';
     }

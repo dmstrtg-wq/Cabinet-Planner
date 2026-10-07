@@ -188,9 +188,11 @@ function refreshQuoteTotals() {
     ${T.hw>0?`<div class="qtp-row"><span>Hardware &amp; Accessories</span><span>${fmtMoney(T.hw)}</span></div>`:''}
     ${jcTotal>0?`<div class="qtp-row"><span>Additional Costs</span><span>${fmtMoney(jcTotal)}</span></div>`:''}
     ${trimTotal>0?`<div class="qtp-row"><span>Trim &amp; Materials</span><span>${fmtMoney(trimTotal)}</span></div>`:''}
-    ${tax>0?`<div class="qtp-row"><span>Tax (${(tax*100).toFixed(1)}%)</span><span>${fmtMoney(taxAmt)}</span></div>`:''}
+    <div class="qtp-row"><span><label for="quote-tax">Sales tax</label> <input type="number" id="quote-tax" min="0" max="30" step="0.01" value="${escHtml(String(projectTaxPct(p)))}" onchange="setProjectTax(this.value)" style="width:64px;padding:2px 6px;font-size:13px;"> %
+      <span style="display:block;font-size:10px;color:var(--text-muted);font-weight:400;">This job's rate. New projects start from your default in Company Settings.</span></span><span>${fmtMoney(taxAmt)}</span></div>
     <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>
-    ${unpricedCount ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ ${unpricedCount} cabinet${unpricedCount===1?'':'s'} with no price set for their finish — not included above.</div>` : ''}`;
+    ${unpricedCount ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ ${unpricedCount} cabinet${unpricedCount===1?'':'s'} with no price set for their finish — not included above.</div>` : ''}
+    ${glassUpchargePct() == null && p.rooms.some(r => r.cabinets.some(c => c.type === 'wall' && c.glassDoors)) ? `<div style="font-size:11px;color:#b45309;margin-top:4px;">⚠ Glass doors have no price until you set your glass upcharge % in <a href="/profile#company">Company Settings</a>.</div>` : ''}`;
 }
 
 function checkCompanyProfile() {
@@ -279,10 +281,10 @@ function printQuote() {
     });
   });
 
-  const jcItems   = (p.jobCosts||[]).filter(jc => jc.label || jc.amount);
+  const jcItems   = quoteJobCosts(p);
   const jcTotal   = jcItems.reduce((s,jc) => s+(parseFloat(jc.amount)||0), 0);
   const jcRows    = jcItems.map(jc => `<tr><td colspan="4">${escHtml(jc.label||'Additional Cost')}</td><td class="amt">${fmtMoney(parseFloat(jc.amount)||0)}</td></tr>`).join('');
-  const trimItems = (p.trimItems||[]).filter(t => t.label || t.unitPrice);
+  const trimItems = quoteTrimItems(p);
   const trimTotal = trimItems.reduce((s,t) => s+(parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0), 0);
   const trimRows  = trimItems.map(t => `<tr><td colspan="2">${escHtml(t.label||'Trim Item')}</td><td>Qty: ${t.qty||1}</td><td>${fmtMoney(parseFloat(t.unitPrice)||0)} ea</td><td class="amt">${fmtMoney((parseFloat(t.qty)||0)*(parseFloat(t.unitPrice)||0))}</td></tr>`).join('');
   const hwTotal   = hardwareTotal(p);                       // 7.2 hardware & accessories

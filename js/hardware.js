@@ -82,6 +82,13 @@ function hardwareQuoteLines(p) {
 }
 function hardwareTotal(p) { return hardwareQuoteLines(p).reduce((s, l) => s + (l.total || 0), 0); }
 
+// Job-cost and trim lines that go on the customer's quote: only ones with an amount typed in.
+// (New projects start with blank "Labor / Demo / Incidentals" rows to fill in — untouched,
+// they used to print as $0.00 lines.)
+const _qBlank = v => v == null || String(v).trim() === '';
+function quoteJobCosts(p) { return (p.jobCosts || []).filter(x => !_qBlank(x.amount)); }
+function quoteTrimItems(p) { return (p.trimItems || []).filter(t => !_qBlank(t.unitPrice)); }
+
 // One place for the money, so the printed quote, the PDF and the Quote window agree
 function quoteTotals(p) {
   let cab = 0, cabBase = 0, unpriced = 0, app = 0;
@@ -89,8 +96,8 @@ function quoteTotals(p) {
     quoteCabinets(r).forEach(c => { const pr = cabinetPrice(c); if (pr != null) { cab += pr; cabBase += cabinetPrice(c, { noMarkup: true }); } else unpriced++; });
     (r.appliances || []).forEach(a => { if (a.price != null && a.price > 0 && !(APPLIANCES[a.type] || {}).decor) app += a.price; });
   });
-  const jc = (p.jobCosts || []).filter(x => x.label || x.amount).reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
-  const trim = (p.trimItems || []).filter(t => t.label || t.unitPrice).reduce((s, t) => s + (parseFloat(t.qty) || 0) * (parseFloat(t.unitPrice) || 0), 0);
+  const jc = quoteJobCosts(p).reduce((s, x) => s + (parseFloat(x.amount) || 0), 0);
+  const trim = quoteTrimItems(p).reduce((s, t) => s + (parseFloat(t.qty) || 0) * (parseFloat(t.unitPrice) || 0), 0);
   const hw = hardwareTotal(p);
   const beforeTax = cab + app + jc + trim + hw, tax = beforeTax * getTax();
   // cab includes the markup (cabinets only); cabBase/markup split it for the Quote window

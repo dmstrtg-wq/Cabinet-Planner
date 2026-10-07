@@ -468,3 +468,19 @@ Replaces the old 6-card tour (out of date) with tips that point at the real butt
 Claude tested locally (demo at 1280×800 and phone width, profile page with the sign-in skipped): every tip finds its button, no bubble covers its button or leaves the screen, demo correctly skips the hidden pricing buttons, seen tips stay seen after reload, no console errors.
 - [ ] After push: on your account the new tips show once (Designing first). Click through; then Tips button replays. Check a tip on your phone. Open Profile → each tab once.
 - [ ] Later: a brand-new test account sees Getting started → Designing.
+
+### New-user check-in, round 1 (2026-10-07) — no SQL, push only
+Fixed (tested locally with a simulated brand-new Gold account — stand-in database, nothing written):
+- **Demo Sample Kitchen no longer copied into new accounts.** Someone who tried the demo and then signed up got "Sample Kitchen" in their real account (and a failed cloud upload once upgraded). Their own demo designs still come along.
+- **No more $0.00 lines on quotes.** New projects start with blank Labor / Demo / Incidentals rows; untouched, they printed as $0.00 on the quote, the PDF and the share link. Now only lines with an amount print (Quote window still shows the rows to fill in).
+- **Hand-set plans (trial companies, owner accounts) show "Complimentary"** instead of "$99/mo" + a Cancel button and a billing portal that answered "No billing account found".
+- **Unused formula prices removed** from the cabinet catalog (e.g. Base = width × $4.20 — never used, nothing estimated any more).
+- **Internal files no longer public:** docs/, the SQL scripts (moved to supabase/), the functions' source and README now answer "Page not found" (new 404.html, also used for any mistyped link). app-changes.txt (old CoWork instructions) and .DS_Store deleted.
+- Tips/FAQ: no "starter layout" promise for kitchens (only bath, living, mudroom rooms have one).
+- [ ] After push: open mycabinetplanner.com/docs/BUILD-PLAN.md and /supabase/supabase-leads-table.sql → "Page not found". A quote with blank job-cost rows prints without them.
+Also in round 1 (Dan's decisions, 2026-10-07):
+- **Sales tax:** saved on each project now (it used to be a box that reset itself: opening a project filled in the state's BASE rate — Colorado 2.9% vs Denver ≈ 8.8%). New: Company Settings → **Default sales tax %**; new projects start from it; each job can change it in the Quote window (next to Markup) or the side panel. Existing projects keep the rate they showed, so no total changes.
+- **Glass doors:** the automatic +58% is gone. Company Settings → **Glass door upcharge %** (blank by default). Until it's set, glass wall cabinets show N/A and the Quote window says why. (Dan: set it if you quote glass — your existing glass cabinets show N/A until then.)
+- **Supplier finish names out of public code:** js/owner-styles.js deleted; the 21 finishes moved into Dan's and Sam's saved finishes by `supabase/supabase-move-owner-finishes.sql` (run BEFORE pushing). Same list, same order (checked against Dan's live picker: 25 = 21 + 4 Matrix).
+Claude tested locally: new project uses the company rate (8.81), editing saves on the project, an old Colorado project keeps 2.9, glass N/A → 50% gives $100 → $150, finish list order identical, profile and planner load with no errors.
+- [ ] Run the SQL, then push. Check your style picker still shows all 25 finishes. Set your default tax % and (if you sell glass) your glass %.

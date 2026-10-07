@@ -18,7 +18,7 @@ const TIP_SETS = {
   // ── Planner ──────────────────────────────────────────────────────────
   welcome: { name: 'Getting started', steps: [
     { el: '#welcome .btn-primary, #new-project-btn', title: 'Start your first project',
-      body: 'One project per customer job. Add the customer, the room size, and (optional) a starter layout to build from.' },
+      body: 'One project per customer job: the customer, the project type and the room size. You can add more rooms later.' },
     { el: 'button[onclick="location.href=\'/profile#company\'"]', title: 'Set up your company',
       body: 'Your logo, address, phone and terms print on every quote and PDF. Two minutes here makes everything look like yours.' },
     { el: 'button[onclick="location.href=\'/profile#company\'"]', tier: 'silver', title: 'Prices come from your price sheet',

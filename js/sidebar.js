@@ -57,11 +57,11 @@ function openProject(projId, roomId) {
   const p = getProj(projId);
   state.activeRoomId = roomId || (p.rooms[0] && p.rooms[0].id);
   p.rooms.forEach(r => { if (!r.openings) r.openings = []; if (!r.appliances) r.appliances = []; });
-  // Auto-set state tax rate
-  if (p.state && STATE_TAX[p.state] != null) {
-    const taxEl = document.getElementById('tax-pct');
-    if (taxEl) taxEl.value = STATE_TAX[p.state];
-  }
+  // Sales tax is saved on the project now (company default otherwise). Projects from before
+  // showed their state's base rate here — keep that so their totals don't change.
+  if (p.taxPct === undefined) p.taxPct = (p.state && STATE_TAX[p.state] != null) ? STATE_TAX[p.state] : null;
+  const taxEl = document.getElementById('tax-pct');
+  if (taxEl) taxEl.value = projectTaxPct(p);
   if (!p.jobCosts) p.jobCosts = [
     { label:'Labor',        amount:'' },
     { label:'Demo / Removal', amount:'' },

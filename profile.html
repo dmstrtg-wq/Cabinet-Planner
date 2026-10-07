@@ -608,6 +608,11 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 </label>
                 <div style="font-size:11px;color:var(--muted);margin-top:4px;">Untick this if slides are an add-on: quotes will then count one pair of slides per drawer under Hardware &amp; Accessories (you type the price on each quote).</div>
               </div>
+              <div style="margin-top:14px;display:flex;gap:16px;flex-wrap:wrap;">
+                <div class="form-group" style="margin:0;"><label for="cp-tax-pct">Default sales tax %</label><input type="number" id="cp-tax-pct" min="0" max="30" step="0.01" placeholder="e.g. 8.81" style="width:140px;"></div>
+                <div class="form-group" style="margin:0;"><label for="cp-glass-pct">Glass door upcharge %</label><input type="number" id="cp-glass-pct" min="0" max="300" step="1" placeholder="not set" style="width:140px;"></div>
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;">Tax: your full rate (state + local); each project can change it in its Quote window. Glass: added to a wall cabinet's price when it has glass doors — until you set it, glass cabinets show N/A on quotes.</div>
               <div style="margin-top:14px;">
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
                   <input type="checkbox" id="cp-alert-emails" checked> Email alerts: new leads and design approvals
@@ -1289,6 +1294,9 @@ async function toggleEventDone() {
   openEventDetail(ev.id); renderCalendar();
 }
 
+// A % field: blank → null (not set), otherwise clamped to 0…max
+function _pctOrNull(id, max) { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? Math.max(0, Math.min(max, v)) : null; }
+
 /* ── TABS ── */
 let billingLoaded = false;
 function setActiveTab(tab) {
@@ -1606,7 +1614,20 @@ function renderSubscription() {
     : `${meta.price}<span>/mo</span>`;
 
   const actions = document.getElementById('sub-actions');
-  if (tier !== 'free') {
+  // A paid plan with no Stripe customer was set by hand (trial companies, owner accounts):
+  // there's nothing to pay, cancel or manage in Stripe — say so instead of offering a portal
+  // that answers "No billing account found".
+  const complimentary = tier !== 'free' && !companyProfile.stripe_customer_id;
+  const cancelLink = document.getElementById('sidebar-cancel-link');
+  if (cancelLink && (complimentary || tier === 'free')) cancelLink.style.display = 'none';   // (team members already have it hidden)
+  if (complimentary) {
+    document.getElementById('sub-price').innerHTML = '<span style="font-size:15px;">Complimentary</span>';
+    actions.innerHTML = `<p style="font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.6;">My Cabinet Planner set up this plan for you, so there's no card on file and nothing to cancel. Questions? <a href="/contact">Contact us</a>.</p>`;
+    const lbl = document.getElementById('billing-card-label'), sub = document.getElementById('billing-card-sub'), btn = document.getElementById('billing-portal-btn');
+    if (lbl) lbl.textContent = 'No billing on this account';
+    if (sub) sub.textContent = 'Your plan was set up by My Cabinet Planner — there\'s no card on file and nothing to pay.';
+    if (btn) btn.style.display = 'none';
+  } else if (tier !== 'free') {
     actions.innerHTML = `<button class="btn btn-danger" onclick="openCancelModal()">Cancel Subscription</button>`;
   } else {
     actions.innerHTML = '';
@@ -1955,6 +1976,9 @@ function applyCompanyData(company) {
   document.getElementById('cp-website').value = company?.website     || '';
   document.getElementById('cp-terms').value   = company?.terms_and_conditions || '';
   document.getElementById('cp-slides-included').checked = (company?.quote_settings || {}).slidesIncluded !== false;
+  { const qs = company?.quote_settings || {};
+    document.getElementById('cp-tax-pct').value = qs.taxPct != null ? qs.taxPct : '';
+    document.getElementById('cp-glass-pct').value = qs.glassPct != null ? qs.glassPct : ''; }
   document.getElementById('cp-alert-emails').checked = company?.alert_emails !== false;
   if (pendingLogoDataUrl === null) updateLogoPreview(company?.logo_url || '');
 
@@ -2022,7 +2046,8 @@ async function saveCompanySettings() {
     terms_and_conditions:  document.getElementById('cp-terms').value.trim() || null,
     custom_styles:         (() => { const s = _pfStyles.filter(s => s.name.trim()); return s.length ? s : null; })(),
     // Quote settings (7.2) — needs the quote_settings column (supabase-quote-settings.sql)
-    quote_settings:        { ...((companyProfile && companyProfile.quote_settings) || {}), slidesIncluded: document.getElementById('cp-slides-included').checked },
+    quote_settings:        { ...((companyProfile && companyProfile.quote_settings) || {}), slidesIncluded: document.getElementById('cp-slides-included').checked,
+                             taxPct: _pctOrNull('cp-tax-pct', 30), glassPct: _pctOrNull('cp-glass-pct', 300) },
     alert_emails:          document.getElementById('cp-alert-emails').checked,   // supabase-email-alerts.sql
     updated_at:            new Date().toISOString(),
   };
@@ -2260,7 +2285,7 @@ const DEFAULT_STYLES = [
   { code:'NW', name:'Natural Wood' },
 ];
 function companyStyles() {
-  // Same finish list the planner shows (incl. the built-in catalog on owner accounts) — see priceimport.js
+  // Same finish list the planner shows — see priceimport.js
   if (typeof companyFinishes === 'function') return companyFinishes();
   const cs = companyProfile.custom_styles;
   return (cs && Array.isArray(cs) && cs.length > 0) ? cs : DEFAULT_STYLES;
@@ -2586,7 +2611,6 @@ init();
   applyA11y();
 })();
 </script>
-<script src="/js/owner-styles.js" data-categories="essential"></script>
 <script src="/js/priceimport.js" data-categories="essential"></script>
 <script src="/js/tips.js" data-categories="essential"></script>
 

@@ -79,7 +79,7 @@ function createProject() {
     address: document.getElementById('np-address').value.trim(),
     city:    document.getElementById('np-city').value.trim(),
     state:   document.getElementById('np-state').value,
-    style: getStyles()[0]?.code || 'AW', createdAt: Date.now(), rooms: [room],
+    style: getStyles()[0]?.code || 'AW', createdAt: Date.now(), rooms: [room], taxPct: null,   // null = company default rate
     status: 'Lead', activityLog: [],
     quoteLocked: false, lockedQuote: null, quoteHistory: []
   };
@@ -114,7 +114,6 @@ function saveEditProject() {
   p.city     = document.getElementById('ep-city').value.trim();
   p.state    = document.getElementById('ep-state').value;
   p.notes    = document.getElementById('ep-notes').value.trim();
-  if (p.state && STATE_TAX[p.state] != null) document.getElementById('tax-pct').value = STATE_TAX[p.state];
   persist(); closeModal('modal-edit-project'); renderProjectView();
 }
 function deleteProject(id, e) {

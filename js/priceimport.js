@@ -33,16 +33,10 @@ let PI = null;   // the import in progress
 // FINISHES
 // ════════════════════════════
 // Same list the planner's style picker shows (getStyles in core.js): the company's own
-// finishes; on an owner account the built-in catalog plus anything imported.
+// finishes, or the generic defaults until it has some.
 function companyFinishes() {
   const raw = companyProfile.custom_styles;
   const own = (raw && Array.isArray(raw)) ? raw : [];
-  const isOwnerAcct = typeof OWNER_USER_IDS !== 'undefined' && OWNER_USER_IDS.includes(effectiveOwnerId);
-  if (isOwnerAcct && typeof STYLES !== 'undefined') {
-    if (!own.length) return STYLES;
-    if (own.some(s => s.supplier)) { const codes = new Set(own.map(s => s.code)); return [...STYLES.filter(s => !codes.has(s.code)), ...own]; }
-    return own;
-  }
   return own.length ? own : DEFAULT_STYLES;
 }
 // Finishes an import for this supplier may use: its own, or ones with no supplier set —
@@ -1098,12 +1092,11 @@ async function piSave() {
   const cur = sel.data || {};
 
   // Finishes: create the new ones this import actually prices. A company still on the generic
-  // defaults keeps them (existing projects may use them) — owner accounts keep the built-in catalog.
-  const isOwnerAcct = OWNER_USER_IDS.includes(effectiveOwnerId);
+  // defaults keeps them (existing projects may use them).
   const styles = Array.isArray(cur.custom_styles) && cur.custom_styles.length ? cur.custom_styles.map(s => ({ ...s }))
-    : (isOwnerAcct ? [] : DEFAULT_STYLES.map(s => ({ swatch: piDefaultSwatch(s.code), ...s })));
-  const taken = new Set([...styles.map(s => s.code), ...(isOwnerAcct ? STYLES.map(s => s.code) : [])]);
-  const names = new Set([...styles, ...(isOwnerAcct ? STYLES : [])].map(s => s.name.toLowerCase()));
+    : DEFAULT_STYLES.map(s => ({ swatch: piDefaultSwatch(s.code), ...s }));
+  const taken = new Set(styles.map(s => s.code));
+  const names = new Set(styles.map(s => s.name.toLowerCase()));
   const refCode = {};
   const newRefs = [...new Set([...plan.newFinishes, ...later.flatMap(it => Object.keys(piItemPrices(it)).filter(r => r.startsWith('new:')))])];
   newRefs.forEach(ref => {

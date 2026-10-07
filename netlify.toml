@@ -12,3 +12,29 @@
 
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
+
+# Internal files live in the repo but must not be served publicly: plans/notes (docs/),
+# database setup scripts (supabase/), the functions' source (netlify/) and the README.
+[[redirects]]
+  from = "/docs/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
