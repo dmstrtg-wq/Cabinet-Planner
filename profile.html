@@ -857,7 +857,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
           <div class="section-head"><div class="section-title" id="leads-section-title">Your Leads</div></div>
           <div class="card" style="padding:0;overflow:hidden;">
             <div id="leads-loading" style="padding:24px;text-align:center;color:var(--muted);font-size:14px;">Loading leads…</div>
-            <div id="leads-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6;">No leads yet — they'll appear here when homeowners submit the Connect with a Pro form.</div>
+            <div id="leads-empty" style="display:none;padding:32px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6;">No leads yet. They'll show up here (and in your email) when a homeowner sends you a design from your homeowner design link, or when we send you a quote request from your area.</div>
             <div id="leads-table-wrap" style="display:none;overflow-x:auto;">
               <table class="proj-table" style="min-width:720px;">
                 <thead>
@@ -1369,8 +1369,8 @@ async function loadLeads() {
     emptyEl.textContent = isLeadsAdmin
       ? 'No leads yet — they\'ll appear here when homeowners submit the Connect with a Pro form.'
       : (proListing?.listed
-          ? 'No leads yet. Homeowners near ' + (proListing.service_zip || 'you') + ' will land here when they ask for a quote.'
-          : 'No leads yet. Turn on your Find a Pro listing in Company Settings to start receiving quote requests from homeowners near you.');
+          ? 'No leads yet. Quote requests we send you from homeowners near ' + (proListing.service_zip || 'you') + ', and designs from your homeowner design link, will show up here — and in your email.'
+          : 'No leads yet. Turn on your Find a Pro listing (and, on Gold, your homeowner design link) in Company Settings to start receiving them.');
     return;
   }
   setLeadsBadge(data.filter(l => !l.project_id && !l.contacted && (!isLeadsAdmin || !l.company_id)).length);
@@ -1659,7 +1659,7 @@ function renderSubscription() {
   const overviewName = document.getElementById('overview-plan-name');
   const overviewSub  = document.getElementById('overview-plan-sub');
   if (overviewName) overviewName.textContent = meta.label + ' Plan';
-  if (overviewSub)  overviewSub.textContent  = tier === 'free' ? 'Free — upgrade anytime' : 'Renews monthly';
+  if (overviewSub)  overviewSub.textContent  = tier === 'free' ? 'Free — upgrade anytime' : complimentary ? 'Complimentary — no billing' : 'Renews monthly';
 }
 
 function openCancelModal() { document.getElementById('cancel-modal-overlay').classList.add('open'); }
@@ -2364,7 +2364,7 @@ async function tryOpenPriceMapping(file) {
       if (style) finishCols.push({ col: i, code: style.code, name: style.name });
     }
     if (!finishCols.length) {
-      showToast("None of the columns matched your current finish names — check Company Settings → Styles, then download a fresh template.");
+      showToast("None of the columns matched your current finish names — check Company Settings → Door Styles / Finishes, then download a fresh template.");
       return;
     }
 

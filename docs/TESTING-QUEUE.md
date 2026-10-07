@@ -484,3 +484,16 @@ Also in round 1 (Dan's decisions, 2026-10-07):
 - **Supplier finish names out of public code:** js/owner-styles.js deleted; the 21 finishes moved into Dan's and Sam's saved finishes by `supabase/supabase-move-owner-finishes.sql` (run BEFORE pushing). Same list, same order (checked against Dan's live picker: 25 = 21 + 4 Matrix).
 Claude tested locally: new project uses the company rate (8.81), editing saves on the project, an old Colorado project keeps 2.9, glass N/A → 50% gives $100 → $150, finish list order identical, profile and planner load with no errors.
 - [ ] Run the SQL, then push. Check your style picker still shows all 25 finishes. Set your default tax % and (if you sell glass) your glass %.
+
+### Website copy + new-user check-in round 2 (2026-10-07) — no SQL, push only
+- **Home page (Dan approved):** "<5 min average quote setup" → "100% — Your prices. Nothing estimated."; Leads section reworded (requests are sent by us, not auto-routed by distance; mentions the Gold design link; badge "✓ Sent to your company"); Silver list adds supplier price import, full PDF package, order list, Design Check, email alerts; Gold list adds customer share link and homeowner design link. "Priority support" left as is (Dan to confirm it's real).
+- **Price sheet template** checked: blank (no sample prices), all 19 cabinet types with the same sizes as the planner.
+- **Overview card** says "Complimentary — no billing" for hand-set plans (it said "Renews monthly").
+- **Leads tab empty messages** match how leads really arrive (sent by us / from the design link, plus email) — they promised homeowners near your ZIP would "land here".
+- **Quote window:** the "N cabinets with no price" warning links to My Pricing (team members are told to ask the owner).
+- **Phones:** the bottom-bar Quote tab only listed item counts ("Pricing & PDF on desktop"). Paid users now get **Open the full quote** (the full Quote window works at phone width: job costs, markup, tax, Print / Save PDF). Demo shows "Prices and the PDF quote come with Silver and Gold."
+- Fixed text: "Company Settings → Styles" → "Door Styles / Finishes".
+- Checked, no change needed: team invite is Gold-only and capped at 5 on the server; price import limits; homeowner link needs a company name first.
+Claude tested locally (simulated new Gold account, phone + laptop sizes; no console errors).
+- [ ] After push: home page reads right on phone and laptop.
+- [ ] Dan: real end-to-end checks Claude can't do — (1) sign up a brand-new account with a +alias email (e.g. dmstrtg+trial@gmail.com) in a private window, flip it to Gold in Supabase, and walk the first hour; (2) invite that account as a team member from yours; (3) Sam turns on her design link and you send a test design through it.

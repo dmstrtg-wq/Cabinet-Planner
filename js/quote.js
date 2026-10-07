@@ -191,7 +191,7 @@ function refreshQuoteTotals() {
     <div class="qtp-row"><span><label for="quote-tax">Sales tax</label> <input type="number" id="quote-tax" min="0" max="30" step="0.01" value="${escHtml(String(projectTaxPct(p)))}" onchange="setProjectTax(this.value)" style="width:64px;padding:2px 6px;font-size:13px;"> %
       <span style="display:block;font-size:10px;color:var(--text-muted);font-weight:400;">This job's rate. New projects start from your default in Company Settings.</span></span><span>${fmtMoney(taxAmt)}</span></div>
     <div class="qtp-row"><span>Total</span><span style="color:var(--success);">${fmtMoney(total)}</span></div>
-    ${unpricedCount ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ ${unpricedCount} cabinet${unpricedCount===1?'':'s'} with no price set for their finish — not included above.</div>` : ''}
+    ${unpricedCount ? `<div style="font-size:11px;color:#b45309;margin-top:6px;">⚠ ${unpricedCount} cabinet${unpricedCount===1?'':'s'} with no price set for their finish — not included above. ${typeof myTeamRole === 'undefined' || myTeamRole === 'owner' ? 'Add prices in <a href="/profile#files">My Pricing</a>.' : 'Ask the account owner to add them in My Pricing.'}</div>` : ''}
     ${glassUpchargePct() == null && p.rooms.some(r => r.cabinets.some(c => c.type === 'wall' && c.glassDoors)) ? `<div style="font-size:11px;color:#b45309;margin-top:4px;">⚠ Glass doors have no price until you set your glass upcharge % in <a href="/profile#company">Company Settings</a>.</div>` : ''}`;
 }
 
