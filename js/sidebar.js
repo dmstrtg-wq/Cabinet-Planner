@@ -73,6 +73,7 @@ function openProject(projId, roomId) {
   // Reset 3D camera so it re-frames the new room correctly
   if (iso3D) iso3D.initedCamera = false;
   persist(); renderProjectView();
+  if (typeof tipsForProject === 'function') tipsForProject();   // first-time feature tips (js/tips.js)
 }
 // The line under the project name: "Kitchen · Style: WS – White Shaker · Created …"
 // (also refreshed when the door style changes — it used to stay on the old style)

@@ -83,6 +83,7 @@ function openQuoteModal() {
   refreshQuoteLockBanner();
   renderQuoteSnapshotList();
   openModal('modal-quote');
+  if (typeof maybeTips === 'function') maybeTips('quote');
 }
 
 function updateQuoteCompany(val) {

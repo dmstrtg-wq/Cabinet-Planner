@@ -455,3 +455,16 @@ Claude tested locally (demo, 2 rooms, stand-in company info): Letter = 14 pages,
 Claude tested locally (function run in the browser with a stand-in database and email service): lead email (fields, reply-to, attachment, HTML escaping), approval email, repeat calls send nothing, bad id rejected, alerts off respected. Profile page loads with the new checkbox.
 - [ ] After setup: send a lead from your homeowner design link (private window) → email arrives with the Accept button + floor plan. Approve a share link on ZZ Claude Test → approval email arrives. Untick Email alerts → no email.
 - If nothing arrives: Supabase SQL `select status_code, content, created from net._http_response order by created desc limit 5;` and Netlify → Functions → notify logs.
+- Live check 2026-10-06 (Claude on Dan's account): Resend key working after redeploy. Approval on a ZZ Claude Test design-only link (approved as "Claude Test (delete me)", link then turned off) → stamped as emailed 0.6s later. Test lead "TEST - Claude (delete me)" assigned to Dan's company → stamped as emailed, then marked handled. Waiting on Dan to confirm both emails arrived at dmstrtg@gmail.com (the stamp is set just before sending, so only the inbox / Resend → Emails proves delivery).
+
+### Feature tips (built 2026-10-07) — no SQL, push only
+Replaces the old 6-card tour (out of date) with tips that point at the real buttons: the page dims, the button is outlined, a bubble explains it. Back / Next / Skip, Esc to close, "Don't show tips automatically", Help & FAQ.
+- **When:** the first time each screen is used — Getting started (no projects), Designing (planner), Quoting & ordering (on a later visit, so new users aren't handed 12 at once), Elevation, 3D, Quote window, and each Profile tab (Overview, Projects, Calendar, Company Settings, My Pricing, Team, Leads). Homeowners on a design link get 4 tips; customers on a share link get 2.
+- **Tips button** (planner header, and next to the Profile title) replays the tips for the screen you're on.
+- **Remembered per account** (saved to the login, so no repeats on another device); demo/homeowner/customer: per browser. Each tip is remembered on its own: a tip whose button isn't on screen (phone, demo) stays unseen and shows later where it is.
+- Features the plan doesn't include still get their tip with a "Silver feature"/"Gold feature" tag.
+- **Help & FAQ rewritten** — the old one described the old add-cabinet form, a "Show" dropdown that no longer exists, and said cabinet prices come from "a base price formula" (wrong: only from your own price sheet).
+- Profile menu item "Files" renamed **My Pricing** (matches the page title and the tips).
+Claude tested locally (demo at 1280×800 and phone width, profile page with the sign-in skipped): every tip finds its button, no bubble covers its button or leaves the screen, demo correctly skips the hidden pricing buttons, seen tips stay seen after reload, no console errors.
+- [ ] After push: on your account the new tips show once (Designing first). Click through; then Tips button replays. Check a tip on your phone. Open Profile → each tab once.
+- [ ] Later: a brand-new test account sees Getting started → Designing.

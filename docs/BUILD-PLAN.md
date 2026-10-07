@@ -396,6 +396,9 @@ Notes from Dan's dad, sister and brother-in-law. Each item below is checked agai
 - Drawer slides: a **company setting** "Slides included with cabinets" (on = not counted; off = one slide pair per drawer on the quote).
 - Bump-out casing filler is **added to the quote automatically** as filler stock (existing 3"/6" stock pricing), on its own line.
 
+**7.6 Feature tips + Help & FAQ refresh (Dan, 2026-10-07)** — Faster (onboarding) · Parity · small
+- Skippable tips that point at the real buttons, the first time each screen is used (planner, Elevation, 3D, Quote, each Profile tab; short sets for homeowners and customers). Tips button replays the current screen. Remembered per account; locked features tagged Silver/Gold. Built 2026-10-07 (`js/tips.js`); old tour removed; Help & FAQ rewritten to match the current app. First step of Dan's new-user check-in (blank slate, no dead ends, no made-up pricing) — the audit is next.
+
 ## 5. Testing checklist (run at the end of every task)
 
 - [ ] Existing saved projects load and look the same (or better, if the task was visual).

@@ -255,7 +255,7 @@
           <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
           <button class="btn btn-secondary" id="share-btn" onclick="openShareModal()" title="Send your customer a link to view the design in 3D and approve it (Gold)">Share</button>
           <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
-          <button class="btn btn-secondary" onclick="openModal('modal-faq')" style="font-weight:800;">Tips</button>
+          <button class="btn btn-secondary" onclick="replayTips()" title="Show the tips for this screen" style="font-weight:800;">Tips</button>
         </div>
       </div>
     </div>
@@ -1120,66 +1120,44 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h3 style="margin:0;">Help & FAQ</h3>
       <div style="display:flex;gap:10px;align-items:center;">
-        <button onclick="startTour()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">↺ Replay Tips Tour</button>
+        <button onclick="replayTips()" style="padding:5px 12px;border:1px solid var(--accent);border-radius:6px;font-size:12px;font-weight:700;background:white;cursor:pointer;color:var(--accent);">Show tips for this screen</button>
         <button onclick="closeModal('modal-faq')" aria-label="Close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">✕</button>
       </div>
     </div>
     <div class="faq-section">
-      <button class="faq-q" onclick="toggleFaq(this)">Getting Started <span class="faq-arrow">▾</span></button>
+      <button class="faq-q" onclick="toggleFaq(this)">Getting started <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>How do I create a project?</strong><br>Click <strong>New Project</strong> in the top header. Enter a customer name and project type, then add rooms.</p>
-        <p><strong>How do I add a room?</strong><br>Click <strong>+ Add Room</strong> in the sidebar. Set each wall length (in inches) and the ceiling height.</p>
-        <p><strong>How do I set up my company info?</strong><br>Click the <strong>Company</strong> button in the header. Add your name, address, phone, and logo — this info prints on every PDF you export.</p>
-        <p><strong>What's the difference between a project and a room?</strong><br>A project is for one customer/job. Each project can have multiple rooms (Kitchen, Laundry, Bathroom, etc.), each with its own cabinet layout.</p>
+        <p><strong>How do I start a job?</strong><br>Click <strong>＋ New Project</strong> at the top of the left sidebar. Enter the customer, project type and room size. You can start from a starter layout.</p>
+        <p><strong>How do I add another room?</strong><br>Click <strong>＋ Room</strong> next to the room tabs and pick a room type and size. One project can hold a kitchen, baths, laundry and more; the quote adds them all up.</p>
+        <p><strong>Where do I put my logo, address and terms?</strong><br>Click <strong>Company</strong> at the bottom of the left sidebar. Your logo, contact info and terms print on every quote and PDF.</p>
       </div>
     </div>
     <div class="faq-section">
-      <button class="faq-q" onclick="toggleFaq(this)">Floor Plan <span class="faq-arrow">▾</span></button>
+      <button class="faq-q" onclick="toggleFaq(this)">Designing <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>How do I add a cabinet?</strong><br>Select a type and dimensions in the left panel, then click <strong>Add Cabinet</strong>. It will appear on the selected wall.</p>
-        <p><strong>How do I edit or delete a cabinet?</strong><br>Double-click any cabinet on the floor plan to open its edit modal. You can change dimensions, notes, or delete it there.</p>
-        <p><strong>Why can't I see my upper cabinets?</strong><br>The <strong>Show</strong> dropdown in the toolbar controls what's visible. Switch to <strong>Wall Only</strong> to see upper cabinets, or <strong>All Cabinets</strong> to see both layers at once.</p>
-        <p><strong>How do I reposition a cabinet?</strong><br>Click and drag a cabinet on the floor plan to slide it along its wall. Use the <strong>From Left</strong> field in the edit modal for precise placement.</p>
-        <p><strong>What does the Dims button do?</strong><br>Toggles dimension callout lines on the floor plan showing the width of each cabinet.</p>
+        <p><strong>How do I add a cabinet?</strong><br>Drag it from the <strong>Catalog</strong> in the right panel onto the floor plan or an elevation. It snaps to the wall and its neighbors. Clicking a tile adds it to the end of the selected wall. Search by code ("B36") or word ("sink").</p>
+        <p><strong>How do I move, edit or delete a cabinet?</strong><br>Click it to select it, then drag it or use the arrow keys (Shift = 1/8", Option/Alt = 3"). Press Delete to remove it. Double-click it to change size, door style, notes and more.</p>
+        <p><strong>I can't see my upper cabinets on the floor plan.</strong><br>Use the <strong>Layers</strong> button in the toolbar to choose what's shown (e.g. uppers only), or switch to <strong>Elevation</strong> to see each wall straight on.</p>
+        <p><strong>What do Dims and Measure do?</strong><br><strong>Dims</strong> shows measurements and the open space left on each wall. <strong>Measure</strong> lets you click two points to measure anything.</p>
+        <p><strong>Can I undo?</strong><br>Yes: ⌘Z / Ctrl Z, or the ↶ button. ⌨ lists every keyboard shortcut.</p>
       </div>
     </div>
     <div class="faq-section">
-      <button class="faq-q" onclick="toggleFaq(this)">Elevations <span class="faq-arrow">▾</span></button>
+      <button class="faq-q" onclick="toggleFaq(this)">Prices &amp; quotes <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>What is the Elevation view?</strong><br>A side-on view of each wall showing how base and upper cabinets stack. Switch to it using the <strong>Elevation</strong> tab at the top of the canvas area.</p>
-        <p><strong>How do I switch between walls?</strong><br>Use the North / East / South / West tabs below the canvas toolbar in Elevation view.</p>
-        <p><strong>Why are some cabinets missing from the elevation?</strong><br>The elevation shows cabinets on the selected wall only. Make sure the right wall tab is active.</p>
+        <p><strong>Where do cabinet prices come from?</strong><br>Only from <strong>your</strong> price sheet: Profile → <strong>My Pricing</strong>. Download the template and fill it in, or import your supplier's list as they sent it (Excel, CSV or PDF). Nothing is estimated or made up.</p>
+        <p><strong>Why does a cabinet say N/A?</strong><br>Your price sheet has no price for that cabinet's size in that finish. It's left out of the total until you add one.</p>
+        <p><strong>Where do I add labor, delivery or a markup?</strong><br>Click <strong>Quote</strong>. Add job costs, trim and hardware there (you type those prices), and set your markup on the totals line. Customers see the markup built into cabinet prices.</p>
+        <p><strong>Print Quote or Export PDF?</strong><br><strong>Print / Save PDF</strong> (in the Quote window) is the quote on its own. <strong>Export PDF</strong> is the full package: cover page, floor plans and elevations for every room, 3D views, quote, terms and signature lines.</p>
       </div>
     </div>
     <div class="faq-section">
-      <button class="faq-q" onclick="toggleFaq(this)">Exporting <span class="faq-arrow">▾</span></button>
+      <button class="faq-q" onclick="toggleFaq(this)">Customers, leads &amp; ordering <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>What does Export PDF produce?</strong><br>A multi-page PDF with: (1) floor plan + company header, (2) a wall elevation for each wall, (3) a full quote page with line items, totals, signature lines, and terms.</p>
-        <p><strong>What does Print Quote do?</strong><br>Opens a browser print dialog with a polished quote document — logo, line items, terms, and signature blocks. Best for printing directly or saving as PDF via your browser.</p>
-        <p><strong>Why does the PDF show "My Cabinet Planner" instead of my company?</strong><br>Your company profile isn't set up yet. Click <strong>Company</strong> in the header and fill in your name. You'll be warned before exporting if it's not set.</p>
+        <p><strong>How does my customer approve a design?</strong><br><strong>Share</strong> (Gold) makes a private link. Your customer spins the design in 3D on their phone and taps Approve; you get an email and it's logged on the job.</p>
+        <p><strong>How do homeowners send me designs?</strong><br>Turn on your <strong>Homeowner Design Link</strong> (Gold) in Company Settings and put its button on your website. Their designs land in Profile → Leads; <strong>Accept</strong> turns one into a project.</p>
+        <p><strong>How do I order from my supplier?</strong><br><strong>Order List</strong> in the toolbar lists every cabinet, panel and filler with your supplier's item codes, as a CSV for their order form or a printout.</p>
       </div>
-    </div>
-    <div class="faq-section">
-      <button class="faq-q" onclick="toggleFaq(this)">Pricing & Quotes <span class="faq-arrow">▾</span></button>
-      <div class="faq-a">
-        <p><strong>How does cabinet pricing work?</strong><br>Each cabinet type has a base price formula. Toggle <strong>Pricing</strong> in the toolbar to show prices on the floor plan. The Quote modal shows a full breakdown.</p>
-        <p><strong>How do I add custom job costs?</strong><br>Open the Quote modal and use the <strong>Additional Costs</strong> section to add line items like labor, delivery, or hardware.</p>
-        <p><strong>Can I change the tax rate?</strong><br>Yes — set it in the Quote modal. It persists per project.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- TOUR -->
-<div id="tour-overlay">
-  <div id="tour-card">
-    <div class="tour-step-tag" id="tour-tag"></div>
-    <h4 id="tour-title"></h4>
-    <p id="tour-body"></p>
-    <div class="tour-dots" id="tour-dots"></div>
-    <div class="tour-row">
-      <button class="tour-skip" onclick="endTour()">Skip</button>
-      <button class="tour-next" id="tour-next-btn" onclick="tourNext()">Next →</button>
     </div>
   </div>
 </div>
@@ -1221,6 +1199,7 @@
 <script src="/js/furniture.js" data-categories="essential"></script>
 <script src="/js/homeowner.js" data-categories="essential"></script>
 <script src="/js/share.js" data-categories="essential"></script>
+<script src="/js/tips.js" data-categories="essential"></script>
 <script src="/js/shell.js" data-categories="essential"></script>
 
 <!-- Hidden Netlify form declaration — required for Netlify to register this form at build time -->

@@ -406,7 +406,10 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
 
 <div class="page" id="profile-page" style="display:none;">
 
-  <h1 class="page-title" id="profile-name">My Profile</h1>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <h1 class="page-title" id="profile-name">My Profile</h1>
+    <button class="hdr-btn" onclick="replayTips()" title="Show the tips for this page" style="font-weight:700;">Tips</button>
+  </div>
   <p class="page-sub" id="profile-email"></p>
 
   <div class="profile-layout">
@@ -432,7 +435,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
         </a>
         <a class="sidebar-link" href="#files" data-tab="files" id="files-nav-link">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h5l3 3v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 2v3h3"/><line x1="5" y1="8.5" x2="9.5" y2="8.5"/><line x1="5" y1="11" x2="9.5" y2="11"/></svg>
-          Files
+          My Pricing
         </a>
         <a class="sidebar-link" href="#team" data-tab="team">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.2"/><path d="M2 14c0-2.4 1.8-4 4-4s4 1.6 4 4"/><circle cx="11.7" cy="6" r="1.7"/><path d="M9.8 8.6c.6-.3 1.2-.4 1.9-.4 2 0 3.7 1.4 3.7 3.8"/></svg>
@@ -1294,6 +1297,7 @@ function setActiveTab(tab) {
   if (tab === 'billing' && !billingLoaded) { billingLoaded = true; renderBilling(); }
   if (tab === 'leads' && !leadsLoaded) { leadsLoaded = true; loadLeads(); }
   if (tab === 'calendar') renderCalendar();
+  if (typeof maybeTips === 'function') maybeTips('profile-' + tab);   // first-time tips (js/tips.js)
 }
 function applyHashTab() {
   const tab = (location.hash || '#overview').slice(1);
@@ -2584,6 +2588,7 @@ init();
 </script>
 <script src="/js/owner-styles.js" data-categories="essential"></script>
 <script src="/js/priceimport.js" data-categories="essential"></script>
+<script src="/js/tips.js" data-categories="essential"></script>
 
 </body>
 </html>

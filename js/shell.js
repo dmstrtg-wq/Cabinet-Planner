@@ -110,13 +110,14 @@ document.addEventListener('keydown', e => {
 
 (async () => {
   // Demo mode: skip login, boot straight into the app with a local-only session
-  if (HOME_PRO) { await homeStart(); return; }   // homeowner mode (js/homeowner.js)
-  if (SHARE_TOKEN) { await shareStart(); return; }   // customer's share link (js/share.js)
+  if (HOME_PRO) { await homeStart(); maybeStartTour(); return; }   // homeowner mode (js/homeowner.js)
+  if (SHARE_TOKEN) { await shareStart(); maybeStartTour(); return; }   // customer's share link (js/share.js)
   if (IS_DEMO) {
     currentUser = null;
     showApp();
     seedDemoIfFirstVisit();
     loadProjectsFromLocal();
+    maybeStartTour();
     return;
   }
 
@@ -145,59 +146,9 @@ db.auth.onAuthStateChange((event, session) => {
 // ════════════════════════════
 // TOUR
 // ════════════════════════════
-const TOUR_STEPS = [
-  { tag:'Welcome',
-    title:'Welcome to My Cabinet Planner!',
-    body:"Let's take a 30-second tour of the key features. You can skip anytime — the Tips button in the header replays it whenever you need." },
-  { tag:'Adding Cabinets',
-    title:'Left Panel — Add Cabinets',
-    body:'Select a cabinet type and dimensions in the left panel, then click Add Cabinet. It appears on whichever wall is selected in the dropdown above it.' },
-  { tag:'Floor Plan',
-    title:'Your Floor Plan',
-    body:'Cabinets show up as colored boxes on the floor plan. Double-click any cabinet to edit dimensions, add notes, or delete it. Drag it to reposition along the wall.' },
-  { tag:'Base vs. Upper',
-    title:'Switching Between Layers',
-    body:'Use the Show dropdown in the toolbar to filter the floor plan. "Wall Only" shows just upper cabinets — much easier when placing them without base cabinets in the way.' },
-  { tag:'Views',
-    title:'Floor Plan · Elevation · 3D',
-    body:'The tabs at the top right switch your view. Elevation shows a side view of each wall — great for verifying upper cabinet heights and gaps. 3D gives you a full walkthrough.' },
-  { tag:'Exporting',
-    title:'Export Your Quote',
-    body:'Export PDF generates a multi-page document: floor plan, wall elevations, and a full quote with line items, totals, signature lines, and terms — ready to hand to a customer.',
-    last:true },
-];
-let _tourStep = 0;
-
-function maybeStartTour() {
-  if (!localStorage.getItem('mcp_tour_done')) setTimeout(startTour, 1000);
-}
-function startTour() {
-  try { closeModal('modal-faq'); } catch(e) {}
-  _tourStep = 0;
-  _renderTourStep();
-  document.getElementById('tour-overlay').classList.add('active');
-}
-function _renderTourStep() {
-  const step = TOUR_STEPS[_tourStep];
-  document.getElementById('tour-tag').textContent   = step.tag;
-  document.getElementById('tour-title').textContent = step.title;
-  document.getElementById('tour-body').textContent  = step.body;
-  document.getElementById('tour-next-btn').textContent = step.last ? 'Done ✓' : 'Next →';
-  // Progress dots
-  const dotsEl = document.getElementById('tour-dots');
-  dotsEl.innerHTML = TOUR_STEPS.map((_,i) =>
-    `<div class="tour-dot${i===_tourStep?' active':''}"></div>`
-  ).join('');
-}
-function tourNext() {
-  if (_tourStep >= TOUR_STEPS.length - 1) { endTour(); return; }
-  _tourStep++;
-  _renderTourStep();
-}
-function endTour() {
-  localStorage.setItem('mcp_tour_done', '1');
-  document.getElementById('tour-overlay').classList.remove('active');
-}
+// Replaced by feature tips (js/tips.js). These names are still called at startup.
+function maybeStartTour() { if (typeof tipsStart === 'function') tipsStart(); }
+function startTour() { if (typeof replayTips === 'function') replayTips(); }
 
 // ════════════════════════════
 // ════════════════════════════

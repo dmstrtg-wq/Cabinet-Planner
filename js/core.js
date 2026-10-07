@@ -1050,5 +1050,6 @@ function setViewMode(m) {
   if (m === 'elevation') { renderElevation(); fitView('elev'); }
   else if (m === '3d')   { renderIsometric(); resetIso3DView(); }
   else                   { renderCanvas(); fitView('floor'); }
+  if (typeof maybeTips === 'function' && m !== 'floor') maybeTips(m === 'elevation' ? 'elevation' : '3d');
 }
 
