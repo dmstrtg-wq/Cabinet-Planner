@@ -350,11 +350,24 @@ function pageRequest(body) {
       String(text || '').split(/\r?\n/).forEach(line => {
         line = line.trim().replace(/^\|\s*|\s*\|$/g, '');
         if (!line || /^[-|:\s]+$/.test(line)) return;                 // markdown table rule
-        const f = line.includes('\t') ? line.split('\t') : line.split(/\s*\|\s*/);
-        if (f.length < 3) return;
-        const sku = clip(f[0], 60), price = parseFloat(String(f[2]).replace(/[$,\s]/g, ''));
-        if (!sku || !/\d/.test(sku) || !(price > 0 && price < 100000) || !/^\$?\s*[\d,]+(\.\d+)?$/.test(String(f[2]).trim())) return;
-        rows.push({ sku, col: clip(f[1], 40), price: Math.round(price * 100) / 100, section: clip(f[3], 60) });
+        let f = line.includes('\t') ? line.split('\t') : line.split(/\s*\|\s*/);
+        if (f.length < 2) {   // no tabs or pipes: "SB24B 568 Sink Bases" (item code without spaces only)
+          const m = /^(\S*\d\S*)\s+(\$?[\d,]+(?:\.\d+)?)(?:\s+(.*))?$/.exec(line);
+          if (!m) return;
+          f = [m[1], m[2], m[3] || ''];
+        }
+        // The price is the first purely numeric field after the item code. On a page with one
+        // price per item the model often leaves the empty COLUMN out ("SB24B<tab>568<tab>Sink
+        // Bases"); reading the price from a fixed position dropped every line of those pages
+        // (Matrix base cabinets, 2026-10-08). Fields before the price = column, after = section.
+        const isNum = v => /^\$?\s*[\d,]+(\.\d+)?$/.test(String(v).trim());
+        // (Full 4-field line with a number in the price slot → that's the price, as before; a number
+        // that landed in COLUMN then gets the line dropped in the browser, as before.)
+        const pi = f.length >= 3 && isNum(f[2]) ? 2 : f.findIndex((v, i) => i >= 1 && isNum(v));
+        if (pi < 1) return;
+        const sku = clip(f[0], 60), price = parseFloat(String(f[pi]).replace(/[$,\s]/g, ''));
+        if (!sku || !/\d/.test(sku) || !(price > 0 && price < 100000)) return;
+        rows.push({ sku, col: clip(f.slice(1, pi).join(' '), 40), price: Math.round(price * 100) / 100, section: clip(f.slice(pi + 1).join(' '), 60) });
       });
       return { rows: rows.slice(0, 1500), truncated: stop === 'max_tokens', ...(rows.length ? {} : { sample: clip(text, 300) }) };
     },

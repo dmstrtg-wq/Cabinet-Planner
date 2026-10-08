@@ -513,3 +513,8 @@ First run fixed: British spellings (centre ×2, neighbouring, "Untick" → "Unch
 New rooms of type Bathroom, Living room or Hallway (and new Bathroom projects) used to fill themselves in because the "start with a layout" box was ticked by default: bathroom = vanity, wall cabinet, shower, toilet, mirror and 2 sconces; living room = media base, 2 bookcases and a TV; hallway = 4 mudroom lockers. Now the box starts **unticked** every time (Add Room, room templates, New Project) and says exactly what it adds.
 Claude tested locally: default → 0 items for all three; ticked → bathroom 7, living room 4. Copy check: nothing to fix.
 - [ ] After push: + Room → Bathroom → the box is unticked and lists what it adds.
+
+### Price import: base cabinets lost — FOUND + fixed (2026-10-08) — no SQL, push only
+Trace on Dan's Matrix PDF (pages 14–18 only, live account with every save blocked): pages 16–17 (all base, sink, drawer-base cabinets) "failed" — the AI read them correctly ("SB24B 568 Sink Bases…") but on pages with ONE price per item it writes 3 fields (code, price, section) instead of 4 with an empty column. The parser read the price from a fixed position (3rd field = "Sink Bases") and threw away every line → page dropped → no base prices. Walls worked because their pages have two price columns (Gold / PR, PS).
+Fix (netlify/functions/price-import.js, page step): the price is the first purely numeric field after the item code (standard 4-field lines unchanged); also accepts space-separated lines. Tested against 11 line shapes in the browser.
+- [ ] After push: Claude re-runs pages 16–17 in the same blocked tab and continues the trace through matching and the review screen.
