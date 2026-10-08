@@ -96,13 +96,17 @@ function renderElevation() {
     ctx.fillText(text, x, y);
   };
   wallOpenings.forEach(op => {
-    const ox = eX(op.offset||0, op.width), oW = op.width*scale, oH = op.height*scale, c = CASING*scale;
+    // Trim is optional per opening (Dan, 2026-10-08): op.noTrim = no casing / stool / apron
+    const trim = !op.noTrim;
+    const ox = eX(op.offset||0, op.width), oW = op.width*scale, oH = op.height*scale, c = trim ? CASING*scale : 0;
     if (op.type==='window') {
       const sill = op.sillHeight ?? 36, top = floorY - (sill + op.height)*scale, bot = floorY - sill*scale;
-      trimRect(ox - c, top - c, oW + 2*c, c);                       // head casing
-      trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);  // side casings
-      trimRect(ox - c - 1*scale, bot, oW + 2*c + 2*scale, 1*scale); // stool (sill)
-      trimRect(ox - c, bot + 1*scale, oW + 2*c, 3*scale);           // apron
+      if (trim) {
+        trimRect(ox - c, top - c, oW + 2*c, c);                       // head casing
+        trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);  // side casings
+        trimRect(ox - c - 1*scale, bot, oW + 2*c + 2*scale, 1*scale); // stool (sill)
+        trimRect(ox - c, bot + 1*scale, oW + 2*c, 3*scale);           // apron
+      }
       ctx.fillStyle = PDF ? '#F2F6F9' : '#BAE6FD'; ctx.fillRect(ox, top, oW, oH);
       ctx.strokeStyle = PDF ? '#1a1a1a' : '#0369A1'; ctx.lineWidth = 1.5; ctx.strokeRect(ox, top, oW, oH);
       // double-hung: meeting rail across the middle, sash frames
@@ -117,7 +121,7 @@ function renderElevation() {
       opLabel(wl, ox + oW/2, top + 15, '#0369A1');
     } else if (op.type==='door') {
       const top = floorY - oH;
-      trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);
+      if (trim) { trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH); }
       ctx.fillStyle = PDF ? '#FFFFFF' : '#FEF9C3'; ctx.fillRect(ox, top, oW, oH);
       ctx.strokeStyle = PDF ? '#1a1a1a' : '#D97706'; ctx.lineWidth = 1.5; ctx.strokeRect(ox, top, oW, oH);
       // two-panel door slab + knob
@@ -135,7 +139,7 @@ function renderElevation() {
       ctx.fillText('S '+op.width+'"', ox+oW/2, counterY-14);
     } else {                                           // cased opening (arch)
       const top = floorY - oH;
-      trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH);
+      if (trim) { trimRect(ox - c, top - c, oW + 2*c, c); trimRect(ox - c, top, c, oH); trimRect(ox + oW, top, c, oH); }
       ctx.fillStyle = PDF ? '#FFFFFF' : 'rgba(241,245,249,0.6)'; ctx.fillRect(ox, top, oW, oH);
       ctx.strokeStyle = PDF ? '#1a1a1a' : '#7C3AED'; ctx.lineWidth = 1.5; ctx.setLineDash([4,4]); ctx.strokeRect(ox, top, oW, oH); ctx.setLineDash([]);
       opLabel(`Opening ${fmtFrac(op.width)} × ${fmtFrac(op.height)}`, ox + oW/2, top - c - 3, '#7C3AED');

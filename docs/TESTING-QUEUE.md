@@ -497,3 +497,9 @@ Claude tested locally: new project uses the company rate (8.81), editing saves o
 Claude tested locally (simulated new Gold account, phone + laptop sizes; no console errors).
 - [ ] After push: home page reads right on phone and laptop.
 - [ ] Dan: real end-to-end checks Claude can't do — (1) sign up a brand-new account with a +alias email (e.g. dmstrtg+trial@gmail.com) in a private window, flip it to Gold in Supabase, and walk the first hour; (2) invite that account as a team member from yours; (3) Sam turns on her design link and you send a test design through it.
+
+### Window trim optional + tips grammar (2026-10-08) — no SQL, push only
+- **Trim is optional** on every window, door and cased opening: a **Trim** checkbox on each opening in the side panel's Openings list, and on the add-opening form. Off = the elevation draws the opening without casing (and, on windows, without the sill and apron). On by default, so existing drawings don't change.
+- **Tips rewritten as complete sentences** (Dan saw grammar problems — they were clipped fragments like "Flags layout problems…").
+Claude tested locally: trim off/on redraws the demo window correctly; tips file loads (48 tips).
+- [ ] After push: untick Trim on a window → elevation and Export PDF show it without casing/sill/apron.

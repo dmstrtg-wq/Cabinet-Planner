@@ -630,12 +630,21 @@ function addOpening() {
   if (!w || !h) { alert('Enter width and height for the opening.'); return; }
   if (!r.openings) r.openings = [];
   const sillHeight = parseInt(document.getElementById('opening-sill').value) || 36;
-  r.openings.push({ id: uid(), type: state.activeOpeningType, wall: state.activeWall, width: w, height: h, offset, sillHeight });
+  const trimEl = document.getElementById('opening-trim');
+  r.openings.push({ id: uid(), type: state.activeOpeningType, wall: state.activeWall, width: w, height: h, offset, sillHeight,
+    ...(trimEl && !trimEl.checked && state.activeOpeningType !== 'sink-loc' ? { noTrim: true } : {}) });
   document.getElementById('opening-width').value  = '';
   document.getElementById('opening-height').value = '';
   document.getElementById('opening-offset').value = '0';
   document.getElementById('opening-sill').value   = '36';
   persist(); renderCabinetList(); renderCanvas(); renderElevation();
+}
+// Casing / stool / apron around a window, door or cased opening — on unless turned off
+function setOpeningTrim(id, on) {
+  const r = activeRoom(); const o = r && (r.openings || []).find(x => x.id === id); if (!o) return;
+  if (on) delete o.noTrim; else o.noTrim = true;
+  persist(); renderCabinetList(); renderCanvas(); renderElevation();
+  if (state.viewMode === '3d' && typeof renderIsometric === 'function') renderIsometric();
 }
 function removeOpening(id) {
   const r = activeRoom(); if (!r || !r.openings) return;

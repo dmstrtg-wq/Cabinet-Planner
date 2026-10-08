@@ -149,6 +149,7 @@ function renderCabinetList() {
       <div class="opening-item">
         <div class="opening-item-info">${OPENING_LABELS[o.type] || o.type}</div>
         <div class="opening-item-dim">${o.width}" × ${o.height}" @ ${o.offset || 0}" from left</div>
+        ${o.type !== 'sink-loc' ? `<label class="opening-trim" title="Casing around it (and sill + apron on a window)"><input type="checkbox" ${o.noTrim ? '' : 'checked'} onchange="setOpeningTrim('${o.id}', this.checked)"> Trim</label>` : ''}
         <button class="opening-remove" onclick="removeOpening('${o.id}')" aria-label="Remove opening">×</button>
       </div>`).join('');
   }
