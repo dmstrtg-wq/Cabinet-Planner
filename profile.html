@@ -720,6 +720,8 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
         <div class="tab-title">My Pricing</div>
         <div class="tab-desc">Download our price sheet template, fill in what you charge for each size and finish, then upload it back — every quote will use your real numbers.</div>
 
+        <div class="section" id="pl-lists" style="display:none;"></div>
+
         <div class="section">
           <div class="section-head">
             <div class="section-title">Price Sheets</div>
@@ -2490,6 +2492,7 @@ async function init() {
   loadCompanyFiles('price_list');
   if (typeof piRenderPending === 'function') piRenderPending();   // open price questions (5.8b)
   if (typeof piRenderBasis === 'function') piRenderBasis();       // MSRP-priced suppliers (5.8c)
+  if (typeof plRender === 'function') plRender();                 // Your Price Lists (view / replace / delete)
 
   // Stats
   const projs = projects || [];
@@ -2612,6 +2615,7 @@ init();
 })();
 </script>
 <script src="/js/priceimport.js" data-categories="essential"></script>
+<script src="/js/pricelists.js" data-categories="essential"></script>
 <script src="/js/tips.js" data-categories="essential"></script>
 
 </body>

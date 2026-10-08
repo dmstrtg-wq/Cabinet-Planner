@@ -522,3 +522,13 @@ Fix (netlify/functions/price-import.js, page step): the price is the first purel
 - **Second fix (js/priceimport.js):** an item code whose two reads differed only by a curly vs straight inch mark (B24MW/(24"W) vs (24”W)) was split into two "disputed" cabinets → now one. Tested with the new merge step.
 - Questions this run would ask: 2 (W3012B / W3312B priced out of order vs their neighbors — a real check).
 - [ ] After push: Dan (or Sam on her new account) re-imports the full Matrix PDF; then clean up the junk finishes 3W / 3W2 / 4W / TP on Dan's account (with Dan's OK).
+
+### Your Price Lists — view / download / replace / delete (built 2026-10-08) — no SQL, push only
+My Pricing now starts with **Your Price Lists**: one row per supplier (finishes, number of prices, import date, open questions) plus "Your price sheet / other prices". Buttons:
+- **View** — price table (sizes × finishes, with the supplier's item codes).
+- **Download** — our price sheet template with the current prices filled in (item codes in the notes column) → edit in Excel → upload back.
+- **Replace** — opens the import with that supplier filled in. **Re-importing a supplier that's already loaded replaces its whole list** (Dan's choice): the confirm screen says how many old prices will be removed, which old finishes go, and that old open questions are cleared. Old prices stay until the new ones are saved.
+- **Delete** — removes that supplier's prices, item codes, open questions and the finishes its import created (Dan's choice); warns which projects use those finishes. Finishes you made yourself stay.
+Every import now records which finishes it priced. Older imports (Dan's Oct 5 Matrix) are worked out from the saved item codes when the account has one supplier.
+Claude tested: on Dan's REAL data in a save-blocked tab → Matrix = 25 finishes, 642 prices, 8 open questions, created finishes 3W / 3W2 / 4W / TP; deleting would leave the 21 regular finishes and nothing else. Locally with sample data (2 suppliers + price-sheet prices): view, download, delete (only that supplier removed), case-insensitive replace match. Copy check clean.
+- [ ] After push (Dan): My Pricing → Your Price Lists → Matrix → **Delete** → then import the full Matrix PDF fresh (base cabinets now come through). That also clears the junk finishes. Then give ZZ Claude Test a real finish.

@@ -135,6 +135,8 @@ const TIP_SETS = {
       body: 'Every price comes from here, and nothing is guessed. Download the template, fill in your price for each size and finish, and upload it again.' },
     { el: 'sec:Import a Supplier Price List', tier: 'silver', title: 'Or import your supplier\'s list',
       body: 'Upload the list just as your supplier sent it (Excel, CSV or PDF). It\'s read for you, you answer any questions, and nothing is saved until you review it.' },
+    { el: '#pl-lists', tier: 'silver', title: 'Your price lists',
+      body: 'Every price list you\'ve loaded is listed here. You can view its prices, download it to edit in Excel, replace it with a newer list, or delete it.' },
   ]},
   'profile-team': { name: 'Team', steps: [
     { el: 'sec:Team Members', tier: 'gold', title: 'Your team',

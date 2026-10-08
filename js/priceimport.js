@@ -1059,6 +1059,17 @@ function piReopenQuestions() {
 // ════════════════════════════
 // SAVE
 // ════════════════════════════
+// The supplier's list already on the account, if this import is for a supplier that's loaded
+// (name matched without case: "matrix" = "Matrix"). plOwnership lives in pricelists.js.
+function piReplacing(cp) {
+  if (typeof plOwnership !== 'function' || !PI || !PI.supplier) return null;
+  const own = plOwnership(cp).find(o => o.name.toLowerCase() === PI.supplier.trim().toLowerCase());
+  return own && (own.codes.size || own.pending || own.created.length) ? own : null;
+}
+// Finish codes the new import prices (existing ones) — their finishes stay when replacing
+function piKeepCodes(plan, later) {
+  return new Set([...plan.rows.map(r => r.ref), ...later.flatMap(it => Object.keys(piItemPrices(it)))].filter(r => !r.startsWith('new:')));
+}
 async function piSave() {
   const st = piStatuses(), plan = piPlan(st);
   const later = PI.items.filter(it => st.get(it)[0] === 'later' || st.get(it)[0] === 'look');
@@ -1074,6 +1085,17 @@ async function piSave() {
   const codes = [...new Set(plan.rows.map(r => r.ref).filter(r => !r.startsWith('new:')))];
   const switching = codes.filter(c => { const b = piBasisOf(c); return (b === 'msrp') !== (PI.basis === 'msrp') && piPriceCount(c) > 0; });
   if (switching.length) lines.push(`⚠ ${switching.map(piRefName).join(', ')} already ha${switching.length === 1 ? 's' : 've'} prices saved as ${PI.basis === 'msrp' ? 'cost' : 'MSRP'}. After saving, ALL ${switching.length === 1 ? 'its' : 'their'} prices are treated as ${PI.basis === 'msrp' ? 'MSRP' : 'cost'}.`);
+  // Re-importing a supplier that's already loaded replaces its whole list (Dan, 2026-10-08)
+  const own = piReplacing(companyProfile);
+  if (own) {
+    const keep = piKeepCodes(plan, later);
+    const newKeys = new Set(plan.rows.filter(r => !r.ref.startsWith('new:')).map(r => `${r.it.t}|${piSizeKey(r.it)}|${r.ref}`));
+    const gone = plCells(companyProfile, own.codes).filter(x => !newKeys.has(`${x.t}|${x.sk}|${x.c}`)).length;
+    const dropFins = own.created.filter(c => !keep.has(c));
+    lines.push('', `This replaces your current ${own.name} price list.` + (gone ? ` ${gone} old price${gone === 1 ? '' : 's'} not in this file will be removed.` : ''));
+    if (dropFins.length) lines.push(`• Finishes from the old list that this file doesn't price will be removed: ${dropFins.map(piRefName).join(', ')}`);
+    if (own.pending) lines.push(`• The old list's ${own.pending} open question${own.pending === 1 ? '' : 's'} will be cleared.`);
+  }
   if (plan.changed.length) {
     lines.push('', 'Biggest changes:');
     plan.changed.slice().sort((a, b) => Math.abs(b.price - b.was) - Math.abs(a.price - a.was)).slice(0, 8)
@@ -1093,6 +1115,8 @@ async function piSave() {
   }
   if (sel.error && sel.error.code !== 'PGRST116') { showToast('Could not load your pricing: ' + sel.error.message); PI.step = 'review'; piRender(); return; }
   const cur = sel.data || {};
+  const ownNow = piReplacing(cur);
+  if (ownNow) { PI.supplier = ownNow.name; Object.assign(cur, plWithout(cur, ownNow, piKeepCodes(plan, later))); }
 
   // Finishes: create the new ones this import actually prices. A company still on the generic
   // defaults keeps them (existing projects may use them).
@@ -1133,10 +1157,14 @@ async function piSave() {
     });
     qs.priceBasis = pb; row.quote_settings = qs;
   }
-  if (!missing.has('price_import_state') && later.length) {
+  if (!missing.has('price_import_state')) {
     const state = { ...(cur.price_import_state || {}) };
     const sups = { ...(state.suppliers || {}) };
     const sup = { ...(sups[PI.supplier] || {}) };
+    // What this import priced, so Your Price Lists can show, replace or delete exactly this list
+    sup.codes = [...new Set([...(sup.codes || []), ...plan.rows.map(r => refCode[r.ref] || r.ref),
+      ...later.flatMap(it => Object.keys(piItemPrices(it)).map(ref => refCode[ref] || ref))])];
+    sup.importedAt = new Date().toISOString(); sup.fileName = PI.fileName || '';
     const keep = (sup.pending || []).filter(p => !later.some(it => it.key === p.key));
     later.forEach(it => {
       const prices = {};
@@ -1159,6 +1187,7 @@ async function piSave() {
   PI.step = 'done'; piRender();
   piRenderPending();
   piRenderBasis();
+  if (typeof plRender === 'function') plRender();
 }
 function piBasisOf(code) { const pb = (companyProfile.quote_settings || {}).priceBasis || {}; return pb[code] ? pb[code].kind : 'cost'; }
 function piPriceCount(code) {
