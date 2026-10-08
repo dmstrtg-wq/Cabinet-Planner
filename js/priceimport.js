@@ -399,7 +399,10 @@ async function piReadPage(pg, img) {
 // them. With two reads, any disagreement or a line only one read found asks for a third read;
 // after that, two out of three is enough; anything else is "disputed" (a question later).
 function piMergeReads(reads, pg) {
-  reads.forEach(r => { if (!r.failed) r.rows = (r.rows || []).map(x => ({ ...x, col: piCleanCol(x.col) })).filter(x => x.col !== null); });
+  // (Curly and straight inch/foot marks are the same item code: B24MW/(24"W) = B24MW/(24”W) —
+  // reads that differed only in that used to split one cabinet into two disputed ones.)
+  const plainMarks = v => String(v || '').replace(/[”“″]/g, '"').replace(/[’‘′]/g, "'");
+  reads.forEach(r => { if (!r.failed) r.rows = (r.rows || []).map(x => ({ ...x, sku: plainMarks(x.sku), col: piCleanCol(x.col) })).filter(x => x.col !== null); });
   const ok = reads.filter(r => !r.failed);
   const groupOf = () => pg.group;   // the finish group is decided per page (and can be edited), never per line
   const keyOf = r => [piNorm(groupOf(r)), r.sku.toUpperCase().replace(/\s+/g, ''), piNorm(r.col)].join('|');
