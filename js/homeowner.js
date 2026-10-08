@@ -68,7 +68,7 @@ function homeBrand() {
   }
   const title = document.getElementById('lead-modal-title'), intro = document.getElementById('lead-modal-intro'), legal = document.getElementById('lead-modal-legal');
   if (title) title.textContent = `Send your design to ${name}`;
-  if (intro) intro.textContent = `${name} gets your whole design — every cabinet, measurement and finish you picked — and will contact you about pricing and next steps.`;
+  if (intro) intro.textContent = `${name} gets your whole design, including every cabinet, measurement and finish you picked, and will contact you about pricing and next steps.`;
   if (legal) legal.textContent = `By sending, you agree to be contacted by ${name} about your project. Your design and contact details go only to them.`;
   const welcome = document.querySelector('#welcome h2');
   if (welcome) welcome.textContent = `Design your kitchen with ${name}`;

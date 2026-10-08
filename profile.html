@@ -606,7 +606,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;">
                   <input type="checkbox" id="cp-slides-included" checked> Drawer slides come with our cabinets
                 </label>
-                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Untick this if slides are an add-on: quotes will then count one pair of slides per drawer under Hardware &amp; Accessories (you type the price on each quote).</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Uncheck this if slides are an add-on: quotes will then count one pair of slides per drawer under Hardware &amp; Accessories (you type the price on each quote).</div>
               </div>
               <div style="margin-top:14px;display:flex;gap:16px;flex-wrap:wrap;">
                 <div class="form-group" style="margin:0;"><label for="cp-tax-pct">Default sales tax %</label><input type="number" id="cp-tax-pct" min="0" max="30" step="0.01" placeholder="e.g. 8.81" style="width:140px;"></div>
@@ -681,7 +681,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 <input type="checkbox" id="dl-on" style="width:18px;height:18px;accent-color:var(--accent);cursor:pointer;">
                 <span style="font-size:14px;font-weight:700;">Turn on my homeowner design link</span>
               </label>
-              <div style="font-size:12px;color:var(--muted);margin:0 0 16px 30px;line-height:1.6;">Homeowners design with your door styles and finishes — never your prices — then send the design to you. It lands in your Leads tab with the whole design attached.</div>
+              <div style="font-size:12px;color:var(--muted);margin:0 0 16px 30px;line-height:1.6;">Homeowners design with your door styles and finishes (they never see your prices) and then send the design to you. It lands in your Leads tab with the whole design attached.</div>
               <div class="form-group"><label>Link name</label>
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;"><span style="color:var(--muted);">mycabinetplanner.com/app?pro=</span>
                 <input type="text" id="dl-slug" maxlength="40" placeholder="your-company" style="width:220px;" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'')"></div>
@@ -696,7 +696,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><code id="dl-snippet" style="font-size:11px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:6px 8px;word-break:break-all;max-width:100%;"></code>
                   <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="copyDesignLink('snippet')">Copy button code</button></div>
               </div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Your company name, logo, phone, email and website — and your finish names and colors — are shown to homeowners and refreshed each time you save here. Save again after you change your finishes.</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Homeowners see your company name, logo, phone, email and website, plus your finish names and colors. They're refreshed each time you save here. Save again after you change your finishes.</div>
               <button class="btn btn-primary" onclick="saveDesignLink()">Save Design Link</button>
             </div>
           </div>
@@ -735,7 +735,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
               <tbody id="pricelist-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
             </table>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload a CSV or Excel sheet from your supplier and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload your supplier's price list (Excel, CSV or PDF), and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
         </div>
 
         <div id="pi-pending" style="display:none;margin-bottom:18px;"></div>

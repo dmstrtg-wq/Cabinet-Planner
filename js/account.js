@@ -201,7 +201,7 @@ function applyTierGates() {
 
 function showTierUpgradePrompt(required, featureName) {
   const tierLabel = { silver: 'Silver', gold: 'Gold' };
-  const msg = `${featureName} is available on the ${tierLabel[required] || required} plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.`;
+  const msg = `${featureName} is available on the ${tierLabel[required] || required} plan and above.\n\nYou can upgrade under Subscription in your profile.`;
   alert(msg);
 }
 

@@ -511,7 +511,7 @@ async function piLayoutSheets(names) {
     } catch (e) {
       if (e.status === 429 || e.status === 403 || e.status === 503) { fatal = e.message; break; }
       s = piGuessLayout(grid);
-      note = "The AI couldn't read this sheet's layout, so this is a best guess — check it below.";
+      note = "The AI couldn't read this sheet's layout, so this is our best guess. Please check it below.";
     }
     const titles = new Map((s.groupTitles || []).filter(g => piGroupOk(g.name)).map(g => [g.row, g.name]));
     PI.layouts[name] = {
@@ -898,7 +898,7 @@ function piFillSize(it) {
 const PI_CARD_TEXT = {
   style: ['New finishes that look like ones you have', "If it's the same door, its prices should go to your existing finish instead of creating a second one."],
   read: ["The two reads of this page don't agree", `Lines where the AI's reads differ by more than $${PI_TOL}, or only one read found the line. The suggested price is the higher reading — check it against the page.`],
-  price: ['Listed more than once at different prices', `The same item code appears with prices more than $${PI_TOL} apart. Suggested: the price that fits between the neighbouring sizes, otherwise the higher one.`],
+  price: ['Listed more than once at different prices', `The same item code appears with prices more than $${PI_TOL} apart. Suggested: the price that fits between the neighboring sizes, otherwise the higher one.`],
   which: ['Two finish groups price the same finish', 'Two groups (e.g. two tiers) give the same finish different prices. Suggested: the higher price.'],
   order: ['Prices that look out of line', `A wider cabinet costs more than $${PI_TOL} less than a narrower one — possibly a typo in the price list. Suggested: keep the price list's price.`],
   low: ["Items the AI wasn't sure about", 'Check the cabinet type and size (pre-filled with the best guess).'],

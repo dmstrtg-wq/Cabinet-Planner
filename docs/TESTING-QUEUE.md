@@ -503,3 +503,8 @@ Claude tested locally (simulated new Gold account, phone + laptop sizes; no cons
 - **Tips rewritten as complete sentences** (Dan saw grammar problems — they were clipped fragments like "Flags layout problems…").
 Claude tested locally: trim off/on redraws the demo window correctly; tips file loads (48 tips).
 - [ ] After push: untick Trim on a window → elevation and Export PDF show it without casing/sill/apron.
+
+### Copy checker (built 2026-10-08) — run before every push
+`python3 tools/copy_check.py` checks every piece of text people see (856 today: pages, tips, Help & FAQ, messages, alert emails): grammar + spelling through LanguageTool's free service (only the visible text is sent), plus our own checks for AI-sounding words ("seamless", "unlock", "elevate", "whether you're"…), dash-heavy lines and sentences with no subject. Report: docs/copy-check-report.md. `--offline` = our checks only; `--legal` adds the legal pages. Known-OK trade wording goes in IGNORE / ALLOW at the top of the script. /tools is blocked on the live site.
+First run fixed: British spellings (centre ×2, neighbouring, "Untick" → "Uncheck"), missing commas, "Saves locally in your browser" fragment, "unlock" ×3 (and the demo pop-up said "Pro subscription" — there's no Pro plan; now "Silver and Gold plans"), three lines with a phrase hung between two dashes, the price-list upload line now mentions PDF. Now: 0 issues.
+- [ ] After push: the demo banner reads "subscribe to get pricing & PDF export".

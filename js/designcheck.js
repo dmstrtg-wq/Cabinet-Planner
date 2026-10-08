@@ -250,7 +250,7 @@ function computeDesignIssues(r) {
     });
     const side = Math.min(left, right);
     if (side < R.toilet.side)
-      add('problem', 'wc-side:' + T.id, `Toilet is ${_dcIn(side)} from its centre to the side`, `Code minimum is ${R.toilet.side}" from the centre of the toilet to a wall, vanity or tub (18" is more comfortable).`, [T]);
+      add('problem', 'wc-side:' + T.id, `Toilet is ${_dcIn(side)} from its center to the side`, `Code minimum is ${R.toilet.side}" from the center of the toilet to a wall, vanity or tub (18" is more comfortable).`, [T]);
     if (front < R.toilet.front)
       add('problem', 'wc-front:' + T.id, `Only ${_dcIn(front)} clear in front of the toilet`, `Code minimum is ${R.toilet.front}" of clear floor in front (${R.toilet.frontComfort}" recommended).`, [T]);
     else if (front < R.toilet.frontComfort)
