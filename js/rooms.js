@@ -41,6 +41,7 @@ function openNewProjectModal() {
   ['np-customer','np-phone','np-company','np-notes','np-address','np-city'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   setRoomDimFields('np', ROOM_DIM_DEFAULTS);
   document.getElementById('np-type').value = 'Kitchen';
+  syncStarterOption('np');
   // Populate state dropdown if empty
   const sel = document.getElementById('np-state');
   if (sel.options.length <= 1) {
@@ -178,12 +179,18 @@ function renameProject(id) {
 // ════════════════════════════
 // Room types with a starter layout (7.4): bathroom, living room (entertainment center),
 // hallway (mudroom lockers). The option only shows for those.
-const STARTER_TEXT = { bath: 'Start with a bathroom layout', living: 'Start with an entertainment center', hall: 'Start with a mudroom locker wall' };
+// Starter layouts are opt-in (Dan, 2026-10-08): the box starts unticked and says exactly what it adds
+const STARTER_TEXT = {
+  bath: 'Add a starter bathroom: vanity, wall cabinet, mirror, two sconces, toilet and a tub or shower, sized to the room',
+  living: 'Add a starter entertainment center: media base, two open bookcases and a wall-mounted TV',
+  hall: 'Add a mudroom locker wall (up to four lockers)',
+};
 function syncStarterOption(prefix) {
   const kindEl = document.getElementById(prefix === 'np' ? 'np-type' : 'ar-kind');
   const kind = prefix === 'np' ? (/bath|vanity/i.test(kindEl.value) ? 'bath' : '') : kindEl.value;
   const g = document.getElementById(prefix + '-starter-group'); if (g) g.style.display = STARTER_TEXT[kind] ? '' : 'none';
   const t = document.getElementById(prefix + '-starter-text'); if (t && STARTER_TEXT[kind]) t.textContent = STARTER_TEXT[kind];
+  const cb = document.getElementById(prefix + '-starter'); if (cb) cb.checked = false;   // always opt-in
 }
 function applyStarterLayout(r) {
   if (r.kind === 'bath') bathStarterLayout(r);

@@ -808,7 +808,7 @@
     </div>
     <div class="form-group"><label>Project Type</label><select id="np-type" onchange="syncStarterOption('np')"><option>Kitchen</option><option>Bathroom</option><option>Vanity</option><option>Laundry</option><option>Other</option></select></div>
     <div class="form-group" id="np-starter-group" style="display:none;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
-      <input type="checkbox" id="np-starter" checked> Start with a bathroom layout (vanity, mirror, sconces, toilet, tub or shower — sized to the room)</label></div>
+      <input type="checkbox" id="np-starter"> <span id="np-starter-text">Add a starter bathroom: vanity, wall cabinet, mirror, two sconces, toilet and a tub or shower, sized to the room</span></label></div>
     <div class="form-group np-pro"><label>Street Address <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#64748b;">(optional)</span></label><input type="text" id="np-address" placeholder=""></div>
     <div class="form-row np-pro">
       <div class="form-group"><label>City</label><input type="text" id="np-city" placeholder=""></div>
@@ -875,7 +875,7 @@
         <option value="kitchen">Kitchen</option><option value="bath">Bathroom</option><option value="hall">Hallway</option>
         <option value="living">Living room</option><option value="laundry">Laundry</option><option value="other">Other</option></select></div>
       <div class="form-group" id="ar-starter-group" style="display:none;align-self:end;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
-        <input type="checkbox" id="ar-starter" checked> <span id="ar-starter-text">Start with a bathroom layout</span></label></div>
+        <input type="checkbox" id="ar-starter"> <span id="ar-starter-text"></span></label></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" value="120" min="12" max="1200"></div>

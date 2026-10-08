@@ -321,6 +321,7 @@ function applyTemplate(tId) {
   } else {
     document.getElementById('ar-lcut-fields').style.display = 'none';
   }
+  syncStarterOption('ar');
   openModal('modal-add-room');
   setTimeout(() => document.getElementById('ar-name').focus(), 50);
 }
