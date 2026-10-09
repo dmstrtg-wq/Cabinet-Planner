@@ -21,12 +21,11 @@ function loadScript(src) {
   return _scriptLoads[src];
 }
 
-/* ── EXPORT PDF (Silver+, Build Plan 5.5) — the one PDF button ──────
-   Cover page, floor plan + every wall elevation for EVERY room, 3D views, cut list, itemized
-   quote (same numbers as the Quote window), the company's own terms and signature lines.
-   Letter or Tabloid (11×17). Each part can be left out: without the quote it's the plans-only
-   set for installers (the old Print Plans); the old Print Quote is this with the quote ticked —
-   on Gold, "Mark as sent" and revision tracking happen here (recordQuoteVersion, quote.js).
+/* ── PDF EXPORTS (Silver+, Build Plan 5.5) ─────────────────────────
+   One builder (buildExportPackage) for both exports: Export Plans (cover + every room's floor
+   plan, wall elevations and 3D views; no prices; optional watermark) and the Quote PDF (itemized
+   quote, terms, signatures; Gold "Mark as sent" and revision tracking via recordQuoteVersion in
+   quote.js; plans optional). Letter or Tabloid (11×17).
    ──────────────────────────────────────────────────────────────── */
 const PKG_SIZES = { letter: { w: 215.9, h: 279.4, label: 'Letter (8.5 × 11)' }, tabloid: { w: 279.4, h: 431.8, label: 'Tabloid (11 × 17)' } };
 
@@ -42,61 +41,80 @@ function pkgQuotePreview(p, T) {
   }
   return { text: '', canMark: true };
 }
-function exportPDF(btn) {
-  if (!demoGate('export')) return;
-  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF Export Package'); return; }
+// Two exports (Dan, 2026-10-08):
+//   • Export Plans (header, next to Quote): cover with company info + every room's floor plan,
+//     wall elevations and 3D views. No prices, no quote, no cut list. Optional watermark.
+//   • Quote PDF (Quote window): the quote with terms and signatures (+ Gold versioning), and
+//     optionally the plans in the same file.
+function pkgCanExport() {
+  if (!demoGate('export')) return null;
+  if (!canAccess('silver')) { showTierUpgradePrompt('silver', 'PDF export'); return null; }
   const p = activeProj();
-  if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return; }
-  if (!checkCompanyProfile()) return;
+  if (!p || !p.rooms.length) { alert('Add at least one room before exporting.'); return null; }
+  return p;
+}
+function pkgModal(html) {
   let el = document.getElementById('modal-export-pkg');
   if (!el) {
     el = document.createElement('div');
     el.id = 'modal-export-pkg'; el.className = 'modal-overlay hidden';
-    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Export PDF package');
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Export a PDF');
     document.body.appendChild(el);
   }
-  let size = 'letter';
-  try { if (localStorage.getItem('cp_pkg_size') === 'tabloid') size = 'tabloid'; } catch (e) {}
-  let inc = { plans: true, views: true, cut: true, quote: true };
-  try { inc = { ...inc, ...JSON.parse(localStorage.getItem('cp_pkg_parts') || '{}') }; } catch (e) {}
-  const T = quoteTotals(p), qp = pkgQuotePreview(p, T);
-  const rooms = p.rooms.length === 1 ? 'Floor plan and every wall elevation' : `Floor plans and wall elevations for all ${p.rooms.length} rooms`;
-  const part = (k, label, hint) => `<label style="display:block;font-weight:400;font-size:13px;margin-bottom:6px;cursor:pointer;"><input type="checkbox" id="pkg-${k}" ${inc[k] ? 'checked' : ''} onchange="pkgSync()"> <b>${label}</b>${hint ? ` <span style="color:#64748b;">${hint}</span>` : ''}</label>`;
-  el.innerHTML = `<div class="modal" style="width:500px;max-width:96vw;">
-    <h3>Export PDF</h3>
-    <p style="font-size:13px;color:#64748b;margin:0 0 10px;">One file with a cover page and the parts you choose. Leave the quote out for a plans-only set for installers.</p>
-    <div style="font-size:13px;font-weight:600;margin:4px 0 6px;">Include</div>
-    ${part('plans', rooms)}
-    ${part('views', '3D views', '(the ones added to the quote)')}
-    ${part('cut', 'Cut list')}
-    ${part('quote', 'Quote', 'with your terms and signature lines')}
-    <div id="pkg-quote-info" style="margin:2px 0 8px 22px;font-size:12px;color:#475569;">
-      <div>Total ${fmtMoney(T.total)}. ${escHtml(qp.text)}</div>
-      ${qp.canMark ? `<label style="display:block;font-weight:400;margin-top:4px;cursor:pointer;"><input type="checkbox" id="pkg-mark"> Mark as sent to the customer <span style="color:#64748b;">(locks this version; later changes print as tracked revisions)</span></label>` : ''}
-      ${T.unpriced ? `<div style="color:#b45309;margin-top:4px;">⚠ ${T.unpriced} cabinet${T.unpriced === 1 ? '' : 's'} ${T.unpriced === 1 ? "doesn't" : "don't"} have a price for ${T.unpriced === 1 ? 'its' : 'their'} finish. ${T.unpriced === 1 ? 'It' : 'They'}'ll show as N/A and won't be in the total.</div>` : ''}
-    </div>
-    <div style="font-size:13px;font-weight:600;margin:8px 0 6px;">Page size</div>
-    ${Object.entries(PKG_SIZES).map(([k, s]) => `<label style="display:block;font-weight:400;font-size:13px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="pkg-size" value="${k}"${k === size ? ' checked' : ''}> ${s.label}</label>`).join('')}
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-export-pkg')">Cancel</button>
-      <button class="btn btn-primary" id="pkg-go">Create PDF</button>
-    </div></div>`;
-  pkgSync();
-  el.querySelector('#pkg-go').onclick = () => {
-    const pick = (el.querySelector('input[name="pkg-size"]:checked') || {}).value || 'letter';
-    const parts = {}; ['plans', 'views', 'cut', 'quote'].forEach(k => { parts[k] = document.getElementById('pkg-' + k).checked; });
-    if (!Object.values(parts).some(Boolean)) { alert('Pick at least one part to include.'); return; }
-    try { localStorage.setItem('cp_pkg_size', pick); localStorage.setItem('cp_pkg_parts', JSON.stringify(parts)); } catch (e) {}
-    const mark = document.getElementById('pkg-mark');
-    closeModal('modal-export-pkg');
-    buildExportPackage(btn, pick, { ...parts, markSent: !!(parts.quote && mark && mark.checked) });
-  };
+  el.innerHTML = `<div class="modal" style="width:500px;max-width:96vw;">${html}</div>`;
   openModal('modal-export-pkg');
+  return el;
+}
+const pkgLS = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const pkgSave = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function pkgSizeChoice() {
+  const size = pkgLS('cp_pkg_size', 'letter') === 'tabloid' ? 'tabloid' : 'letter';
+  return `<div style="font-size:13px;font-weight:600;margin:10px 0 6px;">Page size</div>
+    ${Object.entries(PKG_SIZES).map(([k, s]) => `<label style="display:block;font-weight:400;font-size:13px;margin-bottom:6px;cursor:pointer;"><input type="radio" name="pkg-size" value="${k}"${k === size ? ' checked' : ''}> ${s.label}</label>`).join('')}`;
+}
+function pkgPickedSize(el) { const v = (el.querySelector('input[name="pkg-size"]:checked') || {}).value || 'letter'; pkgSave('cp_pkg_size', v); return v; }
+
+function exportPlans(btn) {
+  const p = pkgCanExport(); if (!p) return;
+  const co = p.company || companyProfile.company_name || '';
+  const wmOn = pkgLS('cp_wm_on', '1') === '1';
+  const wmText = pkgLS('cp_wm_text', '') || (co ? `${co} — For review only` : 'For review only');
+  const rooms = p.rooms.length === 1 ? 'the floor plan, every wall elevation' : `floor plans and wall elevations for all ${p.rooms.length} rooms`;
+  const el = pkgModal(`<h3>Export plans</h3>
+    <p style="font-size:13px;color:#64748b;margin:0 0 10px;">A PDF with your company info on the cover, ${rooms} and the 3D views you added to the quote. It has no prices, quote or cut list, so you can leave it with a customer or send it to an installer.</p>
+    <label style="display:block;font-weight:600;font-size:13px;margin:6px 0 4px;cursor:pointer;"><input type="checkbox" id="pkg-wm" ${wmOn ? 'checked' : ''} onchange="document.getElementById('pkg-wm-text').disabled = !this.checked"> Add a watermark</label>
+    <input type="text" id="pkg-wm-text" class="cp-input" maxlength="60" value="${escHtml(wmText)}" ${wmOn ? '' : 'disabled'} style="width:100%;margin-left:0;" aria-label="Watermark text">
+    <div class="form-hint" style="margin-top:4px;">Printed faintly across every page, so the drawings can't easily be passed around as someone else's work.</div>
+    ${pkgSizeChoice()}
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-export-pkg')">Cancel</button><button class="btn btn-primary" id="pkg-go">Create PDF</button></div>`);
+  el.querySelector('#pkg-go').onclick = () => {
+    const size = pkgPickedSize(el);
+    const on = document.getElementById('pkg-wm').checked, text = document.getElementById('pkg-wm-text').value.trim();
+    pkgSave('cp_wm_on', on ? '1' : '0'); if (text) pkgSave('cp_wm_text', text);
+    closeModal('modal-export-pkg');
+    buildExportPackage(btn, size, { plans: true, views: true, cut: false, quote: false, watermark: on && text ? text : '' });
+  };
 }
 
-function pkgSync() {
-  const q = document.getElementById('pkg-quote'), info = document.getElementById('pkg-quote-info');
-  if (q && info) info.style.display = q.checked ? '' : 'none';
+function exportQuote(btn) {
+  const p = pkgCanExport(); if (!p) return;
+  if (!checkCompanyProfile()) return;
+  const T = quoteTotals(p), qp = pkgQuotePreview(p, T);
+  const addPlans = pkgLS('cp_quote_plans', '0') === '1';
+  const el = pkgModal(`<h3>Quote PDF</h3>
+    <p style="font-size:13px;color:#64748b;margin:0 0 10px;">The itemized quote with the 3D views you added, your terms and signature lines. Total ${fmtMoney(T.total)}.</p>
+    ${qp.text ? `<p style="font-size:13px;margin:0 0 8px;">${escHtml(qp.text)}</p>` : ''}
+    ${qp.canMark ? `<label style="display:block;font-weight:400;font-size:13px;margin:0 0 8px;cursor:pointer;"><input type="checkbox" id="pkg-mark"> <b>Mark as sent to the customer</b> <span style="color:#64748b;">(locks this version; later changes print as tracked revisions)</span></label>` : ''}
+    ${T.unpriced ? `<p style="font-size:13px;color:#b45309;margin:0 0 8px;">⚠ ${T.unpriced} cabinet${T.unpriced === 1 ? '' : 's'} ${T.unpriced === 1 ? "doesn't" : "don't"} have a price for ${T.unpriced === 1 ? 'its' : 'their'} finish. ${T.unpriced === 1 ? 'It' : 'They'}'ll show as N/A and won't be in the total.</p>` : ''}
+    <label style="display:block;font-weight:400;font-size:13px;margin:4px 0 0;cursor:pointer;"><input type="checkbox" id="pkg-addplans" ${addPlans ? 'checked' : ''}> Add the plans (floor plans and wall elevations) to this file</label>
+    ${pkgSizeChoice()}
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('modal-export-pkg')">Cancel</button><button class="btn btn-primary" id="pkg-go">Create PDF</button></div>`);
+  el.querySelector('#pkg-go').onclick = () => {
+    const size = pkgPickedSize(el), plans = document.getElementById('pkg-addplans').checked, mark = document.getElementById('pkg-mark');
+    pkgSave('cp_quote_plans', plans ? '1' : '0');
+    closeModal('modal-export-pkg');
+    buildExportPackage(btn, size, { plans, views: true, cut: false, quote: true, markSent: !!(mark && mark.checked) });
+  };
 }
 
 async function buildExportPackage(btn, sizeKey, inc) {
@@ -162,11 +180,11 @@ async function buildExportPackage(btn, sizeKey, inc) {
     doc.setDrawColor(180,83,9); doc.setLineWidth(0.4); doc.line(MAR, y, PW-MAR, y);
     return y + 5;
   }
-  const len = n => { const ft = Math.floor(n/12), ins = n % 12; return ft > 0 ? `${ft}'-${fmtFrac(ins)}"` : `${fmtFrac(ins)}"`; };
+  const len = n => { const ft = Math.floor(n/12), ins = n % 12; return ft > 0 ? `${ft}'-${fmtFrac(ins)}` : fmtFrac(ins); };   // (fmtFrac adds the ")
   const wallName = w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '—';
 
   // ── Cover ─────────────────────────────────────────────────────────
-  hdr('Design & Quote');
+  hdr(inc.quote ? 'Design & Quote' : 'Plans');
   let y = 30;
   if (logo) {
     const d = fit(logo.w, logo.h, Math.min(90, CW), 30);
@@ -183,7 +201,8 @@ async function buildExportPackage(btn, sizeKey, inc) {
   doc.setFontSize(26); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8);
   doc.text(`${p.type || 'Cabinet'} ${inc.quote ? 'Design' : 'Plans'}`, MAR, y); y += 9;
   doc.setFontSize(12); doc.setFont('helvetica','normal'); doc.setTextColor(180,83,9);
-  doc.text(Q.label, MAR, y); y += 16;
+  if (inc.quote) doc.text(Q.label, MAR, y);
+  y += 16;
   const custAddr = [p.address, [p.city, p.state].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   [['Prepared for', p.customer || '—'], ...(custAddr ? [['Address', custAddr]] : []), ['Date', today],
    ['Door style', p.style ? `${styleName} (${p.style})` : '—'], ['Rooms', p.rooms.map(r => r.name).join(', ')],
@@ -377,7 +396,19 @@ async function buildExportPackage(btn, sizeKey, inc) {
     doc.text(`${coName}  ·  ${Q.num ? 'Quote #' + Q.num : 'Plans'}  ·  ${today}`, PW/2, PH-5, {align:'center'});
   }
 
-  const fname = (p.customer || 'project').replace(/[^a-z0-9]/gi,'_') + (inc.quote ? '_design_package.pdf' : '_plans.pdf');
+  // Watermark (Export Plans): faint, diagonal, over every page
+  if (inc.watermark) {
+    const wm = String(inc.watermark).slice(0, 60);
+    for (let i = 1; i <= nPages; i++) {
+      doc.setPage(i);
+      if (doc.GState) doc.setGState(new doc.GState({ opacity: 0.13 }));
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
+      doc.setFontSize(Math.max(28, Math.min(64, (PW * 1.25) / Math.max(8, wm.length) * 2.2)));
+      doc.text(wm, PW / 2, PH / 2, { align: 'center', angle: 45, baseline: 'middle' });
+      if (doc.GState) doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+  }
+  const fname = (p.customer || 'project').replace(/[^a-z0-9]/gi,'_') + (inc.quote ? (inc.plans ? '_quote_and_plans.pdf' : '_quote.pdf') : '_plans.pdf');
   doc.save(fname);
   done();
 }

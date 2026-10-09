@@ -186,8 +186,8 @@ function applyTierGates() {
   // Pricing-locked class — hides pricing toggle below Silver (Silver+ unlocks)
   document.body.classList.toggle('pricing-locked', !canAccess('silver'));
 
-  // PDF export button — Silver+
-  const pdfBtn = document.getElementById('pdf-export-btn');
+  // Export Plans button — Silver+
+  const pdfBtn = document.getElementById('export-plans-btn');
   if (pdfBtn) {
     const locked = !canAccess('silver');
     pdfBtn.style.opacity  = locked ? '0.45' : '';

@@ -550,3 +550,10 @@ Ran 4 typical supplier layouts through the real importer on Dan's account with e
 - Tips, Help & FAQ and the home page updated to match; removed code: Print Plans, Print Quote, the old upload table and its helpers.
 Claude tested locally (simulated Gold/Silver accounts, stand-in database): template routed to the exact reader and recorded with its file; Silver supplier limit; export window parts; Gold mark-as-sent → v1 + "Quote sent" log; unchanged reprint keeps CD-number; change → revision 2 logged "+$300.00 from v1"; plans-only → *_plans.pdf, no version recorded; Silver → fresh numbers; Quote window button opens Export; one tax input; sidebar shows My Profile + Sign Out; no console errors; copy check clean.
 - [ ] After push: Export PDF once with everything, once plans-only. On a Gold job: mark as sent, change a cabinet, export again → "Revision 2".
+
+### Export Plans + Quote PDF split (2026-10-08, Dan) — no SQL, push only
+- **Export Plans** (header, right next to Quote; the toolbar Export PDF button is gone): cover with company info + every room's floor plan, wall elevations and 3D views. **No prices, no quote, no cut list.** **Watermark** option (on by default, text editable, starts as "<Company> — For review only"), printed faintly and diagonally across every page; the choice and text are remembered.
+- **Quote window → Save quote as PDF:** the itemized quote with 3D views, terms and signature lines; Gold "Mark as sent" + revision tracking; optional "Add the plans to this file".
+- Fixed while testing: wall lengths in the PDF printed a doubled inch mark (10'-0""), and the plans cover bar said "Design & Quote".
+Claude tested locally: plans PDF text has no $, no "Quote #", no "TOTAL", no cut list; watermark visible on every page; quote PDF = quote only, no watermark, mark-as-sent locks it; with plans → one file; reprint doesn't add a version; no console errors; copy check clean.
+- [ ] After push: Export Plans on a real kitchen (check the watermark looks right on Tabloid too); Save quote as PDF from the Quote window.

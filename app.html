@@ -252,6 +252,7 @@
           </div>
           <button class="btn btn-secondary" onclick="openActivityLog()" title="Project activity log">Log</button>
           <button class="btn btn-success" onclick="openQuoteModal()">Quote</button>
+          <button class="btn btn-secondary" id="export-plans-btn" onclick="exportPlans(this)" title="Floor plans, wall elevations and 3D views with your company info. No prices. Optional watermark.">Export Plans</button>
           <button class="btn btn-secondary" id="share-btn" onclick="openShareModal()" title="Send your customer a link to view the design in 3D and approve it (Gold)">Share</button>
           <button class="btn btn-secondary" onclick="openEditProjectModal()">Edit</button>
           <button class="btn btn-secondary" onclick="replayTips()" title="Show the tips for this screen" style="font-weight:800;">Tips</button>
@@ -295,7 +296,6 @@
               
               <div class="order-wrap"><button id="order-list-btn" class="toolbar-btn" onclick="toggleOrderMenu(this)" aria-haspopup="true" title="Order list for your supplier"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h10v11H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>Order List</button><div class="order-menu layers-menu hidden"><button type="button" class="order-item" onclick="downloadOrderCSV(); this.closest('.order-menu').classList.add('hidden')">Download CSV (for supplier order forms)</button><button type="button" class="order-item" onclick="printOrderList(); this.closest('.order-menu').classList.add('hidden')">Print order list</button></div></div>
               <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h6l2 2v9h-8v-11z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>Summary</button>
-              <button id="pdf-export-btn" class="toolbar-btn-primary" onclick="exportPDF(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export PDF</button>
             </div>
 
             <div class="vp-controls">
@@ -1015,12 +1015,12 @@
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Quote Summary</div>
     <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;"></div>
 
-    <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Click <strong>Export PDF</strong> for the quote with your terms and signature lines. You can add the drawings and 3D views in the same file.</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Click <strong>Save quote as PDF</strong> for the quote with your terms and signature lines. Use <strong>Export Plans</strong> (next to the <strong>Quote</strong> button) for the drawings without prices.</p>
 
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-quote')">Close</button>
       <button class="btn btn-secondary" id="quote-share-btn" onclick="closeModal('modal-quote');openShareModal()">Share with customer</button>
-      <button class="btn btn-primary" id="quote-export-btn" onclick="closeModal('modal-quote'); exportPDF(document.getElementById('pdf-export-btn'))">Export PDF</button>
+      <button class="btn btn-primary" id="quote-export-btn" onclick="closeModal('modal-quote'); exportQuote(document.getElementById('export-plans-btn'))">Save quote as PDF</button>
     </div>
   </div>
 </div>
@@ -1139,7 +1139,7 @@
         <p><strong>Where do cabinet prices come from?</strong><br>Only from <strong>your</strong> price lists: My Profile → <strong>My Pricing</strong> → <strong>Add a price list</strong>. Upload your supplier's list as they sent it (Excel, CSV or PDF), or fill in our blank template. Nothing is estimated or made up.</p>
         <p><strong>Why does a cabinet say N/A?</strong><br>Your price sheet has no price for that cabinet's size in that finish. It's left out of the total until you add one.</p>
         <p><strong>Where do I add labor, delivery or a markup?</strong><br>Click <strong>Quote</strong>. Add job costs, trim and hardware there (you type those prices), and set your markup on the totals line. Customers see the markup built into cabinet prices.</p>
-        <p><strong>How do I make a PDF for my customer or installer?</strong><br>Click <strong>Export PDF</strong> (toolbar, or in the Quote window) and choose what to include: floor plans and elevations for every room, 3D views, the cut list and the quote with your terms and signature lines. Leave the quote out for a plans-only set for installers. On Gold, you can mark the quote as sent there, and later changes print as tracked revisions.</p>
+        <p><strong>How do I make a PDF for my customer or installer?</strong><br>For the drawings, click <strong>Export Plans</strong>, next to the <strong>Quote</strong> button. You get every room's floor plan, wall elevations and 3D views with your company info, no prices, and an optional watermark. For the price, open <strong>Quote</strong> and click <strong>Save quote as PDF</strong>. On Gold, you can mark the quote as sent there, and later changes print as tracked revisions.</p>
       </div>
     </div>
     <div class="faq-section">
