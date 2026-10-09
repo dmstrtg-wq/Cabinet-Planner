@@ -521,7 +521,9 @@ async function piLayoutSheets(names) {
       headerRow: s.headerRow, tables: piCleanTables(s.tables || [], [...titles.values(), name]),
       sheetIsGroup: !!s.sheetIsGroup, note,
       // every text-only row can be switched on/off as a finish-group title; the AI's picks start on
-      candidates: [...textRows.map(t => ({ row: t.row, name: titles.get(t.row) || t.text, on: titles.has(t.row) })),
+      // (the row's own text, not the AI's retelling of it — the AI sometimes shortens a long title,
+      // e.g. "…/ Gramercy White" came back as "…/ Gramercy")
+      candidates: [...textRows.map(t => ({ row: t.row, name: t.text || titles.get(t.row), on: titles.has(t.row) })),
         ...[...titles].filter(([r]) => !textRows.some(t => t.row === r)).map(([row, name]) => ({ row, name, on: true }))].sort((a, b) => a.row - b.row),
     };
   }
@@ -637,6 +639,19 @@ function piSuggestRefs(label) {
   const tier = parts[0].replace(/pricing|price|tier|series|level/ig, '').trim().toLowerCase();
   if (tier && parts.length === 1) { const t = fin.filter(f => (f.tier || '').toLowerCase() === tier); if (t.length) return t.map(f => f.code); }
   if (label === 'Price') return ['new:' + PI.supplier];
+  // "Gold Line - Ice White Shaker / Pepper Shaker", "Platinum Series: A, B": the names come after
+  // the dash/colon; the part before it is the line or tier (used if none of the names match)
+  let body = last, lead = '';
+  const dash = /^(.{1,40}?)\s+[-–—]\s+(.+)$/.exec(last) || /^(.{1,40}?):\s+(.+)$/.exec(last);
+  if (dash) { lead = dash[1]; body = dash[2]; }
+  if (dash) {
+    const viaBody = piSuggestRefs(body);
+    if (viaBody.some(r => !r.startsWith('new:'))) return viaBody;
+    const tierWord = lead.replace(/\b(line|pricing|price|tier|series|level|collection)\b/ig, '').trim().toLowerCase();
+    const t = tierWord ? fin.filter(f => (f.tier || '').toLowerCase() === tierWord) : [];
+    if (t.length) return t.map(f => f.code);
+    return viaBody;
+  }
   // "Pricing Gold" → a new finish just called "Gold"
   const clean = last.replace(/\b(pricing|price list|prices|price|tier|series|level|collection)\b/ig, ' ').replace(/\s+/g, ' ').trim() || last;
   const names = clean.split(/\s*(?:,|&|\/|\band\b)\s*/i).map(x => piTitle(x.trim())).filter(Boolean);

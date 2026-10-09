@@ -532,3 +532,11 @@ My Pricing now starts with **Your Price Lists**: one row per supplier (finishes,
 Every import now records which finishes it priced. Older imports (Dan's Oct 5 Matrix) are worked out from the saved item codes when the account has one supplier.
 Claude tested: on Dan's REAL data in a save-blocked tab → Matrix = 25 finishes, 642 prices, 8 open questions, created finishes 3W / 3W2 / 4W / TP; deleting would leave the 21 regular finishes and nothing else. Locally with sample data (2 suppliers + price-sheet prices): view, download, delete (only that supplier removed), case-insensitive replace match. Copy check clean.
 - [ ] After push (Dan): My Pricing → Your Price Lists → Matrix → **Delete** → then import the full Matrix PDF fresh (base cabinets now come through). That also clears the junk finishes. Then give ZZ Claude Test a real finish.
+
+### Spreadsheet (CSV / Excel) import check (2026-10-08) — Sam: almost every price list is CSV or Excel, rarely PDF
+Ran 4 typical supplier layouts through the real importer on Dan's account with every save blocked (nothing saved):
+1. One price per item (Item, Description, Price) — 16/16 matched, prices exact, 0 questions.
+2. One column per finish (Ice White Shaker / Pepper Shaker / Lait Grey Shaker) — columns auto-matched to Dan's AW / AP / AB, prices exact, 0 questions.
+3. Tier sections ("Gold Line - Ice White Shaker / Pepper Shaker" rows above each table) — **found 2 problems, fixed (js/priceimport.js):** the "Gold Line - " prefix stuck to the first finish name (→ proposed a duplicate new finish), and the AI shortened a long heading ("…/ Gramercy White" → "…/ Gramercy"). Now the heading's own text is used and the names after the dash/colon are matched (falling back to the tier, e.g. all Gold finishes). After the fix: AW, AP / AB, AR, GW, prices exact, 0 questions.
+4. Excel workbook with one sheet per tier ("Gold", "Platinum") — each sheet → that tier's finishes, prices exact, 0 questions.
+- [ ] Get a REAL CSV/Excel price list from Sam (or a supplier) and run it — synthetic sheets can't cover every supplier's quirks.
