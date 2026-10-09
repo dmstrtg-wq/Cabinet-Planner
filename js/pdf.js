@@ -81,7 +81,7 @@ function exportPlans(btn) {
   const wmText = pkgLS('cp_wm_text', '') || (co ? `${co} — For review only` : 'For review only');
   const rooms = p.rooms.length === 1 ? 'the floor plan, every wall elevation' : `floor plans and wall elevations for all ${p.rooms.length} rooms`;
   const el = pkgModal(`<h3>Export plans</h3>
-    <p style="font-size:13px;color:#64748b;margin:0 0 10px;">A PDF with your company info on the cover, ${rooms} and the 3D views you added to the quote. It has no prices, quote or cut list, so you can leave it with a customer or send it to an installer.</p>
+    <p style="font-size:13px;color:#64748b;margin:0 0 10px;">A PDF with your company info on the cover, ${rooms} and a 3D view of each room (the 3/4 view, or the views you added to the quote). It has no prices, quote or cut list, so you can leave it with a customer or send it to an installer.</p>
     <label style="display:block;font-weight:600;font-size:13px;margin:6px 0 4px;cursor:pointer;"><input type="checkbox" id="pkg-wm" ${wmOn ? 'checked' : ''} onchange="document.getElementById('pkg-wm-text').disabled = !this.checked"> Add a watermark</label>
     <input type="text" id="pkg-wm-text" class="cp-input" maxlength="60" value="${escHtml(wmText)}" ${wmOn ? '' : 'disabled'} style="width:100%;margin-left:0;" aria-label="Watermark text">
     <div class="form-hint" style="margin-top:4px;">Printed faintly across every page, so the drawings can't easily be passed around as someone else's work.</div>
@@ -115,6 +115,36 @@ function exportQuote(btn) {
     closeModal('modal-export-pkg');
     buildExportPackage(btn, size, { plans, views: true, cut: false, quote: true, markSent: !!(mark && mark.checked) });
   };
+}
+
+// Each room's 3/4 view (the "3/4 View" camera preset), captured like "Add to quote" does, for a
+// plans PDF without added 3D views. Puts the screen back the way it was afterwards.
+async function pkgAuto3D(p) {
+  if (typeof capture3DImage !== 'function' || typeof THREE === 'undefined') return [];
+  const rooms = p.rooms.filter(r => (r.cabinets || []).length || (r.appliances || []).length);
+  if (!rooms.length) return [];
+  const saved = { mode: state.viewMode || 'floor', room: state.activeRoomId,
+    cam: iso3D ? { pos: iso3D.camera.position.clone(), target: iso3D.controls.target.clone() } : null };
+  const out = [];
+  window._pdfMode = true;   // (also keeps tips from popping up mid-export)
+  try {
+    setViewMode('3d');
+    for (const r of rooms) {
+      state.activeRoomId = r.id;
+      renderIsometric();
+      setCameraPreset('hero', true);
+      await new Promise(res => requestAnimationFrame(() => setTimeout(res, 60)));
+      const img = capture3DImage();
+      if (img) out.push({ ...img, label: rooms.length > 1 ? r.name : '' });
+    }
+  } catch (e) { console.warn('3D views for the plans skipped:', e); }
+  finally {
+    window._pdfMode = false;
+    state.activeRoomId = saved.room;
+    setViewMode(saved.mode);
+    if (saved.mode === '3d' && saved.cam && iso3D) { iso3D.camera.position.copy(saved.cam.pos); iso3D.controls.target.copy(saved.cam.target); iso3D.controls.update(); render3DNow(); }
+  }
+  return out;
 }
 
 async function buildExportPackage(btn, sizeKey, inc) {
@@ -260,11 +290,18 @@ async function buildExportPackage(btn, sizeKey, inc) {
   }
 
   // ── 3D views ──────────────────────────────────────────────────────
-  if (snapImgs.length) {
-    y = newPage('3D Views', '3D views');
-    y = heading('3D Views', null, y);
-    const each = (PH - y - MAR - 6 - 6 * (snapImgs.length - 1)) / snapImgs.length;
-    snapImgs.forEach(im => {
+  // The views added to the quote; for the plans, when none were added, each room's 3/4 view
+  // is captured automatically (Dan, 2026-10-08)
+  let views = snapImgs.map(im => ({ ...im, label: '' }));
+  if (!views.length && inc.views && inc.plans) views = await pkgAuto3D(p);
+  const perPage = views.some(v => v.label) ? 2 : 3;
+  for (let k = 0; k < views.length; k += perPage) {
+    y = newPage('3D Views', k === 0 ? '3D views' : null);
+    y = heading(k === 0 ? '3D Views' : '3D Views (continued)', null, y);
+    const group = views.slice(k, k + perPage);
+    const each = (PH - y - MAR - 6 - 12 * group.length) / group.length;
+    group.forEach(im => {
+      if (im.label) { doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8); doc.text(im.label, MAR, y + 3); y += 6; }
       const d = fit(im.w, im.h, CW, each);
       doc.addImage(im.url, 'JPEG', MAR + (CW-d.w)/2, y, d.w, d.h); y += d.h + 6;
     });

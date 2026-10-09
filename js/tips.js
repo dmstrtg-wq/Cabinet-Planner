@@ -42,7 +42,7 @@ const TIP_SETS = {
     { el: '.header-actions button[onclick="openQuoteModal()"]', tier: 'silver', title: 'Quote',
       body: 'The quote uses the prices from your price sheet, plus labor, trim, hardware and your markup. Print it or save it as a PDF.' },
     { el: '#export-plans-btn', tier: 'silver', title: 'Export Plans',
-      body: 'A PDF of every room\'s floor plan, wall elevations and 3D views with your company info, and no prices. You can add a watermark so the drawings stay yours.' },
+      body: 'A PDF of every room\'s floor plan, wall elevations and a 3D view, with your company info and no prices. You can add a watermark so the drawings stay yours.' },
     { el: '#share-btn', tier: 'gold', title: 'Share with your customer',
       body: 'Send your customer a link. They can spin the 3D view on their phone and tap Approve. You get an email, and the approval is logged on the job.' },
     { el: '#order-list-btn', tier: 'silver', title: 'Order List',
@@ -342,6 +342,7 @@ const _TIPS_ORDER = ['welcome', 'home', 'share', 'planner', 'planner-more', 'quo
 function _tipsAllSeen(id, st) { return TIP_SETS[id].steps.every((s, k) => st.seen.has(id + '.' + k)); }
 function _tipsAnySeen(id, st) { return TIP_SETS[id].steps.some((s, k) => st.seen.has(id + '.' + k)); }
 function maybeTips(id) {
+  if (window._pdfMode) return;   // a PDF export is switching views — not a person
   const st = _tipsState();
   if (st.off || !TIP_SETS[id] || _tipsAllSeen(id, st)) return;
   if (!_tipsQueue.includes(id)) _tipsQueue.push(id);

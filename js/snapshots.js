@@ -35,28 +35,39 @@ function updateSnapButton() {
 // ════════════════════════════
 // Render the current 3D view at 2× size with the width labels and selection outline
 // hidden, then scale down to a JPEG.
+// (shared by "Add to quote" and the automatic 3/4 views in Export Plans)
+function _snapshotCanvas() {
+  const R = iso3D.renderer, canvas = R.domElement;
+  const cw = canvas.clientWidth || 800, ch = canvas.clientHeight || 500;
+  const hidden = [];
+  iso3D.root.traverse(o => { if ((o.isSprite || (o.userData && o.userData.selectionOutline)) && o.visible) { o.visible = false; hidden.push(o); } });
+  const prevSel = selectedItemId; selectedItemId = null; highlight3DSelection();
+  let big;
+  try {
+    R.setSize(cw * 2, ch * 2, false);
+    updateCutaway(); R.render(iso3D.scene, iso3D.camera);
+    const outW = Math.min(SNAP_OUT_W, cw * 2), outH = Math.round(outW * ch / cw);
+    big = document.createElement('canvas'); big.width = outW; big.height = outH;
+    const g = big.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(canvas, 0, 0, outW, outH);
+  } finally {
+    hidden.forEach(o => { o.visible = true; });
+    selectedItemId = prevSel; highlight3DSelection();
+    resizeIso3D();
+  }
+  return big;
+}
+// The current 3D view as a JPEG data URL (for PDFs that don't go through storage)
+function capture3DImage() {
+  if (!iso3D) return null;
+  const big = _snapshotCanvas();
+  return { url: big.toDataURL('image/jpeg', 0.86), w: big.width, h: big.height };
+}
 function captureSnapshotBlob() {
   return new Promise((resolve, reject) => {
     if (!iso3D) { reject(new Error('3D view not ready')); return; }
-    const R = iso3D.renderer, canvas = R.domElement;
-    const cw = canvas.clientWidth || 800, ch = canvas.clientHeight || 500;
-    const hidden = [];
-    iso3D.root.traverse(o => { if ((o.isSprite || (o.userData && o.userData.selectionOutline)) && o.visible) { o.visible = false; hidden.push(o); } });
-    const prevSel = selectedItemId; selectedItemId = null; highlight3DSelection();
-    let big;
-    try {
-      R.setSize(cw * 2, ch * 2, false);
-      updateCutaway(); R.render(iso3D.scene, iso3D.camera);
-      const outW = Math.min(SNAP_OUT_W, cw * 2), outH = Math.round(outW * ch / cw);
-      big = document.createElement('canvas'); big.width = outW; big.height = outH;
-      const g = big.getContext('2d');
-      g.imageSmoothingQuality = 'high';
-      g.drawImage(canvas, 0, 0, outW, outH);
-    } finally {
-      hidden.forEach(o => { o.visible = true; });
-      selectedItemId = prevSel; highlight3DSelection();
-      resizeIso3D();
-    }
+    const big = _snapshotCanvas();
     big.toBlob(b => b ? resolve(b) : reject(new Error('Could not make the image')), 'image/jpeg', 0.86);
   });
 }
