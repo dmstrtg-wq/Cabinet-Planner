@@ -21,7 +21,7 @@ Needs only the Python that comes with macOS. Nothing is changed in the site's fi
 import html, json, os, re, sys, time, urllib.parse, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PAGES = ['index.html', 'app.html', 'profile.html', 'contact.html', 'contact-success.html', '404.html', 'project.html']
+PAGES = ['index.html', 'app.html', 'profile.html', 'contact.html', 'contact-success.html', '404.html', 'project.html', 'find-a-pro.html']
 LEGAL = ['terms.html', 'privacy.html', 'cookie.html', 'refund.html', 'accessibility.html']
 SKIP_JS = {'owner-styles.js'}
 LT_URL = 'https://api.languagetool.org/v2/check'

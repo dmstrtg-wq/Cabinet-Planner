@@ -301,7 +301,11 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 /* Demo mode: hide all pricing & export UI */
 body.demo-mode .toolbar-pricing,
 body.demo-mode #export-plans-btn,
-body.demo-mode .btn-success { display: none !important; }
+body.demo-mode .btn-success,
+/* Job tracking (status + activity log) is Silver+ — the free demo is for designing plans */
+body.demo-mode #pv-status-pill,
+body.demo-mode .header-actions button[onclick="openActivityLog()"],
+body.demo-mode #schedule-btn { display: none !important; }
 /* Order list — Silver+ only; hide for demo and free/unsubscribed users */
 body.demo-mode .order-wrap,
 body.free-tier .order-wrap,
@@ -766,6 +770,7 @@ body.home-mode .np-pro,
 body.home-mode #pv-status-pill,
 body.home-mode .header-actions button[onclick^="openActivityLog"],
 body.home-mode #export-plans-btn,
+body.home-mode #schedule-btn,
 body.home-mode .header-actions button[onclick^="openEditProjectModal"],
 body.home-mode .sidebar-footer > div:has(> .signout-btn),
 body.home-mode .sidebar-footer a.signout-btn,

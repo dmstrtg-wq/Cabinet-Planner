@@ -920,6 +920,7 @@ async function loadAccountData() {
   await loadCompanyProfile();
   await loadProjects();
   if (typeof startLeadAlerts === 'function') startLeadAlerts();   // 🔔 new leads (homeowner.js)
+  if (typeof maybeAskToList === 'function') setTimeout(maybeAskToList, 6000);   // Gold: "get listed on Find a Pro?" once (findapro.js)
 }
 
 // ════════════════════════════

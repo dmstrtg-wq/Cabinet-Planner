@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="https://app.termly.io/resource-blocker/7ef49079-dd37-482e-abb9-06aa5aee64cf?autoBlock=on"></script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NM2S0KTNF4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-NM2S0KTNF4");
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find a Cabinet Pro Near You — My Cabinet Planner</title>
+<meta name="description" content="Find a cabinet seller or installer near you. Enter your ZIP, see local cabinet pros, design your kitchen with them or ask for a quote.">
+<link rel="canonical" href="https://mycabinetplanner.com/find-a-pro">
+<meta property="og:image" content="https://mycabinetplanner.com/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --ink:#0f172a; --accent:#0f766e; --accent-light:#5eead4;
+  --bg:#f8fafc; --border:#e2e8f0; --muted:#64748b; --white:#ffffff;
+}
+body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--bg);line-height:1.7;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(15,8,5,0.88);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  padding:0 6%;display:flex;align-items:center;justify-content:space-between;height:60px;
+}
+.nav-logo{display:flex;align-items:center;gap:10px;}
+.nav-logo-text{font-size:12px;font-weight:700;color:white;font-family:'Unbounded',sans-serif;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,0.7);transition:color 0.12s;}
+.nav-links a:hover,.nav-links a.active{color:white;}
+.nav-cta{display:flex;gap:10px;align-items:center;}
+.nav-signin{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);padding:7px 14px;transition:color 0.12s;}
+.nav-signin:hover{color:white;}
+.nav-trial{padding:8px 18px;background:var(--accent);color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s;display:inline-block;}
+.nav-trial:hover{background:#115e59;}
+
+/* ── PAGE ── */
+main{max-width:560px;margin:0 auto;padding:100px 24px 100px;}
+.page-eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);
+  margin-bottom:16px;display:flex;align-items:center;gap:10px;
+}
+.page-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--accent);}
+h1{font-family:'Unbounded',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:-0.5px;line-height:1.1;margin-bottom:14px;color:var(--ink);}
+.sub{font-size:15px;color:var(--muted);margin-bottom:40px;line-height:1.75;}
+
+/* ── FORM ── */
+.form-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:36px;}
+.form-group{margin-bottom:16px;}
+label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px;}
+input,select,textarea{
+  width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:9px;
+  font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);outline:none;transition:border-color 0.12s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+textarea{resize:vertical;min-height:110px;}
+.btn-primary{
+  display:inline-block;background:var(--accent);color:#fff;border:none;
+  border-radius:9px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;
+  margin-top:8px;transition:background 0.15s;width:100%;text-align:center;
+}
+.btn-primary:hover{background:#115e59;}
+#contact-error{color:#ef4444;font-size:12px;min-height:16px;margin-top:6px;}
+#contact-success{
+  display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;
+  padding:20px 24px;color:#15803d;font-size:14px;margin-top:16px;line-height:1.6;
+}
+
+
+/* ── FIND A PRO ── */
+.fp-search{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.fp-search input{flex:1;min-width:160px;font-size:16px}
+.fp-search button{width:auto;margin-top:0;padding:11px 24px}
+#fp-status{font-size:14px;color:var(--muted);margin:16px 0 6px;min-height:20px}
+.fp-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-top:14px;display:flex;gap:16px;align-items:flex-start}
+.fp-logo{width:56px;height:56px;border-radius:10px;object-fit:contain;background:#fff;border:1px solid var(--border);flex-shrink:0}
+.fp-logo.blank{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent);font-size:20px}
+.fp-body{flex:1;min-width:0}
+.fp-name{font-weight:800;font-size:17px}
+.fp-meta{font-size:13px;color:var(--muted)}
+.fp-blurb{font-size:14px;margin-top:6px;color:#334155}
+.fp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.fp-actions a,.fp-actions button{font-size:13px;font-weight:700;padding:9px 16px;border-radius:9px;border:1px solid var(--accent);cursor:pointer;font-family:inherit}
+.fp-actions .fill{background:var(--accent);color:#fff}
+.fp-actions .line{background:#fff;color:var(--accent)}
+.fp-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:200}
+.fp-modal.open{display:flex}
+.fp-box{background:#fff;border-radius:14px;padding:24px;max-width:460px;width:100%;max-height:90vh;overflow:auto}
+.fp-box h3{font-size:18px;margin-bottom:6px}
+.fp-box .form-group{margin-bottom:12px}
+#fp-err{color:#b91c1c;font-size:13px;min-height:18px}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--ink);padding:40px 6%;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;
+}
+.footer-brand{display:flex;align-items:center;gap:10px;}
+.footer-brand span{font-size:14px;font-weight:700;color:white;}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+.footer-links a{font-size:13px;color:rgba(255,255,255,0.6);transition:color 0.12s;}
+.footer-links a:hover{color:rgba(255,255,255,0.9);}
+.footer-copy{font-size:12px;color:rgba(255,255,255,0.55);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:680px){
+  nav .nav-links{display:none;}
+  main{padding:88px 16px 60px;}
+  .form-card{padding:24px 20px;}
+  h1{font-size:22px;}
+  input,select,textarea{font-size:16px;}
+}
+
+/* ── A11Y WIDGET ── */
+#a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
+#a11y-btn:hover{background:#115e59;}
+#a11y-btn svg{width:24px;height:24px;}
+#a11y-panel{position:fixed;bottom:76px;right:16px;z-index:9100;background:white;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:16px;width:220px;display:none;}
+#a11y-panel.open{display:block;}
+.a11y-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.a11y-row:last-child{border-bottom:none;padding-bottom:0;}
+.a11y-toggle{position:relative;width:36px;height:20px;flex-shrink:0;}
+.a11y-toggle input{opacity:0;width:0;height:0;}
+.a11y-slider{position:absolute;inset:0;background:#ccc;border-radius:20px;cursor:pointer;transition:background 0.2s;}
+.a11y-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:white;border-radius:50%;transition:transform 0.2s;}
+.a11y-toggle input:checked+.a11y-slider{background:var(--accent);}
+.a11y-toggle input:checked+.a11y-slider:before{transform:translateX(16px);}
+body.a11y-large-text{font-size:115%;}
+body.a11y-reduce-motion *,body.a11y-reduce-motion *::before,body.a11y-reduce-motion *::after{animation-duration:0.001ms!important;transition-duration:0.001ms!important;}
+#a11y-panel h4{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+.a11y-row{color:var(--ink);}
+body.a11y-high-contrast{--bg:#000000;--ink:#ffffff;--muted:#cccccc;--accent:#2dd4bf;--border:#888888;}
+body.a11y-high-contrast nav{background:rgba(0,0,0,0.98);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#ng)"/>
+      <circle cx="16" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <polyline points="44,10 10,10 10,44 44,44" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="10" width="34" height="8" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <rect x="10" y="10" width="8" height="34" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <line x1="18" y1="10" x2="18" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="26" y1="10" x2="26" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="34" y1="10" x2="34" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="26" x2="18" y2="26" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="36" x2="18" y2="36" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <rect x="24" y="28" width="16" height="12" rx="1.5" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+      <circle cx="32" cy="34" r="2" fill="#f59e0b"/>
+      <defs><linearGradient id="ng" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2744"/><stop offset="100%" stop-color="#071529"/></linearGradient></defs>
+    </svg>
+    <span class="nav-logo-text">My Cabinet Planner</span>
+  </a>
+  <div class="nav-links">
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/find-a-pro" class="active">Find a Pro</a>
+    <a href="/contact">Contact</a>
+  </div>
+  <div class="nav-cta">
+    <a href="/app" class="nav-signin">Sign In</a>
+    <a href="/app" class="nav-trial">Try Free</a>
+  </div>
+</nav>
+
+<main>
+  <div class="page-eyebrow">Find a Pro</div>
+  <h1>Find a cabinet pro near you</h1>
+  <p class="sub">Enter your ZIP code to see cabinet sellers and installers who work in your area. Design your kitchen with them, or ask for a quote.</p>
+  <div class="form-card">
+    <form id="fp-form" class="fp-search" onsubmit="fpSearch(event)">
+      <label for="fp-zip" style="position:absolute;left:-9999px;">ZIP code</label>
+      <input type="text" id="fp-zip" inputmode="numeric" maxlength="5" placeholder="Your ZIP code, e.g. 80219" autocomplete="postal-code">
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+    <div id="fp-status" aria-live="polite"></div>
+    <div id="fp-results"></div>
+  </div>
+  <p class="sub" style="margin-top:22px;font-size:14px;">Are you a cabinet company? <a href="/#pricing" style="color:var(--accent);font-weight:700;">Get listed with a Silver or Gold plan</a>.</p>
+</main>
+
+<div class="fp-modal" id="fp-modal" role="dialog" aria-modal="true" aria-labelledby="fp-modal-title">
+  <div class="fp-box">
+    <h3 id="fp-modal-title">Ask for a quote</h3>
+    <p class="fp-meta" id="fp-modal-intro" style="margin-bottom:14px;"></p>
+    <div class="form-group"><label for="fp-name">Your name</label><input id="fp-name" autocomplete="name"></div>
+    <div class="form-group"><label for="fp-email">Email</label><input id="fp-email" type="email" autocomplete="email"></div>
+    <div class="form-group"><label for="fp-phone">Phone (optional)</label><input id="fp-phone" type="tel" autocomplete="tel"></div>
+    <div class="form-group"><label for="fp-note">What are you planning?</label><textarea id="fp-note" placeholder="For example: a full kitchen remodel, about 12 by 10, starting this spring."></textarea></div>
+    <input type="text" id="fp-website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;" aria-hidden="true">
+    <div id="fp-err"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn-primary" style="width:auto;background:#fff;color:var(--ink);border:1px solid var(--border);" onclick="fpClose()">Cancel</button>
+      <button class="btn-primary" style="width:auto;" id="fp-send" onclick="fpSend()">Send</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">
+    <svg width="24" height="24" viewBox="0 0 52 52" fill="none">
+      <rect x="1" y="1" width="50" height="50" rx="9" fill="url(#fg)"/>
+      <circle cx="16" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="16" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="26" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="16" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="26" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <circle cx="36" cy="36" r="0.7" fill="#38bdf8" opacity="0.4"/>
+      <polyline points="44,10 10,10 10,44 44,44" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="10" y="10" width="34" height="8" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <rect x="10" y="10" width="8" height="34" rx="1" fill="#38bdf8" opacity="0.18"/>
+      <line x1="18" y1="10" x2="18" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="26" y1="10" x2="26" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="34" y1="10" x2="34" y2="18" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="26" x2="18" y2="26" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <line x1="10" y1="36" x2="18" y2="36" stroke="#38bdf8" stroke-width="0.8" opacity="0.7"/>
+      <rect x="24" y="28" width="16" height="12" rx="1.5" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+      <circle cx="32" cy="34" r="2" fill="#f59e0b"/>
+      <defs><linearGradient id="fg" x1="0" y1="0" x2="52" y2="52" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#0f2744"/><stop offset="100%" stop-color="#071529"/></linearGradient></defs>
+    </svg>
+    <span>My Cabinet Planner</span>
+  </div>
+  <div class="footer-links">
+    <a href="/">Home</a>
+    <a href="/privacy">Privacy Policy</a>
+    <a href="/terms">Terms of Service</a>
+    <a href="/cookie">Cookie Policy</a>
+    <a href="/refund">Return Policy</a>
+    <a href="/contact">Contact</a>
+    <a href="/accessibility">Accessibility</a>
+    <a href="#" class="termly-display-preferences">Consent Preferences</a>
+  </div>
+  <div class="footer-copy">© 2026 My Cabinet Planner. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" data-categories="essential"></script>
+<script data-categories="essential">
+// Find a Pro (Dan, 2026-10-08): homeowners search listed companies by ZIP. Distance uses ZIP
+// coordinates from the free api.zippopotam.us lookup; a company's coordinates are saved with its
+// listing (and looked up here for older listings). Quote requests go straight to that company's
+// Leads (and its email alerts).
+const db = window.supabase.createClient('https://ojlbxofgpucihqxgpxzz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qbGJ4b2ZncHVjaWhxeGdweHp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MzY3ODksImV4cCI6MjA5NjExMjc4OX0.u76wC9KxnY95B_rzV47lvQEBEbYUQ6OysTmNA2w541o');
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const zipCache = {};
+async function zipPoint(zip) {
+  if (zipCache[zip] !== undefined) return zipCache[zip];
+  try {
+    const r = await fetch('https://api.zippopotam.us/us/' + zip);
+    if (!r.ok) return (zipCache[zip] = null);
+    const p = (await r.json()).places[0];
+    return (zipCache[zip] = { lat: +p.latitude, lng: +p.longitude, place: p['place name'] + ', ' + p['state abbreviation'] });
+  } catch (e) { return (zipCache[zip] = null); }
+}
+function miles(a, b) {
+  const R = 3958.8, rad = d => d * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+let lastZip = '', shown = [];
+async function fpSearch(e) {
+  if (e) e.preventDefault();
+  const zip = document.getElementById('fp-zip').value.trim(), st = document.getElementById('fp-status'), out = document.getElementById('fp-results');
+  out.innerHTML = '';
+  if (!/^\d{5}$/.test(zip)) { st.textContent = 'Enter a 5-digit ZIP code.'; return; }
+  st.textContent = 'Searching…';
+  const here = await zipPoint(zip);
+  if (!here) { st.textContent = "We couldn't find that ZIP code. Please check it and try again."; return; }
+  const { data, error } = await db.from('pro_listings').select('user_id, company_name, blurb, phone, email, website, logo_url, city, state, service_zip, service_radius_miles, lat, lng, design_link, design_slug').eq('listed', true);
+  if (error) { st.textContent = "Search isn't available right now. Please try again in a moment."; return; }
+  const rows = [];
+  for (const l of data || []) {
+    let pt = (l.lat != null && l.lng != null) ? { lat: l.lat, lng: l.lng } : (l.service_zip ? await zipPoint(String(l.service_zip).slice(0, 5)) : null);
+    if (!pt) continue;
+    const d = miles(here, pt);
+    if (d <= (l.service_radius_miles || 25) + 0.5) rows.push({ ...l, d });
+  }
+  rows.sort((a, b) => a.d - b.d);
+  shown = rows; lastZip = zip;
+  if (!rows.length) {
+    st.innerHTML = `No cabinet pros list ${esc(here.place)} in their service area yet. You can still <a href="/app?demo=1" style="color:var(--accent);font-weight:700;">design your kitchen for free</a> and send it to a pro later.`;
+    if (window.gtag) gtag('event', 'find_a_pro_search', { results: 0 });
+    return;
+  }
+  st.textContent = `${rows.length} cabinet pro${rows.length === 1 ? '' : 's'} serving ${here.place}`;
+  if (window.gtag) gtag('event', 'find_a_pro_search', { results: rows.length });
+  out.innerHTML = rows.map((l, i) => `<div class="fp-card">
+    ${l.logo_url ? `<img class="fp-logo" src="${esc(l.logo_url)}" alt="">` : `<div class="fp-logo blank">${esc((l.company_name || '?')[0])}</div>`}
+    <div class="fp-body"><div class="fp-name">${esc(l.company_name)}</div>
+      <div class="fp-meta">${esc([l.city, l.state].filter(Boolean).join(', '))}${l.city || l.state ? ' · ' : ''}about ${Math.max(1, Math.round(l.d))} mile${Math.round(l.d) === 1 ? '' : 's'} away${l.phone ? ' · ' + esc(l.phone) : ''}</div>
+      ${l.blurb ? `<div class="fp-blurb">${esc(l.blurb)}</div>` : ''}
+      <div class="fp-actions">
+        ${l.design_link && l.design_slug ? `<a class="fill" href="/app?pro=${encodeURIComponent(l.design_slug)}">Design your kitchen with them</a>` : ''}
+        <button class="${l.design_link && l.design_slug ? 'line' : 'fill'}" onclick="fpOpen(${i})">Ask for a quote</button>
+        ${l.website ? `<a class="line" href="${esc(/^https?:/i.test(l.website) ? l.website : 'https://' + l.website)}" target="_blank" rel="noopener">Website</a>` : ''}
+      </div></div></div>`).join('');
+}
+let fpPick = null, fpFormHTML = null;
+function fpOpen(i) {
+  fpPick = shown[i]; if (!fpPick) return;
+  // (after a sent request the box shows "Request sent" — put the form back for the next company)
+  const box = document.querySelector('#fp-modal .fp-box');
+  if (fpFormHTML === null) fpFormHTML = box.innerHTML; else box.innerHTML = fpFormHTML;
+  document.getElementById('fp-modal-title').textContent = 'Ask ' + fpPick.company_name + ' for a quote';
+  document.getElementById('fp-modal-intro').textContent = fpPick.company_name + ' will get your request and contact you. Your details go only to them.';
+  document.getElementById('fp-err').textContent = '';
+  document.getElementById('fp-modal').classList.add('open');
+  setTimeout(() => { const n = document.getElementById('fp-name'); if (n) n.focus(); }, 50);
+}
+function fpClose() { document.getElementById('fp-modal').classList.remove('open'); }
+async function fpSend() {
+  const err = document.getElementById('fp-err'), btn = document.getElementById('fp-send');
+  if (document.getElementById('fp-website').value) { fpClose(); return; }   // bots fill the hidden field
+  const name = document.getElementById('fp-name').value.trim(), email = document.getElementById('fp-email').value.trim();
+  const phone = document.getElementById('fp-phone').value.trim(), note = document.getElementById('fp-note').value.trim();
+  if (name.length < 2) { err.textContent = 'Please enter your name.'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Please enter a valid email address.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const { error } = await db.from('leads').insert({ name, email, phone: phone || null, zip: lastZip, note: note || null,
+    plan_summary: 'Find a Pro request', company_id: fpPick.user_id, source: 'find_a_pro' });
+  btn.disabled = false; btn.textContent = 'Send';
+  if (error) { err.textContent = /Too many|already sent/.test(error.message || '') ? error.message : "We couldn't send that just now. Please try again in a moment."; return; }
+  if (window.gtag) gtag('event', 'find_a_pro_request');
+  document.querySelector('#fp-modal .fp-box').innerHTML = `<h3>Request sent</h3><p class="fp-meta" style="margin:8px 0 16px;">${esc(fpPick.company_name)} has your request and will contact you soon.</p><button class="btn-primary" onclick="fpClose()">Done</button>`;
+}
+document.getElementById('fp-modal').addEventListener('click', e => { if (e.target.id === 'fp-modal') fpClose(); });
+const qz = new URLSearchParams(location.search).get('zip');
+if (qz) { document.getElementById('fp-zip').value = qz; fpSearch(); }
+</script>
+
+<!-- Accessibility widget -->
+<button id="a11y-btn" aria-label="Accessibility options" aria-expanded="false" aria-controls="a11y-panel" onclick="toggleA11yPanel()">
+  <svg viewBox="0 0 128 128" aria-hidden="true">
+    <path d="M72.095 49.514l.01 18.415 7.401 30.374c.494 1.985.47 4.02-1.495 4.514-1.955.493-3.506-.06-4-2.035L64.767 72.63h-2.962l-8.794 28.152c-.74 1.906-2.103 2.775-4 2.035-1.886-.731-1.857-2.874-1.116-4.78l7.138-29.792V49.514L34.01 47.645c-1.836-.148-3.148-1.163-3-3 .139-1.847 1.875-2.945 3.702-2.797H68.01l25.056-.04c1.837-.069 3.885.98 3.944 2.837.08 1.827-2.107 2.921-3.944 3zm-1.721-17.707a6.833 6.833 0 0 1-6.838 6.838c-3.75 0-6.807-3.057-6.807-6.838-.01-3.75 3.047-6.807 6.807-6.807 3.78 0 6.838 3.057 6.838 6.807z" fill="#fff"/>
+  </svg>
+</button>
+<div id="a11y-panel" role="dialog" aria-label="Accessibility options" aria-modal="false">
+  <h4>Display Options</h4>
+  <div class="a11y-row"><span>Larger Text</span><label class="a11y-toggle"><input type="checkbox" id="a11y-text" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+  <div class="a11y-row"><span>High Contrast</span><label class="a11y-toggle"><input type="checkbox" id="a11y-contrast" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+  <div class="a11y-row"><span>Reduce Motion</span><label class="a11y-toggle"><input type="checkbox" id="a11y-motion" onchange="applyA11y()"><span class="a11y-slider"></span></label></div>
+</div>
+<script>
+(function(){
+  const prefs = JSON.parse(localStorage.getItem('a11y_prefs') || '{}');
+  function applyA11y() {
+    const text = document.getElementById('a11y-text').checked;
+    const contrast = document.getElementById('a11y-contrast').checked;
+    const motion = document.getElementById('a11y-motion').checked;
+    document.body.classList.toggle('a11y-large-text', text);
+    document.body.classList.toggle('a11y-high-contrast', contrast);
+    document.body.classList.toggle('a11y-reduce-motion', motion);
+    localStorage.setItem('a11y_prefs', JSON.stringify({text, contrast, motion}));
+  }
+  window.applyA11y = applyA11y;
+  window.toggleA11yPanel = function() {
+    const panel = document.getElementById('a11y-panel');
+    const btn = document.getElementById('a11y-btn');
+    const isOpen = panel.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen);
+    if (isOpen) {
+      setTimeout(function() {
+        document.addEventListener('click', function handler(e) {
+          if (!panel.contains(e.target) && !btn.contains(e.target)) {
+            panel.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', handler);
+          }
+        });
+      }, 0);
+    }
+  };
+  if (prefs.text) { document.getElementById('a11y-text').checked = true; }
+  if (prefs.contrast) { document.getElementById('a11y-contrast').checked = true; }
+  if (prefs.motion) { document.getElementById('a11y-motion').checked = true; }
+  applyA11y();
+})();
+</script>
+
+</body>
+</html>

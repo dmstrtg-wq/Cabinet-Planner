@@ -54,6 +54,7 @@ function setProjectStatus(status) {
   });
   document.getElementById('status-menu').classList.remove('open');
   persist(); renderProjectView();
+  if (typeof maybeScheduleForStatus === 'function' && status !== prev) maybeScheduleForStatus(p, status);   // "add a date?" (schedule.js)
 }
 
 function openActivityLog() {
@@ -197,6 +198,12 @@ function applyTierGates() {
   // Status pill + log button visibility — Silver+
   const statusPill = document.getElementById('pv-status-pill');
   if (statusPill) statusPill.style.display = canAccess('silver') ? '' : 'none';
+  // The Free plan is for designing and sending plans (to a pro, or through a company's design
+  // link) — job tracking (status + activity log) is Silver+, so Log isn't shown at all (Dan, 2026-10-08)
+  const logBtn = document.querySelector('.header-actions button[onclick="openActivityLog()"]');
+  if (logBtn) logBtn.style.display = canAccess('silver') ? '' : 'none';
+  const schBtn = document.getElementById('schedule-btn');
+  if (schBtn) schBtn.style.display = canAccess('silver') ? '' : 'none';
 }
 
 function showTierUpgradePrompt(required, featureName) {

@@ -38,7 +38,7 @@ function readRoomDimFields(prefix) {
   return { walls: { north: out.north, south: out.south, east: out.east, west: out.west }, ceilingHeight: out.ceiling };
 }
 function openNewProjectModal() {
-  ['np-customer','np-phone','np-company','np-notes','np-address','np-city'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['np-customer','np-phone','np-email','np-company','np-notes','np-address','np-city'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   setRoomDimFields('np', ROOM_DIM_DEFAULTS);
   document.getElementById('np-type').value = 'Kitchen';
   syncStarterOption('np');
@@ -74,6 +74,7 @@ function createProject() {
   const proj = {
     id: newId(), customer,
     phone:   document.getElementById('np-phone').value.trim(),
+    email:   document.getElementById('np-email').value.trim(),
     company: document.getElementById('np-company').value.trim(),
     type:    document.getElementById('np-type').value,
     notes:   document.getElementById('np-notes').value.trim(),
@@ -93,6 +94,7 @@ function openEditProjectModal() {
   const p = activeProj(); if (!p) return;
   document.getElementById('ep-customer').value = p.customer;
   document.getElementById('ep-phone').value    = p.phone   || '';
+  document.getElementById('ep-email').value    = p.email   || '';
   document.getElementById('ep-company').value  = p.company || '';
   document.getElementById('ep-type').value     = p.type;
   document.getElementById('ep-address').value  = p.address || '';
@@ -109,6 +111,7 @@ function saveEditProject() {
   const p = activeProj(); if (!p) return;
   p.customer = document.getElementById('ep-customer').value.trim() || p.customer;
   p.phone    = document.getElementById('ep-phone').value.trim();
+  p.email    = document.getElementById('ep-email').value.trim();
   p.company  = document.getElementById('ep-company').value.trim();
   p.type     = document.getElementById('ep-type').value;
   p.address  = document.getElementById('ep-address').value.trim();

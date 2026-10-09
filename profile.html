@@ -1245,6 +1245,7 @@ function openEventDetail(id) {
       <div><label>Customer</label><strong>${esc(p.customer || '—')}</strong>${pd.company ? `<div style="color:var(--muted);">${esc(pd.company)}</div>` : ''}</div>
       <div><label>Status</label>${statusBadge(pd.status || 'Lead')}</div>
       <div><label>Phone</label>${pd.phone ? `<a href="tel:${esc(pd.phone.replace(/[^\d+]/g,''))}">${esc(pd.phone)}</a>` : '—'}</div>
+      <div><label>Email</label>${pd.email ? `<a href="mailto:${esc(pd.email)}">${esc(pd.email)}</a>` : '—'}</div>
       <div><label>Project</label>${esc(p.type || '—')}${p.data?.rooms?.length ? ` · ${p.data.rooms.length} room${p.data.rooms.length === 1 ? '' : 's'}` : ''}</div>
       <div style="grid-column:1 / -1;"><label>Address</label>${addr ? `<a href="${mapsUrl}" target="_blank" rel="noopener">${esc(addr)}</a>` : '—'}</div>
       <div style="grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;">
@@ -1484,6 +1485,15 @@ async function saveDesignLink() {
   renderDesignLink();
 }
 
+// ZIP → { lat, lng } from the free api.zippopotam.us lookup (also used by /find-a-pro)
+async function zipLatLng(zip) {
+  try {
+    const r = await fetch('https://api.zippopotam.us/us/' + encodeURIComponent(zip));
+    if (!r.ok) return null;
+    const p = (await r.json()).places[0];
+    return { lat: +p.latitude, lng: +p.longitude };
+  } catch (e) { return null; }
+}
 async function saveProListing() {
   const statusEl = document.getElementById('pl-save-status');
   if (myTeamRole !== 'owner') { statusEl.style.color = '#b91c1c'; statusEl.textContent = 'Only the account owner can change the listing.'; return; }
@@ -1511,6 +1521,10 @@ async function saveProListing() {
     service_zip: zip || null, service_radius_miles: radius,
     updated_at: new Date().toISOString(),
   };
+  // Map point for the ZIP, so the public Find a Pro search can measure distance (best effort —
+  // the search looks it up itself if this is missing)
+  const pt = zip ? await zipLatLng(zip.slice(0, 5)) : null;
+  if (pt) { row.lat = pt.lat; row.lng = pt.lng; }
   const { data, error } = await db.from('pro_listings').upsert(row, { onConflict: 'user_id' }).select().single();
   if (error) {
     statusEl.style.color = '#b91c1c';
