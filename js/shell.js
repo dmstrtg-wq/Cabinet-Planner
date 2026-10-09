@@ -79,7 +79,7 @@ function renderPhoneQuote() {
     </div>
     ${!IS_DEMO && canAccess('silver')
       ? `<button class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;" onclick="phoneTab('plan'); openQuoteModal()">Open the full quote</button>
-         <p style="font-size:12px;color:#6b7280;text-align:center;line-height:1.6;margin-top:8px;">Prices, job costs, markup, tax, and Print / Save PDF.</p>`
+         <p style="font-size:12px;color:#6b7280;text-align:center;line-height:1.6;margin-top:8px;">Prices, job costs, markup, tax and Export PDF.</p>`
       : `<p style="font-size:12px;color:#6b7280;text-align:center;line-height:1.6;">Prices and the PDF quote come with the Silver and Gold plans.</p>`}
   `;
 }

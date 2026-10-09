@@ -60,8 +60,7 @@ function openProject(projId, roomId) {
   // Sales tax is saved on the project now (company default otherwise). Projects from before
   // showed their state's base rate here — keep that so their totals don't change.
   if (p.taxPct === undefined) p.taxPct = (p.state && STATE_TAX[p.state] != null) ? STATE_TAX[p.state] : null;
-  const taxEl = document.getElementById('tax-pct');
-  if (taxEl) taxEl.value = projectTaxPct(p);
+
   if (!p.jobCosts) p.jobCosts = [
     { label:'Labor',        amount:'' },
     { label:'Demo / Removal', amount:'' },

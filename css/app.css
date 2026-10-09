@@ -301,13 +301,8 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 /* Demo mode: hide all pricing & export UI */
 body.demo-mode .toolbar-pricing,
 body.demo-mode #pdf-export-btn,
-body.demo-mode .btn-success,
-body.demo-mode .cp-section:has(#pricing-toggle),
-body.free-tier .cp-section:has(#pricing-toggle),
-body.pricing-locked .cp-section:has(#pricing-toggle) { display: none !important; }
-/* Print Floor Plan — Silver+ only; hide for demo and free/unsubscribed users */
-body.demo-mode #floor-plan-print-btn,
-body.free-tier #floor-plan-print-btn,
+body.demo-mode .btn-success { display: none !important; }
+/* Order list — Silver+ only; hide for demo and free/unsubscribed users */
 body.demo-mode .order-wrap,
 body.free-tier .order-wrap,
 body.demo-mode #snap-add-btn,
@@ -563,7 +558,6 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .opening-remove:hover { color: var(--danger); }
 .no-cabs { padding: 14px 8px; text-align: center; font-size: 12px; color: var(--text-muted); }
 .cab-wall-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: 6px 2px 3px; }
-.price-toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .toggle-switch { position: relative; width: 36px; height: 20px; cursor: pointer; }
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 20px; transition: 0.2s; }
@@ -792,7 +786,7 @@ body.share-mode .add-room-btn,
 body.share-mode .header-actions,
 body.share-mode #pv-status-pill,
 body.share-mode #measure-btn, body.share-mode #cutlist-btn, body.share-mode #tb-more-wrap,
-body.share-mode #summary-toggle-btn, body.share-mode #pdf-export-btn, body.share-mode #floor-plan-print-btn,
+body.share-mode #summary-toggle-btn, body.share-mode #pdf-export-btn,
 body.share-mode .toolbar-pricing, body.share-mode #snap-add-btn,
 body.share-mode #demo-banner, body.share-mode #cutlist-panel, body.share-mode .room-tab-del { display: none !important; }
 body.share-mode #share-btn, body.demo-mode #share-btn, body.demo-mode #quote-share-btn { display: none !important; }

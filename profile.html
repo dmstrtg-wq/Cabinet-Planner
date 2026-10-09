@@ -718,40 +718,13 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
       <!-- FILES -->
       <div class="tab-panel" data-tab="files">
         <div class="tab-title">My Pricing</div>
-        <div class="tab-desc">Download our price sheet template, fill in what you charge for each size and finish, then upload it back — every quote will use your real numbers.</div>
+        <div class="tab-desc">Every quote prices cabinets from the price lists you add here — your supplier's list or our template, filled in. Nothing is estimated.</div>
 
         <div class="section" id="pl-lists" style="display:none;"></div>
-
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">Price Sheets</div>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="downloadPriceSheetTemplate()">Download Template</button>
-              <input type="file" id="pricelist-file-input" accept=".csv,.xls,.xlsx" style="display:none;" onchange="handleFileUpload(event,'price_list')">
-              <button id="pricelist-upload-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="triggerFileUpload('price_list')">＋ Upload Completed Sheet</button>
-            </div>
-          </div>
-          <div class="card">
-            <table class="proj-table">
-              <thead><tr><th>File</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
-              <tbody id="pricelist-body"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading…</td></tr></tbody>
-            </table>
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Upload your supplier's price list (Excel, CSV or PDF), and we'll walk you through matching it to your cabinet types. Your prices are saved to your account and applied automatically when you build quotes. <strong>Silver plan and above.</strong></div>
-        </div>
 
         <div id="pi-pending" style="display:none;margin-bottom:18px;"></div>
         <div id="pi-basis" class="section" style="display:none;"></div>
 
-        <div class="section">
-          <div class="section-head">
-            <div class="section-title">Import a Supplier Price List</div>
-            <button id="ai-import-btn" class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="piOpen()">✨ Import Supplier Price List</button>
-          </div>
-          <div class="card" style="padding:18px 22px;font-size:13px;color:var(--muted);line-height:1.6;">
-            Skip the template: drop in your supplier's price list exactly as they sent it (Excel, CSV, PDF, or photos of the pages) and our AI matches every item code to your cabinet types, sizes and finishes. Works with cost, list or MSRP price lists. You review everything before it's saved. Buy from more than one supplier? Import each one — their finishes and prices stay separate. <strong>Silver and Gold plans.</strong>
-          </div>
-        </div>
       </div>
 
       <!-- TEAM -->
@@ -934,7 +907,7 @@ body.a11y-high-contrast{--bg:#000000;--surface:#111111;--text:#ffffff;--muted:#c
     <p id="pricemap-summary" style="color:var(--muted);font-size:13px;line-height:1.6;"></p>
 
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closePriceMapModal()">Skip — Keep File Only</button>
+      <button class="btn btn-ghost" onclick="closePriceMapModal()">Cancel</button>
       <button class="btn btn-primary" id="pricemap-apply-btn" onclick="applyPriceMapping()">Apply Pricing</button>
     </div>
   </div>
@@ -2083,150 +2056,11 @@ async function saveCompanySettings() {
 /* ── MY PRICING / PRICE SHEETS ── */
 const FILES_BUCKET = 'company-files';
 
-function applyFilesTabTierGating() {
-  const plBtn = document.getElementById('pricelist-upload-btn');
-  const locked = !canAccess('silver');
-  const aiBtn = document.getElementById('ai-import-btn');
-  if (aiBtn) {
-    aiBtn.style.opacity = locked ? '0.45' : '';
-    aiBtn.style.cursor  = locked ? 'not-allowed' : '';
-    aiBtn.title         = locked ? 'Supplier price-list import requires the Silver or Gold plan' : '';
-  }
-  if (plBtn) {
-    plBtn.style.opacity = locked ? '0.45' : '';
-    plBtn.style.cursor  = locked ? 'not-allowed' : '';
-    plBtn.title         = locked ? 'Price sheet upload requires Silver plan or higher' : '';
-  }
-}
 
-async function triggerFileUpload(category) {
-  if (myTeamRole !== 'owner') {
-    showToast('Only the account owner can manage price sheets.');
-    return;
-  }
-  if (!canAccess('silver')) {
-    alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
-    return;
-  }
-  // Silver is capped at 1 price sheet; Gold gets unlimited
-  if (!canAccess('gold')) {
-    const { count } = await db.from('company_files')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', effectiveOwnerId)
-      .eq('category', 'price_list');
-    if (count >= 1) {
-      alert('Silver plan includes 1 price sheet.\n\nDelete your existing sheet to replace it, or upgrade to Gold for unlimited price sheets.');
-      return;
-    }
-  }
-  document.getElementById('pricelist-file-input').click();
-}
-const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20MB per file
 
-function humanFileSize(bytes) {
-  if (!bytes) return '—';
-  const units = ['B','KB','MB','GB'];
-  let n = bytes, i = 0;
-  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
-  return (i === 0 ? n : n.toFixed(1)) + ' ' + units[i];
-}
 
-function fileRowIcon() {
-  return `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:var(--muted);flex-shrink:0;"><path d="M4 2h5l3 3v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M9 2v3h3"/></svg>`;
-}
 
-async function loadCompanyFiles(category) {
-  if (!currentUser) return;
-  const tbody = document.getElementById('pricelist-body');
-  const { data, error } = await db.from('company_files')
-    .select('*')
-    .eq('user_id', effectiveOwnerId)
-    .eq('category', category)
-    .order('created_at', { ascending: false });
 
-  if (error) {
-    tbody.innerHTML = `<tr><td colspan="4" style="color:#b91c1c;padding:16px;">Couldn't load files: ${esc(error.message)}</td></tr>`;
-    return;
-  }
-  if (!data || !data.length) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No price sheets uploaded yet.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = data.map(f => `
-    <tr data-id="${esc(f.id)}" data-path="${esc(f.storage_path)}" data-name="${esc(f.file_name)}">
-      <td><div style="display:flex;align-items:center;gap:8px;">${fileRowIcon()}<span class="proj-name">${esc(f.file_name)}</span></div></td>
-      <td style="color:var(--muted);">${humanFileSize(f.file_size)}</td>
-      <td style="color:var(--muted);">${new Date(f.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</td>
-      <td style="white-space:nowrap;"><a class="proj-link file-download-link">Download</a>&nbsp;&nbsp;<a class="row-link file-delete-link">Delete</a></td>
-    </tr>
-  `).join('');
-
-  tbody.querySelectorAll('.file-download-link').forEach(a => {
-    a.addEventListener('click', () => {
-      const tr = a.closest('tr');
-      downloadCompanyFile(tr.dataset.path, tr.dataset.name);
-    });
-  });
-  tbody.querySelectorAll('.file-delete-link').forEach(a => {
-    a.addEventListener('click', () => {
-      const tr = a.closest('tr');
-      deleteCompanyFile(tr.dataset.id, tr.dataset.path, category);
-    });
-  });
-}
-
-async function handleFileUpload(e, category) {
-  const file = e.target.files[0];
-  e.target.value = '';
-  if (!file || !currentUser) return;
-
-  // Role + tier gate — belt-and-suspenders check in case button gating was bypassed
-  if (myTeamRole !== 'owner') {
-    showToast('Only the account owner can manage price sheets.');
-    return;
-  }
-  if (!canAccess('silver')) {
-    alert('Price sheet upload is available on the Silver plan and above.\n\nUpgrade at mycabinetplanner.com to unlock this feature.');
-    return;
-  }
-
-  if (file.size > MAX_FILE_BYTES) {
-    showToast(`That file is too large — max size is ${humanFileSize(MAX_FILE_BYTES)}.`);
-    return;
-  }
-
-  showToast('Uploading ' + file.name + '…');
-  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-  const path = `${effectiveOwnerId}/${category}/${Date.now()}-${safeName}`;
-
-  const { error: upErr } = await db.storage.from(FILES_BUCKET).upload(path, file, {
-    contentType: file.type || 'application/octet-stream'
-  });
-  if (upErr) {
-    showToast('Upload failed: ' + upErr.message);
-    return;
-  }
-
-  const { error: insErr } = await db.from('company_files').insert({
-    user_id: effectiveOwnerId,
-    category,
-    file_name: file.name,
-    storage_path: path,
-    file_size: file.size,
-    mime_type: file.type || null,
-  });
-  if (insErr) {
-    showToast('File uploaded, but saving its record failed: ' + insErr.message);
-  } else {
-    showToast(file.name + ' uploaded.');
-  }
-  loadCompanyFiles(category);
-
-  if (category === 'price_list' && isSpreadsheet(file)) {
-    tryOpenPriceMapping(file);
-  }
-}
 
 /* ── PRICE SHEET TEMPLATE + PARSING (matrix CSV → price_overrides, finish-aware) ── */
 const CABINET_TYPES = [
@@ -2293,10 +2127,6 @@ function companyStyles() {
   return (cs && Array.isArray(cs) && cs.length > 0) ? cs : DEFAULT_STYLES;
 }
 
-function isSpreadsheet(file) {
-  const name = file.name.toLowerCase();
-  return name.endsWith('.csv') || name.endsWith('.xls') || name.endsWith('.xlsx');
-}
 
 function csvField(v) {
   const s = String(v ?? '');
@@ -2334,6 +2164,7 @@ function downloadPriceSheetTemplate() {
 }
 
 let _pendingPriceRows = []; // [{ type, sizeKey, styleCode, price }] staged from the last upload
+let _pendingPriceFile = null; // that file — kept with "Your price sheet" in Your Price Lists
 
 // Parsing is fully deterministic — we control the template's exact columns, so there's no
 // guessing involved. A file whose header doesn't match gets rejected with a clear message
@@ -2350,11 +2181,11 @@ async function tryOpenPriceMapping(file) {
 
     const headers = grid[0].map(h => String(h).trim());
     if (headers[0] !== 'Cabinet Type' || headers[1] !== 'Width (in)' || headers[2] !== 'Height (in)') {
-      // Not our template — most likely a supplier's own price list, which the AI import can read (5.8)
-      if (typeof piOpen === 'function' && confirm("That isn't our price sheet template — it looks like a supplier's own price list.\n\nWant the AI import to read it? You'll review every match before anything is saved.")) piOpen(file);
-      else showToast("Saved as a file only. To use it for pricing, use Import Supplier Price List, or fill in our template.");
+      // Not our template — a supplier's own price list goes through the import
+      if (typeof piOpen === 'function') piOpen(file);
       return;
     }
+    _pendingPriceFile = file;
 
     const typeByLabel = Object.fromEntries(CABINET_TYPES.map(t => [t.label, t.key]));
     const styles = companyStyles();
@@ -2407,7 +2238,7 @@ function closePriceMapModal() {
 async function applyPriceMapping() {
   if (!currentUser || !_pendingPriceRows.length) { closePriceMapModal(); return; }
   if (myTeamRole !== 'owner') { showToast('Only the account owner can manage price sheets.'); closePriceMapModal(); return; }
-  const { data: existing } = await db.from('company_profiles').select('price_overrides').eq('user_id', effectiveOwnerId).single();
+  const { data: existing } = await db.from('company_profiles').select('price_overrides, price_import_state').eq('user_id', effectiveOwnerId).single();
   const overrides = { ...(existing?.price_overrides || {}) };
 
   _pendingPriceRows.forEach(({ type, sizeKey, styleCode, price }) => {
@@ -2421,14 +2252,24 @@ async function applyPriceMapping() {
     overrides[type] = forType;
   });
 
+  // Your Price Lists shows when the price sheet was last added, with the file itself
+  const state = { ...(existing?.price_import_state || {}) };
+  const prevFile = (state.priceSheet || {}).file;
+  const stored = typeof plStoreOriginal === 'function' ? await plStoreOriginal(_pendingPriceFile) : null;
+  state.priceSheet = { importedAt: new Date().toISOString(), fileName: _pendingPriceFile ? _pendingPriceFile.name : '', ...(stored ? { file: stored } : prevFile ? { file: prevFile } : {}) };
+
   const { error } = await db.from('company_profiles').upsert({
     user_id: effectiveOwnerId,
     price_overrides: overrides,
+    price_import_state: state,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' });
 
   if (error) { showToast('Could not save pricing: ' + error.message); return; }
   companyProfile.price_overrides = overrides;
+  companyProfile.price_import_state = state;
+  if (stored && prevFile && typeof plRemoveStored === 'function') plRemoveStored(prevFile);
+  if (typeof plRender === 'function') plRender();
   closePriceMapModal();
   showToast(`Updated ${_pendingPriceRows.length} price${_pendingPriceRows.length === 1 ? '' : 's'}.`);
 }
@@ -2445,14 +2286,6 @@ async function downloadCompanyFile(path, name) {
   a.remove();
 }
 
-async function deleteCompanyFile(id, path, category) {
-  if (!confirm('Delete this file? This can\'t be undone.')) return;
-  await db.storage.from(FILES_BUCKET).remove([path]);
-  const { error } = await db.from('company_files').delete().eq('id', id);
-  if (error) { showToast('Could not delete: ' + error.message); return; }
-  showToast('File deleted.');
-  loadCompanyFiles(category);
-}
 
 async function handleSignOut() {
   await db.auth.signOut();
@@ -2488,8 +2321,6 @@ async function init() {
 
   loadTeamMembers();
   renderSubscription();
-  applyFilesTabTierGating();
-  loadCompanyFiles('price_list');
   if (typeof piRenderPending === 'function') piRenderPending();   // open price questions (5.8b)
   if (typeof piRenderBasis === 'function') piRenderBasis();       // MSRP-priced suppliers (5.8c)
   if (typeof plRender === 'function') plRender();                 // Your Price Lists (view / replace / delete)

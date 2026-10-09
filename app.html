@@ -185,11 +185,10 @@
       <span style="font-size:10px;color:rgba(255,255,255,0.65);" id="sync-label">Saved</span>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:6px;">
-      <button class="signout-btn" style="flex:1;" onclick="location.href='/profile#company'">Company</button>
+      <a href="/profile" id="my-profile-link" class="signout-btn" style="flex:1;display:block;text-align:center;text-decoration:none;box-sizing:border-box;">My Profile</a>
       <button class="signout-btn" style="flex:1;" onclick="handleSignOut()">Sign Out</button>
     </div>
     <button id="connect-pro-btn" onclick="openModal('modal-pro-lead')" style="width:100%;margin-bottom:6px;padding:9px 14px;background:linear-gradient(135deg,#0f766e,#0f766e);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(13,148,136,0.25);">Connect with a Pro</button>
-    <a href="/profile" class="signout-btn" style="display:block;text-align:center;text-decoration:none;width:100%;box-sizing:border-box;">My Profile</a>
   </div>
 </aside>
 
@@ -271,7 +270,7 @@
             <div class="tb-group">
               <div class="layers-wrap"><button type="button" class="toolbar-btn layers-btn" onclick="toggleLayersMenu(this)" aria-haspopup="true" title="Show or hide parts of the drawing"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/></svg>Layers <span class="layers-btn-count"></span></button><div class="layers-menu hidden" role="group" aria-label="Layers"></div></div>
               <div class="toolbar-pricing">
-                <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle(true)"><span class="toggle-slider"></span></label>
+                <label class="toggle-switch"><input type="checkbox" id="pricing-toggle-2" onchange="onPricingToggle()"><span class="toggle-slider"></span></label>
                 <span class="toggle-label">Pricing</span>
               </div>
             </div>
@@ -293,7 +292,7 @@
             </div>
 
             <div class="tb-group">
-              <button id="floor-plan-print-btn" class="toolbar-btn" onclick="printFloorPlan(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6V2.5h8V6M4 11h8v3H4v-3zM2.5 6h11v5h-2"/></svg>Print Plans</button>
+              
               <div class="order-wrap"><button id="order-list-btn" class="toolbar-btn" onclick="toggleOrderMenu(this)" aria-haspopup="true" title="Order list for your supplier"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2.5h10v11H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>Order List</button><div class="order-menu layers-menu hidden"><button type="button" class="order-item" onclick="downloadOrderCSV(); this.closest('.order-menu').classList.add('hidden')">Download CSV (for supplier order forms)</button><button type="button" class="order-item" onclick="printOrderList(); this.closest('.order-menu').classList.add('hidden')">Print order list</button></div></div>
               <button id="summary-toggle-btn" class="toolbar-btn" onclick="toggleSummary()"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h6l2 2v9h-8v-11z"/><path d="M5.5 7h5M5.5 9.5h5M5.5 12h3"/></svg>Summary</button>
               <button id="pdf-export-btn" class="toolbar-btn-primary" onclick="exportPDF(this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Export PDF</button>
@@ -368,7 +367,7 @@
                 <option value="plain">Floor: Plain</option><option value="wood">Floor: Wood</option><option value="tile">Floor: Tile</option><option value="lvp">Floor: LVP</option>
               </select>
             </div>
-            <button id="snap-add-btn" class="toolbar-btn snap-btn" onclick="addQuoteSnapshot()" title="Put this exact view on the printed quote (up to 3)">📷 Add to quote</button>
+            <button id="snap-add-btn" class="toolbar-btn snap-btn" onclick="addQuoteSnapshot()" title="Put this exact view on the quote in your PDF (up to 3)">📷 Add to quote</button>
             <span class="cam-hint">Drag to rotate · scroll to zoom · right-drag to pan</span>
           </div>
           <div id="iso-wrapper">
@@ -433,17 +432,6 @@
             <button type="button" data-cat="extras" onclick="setPaletteCategory('extras')">Extras</button>
           </div>
           <div id="palette-items" class="palette-items"></div>
-        </div>
-        <div class="cp-section" style="flex-shrink:0">
-          <div class="cp-label">Pricing</div>
-          <div class="price-toggle-row">
-            <label class="toggle-switch"><input type="checkbox" id="pricing-toggle" onchange="onPricingToggle()"><span class="toggle-slider"></span></label>
-            <span class="toggle-label">Show Pricing</span>
-          </div>
-          <div id="pricing-opts" class="hidden">
-            <div style="font-size:10px;color:#64748b;margin-bottom:6px;">Cabinet prices include the project's markup — set it at the bottom of the Quote window.</div>
-            <div class="markup-row"><label for="tax-pct">Tax %</label><input type="number" id="tax-pct" value="0" min="0" max="30" step="0.1" onchange="setProjectTax(this.value)" style="width:70px;"></div>
-          </div>
         </div>
         <div class="cp-section" style="flex-shrink:0">
           <div class="cp-label">Active Wall</div>
@@ -1027,12 +1015,12 @@
     <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:8px;">Quote Summary</div>
     <div id="quote-totals-preview" style="background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;"></div>
 
-    <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Click <strong>Print / Save PDF</strong> to generate the full formatted quote with line items, terms &amp; conditions, and signature lines.</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Click <strong>Export PDF</strong> for the quote with your terms and signature lines. You can add the drawings and 3D views in the same file.</p>
 
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-quote')">Close</button>
       <button class="btn btn-secondary" id="quote-share-btn" onclick="closeModal('modal-quote');openShareModal()">Share with customer</button>
-      <button class="btn btn-primary" onclick="printQuote()">Print / Save PDF</button>
+      <button class="btn btn-primary" id="quote-export-btn" onclick="closeModal('modal-quote'); exportPDF(document.getElementById('pdf-export-btn'))">Export PDF</button>
     </div>
   </div>
 </div>
@@ -1132,7 +1120,7 @@
       <div class="faq-a">
         <p><strong>How do I start a job?</strong><br>Click <strong>＋ New Project</strong> at the top of the left sidebar. Enter the customer, project type and room size. Bathroom projects can start from a ready-made layout.</p>
         <p><strong>How do I add another room?</strong><br>Click <strong>＋ Room</strong> next to the room tabs and pick a room type and size. One project can hold a kitchen, baths, laundry and more; the quote adds them all up.</p>
-        <p><strong>Where do I put my logo, address and terms?</strong><br>Click <strong>Company</strong> at the bottom of the left sidebar. Your logo, contact info and terms print on every quote and PDF.</p>
+        <p><strong>Where do I put my logo, address and terms?</strong><br>Click <strong>My Profile</strong> at the bottom of the left sidebar, then <strong>Company Settings</strong>. Your logo, contact info and terms print on every quote and PDF.</p>
       </div>
     </div>
     <div class="faq-section">
@@ -1148,10 +1136,10 @@
     <div class="faq-section">
       <button class="faq-q" onclick="toggleFaq(this)">Prices &amp; quotes <span class="faq-arrow">▾</span></button>
       <div class="faq-a">
-        <p><strong>Where do cabinet prices come from?</strong><br>Only from <strong>your</strong> price sheet: Profile → <strong>My Pricing</strong>. Download the template and fill it in, or import your supplier's list as they sent it (Excel, CSV or PDF). Nothing is estimated or made up.</p>
+        <p><strong>Where do cabinet prices come from?</strong><br>Only from <strong>your</strong> price lists: My Profile → <strong>My Pricing</strong> → <strong>Add a price list</strong>. Upload your supplier's list as they sent it (Excel, CSV or PDF), or fill in our blank template. Nothing is estimated or made up.</p>
         <p><strong>Why does a cabinet say N/A?</strong><br>Your price sheet has no price for that cabinet's size in that finish. It's left out of the total until you add one.</p>
         <p><strong>Where do I add labor, delivery or a markup?</strong><br>Click <strong>Quote</strong>. Add job costs, trim and hardware there (you type those prices), and set your markup on the totals line. Customers see the markup built into cabinet prices.</p>
-        <p><strong>Print Quote or Export PDF?</strong><br><strong>Print / Save PDF</strong> (in the Quote window) is the quote on its own. <strong>Export PDF</strong> is the full package: cover page, floor plans and elevations for every room, 3D views, quote, terms and signature lines.</p>
+        <p><strong>How do I make a PDF for my customer or installer?</strong><br>Click <strong>Export PDF</strong> (toolbar, or in the Quote window) and choose what to include: floor plans and elevations for every room, 3D views, the cut list and the quote with your terms and signature lines. Leave the quote out for a plans-only set for installers. On Gold, you can mark the quote as sent there, and later changes print as tracked revisions.</p>
       </div>
     </div>
     <div class="faq-section">

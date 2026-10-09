@@ -48,6 +48,7 @@ DISABLED = ','.join([
     'EN_ELLIPSIS',                          # "Loading…" placeholders are fine
     'UNLIKELY_OPENING_PUNCTUATION',         # pieces of a sentence the code joins together
     'CONFUSION_RULE_READS_REEDS',           # "reads" = the AI's reads of a page
+    'CONFUSION_RULE_PRINTS_PRINCE',         # "prints as revision 2"
     'COMMA_COMPOUND_SENTENCE_2',            # "…so you can…" (purpose) needs no comma
 ])
 

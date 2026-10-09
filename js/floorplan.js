@@ -239,7 +239,7 @@ function renderCanvas() {
   const scale    = CANVAS_SCALE;
   const roomW = Math.max(r.walls.north, r.walls.south, 48);
   const roomH = Math.max(r.walls.east,  r.walls.west,  48);
-  const PDF = !!window._pdfMode; // true only while exportPDF/printFloorPlan capture this canvas
+  const PDF = !!window._pdfMode; // true only while Export PDF captures this canvas
   const PAD = 68;
   canvas.width  = Math.max(roomW * scale + PAD*2, 380);
   canvas.height = Math.max(roomH * scale + PAD*2, 280);

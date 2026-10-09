@@ -983,13 +983,12 @@ function setProjectTax(v) {
   const p = activeProj(); if (!p) return;
   const n = parseFloat(v);
   p.taxPct = isFinite(n) ? Math.max(0, Math.min(30, n)) : null;
-  const el = document.getElementById('tax-pct'); if (el) el.value = projectTaxPct(p);
   persist(); renderAll(); if (typeof refreshQuoteTotals === 'function') refreshQuoteTotals();
 }
 // Glass doors on a wall cabinet: the company's own upcharge % (Company Settings). Not set →
 // null, and that cabinet shows N/A rather than a guessed price.
 function glassUpchargePct() { const v = parseFloat(((companyProfile && companyProfile.quote_settings) || {}).glassPct); return isFinite(v) ? v : null; }
-function pricingOn() { return document.getElementById('pricing-toggle').checked; }
+function pricingOn() { const t = document.getElementById('pricing-toggle-2'); return !!(t && t.checked); }
 // Returns the price for this cabinet, or null if there's no price on file for its exact
 // size + finish combination. We never substitute a guessed/default price here — a company's
 // uploaded price sheet (or legacy manual $/in rate) is the only source of truth, so an

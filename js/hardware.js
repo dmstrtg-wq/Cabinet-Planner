@@ -161,13 +161,8 @@ function removeHardwareExtra(i) {
 }
 
 // ════════════════════════════
-// PRINTED QUOTE / PDF
+// QUOTE PDF (Export PDF)
 // ════════════════════════════
-function hardwareQuoteHTML(p) {
-  const lines = hardwareQuoteLines(p); if (!lines.length) return '';
-  const rows = lines.map(l => `<tr><td colspan="2">${escHtml(l.label)}</td><td>Qty: ${l.qty}</td><td>${l.each != null ? fmtMoney(l.each) + ' ea' : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td><td class="amt">${l.total != null ? fmtMoney(l.total) : '<span style="color:#64748b;font-style:italic;">N/A</span>'}</td></tr>`).join('');
-  return `<div class="sec">Hardware &amp; Accessories</div><table><thead><tr><th colspan="2">Item</th><th>Qty</th><th>Each</th><th style="text-align:right">Total</th></tr></thead><tbody>${rows}</tbody></table>`;
-}
 // jsPDF + autotable; returns the new y
 function addHardwareToPdf(doc, p, MAR, qy) {
   const lines = hardwareQuoteLines(p); if (!lines.length) return qy;

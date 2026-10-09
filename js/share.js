@@ -55,7 +55,7 @@ function renderShareModal(confirmUpdate) {
     <div class="form-group"><label>What your customer sees</label>
       ${opt('none', 'Design only', '— 3D, floor plan and elevations')}
       ${opt('total', 'Design + quote total', '— one total, no line items')}
-      ${opt('full', 'Design + itemized quote', '— every line, as on your printed quote')}
+      ${opt('full', 'Design + itemized quote', '— every line, as on your PDF quote')}
       ${unpriced ? `<div style="font-size:12px;color:#b45309;margin-top:4px;">${unpriced} cabinet${unpriced === 1 ? ' has' : 's have'} no price for ${unpriced === 1 ? 'its' : 'their'} finish yet, so prices can't be shared — the total would leave ${unpriced === 1 ? 'it' : 'them'} out. Price ${unpriced === 1 ? 'it' : 'them'} first, then update the link.</div>` : ''}</div>
     <div class="form-group"><label for="share-expiry">Link works for</label>
       <select id="share-expiry">${Object.entries(SHARE_EXPIRY_DAYS).map(([d, l]) => `<option value="${d}" ${String(d) === '30' ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;

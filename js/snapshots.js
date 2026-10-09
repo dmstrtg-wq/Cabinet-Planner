@@ -157,13 +157,6 @@ function renderQuoteSnapshotList() {
 // ON THE QUOTE
 // ════════════════════════════
 function currentSnapshotPaths(p) { return snapshotsOf(p).map(s => s.path); }
-// HTML block for the printed quote
-function quoteSnapshotsHTML(imgs) {
-  if (!imgs.length) return '';
-  return `<div class="sec">Your Kitchen</div>
-    <div style="display:flex;gap:10px;margin-bottom:18px;">${imgs.map(i =>
-      `<div style="flex:1 1 0;min-width:0;"><img src="${i.url}" style="width:100%;height:auto;border:1px solid #e5e7eb;border-radius:6px;display:block;"></div>`).join('')}</div>`;
-}
 // PDF (jsPDF): a row of images; returns the new y position
 function addSnapshotsToPdf(doc, imgs, x, y, width) {
   if (!imgs.length) return y;

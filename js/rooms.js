@@ -1205,18 +1205,16 @@ function removeAppliance(id) {
 // ════════════════════════════
 // PRICING
 // ════════════════════════════
-function onPricingToggle(fromToolbar) {
-  const main = document.getElementById('pricing-toggle');
+// One Pricing switch, in the toolbar (the side panel had a second one, plus a second tax box —
+// sales tax now lives only in the Quote window). Dan, 2026-10-08.
+function onPricingToggle() {
   const tb = document.getElementById('pricing-toggle-2');
   // Gate pricing visibility at Silver tier
   if (!canAccess('silver')) {
-    if (main) main.checked = false;
     if (tb) tb.checked = false;
     showTierUpgradePrompt('silver', 'Show Pricing');
     return;
   }
-  if (fromToolbar) { main.checked = tb.checked; } else if (tb) { tb.checked = main.checked; }
-  document.getElementById('pricing-opts').classList.toggle('hidden', !pricingOn());
   renderAll();
 }
 function renderAll() { if (typeof syncPaletteToRoom === 'function') syncPaletteToRoom(); renderCanvas(); renderCabinetList(); if (state.viewMode === 'elevation') renderElevation(); if (state.viewMode === '3d') renderIsometric(); renderCutList(); if (typeof renderDesignCheck === 'function') renderDesignCheck(); }

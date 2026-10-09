@@ -144,6 +144,13 @@ async function piLoadFile(files) {
   try {
     PI.wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
   } catch (e) { showToast("Couldn't read that file."); return; }
+  // Our own price sheet template (filled in, or downloaded from a list and edited) is read
+  // exactly — no AI, no questions — by the price sheet reader (profile.html)
+  const first = XLSX.utils.sheet_to_json(PI.wb.Sheets[PI.wb.SheetNames[0]], { header: 1, defval: '' }).find(r => r.some(c => String(c).trim()));
+  if (first && String(first[0]).trim() === 'Cabinet Type' && String(first[1]).trim() === 'Width (in)' && typeof tryOpenPriceMapping === 'function') {
+    piClose(true); tryOpenPriceMapping(file); return;
+  }
+  PI.file = file;
   PI.fileName = file.name;
   PI.grids = {}; PI.use = {}; PI.layouts = {}; PI.targets = {};
   PI.wb.SheetNames.forEach(n => { PI.grids[n] = piSheetGrid(n); PI.use[n] = piPriceCells(PI.grids[n]) >= 3; });
@@ -231,7 +238,7 @@ function piTextGrid(items) {
 
 async function piLoadPdf(file) {
   if (file.size > 80 * 1024 * 1024) { showToast('That PDF is over 80 MB — save just the price pages and try again.'); return; }
-  PI.kind = 'pdf'; PI.fileName = file.name; PI.pages = []; PI.visionRows = []; PI.grids = {}; PI.use = {}; PI.layouts = {}; PI.targets = {};
+  PI.kind = 'pdf'; PI.fileName = file.name; PI.file = file; PI.pages = []; PI.visionRows = []; PI.grids = {}; PI.use = {}; PI.layouts = {}; PI.targets = {};
   PI.wb = { SheetNames: [] };
   PI.step = 'loading'; PI.progress = { done: 0, total: 1, what: 'Opening the PDF…' }; piRender();
   try {
@@ -262,7 +269,7 @@ async function piLoadPdf(file) {
 }
 async function piLoadImages(files) {
   if (files.length > PI_MAX_PAGES) { showToast(`Up to ${PI_MAX_PAGES} pictures at a time.`); return; }
-  PI.kind = 'pdf'; PI.fileName = files.length === 1 ? files[0].name : `${files.length} pictures`;
+  PI.kind = 'pdf'; PI.file = null; PI.fileName = files.length === 1 ? files[0].name : `${files.length} pictures`;
   PI.pages = []; PI.visionRows = []; PI.grids = {}; PI.use = {}; PI.layouts = {}; PI.targets = {}; PI.wb = { SheetNames: [] }; PI.pdf = null;
   PI.step = 'loading'; PI.progress = { done: 0, total: files.length, what: 'Opening pictures' }; piRender();
   // keep the order they were picked in, or by name when that looks like page order
@@ -466,6 +473,8 @@ async function piCall(body) {
 function piReadSettings() {
   PI.supplier = (document.getElementById('pi-supplier').value || '').trim();
   if (!PI.supplier) { showToast('Name the supplier first — finishes and prices are kept per supplier.'); return false; }
+  const limit = typeof plSupplierLimitMsg === 'function' ? plSupplierLimitMsg(PI.supplier) : '';
+  if (limit) { showToast(limit); return false; }
   const basis = (document.querySelector('input[name="pi-basis"]:checked') || {}).value;
   if (!basis) { showToast('Say how this price list is priced — your cost, a list price, or MSRP.'); return false; }
   PI.basis = basis;
@@ -1180,6 +1189,7 @@ async function piSave() {
     sup.codes = [...new Set([...(sup.codes || []), ...plan.rows.map(r => refCode[r.ref] || r.ref),
       ...later.flatMap(it => Object.keys(piItemPrices(it)).map(ref => refCode[ref] || ref))])];
     sup.importedAt = new Date().toISOString(); sup.fileName = PI.fileName || '';
+    if (PI.file && typeof plStoreOriginal === 'function') { const stored = await plStoreOriginal(PI.file); if (stored) sup.file = stored; }
     const keep = (sup.pending || []).filter(p => !later.some(it => it.key === p.key));
     later.forEach(it => {
       const prices = {};
@@ -1197,6 +1207,7 @@ async function piSave() {
   const { data, error } = await db.from('company_profiles').upsert(row, { onConflict: 'user_id' }).select().single();
   if (error) { showToast('Could not save pricing: ' + error.message); PI.step = 'review'; piRender(); return; }
   companyProfile = data;
+  if (ownNow && ownNow.file && typeof plRemoveStored === 'function') plRemoveStored(ownNow.file);   // the replaced list's file
   if (typeof renderPfStyles === 'function') renderPfStyles(data.custom_styles || []);   // keep Company Settings in step
   PI.saved = { count: plan.rows.length, finishes: newRefs.length, later: later.length, skuColumn: !missing.has('supplier_skus'), stateColumn: !missing.has('price_import_state') };
   PI.step = 'done'; piRender();

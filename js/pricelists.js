@@ -1,8 +1,10 @@
 // My Cabinet Planner — js/pricelists.js
-// "Your price lists" (My Pricing tab, Dan 2026-10-08): every supplier price list the account has
-// loaded, with View (price table), Download (our template, filled in — edit in Excel and upload
-// back), Replace (re-import that supplier; the new list replaces the old one entirely) and
-// Delete (its prices, item codes, open questions and the finishes its import created).
+// "Your price lists" (My Pricing tab, Dan 2026-10-08): the one place to add and manage prices.
+// "Add a price list" takes any file — our filled-in template is read exactly (no AI), anything
+// else goes through the supplier import. Each list: View (price table), Download (our template,
+// filled in — edit in Excel and add it back), Original file, Replace (re-import that supplier;
+// the new list replaces the old one entirely) and Delete (its prices, item codes, open questions
+// and the finishes its import created). Silver: 1 price list; Gold: unlimited.
 // Loaded by profile.html after priceimport.js (classic script, shared globals).
 //
 // Which prices belong to which supplier: imports from 2026-10-08 on record the finish codes they
@@ -28,7 +30,7 @@ function plOwnership(cp) {
     Object.entries(pb).forEach(([c, b]) => { if (b && b.supplier === name) codes.add(c); });
     if (!rec.codes && names.size === 1) skuCodes.forEach(c => { if (!taggedAny.has(c) || (tagged[name] || new Set()).has(c)) codes.add(c); });
     return { name, codes, created: [...(tagged[name] || [])], pending: (rec.pending || []).length,
-      importedAt: rec.importedAt || null, fileName: rec.fileName || '' };
+      importedAt: rec.importedAt || null, fileName: rec.fileName || '', file: rec.file || null };
   });
 }
 // Every saved price for the given finish codes: [{ t, sk, c, p, sku }]
@@ -50,7 +52,8 @@ function plLists(cp) {
   const owned = new Set(lists.flatMap(l => [...l.codes]));
   const other = new Set();
   plCells(cp, { has: () => true }).forEach(x => { if (!owned.has(x.c)) other.add(x.c); });
-  if (other.size) lists.push({ name: '', other: true, codes: other, created: [], pending: 0 });
+  const sheet = (cp.price_import_state || {}).priceSheet || {};
+  if (other.size) lists.push({ name: '', other: true, codes: other, created: [], pending: 0, importedAt: sheet.importedAt || null, file: sheet.file || null });
   return lists.map(l => ({ ...l, cells: plCells(cp, l.codes) })).filter(l => l.cells.length || l.pending || l.created.length);
 }
 const plFinishName = code => ((companyFinishes().find(f => f.code === code)) || {}).name || code;
@@ -61,7 +64,10 @@ function plRender() {
   const el = document.getElementById('pl-lists'); if (!el) return;
   const lists = plLists();
   const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-  el.innerHTML = `<div class="section-head"><div class="section-title">Your Price Lists</div></div>
+  el.innerHTML = `<div class="section-head"><div class="section-title">Your Price Lists</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <a href="#" onclick="downloadPriceSheetTemplate(); return false;" style="font-size:12px;color:var(--muted);">Download our blank template</a>
+        <button id="pl-add-btn" class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="plAdd()">＋ Add a price list</button></div></div>
     <div class="card" style="padding:4px 18px;">${lists.length ? lists.map((l, i) => {
       const fins = [...new Set(l.cells.map(x => x.c))];
       const bits = [`${fins.length} finish${fins.length === 1 ? '' : 'es'}`, `${l.cells.length.toLocaleString()} price${l.cells.length === 1 ? '' : 's'}`];
@@ -73,13 +79,57 @@ function plRender() {
           <div style="font-size:12px;color:var(--muted);margin-top:2px;">${esc(fins.slice(0, 8).map(plFinishName).join(', '))}${fins.length > 8 ? ` and ${fins.length - 8} more` : ''}</div></div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="plView(${i})">View</button>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="plDownload(${i})">Download</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="plDownload(${i})" title="Our price sheet with these prices filled in — edit it and add it back">Download</button>
+          ${l.file && l.file.path ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="plOriginal(${i})" title="${esc(l.file.name || '')}">Original file</button>` : ''}
           ${l.other ? '' : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="plReplace(${i})">Replace</button>`}
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:#b91c1c;" onclick="plAskDelete(${i})">Delete</button></div>
       </div>`; }).join('')
-      : '<div style="padding:14px 0;font-size:13px;color:var(--muted);">No prices loaded yet. Fill in our price sheet or import your supplier\'s list below, and it will show up here.</div>'}</div>`;
+      : '<div style="padding:14px 0;font-size:13px;color:var(--muted);line-height:1.6;">No prices loaded yet. Click <b>Add a price list</b> and upload your supplier\'s list just as they sent it (Excel, CSV or PDF). If you don\'t have one, download our blank template, type your prices in, and add that instead.</div>'}</div>
+    <div id="pl-legacy"></div>`;
   el.style.display = '';
+  plRenderLegacy();
 }
+// Files uploaded through the old "Price Sheets" box (before 2026-10-08) — still downloadable
+async function plRenderLegacy() {
+  const box = document.getElementById('pl-legacy'); if (!box || typeof db === 'undefined' || !effectiveOwnerId) return;
+  const { data } = await db.from('company_files').select('*').eq('user_id', effectiveOwnerId).eq('category', 'price_list').order('created_at', { ascending: false });
+  if (!data || !data.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<details style="margin-top:10px;font-size:12px;"><summary style="cursor:pointer;color:var(--muted);">Files you uploaded before (${data.length})</summary>
+    ${data.map(f => `<div style="display:flex;gap:10px;align-items:center;padding:6px 0;"><span style="flex:1;">${esc(f.file_name)} · ${new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+      <a href="#" onclick="downloadCompanyFile('${piJs(f.storage_path)}','${piJs(f.file_name)}'); return false;">Download</a>
+      <a href="#" style="color:#b91c1c;" onclick="plDeleteLegacy('${piJs(f.id)}','${piJs(f.storage_path)}'); return false;">Delete</a></div>`).join('')}</details>`;
+}
+async function plDeleteLegacy(id, path) {
+  if (myTeamRole !== 'owner') { showToast('Only the account owner can manage pricing.'); return; }
+  await db.storage.from(FILES_BUCKET).remove([path]);
+  const { error } = await db.from('company_files').delete().eq('id', id);
+  if (error) { showToast('Could not delete: ' + error.message); return; }
+  showToast('File deleted.'); plRenderLegacy();
+}
+
+// ── Add a price list (any file; our template is read exactly, anything else via the import) ──
+function plAdd() {
+  if (myTeamRole !== 'owner') { showToast('Only the account owner can manage pricing.'); return; }
+  if (!canAccess('silver')) { showToast('Price lists are part of the Silver and Gold plans.'); location.hash = '#subscription'; return; }
+  piOpen();   // (Silver's one-supplier limit is checked when the supplier is named — piReadSettings)
+}
+// Silver: one supplier price list (plus your own price sheet). Re-importing the same supplier is a replace.
+function plSupplierLimitMsg(supplier) {
+  if (canAccess('gold')) return '';
+  const other = plLists().find(l => !l.other && (l.cells.length || l.pending) && l.name.toLowerCase() !== String(supplier || '').trim().toLowerCase());
+  return other ? `Silver includes one supplier price list, and you already have ${other.name}'s. To load a newer ${other.name} list, use Replace on it. To add a second supplier, delete ${other.name}'s list first or upgrade to Gold.` : '';
+}
+// The file the person uploaded, kept with its price list (best effort: pricing never waits on it)
+async function plStoreOriginal(file) {
+  try {
+    if (!file || file.size > 50 * 1024 * 1024) return null;
+    const path = `${effectiveOwnerId}/price_list/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+    const { error } = await db.storage.from(FILES_BUCKET).upload(path, file, { contentType: file.type || 'application/octet-stream' });
+    return error ? null : { path, name: file.name, size: file.size };
+  } catch (e) { return null; }
+}
+function plRemoveStored(file) { try { if (file && file.path) db.storage.from(FILES_BUCKET).remove([file.path]); } catch (e) {} }
+function plOriginal(i) { const l = plLists()[i]; if (l && l.file && l.file.path) downloadCompanyFile(l.file.path, l.file.name || 'price-list'); }
 
 function plModal(html, wide) {
   let el = document.getElementById('pl-modal');
@@ -182,6 +232,7 @@ async function plDelete(i) {
   const { data, error } = await db.from('company_profiles').upsert(row, { onConflict: 'user_id' }).select().single();
   if (error) { showToast('Could not delete: ' + error.message); return; }
   companyProfile = data;
+  plRemoveStored(own.file);
   plCloseModal();
   if (typeof renderPfStyles === 'function') renderPfStyles(data.custom_styles || []);
   plRender(); if (typeof piRenderPending === 'function') piRenderPending(); if (typeof piRenderBasis === 'function') piRenderBasis();
@@ -212,6 +263,7 @@ function plWithout(cur, own, keepCodes) {
   qs.priceBasis = pb;
   const state = { ...(cur.price_import_state || {}) }, sups = { ...(state.suppliers || {}) };
   if (own.name) delete sups[own.name];
+  if (own.other) delete state.priceSheet;
   state.suppliers = sups;
   return { price_overrides: strip(cur.price_overrides), supplier_skus: strip(cur.supplier_skus),
     custom_styles: styles.length ? styles : null, quote_settings: qs, price_import_state: state };
