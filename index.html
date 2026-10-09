@@ -490,23 +490,6 @@ footer{
 .footer-links a:hover{color:rgba(255,255,255,0.9);}
 .footer-copy{font-size:12px;color:rgba(255,255,255,0.55);}
 
-/* ── CONTACT MODAL ── */
-.lp-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px;}
-.lp-modal-overlay.hidden{display:none;}
-.lp-modal{background:var(--white);border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.25);max-height:90vh;overflow-y:auto;}
-.lp-modal h3{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:6px;letter-spacing:-0.3px;}
-.lp-modal p{font-size:13px;color:var(--muted);margin-bottom:20px;}
-.lp-form-group{margin-bottom:14px;}
-.lp-form-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:5px;}
-.lp-form-group input,.lp-form-group select,.lp-form-group textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--bg);outline:none;}
-.lp-form-group input:focus,.lp-form-group select:focus,.lp-form-group textarea:focus{border-color:var(--accent);}
-.lp-form-group textarea{resize:vertical;min-height:90px;}
-.lp-modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
-.lp-btn{padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}
-.lp-btn-secondary{background:var(--bg);color:var(--muted);}
-.lp-btn-primary{background:var(--accent);color:white;}
-.lp-btn-primary:hover{background:#115e59;}
-
 /* ── A11Y WIDGET ── */
 #a11y-btn{position:fixed;bottom:24px;right:16px;z-index:9100;width:44px;height:44px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:background 0.15s;}
 #a11y-btn:hover{background:#115e59;}
@@ -1608,45 +1591,6 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
 </script>
 
-<!-- Contact Us Modal -->
-<div id="lp-contact-modal" class="lp-modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Contact Us">
-  <div class="lp-modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h3>Contact Us</h3>
-      <button onclick="closeContactModal()" aria-label="Close" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
-    </div>
-    <p>Have a question or want to learn more? We'll get back to you within one business day.</p>
-    <div class="lp-form-group">
-      <label for="lp-contact-name">Your Name</label>
-      <input type="text" id="lp-contact-name" placeholder="Jane Smith">
-    </div>
-    <div class="lp-form-group">
-      <label for="lp-contact-email">Email Address</label>
-      <input type="email" id="lp-contact-email" placeholder="jane@company.com">
-    </div>
-    <div class="lp-form-group">
-      <label for="lp-contact-subject">Subject</label>
-      <select id="lp-contact-subject">
-        <option value="">Select a topic…</option>
-        <option value="General Question">General Question</option>
-        <option value="Pricing & Plans">Pricing &amp; Plans</option>
-        <option value="Demo Request">Demo Request</option>
-        <option value="Bug Report">Bug Report</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-    <div class="lp-form-group">
-      <label for="lp-contact-message">Message</label>
-      <textarea id="lp-contact-message" placeholder="Tell us how we can help…"></textarea>
-    </div>
-    <div id="lp-contact-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:4px;"></div>
-    <div class="lp-modal-footer">
-      <button class="lp-btn lp-btn-secondary" onclick="closeContactModal()">Cancel</button>
-      <button class="lp-btn lp-btn-primary" onclick="submitLpContact()">Send Message</button>
-    </div>
-  </div>
-</div>
-
 <!-- Accessibility widget -->
 <button id="a11y-btn" aria-label="Accessibility options" aria-expanded="false" aria-controls="a11y-panel" onclick="toggleA11yPanel()">
   <svg viewBox="0 0 128 128" aria-hidden="true">
@@ -1703,50 +1647,6 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
   if (prefs.motion) { document.getElementById('a11y-motion').checked = true; }
   applyA11y();
 })();
-
-function openContactModal() {
-  document.getElementById('lp-contact-modal').classList.remove('hidden');
-  document.getElementById('lp-contact-name').focus();
-}
-function closeContactModal() {
-  document.getElementById('lp-contact-modal').classList.add('hidden');
-  ['lp-contact-name','lp-contact-email','lp-contact-message'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('lp-contact-subject').value = '';
-  document.getElementById('lp-contact-error').textContent = '';
-}
-async function submitLpContact() {
-  const name    = document.getElementById('lp-contact-name').value.trim();
-  const email   = document.getElementById('lp-contact-email').value.trim();
-  const subject = document.getElementById('lp-contact-subject').value;
-  const message = document.getElementById('lp-contact-message').value.trim();
-  const errEl   = document.getElementById('lp-contact-error');
-  const btn     = document.querySelector('#lp-contact-modal .lp-btn-primary');
-  if (!name || !email || !subject || !message) { errEl.textContent = 'Please fill in all fields.'; return; }
-  if (!email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-  errEl.textContent = '';
-  btn.disabled = true; btn.textContent = 'Sending…';
-  try {
-    const res = await fetch('https://formspree.io/f/YOUR_CONTACT_FORM_ID', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ name, email, subject, message })
-    });
-    if (res.ok) {
-      document.querySelector('#lp-contact-modal .lp-modal').innerHTML =
-        '<div style="text-align:center;padding:40px 20px;"><div style="font-size:32px;margin-bottom:16px;">✓</div><h3 style="margin-bottom:8px;">Message sent!</h3><p style="color:var(--muted);font-size:14px;">We\'ll get back to you within one business day.</p><button class="lp-btn lp-btn-secondary" style="margin-top:24px;" onclick="closeContactModal()">Close</button></div>';
-    } else { throw new Error(); }
-  } catch {
-    // Fallback to mailto if Formspree isn't configured yet
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`);
-    const subjectLine = encodeURIComponent(`[My Cabinet Planner] ${subject}`);
-    window.location.href = `mailto:contact@mycabinetplanner.com?subject=${subjectLine}&body=${body}`;
-    closeContactModal();
-  }
-  btn.disabled = false; btn.textContent = 'Send Message';
-}
-document.getElementById('lp-contact-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeContactModal();
-});
 
 // If user is already signed in, send pricing buttons straight to profile checkout
 (async () => {

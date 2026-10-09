@@ -54,8 +54,9 @@ function renderPhoneQuote() {
   // Group by type+label
   const groups = {};
   all.forEach(item => {
-    const key   = item.type;
-    const label = CATALOG[key]?.label || APPLIANCES[key]?.label || key;
+    // (islands have no type — they used to show as "undefined × 1")
+    const key   = item.type || (isls.includes(item) ? 'island' : 'item');
+    const label = CATALOG[key]?.label || APPLIANCES[key]?.label || (key === 'island' ? 'Island' : key);
     if (!groups[key]) groups[key] = { label, count: 0, items: [] };
     groups[key].count++;
     groups[key].items.push(item);
