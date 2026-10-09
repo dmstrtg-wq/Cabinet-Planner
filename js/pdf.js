@@ -117,6 +117,27 @@ function exportQuote(btn) {
   };
 }
 
+// A 3D shot trimmed to what's actually drawn (plus a small margin), so the room fills the picture
+// and sits in its middle — the 3/4 camera frames the whole room box, empty floor and walls
+// included (Dan, 2026-10-08: a bathroom came out small and off to one side)
+function pkgTrimCanvas(src) {
+  const w = src.width, h = src.height, g = src.getContext('2d');
+  let data; try { data = g.getImageData(0, 0, w, h).data; } catch (e) { return { url: src.toDataURL('image/jpeg', 0.86), w, h }; }
+  const at = (x, y) => (y * w + x) * 4;
+  const bg = [0, 1, 2].map(k => data[k]);                 // the corner colour = the background
+  const differs = i => Math.abs(data[i] - bg[0]) + Math.abs(data[i + 1] - bg[1]) + Math.abs(data[i + 2] - bg[2]) > 36;
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) if (differs(at(x, y))) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return { url: src.toDataURL('image/jpeg', 0.86), w, h };
+  const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.04);
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
+  const cw = x1 - x0 + 1, ch = y1 - y0 + 1, out = document.createElement('canvas');
+  out.width = cw; out.height = ch;
+  const og = out.getContext('2d'); og.fillStyle = '#ffffff'; og.fillRect(0, 0, cw, ch);
+  og.drawImage(src, x0, y0, cw, ch, 0, 0, cw, ch);
+  return { url: out.toDataURL('image/jpeg', 0.88), w: cw, h: ch };
+}
+
 // Each room's 3/4 view (the "3/4 View" camera preset), captured like "Add to quote" does, for a
 // plans PDF without added 3D views. Puts the screen back the way it was afterwards.
 async function pkgAuto3D(p) {
@@ -134,7 +155,7 @@ async function pkgAuto3D(p) {
       renderIsometric();
       setCameraPreset('hero', true);
       await new Promise(res => requestAnimationFrame(() => setTimeout(res, 60)));
-      const img = capture3DImage();
+      const img = iso3D ? pkgTrimCanvas(_snapshotCanvas()) : null;
       if (img) out.push({ ...img, label: rooms.length > 1 ? r.name : '' });
     }
   } catch (e) { console.warn('3D views for the plans skipped:', e); }
@@ -299,11 +320,18 @@ async function buildExportPackage(btn, sizeKey, inc) {
     y = newPage('3D Views', k === 0 ? '3D views' : null);
     y = heading(k === 0 ? '3D Views' : '3D Views (continued)', null, y);
     const group = views.slice(k, k + perPage);
-    const each = (PH - y - MAR - 6 - 12 * group.length) / group.length;
-    group.forEach(im => {
-      if (im.label) { doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8); doc.text(im.label, MAR, y + 3); y += 6; }
-      const d = fit(im.w, im.h, CW, each);
-      doc.addImage(im.url, 'JPEG', MAR + (CW-d.w)/2, y, d.w, d.h); y += d.h + 6;
+    // As big as the page allows, and centred top-to-bottom in the space under the heading
+    const gap = 10, labelH = 7, area = PH - y - MAR - 8;
+    const each = (area - gap * (group.length - 1) - group.filter(v => v.label).length * labelH) / group.length;
+    const sizes = group.map(im => fit(im.w, im.h, CW, each));
+    const used = sizes.reduce((s, d) => s + d.h, 0) + gap * (group.length - 1) + group.filter(v => v.label).length * labelH;
+    y += Math.max(0, (area - used) / 2);
+    group.forEach((im, n) => {
+      const d = sizes[n];
+      if (im.label) { doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(28,16,8); doc.text(im.label, MAR + (CW - d.w) / 2, y + 4); y += labelH; }
+      doc.addImage(im.url, 'JPEG', MAR + (CW - d.w) / 2, y, d.w, d.h);
+      doc.setDrawColor(226, 232, 240); doc.setLineWidth(0.3); doc.rect(MAR + (CW - d.w) / 2, y, d.w, d.h);   // thin frame
+      y += d.h + gap;
     });
   }
 
