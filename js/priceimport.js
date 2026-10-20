@@ -916,9 +916,14 @@ function piPlan(st) {
 // fridge panels have one size in the planner.
 function piFillSize(it) {
   if (!it.t || it.t === 'skip') return;
-  const fixed = { filler3: 3, filler6: 6, fridgePanel: 0.75 }[it.t];
+  const fixed = { filler3: 3, filler6: 6, fridgePanel: 0.75, basePanel: 0.75 }[it.t];
   if (fixed) { it.w = fixed; it.h = null; return; }
   const d = (it.sku.toUpperCase().replace(/^[^0-9]*/, '').match(/^\d+/) || [''])[0];
+  if (it.t === 'wallPanel') {            // WEP1230 → 12 deep, 30 high; WEP42 → 42 high
+    it.w = 0.75;
+    if (it.h == null && (d.length === 2 || d.length >= 4)) it.h = +(d.length === 2 ? d : d.slice(2, 4));
+    return;
+  }
   if (it.w == null && d.length >= 2) it.w = +d.slice(0, 2);
   if (CABINET_HEIGHTS[it.t] && it.h == null && d.length >= 4) it.h = +d.slice(2, 4);
 }

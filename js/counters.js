@@ -30,7 +30,7 @@ function projectCounter(p) {
 // ════════════════════════════
 // WHAT GETS A COUNTERTOP / TOE KICK
 // ════════════════════════════
-const COUNTER_CAB_TYPES = ['base', 'sink', 'drawerBase', 'mwDrawerBase', 'cornerBase', 'lazysusan', 'vanity'];
+const COUNTER_CAB_TYPES = ['base', 'sink', 'drawerBase', 'mwDrawerBase', 'cornerBase', 'lazysusan', 'vanity', 'basePanel'];   // (a base end panel sits under the top)
 const UNDER_COUNTER_APPS = ['dishwasher', 'beverageCooler', 'cooktop'];   // the range breaks the counter instead
 function isFloorFiller(i) { if (!isFiller(i.type)) return false; const [b, t] = itemVerticalRange(i); return b < 0.01 && t <= 37; }
 function coversCounter(i) {
@@ -44,7 +44,7 @@ function vanityBowls(v) {
   if (v.sinks === 2 && w >= 47.9) { const half = w / 2; return [{ offset: a + half / 2 - 11, width: 22 }, { offset: a + half + half / 2 - 11, width: 22 }]; }
   return [{ offset: a + w / 2 - 11, width: 22 }];
 }
-function hasToeKick(cab) { return COUNTER_CAB_TYPES.includes(cab.type) || TALL_TYPES.includes(cab.type) || ['mediaBase', 'bench'].includes(cab.type) || isFloorFiller(cab); }
+function hasToeKick(cab) { return (COUNTER_CAB_TYPES.includes(cab.type) && !isEndPanel(cab.type)) || TALL_TYPES.includes(cab.type) || ['mediaBase', 'bench'].includes(cab.type) || isFloorFiller(cab); }
 function roomWalls(r) { return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])]; }
 
 // ════════════════════════════
@@ -87,9 +87,12 @@ function counterRuns(r) {
       const depth = Math.max(...run.items.map(i => (CATALOG[i.type] ? (i.depth || CATALOG[i.type].depth) : 24) + (i.wallOffset || 0)));   // a bumped-out base pushes the top out too
       const top = cabs.length ? Math.max(...cabs.map(i => itemVerticalRange(i)[1])) : 34.5;
       const ends = runEndsFree(r, wall, [0, top], run.a, run.b);
-      const a = run.a - (ends.startFree ? END_PANEL_T + COUNTER_SIDE : 0), b = run.b + (ends.endFree ? END_PANEL_T + COUNTER_SIDE : 0);
+      // A placed base end panel closes that end: the top overhangs it by 1", and no automatic panel is added
+      const byOff = run.items.slice().sort((m, n) => (m.offset || 0) - (n.offset || 0));
+      const capS = isEndPanel(byOff[0].type), capE = isEndPanel(byOff[byOff.length - 1].type);
+      const a = run.a - (ends.startFree ? (capS ? 0 : END_PANEL_T) + COUNTER_SIDE : 0), b = run.b + (ends.endFree ? (capE ? 0 : END_PANEL_T) + COUNTER_SIDE : 0);
       out.push({ wall, a, b, fullA: a, fullB: b,   // fullA/B: before corner trimming (elevations see the corner piece end-on)
-        depth: depth + COUNTER_FRONT, top, sinks: run.items.filter(i => i.type === 'sink').concat(run.items.filter(i => i.type === 'vanity').flatMap(vanityBowls)), ...ends, cabA: run.a, cabB: run.b });
+        capS, capE, depth: depth + COUNTER_FRONT, top, sinks: run.items.filter(i => i.type === 'sink').concat(run.items.filter(i => i.type === 'vanity').flatMap(vanityBowls)), ...ends, cabA: run.a, cabB: run.b });
     });
   });
   // Corners: two runs overlap where they meet. The longer run keeps the corner; the
@@ -120,7 +123,7 @@ function islandCounterRects(r) { return (r.islands || []).map(islandCounterRect)
 function upperRuns(r) {
   const out = [];
   roomWalls(r).forEach(wall => {
-    const uppers = wallItemsWithReturns(r, wall).filter(i => CATALOG[i.type] && itemLevel(i) === 'upper' && i.type !== 'fridgePanel');
+    const uppers = wallItemsWithReturns(r, wall).filter(i => CATALOG[i.type] && itemLevel(i) === 'upper' && !isEndPanel(i.type));
     // grouped by top height and by how far the fronts stand out (a bumped-out upper gets its own crown run)
     const byTop = new Map();
     uppers.forEach(i => { const k = itemVerticalRange(i)[1] + '|' + ((i.depth || 12) + (i.wallOffset || 0)); (byTop.get(k) || byTop.set(k, []).get(k)).push(i); });
@@ -146,8 +149,8 @@ function tallRuns(r) {
 function endPanels(r) {
   const panels = [];
   const add = (run, bottom, top, depth) => {
-    if (run.startFree) panels.push({ wall: run.wall, a: (run.cabA ?? run.a) - END_PANEL_T, b: run.cabA ?? run.a, bottom, top, depth });
-    if (run.endFree)   panels.push({ wall: run.wall, a: run.cabB ?? run.b, b: (run.cabB ?? run.b) + END_PANEL_T, bottom, top, depth });
+    if (run.startFree && !run.capS) panels.push({ wall: run.wall, a: (run.cabA ?? run.a) - END_PANEL_T, b: run.cabA ?? run.a, bottom, top, depth });
+    if (run.endFree && !run.capE)   panels.push({ wall: run.wall, a: run.cabB ?? run.b, b: (run.cabB ?? run.b) + END_PANEL_T, bottom, top, depth });
   };
   counterRuns(r).forEach(run => add(run, 0, run.top, run.depth - COUNTER_FRONT + FRONT_T));
   upperRuns(r).forEach(run => add(run, run.bottom, run.top, run.depth + FRONT_T));

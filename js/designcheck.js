@@ -62,7 +62,7 @@ function _dcWallName(r, w) {
 // Does this piece have doors/drawers on its face? (fillers, panels and corner units designed
 // for the corner don't count for the corner-clearance rule)
 function _dcHasFront(i) {
-  if (CATALOG[i.type]) return !isFiller(i.type) && !['fridgePanel', 'lazysusan', 'diagWall'].includes(i.type);
+  if (CATALOG[i.type]) return !isFiller(i.type) && !isEndPanel(i.type) && !['lazysusan', 'diagWall'].includes(i.type);
   return ['dishwasher', 'range', 'refrigerator', 'beverageCooler', 'microwave'].includes(i.type);
 }
 

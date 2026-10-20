@@ -40,10 +40,10 @@
     const apps = (r.appliances||[]).filter(a => a.wall === wall && layerShowsItem(a));
     const inner = apps.find(a => applianceHost(r, a) && hitApp(a)); if (inner) return inner;
     for (const cab of r.cabinets.filter(c => c.wall === wall && layerShowsItem(c))) {
-      const cW = cab.width*scale, cH = cab.height*scale;
+      const [bIn, tIn] = itemVerticalRange(cab);          // (uppers, raised fillers and end panels at their real height)
+      const cW = cab.width*scale, cH = (tIn - bIn)*scale;
       const x = eX(cab.offset||0, cab.width);
-      const bIn = (cab.type==='wall'||cab.type==='diagWall') ? (cab.wallBottom != null ? cab.wallBottom : 54) : 0;
-      const y = (cab.type==='wall'||cab.type==='diagWall') ? Math.max(WY, floorY-bIn*scale-cH) : floorY-cH;
+      const y = Math.max(WY, floorY - tIn*scale);
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
     return apps.find(hitApp) || null;

@@ -181,7 +181,7 @@ const PALETTE_CATEGORIES = [
   { id: 'wall',   label: 'Wall',              types: ['wall'] },
   { id: 'tall',   label: 'Tall',              types: ['tall', 'ovenTall'] },
   { id: 'corner', label: 'Corner',            types: ['cornerBase', 'lazysusan', 'diagWall'] },
-  { id: 'fill',   label: 'Fillers & Panels',  types: ['filler3', 'filler6', 'fridgePanel'] },
+  { id: 'fill',   label: 'Fillers & Panels',  types: ['filler3', 'filler6', 'basePanel', 'wallPanel', 'fridgePanel'] },
   { id: 'app',    label: 'Appliances',        types: Object.keys(APPLIANCES).filter(k => !APPLIANCES[k].fixture) },
   { id: 'bath',   label: 'Bath',              types: ['vanity', 'linenTall', 'toilet', 'tub', 'shower', 'mirror', 'medicineCabinet', 'sconce', 'floatingShelf'] },
   { id: 'living', label: 'Living',            types: ['mediaBase', 'openTall', 'wall', 'tv', 'floatingShelf'] },
@@ -241,7 +241,7 @@ function makePaletteItem(entry, wall, offset) {
     const cat = CATALOG[entry.type], upper = entry.type === 'wall' || entry.type === 'diagWall';
     return { id: uid(), type: entry.type, wall, width: entry.width, height: defaultCabHeight(entry.type, r),
       depth: entry.type === 'diagWall' ? 12 : cat.depth, note: '', offset,
-      wallBottom: upper ? 54 : isFiller(entry.type) ? 0 : null, glassDoors: false, styleOverride: null, itemNum: null };
+      wallBottom: upper || entry.type === 'wallPanel' ? 54 : isFiller(entry.type) || isEndPanel(entry.type) ? 0 : null, glassDoors: false, styleOverride: null, itemNum: null };
   }
   const acat = APPLIANCES[entry.type];
   return { id: uid(), type: entry.type, wall, width: entry.width, height: acat.height, note: '', offset,

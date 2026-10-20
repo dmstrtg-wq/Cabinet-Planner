@@ -517,7 +517,11 @@ const CATALOG = {
   // starting sizes). Priced as the stock piece they're ripped from — see fillerPriceParts().
   filler3:     { label:'Filler',                widths:[3],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL', filler:true, stock:3 },
   filler6:     { label:'Filler',                widths:[6],         heights:[34.5],              depth:24, color:'#9CA3AF', abbr:'FL', filler:true, stock:6 },
-  fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP'},
+  fridgePanel: { label:'Fridge End Panel',      widths:[0.75],      heights:[84,90,96],          depth:24, color:'#CBD5E1', abbr:'FEP', panel:true},
+  // Decorative end panels (Dan, 2026-10-20): placed by hand at the end of a run, priced from
+  // the price sheet by height. They sit at any height like a filler (wall panels at 54").
+  basePanel:   { label:'Base End Panel',        widths:[0.75],      heights:[34.5],              depth:24, color:'#CBD5E1', abbr:'BEP', panel:true},
+  wallPanel:   { label:'Wall End Panel',        widths:[0.75],      heights:[12,15,18,24,30,36,42], depth:12, color:'#CBD5E1', abbr:'WEP', panel:true},
   diagWall:    { label:'Diagonal Corner Wall',  widths:[24,27],     heights:[30,36,42],          depth:12, color:'#7DD3FC', abbr:'DCW'},
   // Cabinets that hold a built-in appliance (Build Plan 3.3, Dan 2026-10-02): the cabinet is
   // priced from the price sheet, the appliance placed inside it keeps its own price.
@@ -534,7 +538,10 @@ const CATALOG = {
 // Cabinet types priced per width × height on the price sheet (the rest per width)
 // (diagWall joined 2026-10-05 — suppliers price 30/36/42-high diagonal walls differently; a
 // width-only price saved before then still applies as a fallback.)
-const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker', 'diagWall'];
+// (wallPanel joined 2026-10-20. The fridge panel stays one price per panel, as saved before.)
+const PRICE_BY_HEIGHT = ['wall', 'tall', 'ovenTall', 'linenTall', 'mediaBase', 'openTall', 'locker', 'diagWall', 'wallPanel'];
+// End panels: a 3/4" board standing at the end of a run, no doors
+function isEndPanel(type) { return !!(CATALOG[type] && CATALOG[type].panel); }
 // Returns company-specific styles if set, otherwise generic defaults
 const DEFAULT_STYLES = [
   {code:'WS', name:'White Shaker',   swatch:'#F5F4F0'},

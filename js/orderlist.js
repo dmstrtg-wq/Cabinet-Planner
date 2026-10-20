@@ -42,6 +42,8 @@ function orderSku(cab, styleCode) {
   const cat = CATALOG[cab.type];
   if (isFiller(cab.type)) return 'FL' + fillerPriceParts(cab.width).stock;
   if (cab.type === 'fridgePanel') return 'FEP' + _whole(cab.height);
+  if (cab.type === 'basePanel') return 'BEP' + _whole(cab.depth || 24);                                  // BEP24
+  if (cab.type === 'wallPanel') return 'WEP' + _whole(cab.depth || 12) + _whole(cab.height);            // WEP1230
   if (cat.heights.length > 1) return cat.abbr + _whole(cab.width) + _whole(cab.height);   // W3030, WP1884
   return cat.abbr + _whole(cab.width);                                                      // B36, SB33
 }

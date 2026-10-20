@@ -335,7 +335,7 @@ function renderIsometric() {
     if (_ci) { root.add(buildCorner3D(r, cab, _ci, _frontKit, _p3d)); return; }
     const off = cab.offset || 0;
     const h   = cab.height || cat.heights?.[0] || 30;
-    const dep = cab.depth  || cat.depth || 24;
+    const dep = (cab.depth  || cat.depth || 24) + (isEndPanel(cab.type) ? FRONT_T : 0);   // an end panel reaches the door faces
     const baseY = itemVerticalRange(cab)[0];   // uppers at their bottom, fillers wherever they sit, bases on the floor
     const pos = cabPos(cab.wall, off, cab.width, dep, cab.wallOffset || 0);
     const baseCol = doorStyleInfo(cab.styleOverride || _p3d?.style).swatch;   // per-cabinet style wins

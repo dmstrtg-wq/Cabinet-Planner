@@ -763,8 +763,8 @@ function onTypeChange() {
     wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '54';
     ds.classList.add('hidden'); // depth is auto from width selection
     gdr.style.display = 'flex'; document.getElementById('cab-glass-doors').checked = false;
-  } else if (filler) {          // a filler can sit at any height: 0 = on the floor
-    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = '0';
+  } else if (filler || type === 'wallPanel') {          // a filler can sit at any height: 0 = on the floor; a wall end panel starts at 54"
+    wbr.style.display = 'flex'; document.getElementById('cab-wall-bottom').value = type === 'wallPanel' ? '54' : '0';
     ds.classList.add('hidden');
     gdr.style.display = 'none'; document.getElementById('cab-glass-doors').checked = false;
   } else {
@@ -782,7 +782,7 @@ function defaultCabHeight(type, r) {
   const ceiling = (r && r.ceilingHeight) || 96;
   const upper = ceiling >= 120 ? 42 : ceiling >= 108 ? 36 : 30;
   let want = cat.heights[0];
-  if (type === 'wall' || type === 'diagWall') want = upper;
+  if (type === 'wall' || type === 'diagWall' || type === 'wallPanel') want = upper;
   else if (['tall', 'ovenTall', 'linenTall', 'openTall', 'locker', 'fridgePanel'].includes(type)) want = 54 + upper;
   return cat.heights.includes(want) ? want : cat.heights[0];
 }
@@ -792,7 +792,7 @@ function defaultCabHeight(type, r) {
 function itemVerticalRange(item) {
   if (CATALOG[item.type]) {
     if (item.type === 'wall' || item.type === 'diagWall') { const b = item.wallBottom ?? 54; return [b, b + item.height]; }
-    if (isFiller(item.type)) { const b = item.wallBottom ?? 0; return [b, b + item.height]; }   // fillers sit wherever they're put
+    if (isFiller(item.type) || isEndPanel(item.type)) { const b = item.wallBottom ?? (item.type === 'wallPanel' ? 54 : 0); return [b, b + item.height]; }   // fillers and end panels sit wherever they're put
     return [0, item.height];
   }
   const acat = APPLIANCES[item.type] || {};
@@ -804,7 +804,7 @@ function itemVerticalRange(item) {
 // 'upper' or 'base' — which run a new piece of this type belongs to
 function itemLevel(item) {
   if (item.type === 'wall' || item.type === 'diagWall') return 'upper';
-  if (isFiller(item.type)) return (item.wallBottom ?? 0) >= 48 ? 'upper' : 'base';
+  if (isFiller(item.type) || isEndPanel(item.type)) return itemVerticalRange(item)[0] >= 48 ? 'upper' : 'base';
   const acat = APPLIANCES[item.type];
   return acat && acat.wallMount ? 'upper' : 'base';
 }
@@ -918,7 +918,8 @@ function addCabinet() {
   const note   = document.getElementById('cab-note-input').value.trim();
   const cabOffset = parseInches(document.getElementById('cab-offset-input').value) || 0;
   const depthSel    = document.getElementById('cab-depth-sel');
-  const wallBottom  = (type === 'wall' || type === 'diagWall') ? (parseInches(document.getElementById('cab-wall-bottom').value) || 54)
+  const wallBottom  = (type === 'wall' || type === 'diagWall' || type === 'wallPanel') ? (parseInches(document.getElementById('cab-wall-bottom').value) || 54)
+                    : isEndPanel(type) ? 0
                     : filler ? Math.max(0, parseInches(document.getElementById('cab-wall-bottom').value) || 0) : null;
   const depth       = type === 'diagWall' ? 12
                     : (type === 'wall' && !depthSel.classList.contains('hidden')) ? parseInt(depthSel.value)
@@ -1245,7 +1246,7 @@ function openEditModal(cab) {
 
   // Wall bottom (wall + diagWall)
   const wbg = document.getElementById('edit-wallbottom-group');
-  if (cab.type === 'wall' || cab.type === 'diagWall' || filler) {
+  if (cab.type === 'wall' || cab.type === 'diagWall' || cab.type === 'wallPanel' || filler) {
     wbg.style.display = '';
     document.getElementById('edit-cab-wallbottom').value = cab.wallBottom != null ? cab.wallBottom : (filler ? 0 : 54);
   } else { wbg.style.display = 'none'; }
@@ -1291,6 +1292,7 @@ function saveEditModal() {
     cab.wallBottom = parseInches(document.getElementById('edit-cab-wallbottom').value) || 54;
     cab.glassDoors = document.getElementById('edit-cab-glass').checked;
   }
+  if (cab.type === 'wallPanel') cab.wallBottom = parseInches(document.getElementById('edit-cab-wallbottom').value) || 54;
   setItemOffset(r, cab, parseInches(document.getElementById('edit-cab-offset').value) || 0);   // was parseInt: dropped fractions (built-ins move with it)
   cab.note          = document.getElementById('edit-cab-note').value.trim();
   cab.styleOverride = document.getElementById('edit-cab-style').value || null;
