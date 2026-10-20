@@ -1,6 +1,6 @@
 # Room Model v2: rooms of any shape (Phase 4 design doc)
 
-Status: **draft for Dan's approval** (2026-10-20). No Phase 4 code starts until this is approved.
+Status: **approved by Dan, 2026-10-20**, with the decisions below. Build starts with step 4.1a.
 
 ## What Dan asked for
 
@@ -23,7 +23,7 @@ room.outline = {
   walls:   [ { id, from, to,              // corner ids; the wall runs from → to
                kind: 'full' | 'half' | 'open',
                height?,                   // half walls (pony walls, a counter-height wall)
-               name? } ]                  // Dan's/the user's own name, optional
+             } ]
 }
 ```
 
@@ -32,7 +32,7 @@ room.outline = {
 - `kind: 'half'`: a short wall with its own height (a breakfast-bar wall, a half wall with a column). Uppers aren't allowed on it.
 - The room's outline is always closed (it may be all open on one side), so "inside the room" stays well defined for clearances and 3D.
 
-**Free runs (peninsulas and bent runs):** `room.runs = [ { id, points: [[x,y], …], attachedTo?: wallId } ]`. Each straight piece of a free run is a wall-like segment with its own id (`run:<id>:<n>`) and a front side; a peninsula can take cabinets on both sides like an island. Islands get a `rotation` (0° today) so they can sit at an angle too.
+**Free runs (peninsulas and bent runs):** `room.runs = [ { id, from: { wall, end }, points: [[x,y], …] } ]`. Dan: a peninsula is almost always an extension of a countertop run, so a free run always starts from the end of an existing wall run and continues it (same countertop, same height, mitered where it turns). Each straight piece is a wall-like segment with its own id (`run:<id>:<n>`) and a front side; a peninsula can take cabinets on both sides like an island. Islands get a `rotation` (0° today) so they can sit at an angle too.
 
 ## How a room gets its shape (the editor)
 
@@ -49,7 +49,7 @@ All of these work on one room in the Floor Plan with a "Edit room shape" mode:
 ## Names and elevations
 
 - Each real wall (and each free-run piece with cabinets) gets its own elevation tab.
-- Default names come from which way the wall faces, so they stay familiar: North, East, South, West; angled walls get "Northeast", "Southwest" and so on; duplicates get numbers ("North 2"). The user can rename any wall ("Range wall", "Window wall").
+- Names come from which way the wall faces, so they stay familiar: North, East, South, West; angled walls get "Northeast", "Southwest" and so on; duplicates get numbers ("North 2"). No renaming (Dan: compass directions are enough).
 - Open edges get an elevation only when cabinets are on them.
 
 ## Drawing and math on angled walls
@@ -87,8 +87,8 @@ All of these work on one room in the Floor Plan with a "Edit room shape" mode:
 - **Existing customers' projects:** nothing changes for anyone else until step 4.1d is tested on your account. The switch can be turned off at any time, and the backups make every migrated project reversible.
 - **The phone layout:** drawing on a phone is hard; on phones the editor offers the shape picker, cut corner and numeric lengths, and full draw mode stays desktop and tablet.
 
-## Questions for Dan
+## Dan's decisions (2026-10-20)
 
-1. Roll it out behind a switch on your account first, then Sam's, then everyone? (Recommended.)
-2. Wall names: facing-direction names (North, Northeast…) that can be renamed, or letters (Wall A, B, C)?
-3. Is the build order right, or should the peninsula (4.2) come before draw mode (4.1e), since the reference kitchen needs it?
+1. **Rollout:** behind a switch, on Dan's account first so he can test, then Sam's, then everyone.
+2. **Wall names:** compass directions (North, Northeast…), no renaming.
+3. **Order:** as listed. Peninsulas (4.2) come after draw mode (4.1e), and a peninsula always grows out of the end of a countertop run.
