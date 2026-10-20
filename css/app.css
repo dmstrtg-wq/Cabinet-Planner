@@ -526,6 +526,14 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .style-swatch { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.12); }
 .style-code { font-size: 9px; font-weight: 700; color: var(--text-muted); }
 .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.elev-tab-sep { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 0 2px 0 10px; align-self: center; }
+.isl-sides { display: grid; grid-template-columns: auto 1fr auto auto; gap: 6px 8px; align-items: center; font-size: 12px; }
+.isl-sides .isl-side-name { font-weight: 700; }
+.isl-sides .isl-side-info { color: var(--text-muted); }
+.isl-sides select.cp-select { padding: 5px 8px; font-size: 13px; min-width: 84px; margin: 0; }
+.isl-sides .isl-side-head { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.isl-sides .btn { font-size: 11px; padding: 4px 9px; }
+.wall-grid-sub { grid-column: 1 / -1; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 6px; text-transform: uppercase; letter-spacing: .04em; }
 .wall-btn { padding: 7px 6px; border: 2px solid var(--border); border-radius: 7px; background: white; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); transition: all 0.12s; text-align: center; }
 .wall-btn:hover { border-color: var(--accent); color: var(--accent); }
 .wall-btn.active { border-color: var(--accent); background: #ccfbf1; color: var(--accent); }

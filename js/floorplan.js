@@ -178,10 +178,9 @@ function drawMeasurements(ctx, RX, RY, scale) {
 // ISLAND CLEARANCE HELPER
 // ════════════════════════════
 function calcIslandClearance(isl, r) {
-  const roomW = Math.max(r.walls.north, r.walls.south, 48);
-  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
-  const ix1 = isl.x, iy1 = isl.y;
-  const ix2 = isl.x + isl.width, iy2 = isl.y + isl.depth;
+  const { w: roomW, h: roomH } = roomSize(r);
+  const ct = islandCounterRect(isl);                  // measured from the countertop edge (seating overhang included)
+  const ix1 = ct.x, iy1 = ct.y, ix2 = ct.x + ct.w, iy2 = ct.y + ct.h;
 
   // Rect-to-rect axis-aligned clearance
   function rectClear(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2) {
@@ -195,34 +194,20 @@ function calcIslandClearance(isl, r) {
 
   let minClear = Math.min(ix1, iy1, roomW-ix2, roomH-iy2); // wall distances
 
-  // Cabinet footprints
-  (r.cabinets||[]).forEach(cab => {
-    const cat = CATALOG[cab.type]; if (!cat) return;
-    const off = cab.offset||0, dep = cab.depth||24, w = cab.width;
-    let cx1,cy1,cx2,cy2;
-    if      (cab.wall==='north') { cx1=off; cy1=0;        cx2=off+w; cy2=dep; }
-    else if (cab.wall==='south') { cx1=off; cy1=roomH-dep; cx2=off+w; cy2=roomH; }
-    else if (cab.wall==='west')  { cx1=0;   cy1=off;       cx2=dep;   cy2=off+w; }
-    else                         { cx1=roomW-dep; cy1=off; cx2=roomW; cy2=off+w; }
-    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, cx1,cy1,cx2,cy2));
-  });
-
-  // Appliance footprints
-  (r.appliances||[]).forEach(app => {
-    const acat = APPLIANCES[app.type]; if (!acat || acat.wallMount) return;
-    const off = app.offset||0, dep = acat.depth, w = app.width;
-    let cx1,cy1,cx2,cy2;
-    if      (app.wall==='north') { cx1=off; cy1=0;        cx2=off+w; cy2=dep; }
-    else if (app.wall==='south') { cx1=off; cy1=roomH-dep; cx2=off+w; cy2=roomH; }
-    else if (app.wall==='west')  { cx1=0;   cy1=off;       cx2=dep;   cy2=off+w; }
-    else                         { cx1=roomW-dep; cy1=off; cx2=roomW; cy2=off+w; }
-    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, cx1,cy1,cx2,cy2));
+  // Cabinet and floor-appliance footprints (not the ones built into this island; uppers don't block the floor)
+  const own = new Set(islandItems(r, isl).map(i => i.id));
+  [...(r.cabinets||[]), ...(r.appliances||[])].forEach(it => {
+    if (own.has(it.id) || !(CATALOG[it.type] || APPLIANCES[it.type])) return;
+    if (APPLIANCES[it.type] && APPLIANCES[it.type].wallMount) return;
+    if (itemVerticalRange(it)[0] > 20) return;
+    itemRects(r, it).forEach(b => { minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, b.x,b.y,b.x+b.w,b.y+b.h)); });
   });
 
   // Other islands
   (r.islands||[]).forEach(other => {
     if (other.id === isl.id) return;
-    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, other.x,other.y,other.x+other.width,other.y+other.depth));
+    const o = islandCounterRect(other);
+    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, o.x,o.y,o.x+o.w,o.y+o.h));
   });
 
   return Math.round(Math.max(0, minClear));
@@ -517,7 +502,74 @@ function renderCanvas() {
     ctx.fillText(acat.abbr, x+w/2, y+h/2);
   }
 
-  const _wallList = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
+  // Draw islands with clearance indicator
+  (r.islands || []).forEach(isl => {
+    const ix = RX + isl.x * scale;
+    const iy = RY + isl.y * scale;
+    const iw = isl.width  * scale;
+    const ih = isl.depth  * scale;
+    const clearIn = calcIslandClearance(isl, r);
+    // Color based on clearance: <24"=red, 24-36"=yellow, >=36"=green
+    const clearOk    = clearIn >= 36;
+    const clearWarn  = clearIn >= 24 && clearIn < 36;
+    const borderCol  = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
+    const fillCol    = clearOk ? '#D97706' : clearWarn ? '#D97706' : '#D97706'; // keep amber fill
+    const glowCol    = clearOk ? 'rgba(22,163,74,0.2)' : clearWarn ? 'rgba(217,119,6,0.2)' : 'rgba(220,38,38,0.25)';
+
+    // Clearance glow ring
+    ctx.save();
+    ctx.strokeStyle = borderCol; ctx.lineWidth = 3; ctx.globalAlpha = 0.5;
+    ctx.setLineDash([4,3]);
+    ctx.strokeRect(ix-6, iy-6, iw+12, ih+12);
+    ctx.setLineDash([]); ctx.restore();
+
+    // Seating overhang: the countertop past the island's edge, dashed (NKBA plan convention)
+    const _built = islandItems(r, isl).filter(layerShowsItem);
+    if (['n', 's', 'e', 'w'].some(sd => islandOverhang(isl, sd))) {
+      const ct = islandCounterRect(isl);
+      ctx.save(); ctx.fillStyle = 'rgba(217,119,6,0.12)'; ctx.fillRect(RX + ct.x*scale, RY + ct.y*scale, ct.w*scale, ct.h*scale);
+      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.25; ctx.setLineDash([6,4]);
+      ctx.strokeRect(RX + ct.x*scale, RY + ct.y*scale, ct.w*scale, ct.h*scale); ctx.restore();
+    }
+
+    // Shadow + fill (lighter when cabinets are built in, so they read on top)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+    ctx.fillStyle = _built.length ? '#FDE7C2' : fillCol; ctx.globalAlpha = _built.length ? 1 : 0.85;
+    ctx.fillRect(ix, iy, iw, ih);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // (cabinets, drawers and appliances built into its sides are drawn next, with the walls')
+
+    // Solid border in clearance color
+    ctx.strokeStyle = borderCol; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+    ctx.strokeRect(ix, iy, iw, ih);
+
+    // Counter edge lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ix+3, iy+3); ctx.lineTo(ix+iw-3, iy+3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ix+3, iy+ih-3); ctx.lineTo(ix+iw-3, iy+ih-3); ctx.stroke();
+
+    // Label (in the middle, unless cabinets fill it: then it joins the clearance badge below)
+    if (!_built.length) {
+      ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(9, Math.min(scale*2,12))}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(isl.label || 'Island', ix+iw/2, iy+ih/2 - 7);
+      ctx.font = `${Math.max(8, Math.min(scale*1.6,10))}px sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 6);
+    }
+
+    // Clearance badge — bottom center of island
+    const badgeTxt = (_built.length ? `${isl.label || 'Island'} ${isl.width}"×${isl.depth}" · ` : '') + (clearOk ? `✓ ${clearIn}" clear` : `⚠ ${clearIn}" clear`);
+    const badgeCol = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
+    ctx.fillStyle = badgeCol;
+    ctx.font = `bold ${Math.max(8, Math.min(scale*1.5,10))}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(badgeTxt, ix+iw/2, iy+ih+5);
+  });
+
+  const _wallList = cabinetWalls(r);        // room walls, then island sides (drawn over the islands above)
   // Base cabs + appliances first (solid), then ALL wall/upper cabs as a dashed overlay on
   // top (NKBA convention) — every wall's bases before any uppers, since a corner upper
   // reaches over the next wall's bases
@@ -558,61 +610,6 @@ function renderCanvas() {
   // Draw measurements overlay (before islands so islands render on top)
   const { RX: mRX, RY: mRY } = { RX, RY };
   drawMeasurements(ctx, RX, RY, scale);
-
-  // Draw islands with clearance indicator
-  (r.islands || []).forEach(isl => {
-    const ix = RX + isl.x * scale;
-    const iy = RY + isl.y * scale;
-    const iw = isl.width  * scale;
-    const ih = isl.depth  * scale;
-    const clearIn = calcIslandClearance(isl, r);
-    // Color based on clearance: <24"=red, 24-36"=yellow, >=36"=green
-    const clearOk    = clearIn >= 36;
-    const clearWarn  = clearIn >= 24 && clearIn < 36;
-    const borderCol  = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
-    const fillCol    = clearOk ? '#D97706' : clearWarn ? '#D97706' : '#D97706'; // keep amber fill
-    const glowCol    = clearOk ? 'rgba(22,163,74,0.2)' : clearWarn ? 'rgba(217,119,6,0.2)' : 'rgba(220,38,38,0.25)';
-
-    // Clearance glow ring
-    ctx.save();
-    ctx.strokeStyle = borderCol; ctx.lineWidth = 3; ctx.globalAlpha = 0.5;
-    ctx.setLineDash([4,3]);
-    ctx.strokeRect(ix-6, iy-6, iw+12, ih+12);
-    ctx.setLineDash([]); ctx.restore();
-
-    // Shadow + fill
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
-    ctx.fillStyle = fillCol; ctx.globalAlpha = 0.85;
-    ctx.fillRect(ix, iy, iw, ih);
-    ctx.restore();
-    ctx.globalAlpha = 1;
-
-    // Solid border in clearance color
-    ctx.strokeStyle = borderCol; ctx.lineWidth = 2.5; ctx.setLineDash([]);
-    ctx.strokeRect(ix, iy, iw, ih);
-
-    // Counter edge lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(ix+3, iy+3); ctx.lineTo(ix+iw-3, iy+3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(ix+3, iy+ih-3); ctx.lineTo(ix+iw-3, iy+ih-3); ctx.stroke();
-
-    // Label
-    ctx.fillStyle = '#fff'; ctx.font = `bold ${Math.max(9, Math.min(scale*2,12))}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(isl.label || 'Island', ix+iw/2, iy+ih/2 - 7);
-    ctx.font = `${Math.max(8, Math.min(scale*1.6,10))}px sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 6);
-
-    // Clearance badge — bottom center of island
-    const badgeTxt = clearOk ? `✓ ${clearIn}" clear` : `⚠ ${clearIn}" clear`;
-    const badgeCol = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
-    ctx.fillStyle = badgeCol;
-    ctx.font = `bold ${Math.max(8, Math.min(scale*1.5,10))}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(badgeTxt, ix+iw/2, iy+ih+5);
-  });
 
   // Room border — double line for a clean wall look
   if (_ld) {

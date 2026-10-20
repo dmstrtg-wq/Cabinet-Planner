@@ -13,7 +13,8 @@
 function placementIssue(r, item) {
   if (!item.wall || !wallFrame(r, item.wall)) return 'Drop it next to a wall';
   const len = wallLength(r, item.wall), off = item.offset || 0;
-  if (off < -0.01 || off + item.width > len + 0.01) return 'Runs past the end of the wall';
+  if (off < -0.01 || off + item.width > len + 0.01) return isIslandWall(item.wall) ? 'Runs past the end of the island' : 'Runs past the end of the wall';
+  const islIssue = islandFitIssue(item); if (islIssue) return islIssue;
   const vr = itemVerticalRange(item);
   const hits = overlappingItems(r, item.wall, vr, off, item.width, item.id, item.type);
   if (hits.length) return 'Overlaps ' + hits.map(itemLabel).join(', ');
@@ -295,7 +296,7 @@ function floorPlacement(entry, clientX, clientY) {
   const c = document.getElementById('floor-plan').getBoundingClientRect(), z = vpState.floor.zoom;
   const px = ((clientX - c.left) / z - g.originX) / g.scale, py = ((clientY - c.top) / z - g.originY) / g.scale;
   if (entry.isFurniture) return furnitureAt(entry, px, py);          // 7.5: anywhere in the room
-  const walls = ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])];
+  const walls = cabinetWalls(r);                 // room walls and island sides
   let best = null;
   walls.forEach(w => {
     const f = wallFrame(r, w); if (!f) return;

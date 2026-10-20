@@ -401,8 +401,49 @@ function wallFrame(r, wall) {
         ? { start: [sw.x, sw.startY], dir: [0, 1], inward: [sw.depthRight ? 1 : -1, 0], length: sw.length }
         : { start: [sw.startX, sw.y], dir: [1, 0], inward: [0, sw.depthDown ? 1 : -1], length: sw.length };
     }
-    default: return null;
+    default: {
+      const isl = islandOfWall(r, wall);
+      return isl ? islandSideFrame(isl, parseIslandWall(wall).side) : null;
+    }
   }
+}
+
+// ── Island sides (Dan, 2026-10-20): each side of an island is a short "wall" that takes
+// base cabinets, drawers and under-counter appliances. Its id is isl:<islandId>:<n|s|e|w>
+// (the compass way the fronts face). The cabinet backs sit ISLAND_BACK" in from the face,
+// so a standard 24"-deep base is flush with the island's edge. Offsets run left to right
+// as you stand facing that side, so the elevation never needs mirroring.
+const ISLAND_SIDES = { s: 'south', n: 'north', e: 'east', w: 'west' };
+const ISLAND_BACK = 24;
+function islandWallId(isl, side) { return 'isl:' + isl.id + ':' + side; }
+function parseIslandWall(wall) { const m = /^isl:(.+):([nsew])$/.exec(wall || ''); return m ? { id: m[1], side: m[2] } : null; }
+function isIslandWall(wall) { return typeof wall === 'string' && wall.startsWith('isl:'); }
+function islandOfWall(r, wall) { const p = parseIslandWall(wall); return p && r ? (r.islands || []).find(i => i.id === p.id) || null : null; }
+function islandSideFrame(isl, side) {
+  const { x, y, width: W, depth: D } = isl, bNS = Math.min(ISLAND_BACK, D), bEW = Math.min(ISLAND_BACK, W);
+  switch (side) {
+    case 's': return { start: [x, y + D - bNS],     dir: [1, 0],  inward: [0, 1],  length: W };
+    case 'n': return { start: [x + W, y + bNS],     dir: [-1, 0], inward: [0, -1], length: W };
+    case 'e': return { start: [x + W - bEW, y + D], dir: [0, -1], inward: [1, 0],  length: D };
+    case 'w': return { start: [x + bEW, y],         dir: [0, 1],  inward: [-1, 0], length: D };
+  }
+  return null;
+}
+function islandWalls(r) { return ((r && r.islands) || []).flatMap(isl => ['s', 'n', 'e', 'w'].map(sd => islandWallId(isl, sd))); }
+// Every wall a cabinet can sit on: the room's walls, then the island sides
+function cabinetWalls(r) { return [...roomWalls(r), ...islandWalls(r)]; }
+function islandItems(r, isl) {
+  const ids = new Set(['s', 'n', 'e', 'w'].map(sd => islandWallId(isl, sd)));
+  return [...r.cabinets, ...(r.appliances || [])].filter(i => ids.has(i.wall));
+}
+// Seating overhang (inches past the island's edge) on one side; 0 = none
+function islandOverhang(isl, side) { return Math.max(0, +((isl.seating || {})[side] || 0)); }
+// What can go on an island side: nothing taller than counter height
+function islandFitIssue(item) {
+  if (!isIslandWall(item.wall)) return null;
+  if (['wall', 'diagWall', 'lazysusan', 'cornerBase'].includes(item.type) || itemVerticalRange(item)[1] > 37)
+    return 'Islands take base cabinets, drawers and under-counter appliances';
+  return null;
 }
 function itemDepth(item) {
   if (item.type === 'diagWall') return 12;    // diagonal corner uppers: 12" sides, always
@@ -513,9 +554,11 @@ function renderWallButtons() {
     allWalls.push({id:'step1', label: ld.step1.label + ' Wall'});
     allWalls.push({id:'step2', label: ld.step2.label + ' Wall'});
   }
-  container.innerHTML = allWalls.map(w =>
-    `<button class="wall-btn${w.id===state.activeWall?' active':''}" data-wall="${w.id}" onclick="selectWall('${w.id}')">${w.label}</button>`
-  ).join('');
+  const btn = w => `<button class="wall-btn${w.id===state.activeWall?' active':''}" data-wall="${w.id}" onclick="selectWall('${w.id}')">${w.label}</button>`;
+  // Island sides: base cabinets and drawers go on these like on a wall
+  const isl = (r ? r.islands || [] : []).map(i => `<div class="wall-grid-sub">${escHtml(i.label || 'Island')} sides</div>` +
+    [['n', '↑ North'], ['e', '→ East'], ['s', '↓ South'], ['w', '← West']].map(([sd, l]) => btn({ id: islandWallId(i, sd), label: l })).join('')).join('');
+  container.innerHTML = allWalls.map(btn).join('') + isl;
 }
 
 function toggleLCutFields(prefix) {
@@ -575,11 +618,14 @@ function saveRoomShape() {
   }
 }
 function wallName(r, wall) {
+  if (isIslandWall(wall)) { const isl = islandOfWall(r, wall); return `${(isl && isl.label) || 'Island'} ${ISLAND_SIDES[parseIslandWall(wall).side]} side`; }
   const ld = getLShapeData(r);
   if (wall === 'step1' || wall === 'step2') return ld ? ld[wall].label + ' wall' : 'inner wall';
   return wall.charAt(0).toUpperCase() + wall.slice(1) + ' wall';
 }
+function wallLengthOf(r, wall) { return wallLength(r, wall); }   // (for code with a local named wallLength)
 function wallLength(r, wall) {
+  if (isIslandWall(wall)) { const f = wallFrame(r, wall); return f ? f.length : 0; }
   if (wall === 'step1' || wall === 'step2') { const ld = getLShapeData(r); return ld ? ld[wall].length : 0; }
   return r.walls[wall] || 0;
 }
@@ -610,16 +656,27 @@ function selectWall(wall) {
     step1: ld ? ld.step1.label + ' Wall' : 'Inner Wall 1',
     step2: ld ? ld.step2.label + ' Wall' : 'Inner Wall 2',
   };
-  const lbl = labels[wall] || wall;
+  const lbl = labels[wall] || (isIslandWall(wall) ? wallName(r, wall) : wall);
   document.querySelectorAll('.wall-btn').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
   document.getElementById('wall-list-label').textContent = lbl;
   document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + lbl;
   refreshPlacementOffsets();
   renderCabinetList(); renderCanvas();
 }
+// The elevation's wall tabs: the four walls, then each island's sides
+function renderElevWallTabs() {
+  const el = document.getElementById('elev-wall-tabs'); if (!el) return;
+  const r = activeRoom();
+  if (isIslandWall(state.elevWall) && !islandOfWall(r, state.elevWall)) state.elevWall = 'north';
+  const tab = (w, l, t) => `<button class="elev-wall-tab${w === state.elevWall ? ' active' : ''}" data-wall="${w}" onclick="selectElevWall('${w}')"${t ? ` title="${escHtml(t)}"` : ''}>${l}</button>`;
+  const many = r && (r.islands || []).length > 1;
+  el.innerHTML = [['north', '↑ North'], ['east', '→ East'], ['south', '↓ South'], ['west', '← West']].map(([w, l]) => tab(w, l)).join('')
+    + (r ? (r.islands || []).map((isl, k) => `<span class="elev-tab-sep">${escHtml(many ? (isl.label || 'Island ' + (k + 1)) : 'Island')}</span>`
+      + [['n', 'N'], ['e', 'E'], ['s', 'S'], ['w', 'W']].map(([sd, l]) => tab(islandWallId(isl, sd), l, wallName(r, islandWallId(isl, sd)))).join('')).join('') : '');
+}
 function selectElevWall(wall) {
   state.elevWall = wall;
-  document.querySelectorAll('.elev-wall-tab').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
+  renderElevWallTabs();
   renderElevation();
   fitView('elev'); // walls differ in length — re-center the new one
 }
@@ -837,6 +894,8 @@ function refreshPlacementOffsets() {
   const ao = document.getElementById('app-offset');       if (ao) ao.value = inHost != null ? inHost : nextFreeOffset(r, state.activeWall, appLevel);
 }
 function confirmNoOverlap(r, item, offset, width) {
+  const islIssue = islandFitIssue({ ...item, wall: state.activeWall, offset, width });
+  if (islIssue) { alert(islIssue + '. Pick a base cabinet, drawer base, filler or under-counter appliance.'); return false; }
   const hits = overlappingItems(r, state.activeWall, itemVerticalRange(item), offset, width, null, item.type);
   if (!hits.length) return true;
   return confirm(`This overlaps ${hits.map(itemLabel).join(', ')} on this wall (${offset}" to ${offset + width}" from left).\n\nAdd it anyway?`);
@@ -958,12 +1017,26 @@ function addIsland() {
   if (!r.islands) r.islands = [];
   r.islands.push({ id: uid(), width, depth, x, y, label });
   document.getElementById('island-label').value = '';
-  persist(); renderCabinetList(); renderCanvas();
+  persist(); renderWallButtons(); renderCabinetList(); renderCanvas();
 }
 function removeIsland(id) {
   const r = activeRoom(); if (!r) return;
-  r.islands = (r.islands || []).filter(i => i.id !== id);
+  if (!dropIsland(r, id)) return;
   persist(); renderCabinetList(); renderCanvas();
+}
+// Remove an island and everything built into it (asks first when it has cabinets)
+function dropIsland(r, id) {
+  const isl = (r.islands || []).find(i => i.id === id); if (!isl) return false;
+  const inside = islandItems(r, isl);
+  if (inside.length && !confirm(`Delete ${isl.label || 'this island'} and the ${inside.length} item${inside.length === 1 ? '' : 's'} built into it?`)) return false;
+  const gone = new Set(inside.map(i => i.id));
+  r.cabinets = r.cabinets.filter(c => !gone.has(c.id));
+  r.appliances = (r.appliances || []).filter(a => !gone.has(a.id));
+  r.islands = r.islands.filter(i => i.id !== id);
+  if (isIslandWall(state.activeWall) && islandOfWall(r, state.activeWall) == null) state.activeWall = 'north';
+  if (isIslandWall(state.elevWall) && islandOfWall(r, state.elevWall) == null) state.elevWall = 'north';
+  renderWallButtons();
+  return true;
 }
 // ── Island Edit Modal ──
 function openEditIslandModal(isl) {
@@ -972,7 +1045,43 @@ function openEditIslandModal(isl) {
   document.getElementById('edit-isl-width').value = isl.width;
   document.getElementById('edit-isl-depth').value = isl.depth;
   document.getElementById('edit-isl-label').value = isl.label || '';
+  renderIslandSides(isl);
   document.getElementById('modal-edit-island').classList.remove('hidden');
+}
+// One row per side: what's built in, its seating overhang, and buttons to add cabinets or stools
+const ISLAND_OVERHANGS = [0, 10, 12, 15, 18];
+function renderIslandSides(isl) {
+  const r = activeRoom(), el = document.getElementById('edit-isl-sides'); if (!r || !el) return;
+  const built = islandItems(r, isl);
+  el.innerHTML = `<span class="isl-side-head">Side</span><span class="isl-side-head">Now</span><span class="isl-side-head">Seating overhang</span><span class="isl-side-head">Add</span>`
+    + [['n', 'North'], ['e', 'East'], ['s', 'South'], ['w', 'West']].map(([sd, name]) => {
+    const n = built.filter(i => parseIslandWall(i.wall).side === sd).length, oh = islandOverhang(isl, sd);
+    const opts = [...new Set([...ISLAND_OVERHANGS, oh])].sort((a, b) => a - b)
+      .map(v => `<option value="${v}"${v === oh ? ' selected' : ''}>${v ? `${v}"` : 'None'}</option>`).join('');
+    return `<span class="isl-side-name">${name}</span>
+      <span class="isl-side-info">${n ? `${n} built in` : 'Finished side'}</span>
+      <select class="cp-select" id="edit-isl-oh-${sd}" aria-label="${name} side seating overhang">${opts}</select>
+      <span style="display:flex;gap:4px;">
+        <button type="button" class="btn btn-secondary" onclick="islandSideCabinets('${sd}')" title="Add base cabinets and drawers to the ${name.toLowerCase()} side">Cabinets</button>
+        <button type="button" class="btn btn-secondary" onclick="islandStoolsFromModal('${sd}')" title="Put counter stools along the ${name.toLowerCase()} side">Stools</button>
+      </span>`;
+  }).join('');
+}
+function readIslandSeating(isl) {
+  const seat = {};
+  ['n', 's', 'e', 'w'].forEach(sd => { const el = document.getElementById('edit-isl-oh-' + sd); const v = el ? +el.value : islandOverhang(isl, sd); if (v > 0) seat[sd] = v; });
+  if (Object.keys(seat).length) isl.seating = seat; else delete isl.seating;
+}
+// Close the window and set that side up to take cabinets (side panel, floor plan and elevation)
+function islandSideCabinets(sd) {
+  const r = activeRoom(); if (!r) return;
+  const isl = (r.islands || []).find(i => i.id === document.getElementById('edit-isl-id').value); if (!isl) return;
+  saveEditIslandModal();
+  const wall = islandWallId(isl, sd);
+  selectWall(wall);
+  state.elevWall = wall;
+  if (typeof setViewMode === 'function' && state.viewMode !== 'elevation') setViewMode('elevation'); else renderElevation();
+  showMoveTip(`Adding to the ${wallName(r, wall)}. Drag base cabinets and drawers from the catalog, or use Add Cabinet in the side panel.`);
 }
 function saveEditIslandModal() {
   const r = activeRoom(); if (!r) return;
@@ -987,13 +1096,14 @@ function saveEditIslandModal() {
   isl.x = Math.min(isl.x, roomW - newW);
   isl.y = Math.min(isl.y, roomH - newD);
   isl.label = document.getElementById('edit-isl-label').value.trim();
+  readIslandSeating(isl);
   closeModal('modal-edit-island');
   persist(); renderCabinetList(); renderCanvas();
 }
 function deleteFromEditIslandModal() {
   const r = activeRoom(); if (!r) return;
   const id = document.getElementById('edit-isl-id').value;
-  r.islands = (r.islands||[]).filter(i => i.id !== id);
+  if (!dropIsland(r, id)) return;
   closeModal('modal-edit-island');
   persist(); renderCabinetList(); renderCanvas();
 }

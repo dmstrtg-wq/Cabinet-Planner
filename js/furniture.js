@@ -25,16 +25,27 @@ function clampFurniture(r, f) {
 }
 function addFurnitureTo(r, f) { (r.furniture = r.furniture || []).push(f); clampFurniture(r, f); }
 
-// Stools along one side of an island, one every 24" (island modal → "Add stools")
+// Stools along one side of an island, one every 24" (island modal → "Stools"). With a
+// seating overhang they tuck partly under the countertop; stools already on that side
+// are replaced, so clicking twice doesn't stack them.
 function addIslandStools(isl, side = 's') {
   const r = activeRoom(); if (!r || !isl) return 0;
   const along = side === 'n' || side === 's' ? isl.width : isl.depth;
   const n = Math.max(1, Math.floor(along / 24)), gap = along / n;
   const [sw, sd] = FURNITURE.stool.sizes[0];
+  const out = Math.max(4, islandOverhang(isl, side) - 6);          // stool's near edge, past the island's edge
+  const ns = side === 'n' || side === 's';
+  r.furniture = furnitureOf(r).filter(f => {
+    if (f.type !== 'stool') return true;
+    const cx = f.x + f.width / 2, cy = f.y + f.depth / 2;
+    const inSpan = ns ? cx > isl.x - 6 && cx < isl.x + isl.width + 6 : cy > isl.y - 6 && cy < isl.y + isl.depth + 6;
+    const d = { s: cy - (isl.y + isl.depth), n: isl.y - cy, e: cx - (isl.x + isl.width), w: isl.x - cx }[side];
+    return !(inSpan && d > 0 && d < 40);
+  });
   for (let k = 0; k < n; k++) {
     const c = gap * (k + 0.5) - sw / 2;
-    const pos = side === 's' ? [isl.x + c, isl.y + isl.depth + 4] : side === 'n' ? [isl.x + c, isl.y - 4 - sd]
-      : side === 'e' ? [isl.x + isl.width + 4, isl.y + c] : [isl.x - 4 - sw, isl.y + c];
+    const pos = side === 's' ? [isl.x + c, isl.y + isl.depth + out] : side === 'n' ? [isl.x + c, isl.y - out - sd]
+      : side === 'e' ? [isl.x + isl.width + out, isl.y + c] : [isl.x - out - sw, isl.y + c];
     const face = { s: 'n', n: 's', e: 'w', w: 'e' }[side];          // facing the island
     addFurnitureTo(r, makeFurniture('stool', sw, sd, pos[0], pos[1], face));
   }
@@ -164,10 +175,11 @@ function removeFurniture(id) {
 function islandStoolsFromModal(side) {
   const r = activeRoom(); if (!r) return;
   const isl = (r.islands || []).find(i => i.id === document.getElementById('edit-isl-id').value); if (!isl) return;
+  readIslandSeating(isl);                                    // (use the overhang picked in the window)
   const n = addIslandStools(isl, side);
   closeModal('modal-edit-island'); persist(); renderAll();
   if (state.viewMode === '3d') renderIsometric();
-  showMoveTip(`${n} stool${n === 1 ? '' : 's'} added — drag to adjust`);
+  showMoveTip(`${n} stool${n === 1 ? "" : "s"} added. Drag them to adjust.`);
 }
 
 // Double-click a piece: size, which way it faces, add chairs (tables), duplicate, delete

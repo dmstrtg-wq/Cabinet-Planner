@@ -109,9 +109,12 @@ function counterRuns(r) {
   });
   return kept;
 }
-function islandCounterRects(r) {
-  return (r.islands || []).map(i => ({ x: i.x - COUNTER_SIDE, y: i.y - COUNTER_SIDE, w: i.width + 2 * COUNTER_SIDE, h: i.depth + 2 * COUNTER_SIDE, top: 34.5 }));
+// The island top: 1" past each edge, or the seating overhang on a side that has one
+function islandCounterRect(i) {
+  const o = sd => islandOverhang(i, sd) || COUNTER_SIDE;
+  return { x: i.x - o('w'), y: i.y - o('n'), w: i.width + o('w') + o('e'), h: i.depth + o('n') + o('s'), top: 34.5, islandId: i.id };
 }
+function islandCounterRects(r) { return (r.islands || []).map(islandCounterRect); }
 
 // Upper runs (wall cabinets + upper fillers, same top height) for end panels and trim
 function upperRuns(r) {
@@ -263,20 +266,21 @@ function buildCountersAndTrim3D(r, p) {
     counterRuns(r).forEach(run => {
       const R = run.rect; if (!R) return;
       _box3D(g, counterMat(R.w, R.h), R.x, run.top, R.y, R.w, COUNTER_T, R.h);
-      // Sink: an undermount bowl cut into the top
-      run.sinks.forEach(s => {
-        const bw = Math.min(30, s.width - 6); if (bw < 8) return;
-        // bowl sits 4"–20" out from the wall
-        const f = wallFrame(r, run.wall); if (!f) return;
-        const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
-        const a = (s.offset || 0) + (s.width - bw) / 2, b = a + bw;
-        const pts = [P(a, 4), P(b, 4), P(a, 20), P(b, 20)];
-        const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
-        _box3D(g, new THREE.MeshStandardMaterial({ color: 0x8e979f, roughness: 0.35, metalness: 0.35 }),
-          Math.min(...xs), run.top + COUNTER_T - 0.05, Math.min(...ys), Math.max(...xs) - Math.min(...xs), 0.12, Math.max(...ys) - Math.min(...ys), { cast: false });
-      });
+      run.sinks.forEach(s => sinkBowl(run.wall, s, run.top));
     });
+    // Sink: an undermount bowl cut into the top, 4"–20" out from the wall (or the cabinet backs on an island)
+    function sinkBowl(wall, s, top) {
+      const bw = Math.min(30, s.width - 6); if (bw < 8) return;
+      const f = wallFrame(r, wall); if (!f) return;
+      const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
+      const a = (s.offset || 0) + (s.width - bw) / 2, b = a + bw;
+      const pts = [P(a, 4), P(b, 4), P(a, 20), P(b, 20)];
+      const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+      _box3D(g, new THREE.MeshStandardMaterial({ color: 0x8e979f, roughness: 0.35, metalness: 0.35 }),
+        Math.min(...xs), top + COUNTER_T - 0.05, Math.min(...ys), Math.max(...xs) - Math.min(...xs), 0.12, Math.max(...ys) - Math.min(...ys), { cast: false });
+    }
     islandCounterRects(r).forEach(c => _box3D(g, counterMat(c.w, c.h), c.x, c.top, c.y, c.w, COUNTER_T, c.h));
+    (r.islands || []).forEach(isl => islandItems(r, isl).filter(i => i.type === 'sink' && layerShowsItem(i)).forEach(s => sinkBowl(s.wall, s, 34.5)));
     // Backsplash: a thin layer on the wall above each run
     counterRuns(r).forEach(run => backsplashPieces(r, p, run).forEach(pc => {
       const R = wallStripRect(r, run.wall, pc.a, pc.b, 0.4); if (!R) return;
@@ -325,6 +329,18 @@ function drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF) {
     ctx.strokeStyle = stroke; ctx.lineWidth = PDF ? 1.2 : 1; ctx.strokeRect(x, y, (b - a) * scale, (top - bottom) * scale);
   };
   const finish = PDF ? '#FFFFFF' : doorStyleInfo(p.style).swatch;
+  // An island side: the island's top across the whole side, with the overhang past each end
+  const isl = islandOfWall(r, wall);
+  if (isl && layers.bases) {
+    const sd = parseIslandWall(wall).side, len = wallLength(r, wall);
+    const L = islandOverhang(isl, { s: 'w', n: 'e', e: 's', w: 'n' }[sd]) || COUNTER_SIDE, R = islandOverhang(isl, { s: 'e', n: 'w', e: 'n', w: 's' }[sd]) || COUNTER_SIDE;
+    band(-L, len + R, 34.5, 34.5 + COUNTER_T, PDF ? '#E5E5E5' : mat.base, PDF ? '#1a1a1a' : '#475569');
+    const oh = islandOverhang(isl, sd);
+    if (oh && !wallItems(r, wall).length) {        // (on the panel; a side with cabinets has no room for it)
+      ctx.fillStyle = PDF ? '#333333' : '#92400E'; ctx.font = '600 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`Seating: ${fmtFrac(oh)} overhang toward you`, eX(0, len) + len * scale / 2, floorY - 26 * scale);
+    }
+  }
   if (layers.bases) {
     endPanels(r).filter(pn => pn.wall === wall && pn.bottom < 40).forEach(pn => band(pn.a, pn.b, pn.bottom, pn.top, finish, PDF ? '#1a1a1a' : '#64748B'));
     counterRuns(r).filter(run => run.wall === wall).forEach(run => {

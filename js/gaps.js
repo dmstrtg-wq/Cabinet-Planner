@@ -107,7 +107,7 @@ function drawFloorSpan(ctx, r, wall, a, b, depthIn, scale, RX, RY, color, bold, 
 }
 function drawFloorGaps(ctx, r, scale, RX, RY) {
   const subj = gapSubject();
-  const walls = ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])];
+  const walls = cabinetWalls(r);
   // Open space: on every wall with Dims on, otherwise just the subject's wall
   const openWalls = showDimensions ? walls : (subj ? [subj.wall] : []);
   openWalls.forEach(w => {

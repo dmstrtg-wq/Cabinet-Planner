@@ -286,13 +286,12 @@ async function buildExportPackage(btn, sizeKey, inc) {
         const d = fit(fpCv.width, fpCv.height, CW, PH - y - MAR - 6);
         doc.addImage(fpCv.toDataURL('image/png'), 'PNG', MAR + (CW-d.w)/2, y, d.w, d.h, undefined, 'FAST');
       }
-      const ld = getLShapeData(r);
-      for (const wall of (ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'])) {
-        const wallLen = wall === 'step1' && ld ? ld.step1.length : wall === 'step2' && ld ? ld.step2.length : (r.walls || {})[wall] || 0;
+      for (const wall of cabinetWalls(r)) {            // the room's walls, then island sides
+        const wallLen = wallLength(r, wall);
         if (!wallLen) continue;
         // Blank walls (no cabinets, appliances, doors or windows) don't get a page
         if (![...r.cabinets, ...(r.appliances||[]), ...(r.openings||[])].some(o => o.wall === wall)) continue;
-        const wl = wallLabel[wall] || wall;
+        const wl = wallLabel[wall] || wallName(r, wall);
         y = newPage(`${r.name} — ${wl}`);
         y = heading(`${r.name} — ${wl}`, `Length ${len(wallLen)}  ·  Cabinets ${r.cabinets.filter(c => c.wall === wall).length}  ·  Ceiling ${r.ceilingHeight || 96}"`, y);
         state.elevWall = wall;

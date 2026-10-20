@@ -23,6 +23,7 @@ const DESIGN_RULES = {
   hoodAboveCooktop: 24,                                 // bottom of a hood over the cooking surface
   cornerClearance: 1.5,                                 // filler where two runs meet so doors/drawers clear
   toilet: { side: 15, front: 21, frontComfort: 30 },     // bathroom (7.4): centre to a side obstruction; clear space in front (code / recommended)
+  seating: { overhang: 12, comfort: 15, behind: 36, behindMin: 32, perSeat: 24 },   // counter-height island seating (NKBA)
   minOverlap: 6,                                        // runs must face each other at least this much to form an aisle
 };
 const DC_LEVELS = { problem: { label: 'Problem', color: '#DC2626' }, warning: { label: 'Warning', color: '#D97706' }, tip: { label: 'Tip', color: '#2563EB' } };
@@ -74,8 +75,8 @@ function computeDesignIssues(r) {
   const R = DESIGN_RULES, out = [];
   const walls = roomWalls(r);
   const items = [...r.cabinets, ...(r.appliances || [])].filter(i => i.wall && wallFrame(r, i.wall));
-  const islands = (r.islands || []).map(isl => ({ ...isl, _island: true,
-    _rect: { x: isl.x - COUNTER_SIDE, y: isl.y - COUNTER_SIDE, w: isl.width + 2 * COUNTER_SIDE, h: isl.depth + 2 * COUNTER_SIDE } }));
+  const islands = (r.islands || []).map(isl => { const c = islandCounterRect(isl); return { ...isl, _island: true, _rect: { x: c.x, y: c.y, w: c.w, h: c.h } }; });
+  const notMine = A => T => !(T._island && isIslandWall(A.wall) && parseIslandWall(A.wall).id === T.id);   // (a piece built into an island doesn't hit that island)
   const rectsOf = i => i._island ? [i._rect] : _dcPlanRects(r, i);
   const add = (level, key, title, detail, list, extraRects = [], wall = null) =>
     out.push({ level, key, title, detail, itemIds: list.filter(i => !i._island).map(i => i.id),
@@ -126,15 +127,45 @@ function computeDesignIssues(r) {
   aisles.forEach((v, key) => {
     const gap = Math.max(0, v.gap), what = v.T._island ? _dcLabel(v.T) : `the ${_dcWallName(r, v.T.wall)} run`   // (inner walls keep the arrow names the wall buttons use);
     const level = gap < R.aisle.walkway ? 'problem' : gap < R.aisle.work ? 'warning' : 'tip';
-    const need = level === 'tip' ? `${R.aisle.twoCook}" is comfortable for two cooks` : `${R.aisle.work}" is the guideline for a work aisle (${R.aisle.walkway}" absolute minimum)`;
+    let need = level === 'tip' ? `${R.aisle.twoCook}" is comfortable for two cooks` : `${R.aisle.work}" is the guideline for a work aisle (${R.aisle.walkway}" absolute minimum)`;
+    // Seating on the island side of this aisle: the stools need room too
+    if (v.T._island) {
+      const fa = wallFrame(r, v.A.wall), sd = fa && { '0,1': 'n', '0,-1': 's', '-1,0': 'e', '1,0': 'w' }[fa.inward.join(',')];
+      if (sd && islandOverhang(v.T, sd)) need += `. This side has seating, so 44" lets people walk behind the stools`;
+    }
     const from = _dcWallName(r, v.A.wall);
     add(level, 'aisle:' + key, `${from} run to ${what}: ${_dcIn(gap)} aisle`, `Measured countertop to countertop. ${need}.`, [...new Set(v.list)], [v.rect], v.A.wall);
   });
 
+  // ── 2b. Island seating (counter height): knee room under the overhang, room to pull a stool out
+  if (isKitchen) islands.forEach(T => ['n', 's', 'e', 'w'].forEach(sd => {
+    const oh = islandOverhang(T, sd); if (!oh) return;
+    const side = ISLAND_SIDES[sd], c = T._rect, ns = sd === 'n' || sd === 's';
+    if (oh < R.seating.overhang)
+      add('warning', 'seat-oh:' + T.id + sd, `${_dcName(T)} seating on the ${side} side has ${_dcIn(oh)} of overhang`,
+        `Counter-height seating needs at least ${R.seating.overhang}" of overhang for knees. ${R.seating.comfort}" is more comfortable.`, [T]);
+    const edge = { n: c.y, s: c.y + c.h, w: c.x, e: c.x + c.w }[sd], { w: RW, h: RH } = roomSize(r);
+    const lo = ns ? c.x : c.y, hi = ns ? c.x + c.w : c.y + c.h;
+    let room = { n: edge, s: RH - edge, w: edge, e: RW - edge }[sd];
+    const consider = b => {
+      if ((ns ? b.x + b.w : b.y + b.h) <= lo + 0.5 || (ns ? b.x : b.y) >= hi - 0.5) return;
+      const d = { n: edge - (b.y + b.h), s: b.y - edge, w: edge - (b.x + b.w), e: b.x - edge }[sd];
+      if (d >= -0.5) room = Math.min(room, Math.max(0, d));
+    };
+    items.filter(i => _dcIsFloor(r, i) && notMine(i)(T)).forEach(i => _dcPlanRects(r, i).forEach(consider));
+    islands.filter(o => o.id !== T.id).forEach(o => consider(o._rect));
+    // (a counter run facing this side is already covered by the aisle check above)
+    const out = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[sd];
+    const facing = [...aisles.values()].some(v => v.T === T && (f => f && f.inward[0] * out[0] + f.inward[1] * out[1] < -0.99)(wallFrame(r, v.A.wall)));
+    if (room < R.seating.behind && !facing)
+      add(room < R.seating.behindMin ? 'problem' : 'warning', 'seat-room:' + T.id + sd, `${_dcIn(room)} behind the ${side} side seating at ${_dcLabel(T)}`,
+        `Leave at least ${R.seating.behind}" from the counter edge so a stool can be pulled out (${R.seating.behindMin}" absolute minimum, 44" if people walk behind).`, [T]);
+  }));
+
   // ── 3. Appliance doors that hit something when open
   items.filter(i => R.doorSwing[i.type] && i.wall).forEach(A => {
     const fa = wallFrame(r, A.wall), sa = _dcSpan(fa, itemRects(r, A)), reach = R.doorSwing[A.type];
-    const targets = [...islands, ...items.filter(i => i.wall && i.wall !== A.wall && _dcIsFloor(r, i) && (() => {
+    const targets = [...islands.filter(notMine(A)), ...items.filter(i => i.wall && i.wall !== A.wall && _dcIsFloor(r, i) && (() => {
       const fb = wallFrame(r, i.wall); return fb && fa.inward[0] * fb.inward[0] + fa.inward[1] * fb.inward[1] < -0.99; })())];
     targets.forEach(T => {
       const st = _dcSpan(fa, rectsOf(T));
@@ -236,7 +267,7 @@ function computeDesignIssues(r) {
     const f = wallFrame(r, T.wall); if (!f) return;
     const len = wallLength(r, T.wall), a = T.offset || 0, ctr = a + T.width / 2, depthT = itemDepth(T);
     let left = ctr, right = len - ctr, front = Infinity;
-    const others = [...items.filter(i => i.id !== T.id && i.wall && _dcIsFloor(r, i)), ...islands];
+    const others = [...items.filter(i => i.id !== T.id && i.wall && _dcIsFloor(r, i)), ...islands.filter(notMine(T))];
     others.forEach(o => {
       const so = _dcSpan(f, rectsOf(o));
       if (so.o0 < depthT - 0.5 && so.o1 > 0.5) {                      // beside it

@@ -374,9 +374,16 @@ function renderIsometric() {
   // ── Islands ──
   (r.islands||[]).forEach(isl => {
     const h = 34.5; // standard counter height
-    const _m = addBox(isl.x, 0, isl.y, isl.width, h, isl.depth, _styleHex);
+    // The island's body. Sides with cabinets built in are set back behind their toe kicks
+    // (the cabinets themselves are drawn with the room's cabinets above).
+    const built = islandItems(r, isl);
+    const has = sd => built.some(i => parseIslandWall(i.wall).side === sd);
+    const inset = sd => has(sd) ? TOE_RECESS + 0.5 : 0;
+    const bx = isl.x + inset('w'), bz = isl.y + inset('n');
+    const bw = isl.width - inset('w') - inset('e'), bd = isl.depth - inset('n') - inset('s');
+    const _m = bw > 1 && bd > 1 ? addBox(bx, 0, bz, bw, h, bd, _styleHex) : null;
     if (_m) _m.userData.itemId = isl.id;
-    addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
+    if (!built.length) addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });
 
   // ── Tables, chairs, stools (7.5) ──

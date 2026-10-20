@@ -24,9 +24,10 @@ function renderElevation() {
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
   if (ensureItemNumbers(r)) persist();
+  renderElevWallTabs();                       // (also falls back to North if an island side's island is gone)
   const wall = state.elevWall;
   const scale = ELEV_SCALE;
-  const wallLength = r.walls[wall] || 120;
+  const wallLength = wallLengthOf(r, wall) || 120;
   const ceiling = r.ceilingHeight || 96;
   const p = activeProj();
   const styleInfo = getStyles().find(s => s.code === (p.style||getStyles()[0]?.code)) || getStyles()[0];
@@ -42,8 +43,8 @@ function renderElevation() {
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(WX,WY,WW,WH);
   } else {
     ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
-    ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX,WY,WW,WH);
-    if (layers.grid) {   // Layers ▸ Grid
+    if (!isIslandWall(wall)) ctx.fillStyle = '#FAFAFA', ctx.fillRect(WX,WY,WW,WH);
+    if (layers.grid && !isIslandWall(wall)) {   // Layers ▸ Grid
       ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
       const gs = 12*scale;
       for (let gx=WX; gx<=WX+WW; gx+=gs) { ctx.beginPath(); ctx.moveTo(gx,WY); ctx.lineTo(gx,WY+WH); ctx.stroke(); }
@@ -52,13 +53,19 @@ function renderElevation() {
   }
   ctx.fillStyle = PDF ? '#888888' : '#CBD5E1'; ctx.fillRect(WX,WY+WH,WW,4);
   const counterY = WY+WH-36*scale;
-  if (['kitchen', 'laundry'].includes(roomKind(r))) {     // (a kitchen guide — not drawn in baths, living rooms, halls)
+  if (['kitchen', 'laundry'].includes(roomKind(r)) && !isIslandWall(wall)) {     // (a kitchen guide — not drawn in baths, living rooms, halls, or on an island, which has its top)
     ctx.strokeStyle = PDF ? '#555555' : '#94A3B8'; ctx.lineWidth = PDF ? 1.5 : 1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(WX,counterY); ctx.lineTo(WX+WW,counterY); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = PDF ? '#555555' : '#94A3B8'; ctx.font = '500 9px sans-serif'; ctx.textAlign = 'left';
     ctx.fillText('Counter Height 36"', WX+4, counterY-4);
   }
 
+  // Island side: the island's body (finished panel) behind whatever is built in
+  if (isIslandWall(wall) && layers.bases) {
+    ctx.fillStyle = PDF ? '#F5F5F5' : doorStyleInfo(p.style).swatch; ctx.globalAlpha = PDF ? 1 : 0.55;
+    ctx.fillRect(WX, WY + WH - 34.5 * scale, WW, 34.5 * scale); ctx.globalAlpha = 1;
+    ctx.strokeStyle = PDF ? '#1a1a1a' : '#64748B'; ctx.lineWidth = 1; ctx.strokeRect(WX, WY + WH - 34.5 * scale, WW, 34.5 * scale);
+  }
   const wallCabs     = r.cabinets.filter(c => c.wall === wall && layerShowsItem(c));          // Layers
   const wallOpenings = layers.openings ? (r.openings||[]).filter(o => o.wall === wall) : [];
   const floorY = WY+WH;
@@ -371,14 +378,17 @@ function renderElevation() {
   drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF);   // countertop, end panels, crown (counters.js)
   if (dimsOn) drawElevDimensionStrings(ctx, r, wall, scale, WX, WY, WW, WH, floorY, eX, PDF);
   if (!PDF) { drawElevGaps(ctx, r, wall, scale, floorY, eX); drawElevSelection(ctx, r, wall, scale, floorY, eX); drawElevGhost(ctx, r, wall, scale, floorY, eX); }
-  ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
-  ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
+  const _onIsland = isIslandWall(wall);     // an island side stands in the room: no wall or ceiling behind it
+  if (!_onIsland) {
+    ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
+    ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
+  }
   ctx.fillStyle=PDF?'#1a1a1a':'#475569';
   const df=Math.max(10,scale*2.2); ctx.font=`700 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(fmtIn(wallLength), WX+WW/2, WY-(dimsOn?66:20));
-  ctx.save(); ctx.translate(dimsOn ? WX-66 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore();
+  ctx.fillText(fmtIn(wallLength), WX+WW/2, _onIsland ? floorY - 36*scale - (dimsOn ? 50 : 22) : WY-(dimsOn?66:20));
+  if (!_onIsland) { ctx.save(); ctx.translate(dimsOn ? WX-66 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore(); }
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
-  document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall]} Wall Elevation`;
+  document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall] ? wallLabels[wall] + ' Wall' : wallName(r, wall)} Elevation`;
   if (vpState.elev.zoom === 1 && vpState.elev.panX === 0 && vpState.elev.panY === 0) {
     requestAnimationFrame(() => fitView('elev'));
   } else {

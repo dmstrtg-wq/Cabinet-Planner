@@ -273,6 +273,7 @@ Write `docs/ROOM-MODEL-V2.md` proposing:
 **4.2 Islands and peninsulas**
 - Requirements: free-standing runs placeable anywhere in the room, with rotation. Front and back faces (the back can be cabinets, a finished panel, or a seating overhang with configurable depth). Peninsulas attach to a wall at one end. Waterfall countertop option.
 - Done when: an island with a sink on the front and a seating overhang on the back renders correctly in all views and quotes correctly.
+- **Status (2026-10-20): islands built ahead of Phase 4** (Dan's order: islands, then decorative end panels, then room shapes). Each side is a wall (`isl:<id>:<n|s|e|w>`, rooms.js `islandSideFrame`) that takes base cabinets, drawers, sinks and under-counter appliances; per-side seating overhang (`isl.seating`), counter-height stools, Design Check seating rules; sink + overhang verified in floor plan, 3D, elevation, Export Plans and quote. **Still open:** rotation (islands stay square to the room), peninsulas, waterfall ends, and decorative end panels (next, priced from the price list).
 
 **4.3 Connected multi-room floor plan**
 - Requirements: multiple rooms on one canvas (kitchen, pantry, laundry, mudroom, baths) with doorways between them. Room tabs remain for focused editing. The quote shows subtotals by room plus a job total. The floor plan PDF can print the whole job or a single room.

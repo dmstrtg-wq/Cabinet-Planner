@@ -13,7 +13,7 @@
     const r = activeRoom(); if (!r) return null;
     const scale = ELEV_SCALE;
     const wall = state.elevWall;
-    const wallLength = r.walls[wall] || 120;
+    const wallLength = wallLengthOf(r, wall) || 120;
     const ceiling = r.ceilingHeight || 96;
     const WW = wallLength*scale, WH = ceiling*scale;
     // Use the renderer's actual origin — its padding grows when Dims is on (was a fixed 60,

@@ -25,9 +25,9 @@ function selectItem(id) {
   const it = getSelectedItem();
   if (!it) selectedItemId = null;
   if (it && it.wall) {
-    if (['north','south','east','west'].includes(it.wall) && state.elevWall !== it.wall) {
+    if ((['north','south','east','west'].includes(it.wall) || isIslandWall(it.wall)) && state.elevWall !== it.wall) {
       state.elevWall = it.wall;
-      document.querySelectorAll('.elev-wall-tab').forEach(b => b.classList.toggle('active', b.dataset.wall === it.wall));
+      renderElevWallTabs();
     }
     if (it.wall !== state.activeWall) { selectWall(it.wall); }
   }

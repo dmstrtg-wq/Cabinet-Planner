@@ -193,13 +193,22 @@ function designDetails(p) {
   return p.rooms.map(r => {
     const w = r.walls || {};
     const lines = [`${r.name || 'Room'} — ${ft(w.north || w.south || 0)} × ${ft(w.east || w.west || 0)}, ceiling ${r.ceilingHeight || 96}"`];
-    roomWalls(r).forEach(wall => {
+    const onWall = wall => {
       const cabs = (r.cabinets || []).filter(c => c.wall === wall).sort((a, b) => a.offset - b.offset);
       const apps = (r.appliances || []).filter(a => a.wall === wall);
-      if (!cabs.length && !apps.length) return;
-      lines.push(`  ${wall[0].toUpperCase() + wall.slice(1)} wall: ` + [...cabs.map(c => `${(CATALOG[c.type] || {}).label || c.type} ${c.width}"`), ...apps.map(a => (APPLIANCES[a.type] || {}).label || a.type)].join(', '));
+      return [...cabs.map(c => `${(CATALOG[c.type] || {}).label || c.type} ${c.width}"`), ...apps.map(a => (APPLIANCES[a.type] || {}).label || a.type)].join(', ');
+    };
+    roomWalls(r).forEach(wall => {
+      const list = onWall(wall); if (!list) return;
+      lines.push(`  ${wallName(r, wall)}: ` + list);
     });
-    (r.islands || []).forEach(i => lines.push(`  Island ${i.width}" × ${i.depth}"`));
+    (r.islands || []).forEach(i => {
+      lines.push(`  ${i.label || 'Island'} ${i.width}" × ${i.depth}"`);
+      ['n', 's', 'e', 'w'].forEach(sd => {
+        const list = onWall(islandWallId(i, sd)), oh = islandOverhang(i, sd);
+        if (list || oh) lines.push(`    ${ISLAND_SIDES[sd][0].toUpperCase() + ISLAND_SIDES[sd].slice(1)} side: ` + [list, oh ? `seating with ${oh}" overhang` : ''].filter(Boolean).join('; '));
+      });
+    });
     return lines.join('\n');
   }).join('\n') + (style ? `\nFinish: ${style}` : '');
 }
