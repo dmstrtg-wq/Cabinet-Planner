@@ -591,3 +591,8 @@ Claude tested locally on the demo kitchen: 3 cabinets on the south side, 15" sea
 - Order list codes: BEP24, WEP1230 (depth + height), FEP84 as before.
 Claude tested locally: wall panel at an upper run end replaced the automatic one; base panel closed the counter run end (top 1" past it, automatic panel only at the open end); prices read from a stand-in price list (base, wall 30 = priced, wall 36 with no price = unpriced, fridge panel unchanged); codes; Design Check quiet; no console errors; copy check clean.
 - [ ] After push: in My Pricing, enter a price for Base End Panel and Wall End Panel 30". In ZZ Claude Test, drag both onto a run end and check the quote line and order list.
+
+### Prices only on Silver and Gold (2026-10-20, Dan: "Demo sees no pricing") — no SQL, push only
+- One rule in the price function: the demo and Free accounts never get a price, even when a price list is still saved on an account that dropped from Silver to Free. Free accounts clicking **Quote** get the Silver upgrade prompt (the demo already got the subscribe window). No price is ever guessed: an item missing from the price list stays unpriced.
+Claude tested locally: in the demo, with a stand-in price saved, the cabinet shows no price and the quote total is $0.
+- [ ] After push: on a Free test account, the Quote button shows the upgrade prompt. On your Gold account, prices show as before.

@@ -64,7 +64,7 @@ const TYPES = {
   locker:       'Mudroom locker unit, width AND height.',
   bench:        'Bench seat base.',
   fridgePanel:  'Refrigerator end panel / tall end panel (REP, FEP, "refrigerator end panel"). Width is the panel thickness 0.75.',
-  basePanel:    'Base end panel, plain or decorative (BEP, DBEP, BEP24, "base end panel"), about 24 deep and 34.5 high. Width is the panel thickness 0.75.',
+  basePanel:    'Base end panel, plain or decorative, including the dishwasher end panel (BEP, DBEP, BEP24, DWP, DWP2434-1/2, "base end panel", "dishwasher panel"), about 24 deep and 34.5 high. Width is the panel thickness 0.75.',
   wallPanel:    'Wall end panel, plain or decorative, width AND height (WEP, DWEP; WEP1230 = 12 deep, 30 high; WEP42 = 42 high). Width is the panel thickness 0.75, h is the height.',
   filler3:      'Filler strip 3 inches wide (BF3, WF3x30, F3, "3 inch filler"). Width 3.',
   filler6:      'Filler strip 6 inches wide (BF6, WF6x42, F6). Width 6.',

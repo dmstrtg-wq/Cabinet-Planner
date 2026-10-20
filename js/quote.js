@@ -67,6 +67,7 @@ function refreshQuoteLockBanner() {
 
 function openQuoteModal() {
   if (!demoGate('quote')) return;
+  if (!pricingAllowed()) { showTierUpgradePrompt('silver', 'Quote'); return; }   // Free = plans only
   const p = activeProj();
   if (!p) { alert('Open a project first.'); return; }
   if (!p.jobCosts) p.jobCosts = [

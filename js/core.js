@@ -1016,7 +1016,11 @@ function priceBasis(code) {
   return (pb && pb[code]) || null;
 }
 // opts.noMarkup → the price before the project's markup (the Quote window shows markup as its own line)
+// Prices are a Silver and Gold feature (Dan, 2026-10-20): the demo and Free accounts never
+// see a price, even one saved on the account before a downgrade.
+function pricingAllowed() { return !IS_DEMO && typeof canAccess === 'function' && canAccess('silver'); }
 function cabinetPrice(cab, opts) {
+  if (!pricingAllowed()) return null;
   const overrides = companyProfile.price_overrides;
   if (isFiller(cab.type) && !cab._fillerPiece) {
     const f = fillerPriceParts(cab.width);
