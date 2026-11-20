@@ -11,8 +11,7 @@
   function getCanvasInfo() {
     const r = activeRoom(); if (!r) return null;
     const scale = CANVAS_SCALE;
-    const roomW = Math.max(r.walls.north,r.walls.south,48);
-    const roomH = Math.max(r.walls.east,r.walls.west,48);
+    const { w: roomW, h: roomH } = roomSize(r);
     return { scale, RX:68, RY:68, RW:roomW*scale, RH:roomH*scale, r };
   }
   function hitTestCab(mx,my,info) {
@@ -55,8 +54,9 @@
     const info = getCanvasInfo(); if (!info) return;
     const pt = canvasPtToRoom(e.clientX, e.clientY, canvas, info.RX, info.RY, info.scale);
     // Clamp to room
-    pt.x = Math.max(0, Math.min(info.r.walls.north || 120, pt.x));
-    pt.y = Math.max(0, Math.min(info.r.walls.east  || 96,  pt.y));
+    const _rs = roomSize(info.r);
+    pt.x = Math.max(0, Math.min(_rs.w, pt.x));
+    pt.y = Math.max(0, Math.min(_rs.h, pt.y));
     if (!measureState.pending) {
       measureState.pending = pt;
     } else {
@@ -149,8 +149,7 @@
         }
         const isl = (info.r.islands||[]).find(i=>i.id===drag.cabId);
         if (isl) {
-          const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);
-          const roomH = Math.max(info.r.walls.east,  info.r.walls.west,  48);
+          const { w: roomW, h: roomH } = roomSize(info.r);
           isl.x = Math.max(0, Math.min(roomW - isl.width,  Math.round(drag.startX + (mx-drag.startMX)/drag.scale)));
           isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (my-drag.startMY)/drag.scale)));
           const clr = calcIslandClearance(isl, info.r);
@@ -263,8 +262,7 @@
         }
         const isl = (info.r.islands||[]).find(i => i.id === drag.cabId);
         if (isl) {
-          const roomW = Math.max(info.r.walls.north, info.r.walls.south, 48);
-          const roomH = Math.max(info.r.walls.east,  info.r.walls.west,  48);
+          const { w: roomW, h: roomH } = roomSize(info.r);
           isl.x = Math.max(0, Math.min(roomW - isl.width, Math.round(drag.startX + (t.clientX-rect.left - drag.startMX) / drag.scale)));
           isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (t.clientY-rect.top  - drag.startMY) / drag.scale)));
           tooltip.style.display='block'; tooltip.textContent=`${isl.label||'Island'} · ${isl.x}", ${isl.y}"`;

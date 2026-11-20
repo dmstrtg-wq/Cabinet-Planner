@@ -77,7 +77,7 @@ All of these work on one room in the Floor Plan with a "Edit room shape" mode:
 |---|---|---|
 | 4.1a | Replace the box-shaped footprints with rotated ones everywhere | Nothing changes; every view and the quote must match exactly |
 | 4.1b | New room data + migration, on your account only (a switch) | Your projects look the same |
-| 4.1c | Room editor: cut corner, split/drag corners, wall types (full, half, open), numeric lengths | Odd-shaped and open rooms |
+| 4.1c | Room editor: cut corner, split/drag corners, wall types (full, half, open), numeric lengths | Odd-shaped and open rooms (**built 2026-11-20**, with the L fix) |
 | 4.1d | Cabinets on angled walls: plan, 3D, elevation, mitered tops, wedge fillers, Design Check | The reference kitchen's 45° sink |
 | 4.1e | Draw mode (click and drag walls from scratch) | "Draw your own" room |
 | 4.2 | Peninsulas and bent free runs; rotated islands | The reference's peninsula with the DWP panel |

@@ -277,8 +277,11 @@ async function buildExportPackage(btn, sizeKey, inc) {
       state.activeRoomId = r.id;
       y = newPage(`${r.name} — Floor Plan`, `${r.name} — floor plan & elevations`);
       const dims = [];
-      if (r.walls?.north) dims.push(`N/S ${len(r.walls.north)}`);
-      if (r.walls?.east) dims.push(`E/W ${len(r.walls.east)}`);
+      if (ownedOutline(r)) { const sz = roomSize(r); dims.push(`${len(sz.w)} × ${len(sz.h)} overall`); }   // any shape: its overall size
+      else {
+        if (r.walls?.north) dims.push(`N/S ${len(r.walls.north)}`);
+        if (r.walls?.east) dims.push(`E/W ${len(r.walls.east)}`);
+      }
       dims.push(`Ceiling ${r.ceilingHeight || 96}"`);
       y = heading(`${r.name} — Floor Plan`, dims.join('  ·  '), y);
       renderCanvas();

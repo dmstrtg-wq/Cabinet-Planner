@@ -183,6 +183,11 @@ function calcIslandClearance(isl, r) {
   const ix1 = ct.x, iy1 = ct.y, ix2 = ct.x + ct.w, iy2 = ct.y + ct.h;
 
   let minClear = Math.min(ix1, iy1, roomW-ix2, roomH-iy2); // wall distances
+  if (ownedOutline(r)) {   // a room that has switched over: its real walls (open sides don't count)
+    minClear = Infinity;
+    roomWallSegs(r).filter(sg => sg.kind !== 'open').forEach(sg => { minClear = Math.min(minClear, shapeDistance(ct, shapeOf([sg.a, sg.b]))); });
+    if (!isFinite(minClear)) minClear = 999;
+  }
 
   // Cabinet and floor-appliance footprints (not the ones built into this island; uppers don't block the floor)
   const own = new Set(islandItems(r, isl).map(i => i.id));
@@ -211,8 +216,7 @@ function renderCanvas() {
   const r = activeRoom();
   if (!r) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
   const scale    = CANVAS_SCALE;
-  const roomW = Math.max(r.walls.north, r.walls.south, 48);
-  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const { w: roomW, h: roomH } = roomSize(r);
   const PDF = !!window._pdfMode; // true only while a PDF export captures this canvas
   const PAD = 68;
   canvas.width  = Math.max(roomW * scale + PAD*2, 380);
@@ -224,10 +228,17 @@ function renderCanvas() {
   ctx.fillStyle = '#F1F5F9'; ctx.fillRect(0,0,canvas.width,canvas.height);
 
   // L-shape helper — build room polygon path
-  const _ld = getLShapeData(r);
+  // Room model v2 (roommodel.js): a room that has switched over is drawn from its own corners
+  // and walls (any shape); the rest keep the rectangle / L drawing below, unchanged.
+  const _own = ownedOutline(r);
+  const _segs = _own ? roomWallSegs(r) : [];
+  const _ld = _own ? null : getLShapeData(r);
+  const _P = q => [RX + q[0]*scale, RY + q[1]*scale];
   function buildRoomPath() {
     ctx.beginPath();
-    if (_ld) {
+    if (_own) {
+      roomPolygonPts(r).forEach((q, i) => { const [cx, cy] = _P(q); i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy); });
+    } else if (_ld) {
       _ld.polygon.forEach(([px,py],i) => {
         const cx = RX+px*scale, cy = RY+py*scale;
         i===0 ? ctx.moveTo(cx,cy) : ctx.lineTo(cx,cy);
@@ -241,6 +252,18 @@ function renderCanvas() {
   // Room fill (white, clipped to polygon)
   buildRoomPath(); ctx.fillStyle = '#FFFFFF'; ctx.fill();
 
+  // Outside the room (inside its bounding box): hatched so it's clearly "not room"
+  if (_own) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(RX, RY, RW, RH);
+    roomPolygonPts(r).forEach((q, i) => { const [cx, cy] = _P(q); i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy); });
+    ctx.closePath(); ctx.clip('evenodd');
+    ctx.fillStyle = '#D9E2EE'; ctx.fillRect(RX, RY, RW, RH);
+    ctx.strokeStyle = '#B8C8DC'; ctx.lineWidth = 1;
+    const _hStep = Math.max(14, scale*3);
+    for (let _i = -RH; _i < RW + RH; _i += _hStep) { ctx.beginPath(); ctx.moveTo(RX + _i, RY); ctx.lineTo(RX + _i + RH, RY + RH); ctx.stroke(); }
+    ctx.restore();
+  }
   // L-shape: hatch the cut corner so it's clearly "not room"
   if (_ld) {
     const _c = _ld.corner, _sw1 = _ld.step1, _sw2 = _ld.step2;
@@ -601,7 +624,19 @@ function renderCanvas() {
   drawMeasurements(ctx, RX, RY, scale);
 
   // Room border — double line for a clean wall look
-  if (_ld) {
+  if (_own && isPlainBox(r)) {
+    ctx.strokeStyle = '#94A3B8'; ctx.lineWidth = 1; ctx.strokeRect(RX-2,RY-2,RW+4,RH+4);
+    ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.strokeRect(RX,RY,RW,RH);
+  } else if (_own) {
+    // Full walls: the double line. Half walls: a lighter single line. Open sides: dashed.
+    const line = (sg, color, width, dash) => { const [ax, ay] = _P(sg.a), [bx, by] = _P(sg.b);
+      ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'square'; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.restore(); };
+    _segs.filter(sg => sg.kind === 'full').forEach(sg => line(sg, '#B0BCCE', 5));
+    _segs.filter(sg => sg.kind === 'full').forEach(sg => line(sg, '#1E293B', 3));
+    _segs.filter(sg => sg.kind === 'half').forEach(sg => line(sg, '#64748B', 3));
+    _segs.filter(sg => sg.kind === 'open').forEach(sg => line(sg, '#94A3B8', 1.5, [6, 5]));
+  } else if (_ld) {
     buildRoomPath(); ctx.strokeStyle = '#B0BCCE'; ctx.lineWidth = 5; ctx.stroke();
     buildRoomPath(); ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3; ctx.stroke();
     // Draw inner wall corner indicator lines
@@ -623,7 +658,10 @@ function renderCanvas() {
   // Active wall highlight — orange stroke on selected wall
   if (state.activeWall) {
     let seg = null;
-    if (!_ld) {
+    if (_own) {
+      const sg = _segs.find(x => x.id === state.activeWall);
+      if (sg) seg = [_P(sg.a), _P(sg.b)];
+    } else if (!_ld) {
       const wallSegs = {
         north: [[RX, RY],    [RX+RW, RY]],
         south: [[RX, RY+RH], [RX+RW, RY+RH]],
@@ -656,7 +694,22 @@ function renderCanvas() {
   // Wall dimension labels
   ctx.fillStyle = '#1e293b';
   const df = Math.max(10, scale*2.2); ctx.font = `700 ${df}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (_ld) {
+  if (_own) {
+    // Every wall's length, outside the room, along the wall (kept upright)
+    _segs.forEach(sg => {
+      const f = sg.frame; if (!f) return;
+      const len = Math.hypot(sg.b[0] - sg.a[0], sg.b[1] - sg.a[1]);
+      const [mx, my] = _P([(sg.a[0] + sg.b[0]) / 2, (sg.a[1] + sg.b[1]) / 2]);
+      let ang = Math.atan2(sg.b[1] - sg.a[1], sg.b[0] - sg.a[0]);
+      if (ang > Math.PI / 2 + 1e-6) ang -= Math.PI; else if (ang < -Math.PI / 2 - 1e-6) ang += Math.PI;   // kept upright…
+      if (Math.abs(Math.cos(ang)) < 1e-6) ang = f.inward[0] > 0 ? -Math.PI / 2 : Math.PI / 2;           // …and a side wall reads from outside
+      ctx.save(); ctx.translate(mx - f.inward[0] * 36, my - f.inward[1] * 36); ctx.rotate(ang);
+      ctx.fillStyle = sg.kind === 'open' ? '#64748b' : '#1e293b';
+      ctx.fillText(fmtWallLen(len) + (sg.kind === 'open' ? ', open' : sg.kind === 'half' ? `, half wall ${fmtFrac(sg.height || 42)} high` : ''), 0, 0);
+      ctx.restore();
+    });
+    ctx.fillStyle = '#1e293b';
+  } else if (_ld) {
     // L-shape: show bounding box dims + cut dims
     const _cW = _ld.cutW, _cD = _ld.cutD;
     ctx.fillText(fmtIn(roomW), RX+RW/2, RY-36);
@@ -720,6 +773,7 @@ function renderCanvas() {
   }
   drawFurnitureOnFloor(ctx, r, scale, RX, RY);          // tables, chairs, stools (7.5)
   if (!PDF) { drawDesignCheckOnFloor(ctx, r, scale, RX, RY); drawFloorGaps(ctx, r, scale, RX, RY); drawFloorSelection(ctx, r, scale, RX, RY); drawFloorGhost(ctx, r, scale, RX, RY); }
+  if (!PDF && typeof drawShapeEditOverlay === 'function') drawShapeEditOverlay(ctx, r, scale, RX, RY);   // room shape editor (shapeedit.js)
   renderSummary(r);
   // Auto-fit only on first render of a project (zoom resets to 1 signal)
   if (vpState.floor.zoom === 1 && vpState.floor.panX === 0 && vpState.floor.panY === 0) {

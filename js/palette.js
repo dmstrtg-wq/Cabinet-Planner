@@ -15,6 +15,10 @@ function placementIssue(r, item) {
   const len = wallLength(r, item.wall), off = item.offset || 0;
   if (off < -0.01 || off + item.width > len + 0.01) return isIslandWall(item.wall) ? 'Runs past the end of the island' : 'Runs past the end of the wall';
   const islIssue = islandFitIssue(item); if (islIssue) return islIssue;
+  const kind = typeof wallKind === 'function' ? wallKind(r, item.wall) : 'full';   // room model v2 wall types
+  if (kind === 'open' && itemVerticalRange(item)[0] > 40) return 'This side is open, so there is no wall to hang it on';
+  if (kind === 'half') { const o = ownedOutline(r), w = o && o.walls.find(x => x.id === item.wall);
+    if (w && itemVerticalRange(item)[0] > (w.height || 42) - 0.01) return `This half wall is only ${fmtFrac(w.height || 42)} high`; }
   const vr = itemVerticalRange(item);
   const hits = overlappingItems(r, item.wall, vr, off, item.width, item.id, item.type);
   if (hits.length) return 'Overlaps ' + hits.map(itemLabel).join(', ');
@@ -141,7 +145,7 @@ function nudgeSelected(key, shift, alt) {
   let sign = 0;
   if (state.viewMode === 'elevation') {
     if (it.wall !== state.elevWall) return false;
-    sign = v[0] * ((it.wall === 'south' || it.wall === 'west') ? -1 : 1);
+    sign = v[0] * (wallFlipped(r, it.wall) ? -1 : 1);
   } else if (state.viewMode === 'floor') {
     const f = wallFrame(r, it.wall); if (!f) return false;
     sign = v[0] * f.dir[0] + v[1] * f.dir[1];
@@ -324,7 +328,7 @@ function elevPlacement(entry, clientX, clientY) {
   const wall = state.elevWall, len = wallLength(r, wall);
   const c = document.getElementById('elevation-plan').getBoundingClientRect(), z = vpState.elev.zoom;
   let x = ((clientX - c.left) / z - g.originX) / g.scale;
-  if (wall === 'south' || wall === 'west') x = len - x;   // these elevations are drawn mirrored
+  if (wallFlipped(r, wall)) x = len - x;   // drawn mirrored (the old South and West walls)
   const item = makePaletteItem(entry, wall, 0);
   if (isFiller(item.type)) {
     // In the elevation a filler goes at the height you drop it: up in the upper run or on the floor

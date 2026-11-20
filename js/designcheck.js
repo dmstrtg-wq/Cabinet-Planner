@@ -56,6 +56,7 @@ const _dcName = i => i._island ? (i.label || 'Island') : (CATALOG[i.type] ? CATA
 const _dcIn = v => fmtFrac(Math.round(v * 8) / 8);
 // Wall name as the app shows it (L-room inner walls use their own labels)
 function _dcWallName(r, w) {
+  const names = outlineWallNames(r); if (names && names[w]) return names[w];   // a room that has switched over
   const main = { north: 'North', south: 'South', east: 'East', west: 'West' }[w]; if (main) return main;
   const ld = getLShapeData(r); return ld && ld[w] ? ld[w].label : 'Inner';
 }
@@ -155,6 +156,10 @@ function computeDesignIssues(r) {
       if (sp.a1 <= 0.5 || sp.a0 >= len - 0.5) return;
       if (sp.o0 >= -0.5) room = Math.min(room, Math.max(0, sp.o0));
     };
+    if (ownedOutline(r)) {   // a room that has switched over: its real walls (open sides don't count)
+      room = Infinity;
+      roomWallSegs(r).filter(sg => sg.kind !== 'open').forEach(sg => consider(shapeOf([sg.a, sg.b])));
+    }
     items.filter(i => _dcIsFloor(r, i) && notMine(i)(T)).forEach(i => _dcPlanRects(r, i).forEach(consider));
     islands.filter(o => o.id !== T.id).forEach(o => consider(o._rect));
     // (a counter run facing this side is already covered by the aisle check above)

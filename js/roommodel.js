@@ -143,9 +143,107 @@ function ensureOutline(r) {
 function roomOutline(r) {
   if (!r || !(r.outline || roomV2On())) return null;
   ensureOutline(r);
+  // With the switch on, a room switches over the first time it's used (4.1c)
+  if (r.outline && r.outline.fromLegacy && !_takingOver && roomV2On()) takeOverRoom(r);
   return r.outline || null;
 }
+let _takingOver = false;
 // Undo: put every room of every project back on the old model (the old fields were kept)
 function revertRoomModel(projects) {
   (projects || []).forEach(p => { (p.rooms || []).forEach(r => { delete r.outline; }); p.schemaVersion = 2; });
+}
+
+// ════════════════════════════
+// TAKING OVER A ROOM (step 4.1c)
+// ════════════════════════════
+// Until now the outline was a translation of the old fields. Taking a room over makes the
+// outline the room's own shape (the editor changes it from then on) and fixes what the old
+// model got wrong (Dan approved, 2026-11-20):
+//   • walls are measured from their real corners: on an L room's outer walls the old
+//     measurements started at the room's outer corner, inside the cut-out, so each piece's
+//     offset is shifted by that much and it stays exactly where it was;
+//   • a wall that faced away from the room (the first inner wall of every L room) turns to
+//     face it, so the cabinets on it stand in the room instead of in the cut-out;
+//   • a wall's length is its real length (pieces past the end get the usual red outline).
+// Every change is written to room.shapeNotes so the room can say what moved.
+function ownedOutline(r) { const o = roomOutline(r); return o && !o.fromLegacy ? o : null; }
+function takeOverRoom(r) {
+  if (_takingOver) return false;
+  ensureOutline(r);
+  const o = r.outline; if (!o || !o.fromLegacy) return false;
+  _takingOver = true;
+  try { return _takeOver(r, o); } finally { _takingOver = false; }
+}
+function _takeOver(r, o) {
+  const notes = [];
+  const ld = getLShapeData(r);    // (still readable: the room hasn't switched yet)
+  const oldName = id => ld && ld[id] ? ld[id].label.replace(/^[^A-Za-z]+/, '') + ' wall' : id.charAt(0).toUpperCase() + id.slice(1) + ' wall';
+  const onWall = id => [...(r.cabinets || []), ...(r.appliances || []), ...(r.openings || [])].filter(i => i.wall === id);
+  o.walls.forEach(w => {
+    if (!w.legacy) return;
+    const g = outlineGeomFrame(o, w), L = w.legacy, name = oldName(w.id);
+    if (L.start) {
+      const shift = (L.start[0] - g.start[0]) * g.dir[0] + (L.start[1] - g.start[1]) * g.dir[1];
+      if (Math.abs(shift) > 1e-9) {
+        const items = onWall(w.id);
+        items.forEach(i => { i.offset = Math.round(((i.offset || 0) + shift) * 1000) / 1000; });
+        if (items.length) notes.push(`${name}: now measured from its real corner (${items.length} item${items.length === 1 ? '' : 's'} kept in place).`);
+      }
+    }
+    if (L.inward && L.inward[0] * g.inward[0] + L.inward[1] * g.inward[1] < 0) {
+      const n = onWall(w.id).filter(i => !(r.openings || []).includes(i)).length;
+      if (n) notes.push(`${name}: now faces into the room, so its ${n} item${n === 1 ? '' : 's'} moved out of the cut-out corner.`);
+    }
+    delete w.legacy;
+  });
+  o.fromLegacy = false; delete o.sig;
+  outlineChanged(o);
+  if (notes.length) r.shapeNotes = notes;
+  return true;
+}
+
+// ── Names: which way a wall faces you as you stand in the room ──
+const COMPASS8 = ['North', 'Northeast', 'East', 'Southeast', 'South', 'Southwest', 'West', 'Northwest'];
+function compassOf(dx, dy) {        // direction in room coordinates (x east, y south)
+  const ang = Math.atan2(dx, -dy);   // 0 = north, clockwise
+  return COMPASS8[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8];
+}
+// Each wall of an owned outline: "North", "Northeast", … (a second wall facing the same way is "North 2")
+function outlineWallNames(r) {
+  const o = ownedOutline(r); if (!o) return null;
+  const base = {}, count = {};
+  o.walls.forEach(w => { const f = outlineWallFrame(r, w.id); base[w.id] = f ? compassOf(-f.inward[0], -f.inward[1]) : 'Wall'; count[base[w.id]] = (count[base[w.id]] || 0) + 1; });
+  const seen = {}, out = {};
+  o.walls.forEach(w => { const b = base[w.id]; seen[b] = (seen[b] || 0) + 1; out[w.id] = seen[b] > 1 ? `${b} ${seen[b]}` : b; });   // North, North 2, …
+  return out;
+}
+// Elevations are drawn as you face the wall; offsets run left to right unless the wall runs
+// the other way (the old South and West walls do). Any wall, any angle.
+function wallFlipped(r, wall) {
+  if (!ownedOutline(r) || isIslandWall(wall)) return wall === 'south' || wall === 'west';   // the old rule, unchanged
+  const f = wallFrame(r, wall); if (!f) return false;
+  return f.dir[0] * f.inward[1] - f.dir[1] * f.inward[0] < 0;   // facing the wall, "right" is (inward.y, -inward.x)
+}
+// A switched-over room that is still a plain rectangle with four full walls: drawn the same
+// way as before (same floor, grid and outline)
+function isPlainBox(r) {
+  const o = ownedOutline(r); if (!o || o.corners.length !== 4 || o.walls.some(w => (w.kind || 'full') !== 'full')) return false;
+  const { w, h } = roomSize(r), key = q => q[0] + ',' + q[1];
+  const want = new Set([[0, 0], [w, 0], [w, h], [0, h]].map(key));
+  return outlinePolygon(o).every(q => want.has(key(q)));
+}
+// A wall length for labels: nearest 1/8", with feet (same look as fmtIn for whole inches)
+function fmtWallLen(v) { const t = Math.round(v * 8) / 8; return t > 0 ? `${fmtFrac(t)} (${Math.floor(t / 12)}'-${fmtFrac(t - Math.floor(t / 12) * 12)})` : '0"'; }
+// The room's corners and its drawn walls, in room inches
+function roomPolygonPts(r) {
+  const o = roomOutline(r); if (o) return outlinePolygon(o);
+  const ld = getLShapeData(r); if (ld) return ld.polygon;
+  const { w, h } = roomSize(r); return [[0, 0], [w, 0], [w, h], [0, h]];
+}
+function roomWallSegs(r) {
+  const o = ownedOutline(r); if (!o) return [];
+  return o.walls.map(w => {
+    const a = o.corners.find(c => c.id === w.from), b = o.corners.find(c => c.id === w.to);
+    return a && b ? { id: w.id, kind: w.kind || 'full', height: w.height, a: [a.x, a.y], b: [b.x, b.y], frame: outlineWallFrame(r, w.id) } : null;
+  }).filter(Boolean);
 }

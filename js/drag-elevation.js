@@ -27,7 +27,7 @@
     if (READ_ONLY) return null;   // share link: clicks pan, never pick up a cabinet
     const { scale, WX, WY, WH, WW, r, wall } = info;
     const floorY = WY + WH;
-    const flip = wall === 'south' || wall === 'west';
+    const flip = wallFlipped(r, wall);
     const eX = (offset, width) => flip ? WX + WW - (offset + width)*scale : WX + offset*scale;
     const hitApp = app => {
       const acat = APPLIANCES[app.type]; if (!acat) return false;
@@ -106,7 +106,7 @@
 
     if (elevDrag) {
       const delta = mx - elevDrag.startMX;
-      const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
+      const flip  = wallFlipped(activeRoom(), elevDrag.wall);
       const raw   = elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale;
       const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
       if (cab) {
@@ -207,7 +207,7 @@
       const info = getElevInfo(); if (!info) return;
       const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
       const delta = t.clientX - rect.left - elevDrag.startMX;
-      const flip  = elevDrag.wall === 'south' || elevDrag.wall === 'west';
+      const flip  = wallFlipped(activeRoom(), elevDrag.wall);
       const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId) || (info.r.appliances||[]).find(a => a.id === elevDrag.cabId);
       if (cab) {
         const newOffset = resolveMoveOffset(info.r, cab, elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale);

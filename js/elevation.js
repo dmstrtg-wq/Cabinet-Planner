@@ -43,8 +43,12 @@ function renderElevation() {
     ctx.fillStyle = '#FFFFFF'; ctx.fillRect(WX,WY,WW,WH);
   } else {
     ctx.fillStyle = '#F0F4F8'; ctx.fillRect(0,0,canvasW,canvasH);
-    if (!isIslandWall(wall)) ctx.fillStyle = '#FAFAFA', ctx.fillRect(WX,WY,WW,WH);
-    if (layers.grid && !isIslandWall(wall)) {   // Layers ▸ Grid
+    // How much wall is behind: none on an island side or an open side, a half wall up to its height
+    const _kind = typeof wallKind === 'function' ? wallKind(r, wall) : 'full';
+    const _hw = _kind === 'half' ? (((ownedOutline(r) || { walls: [] }).walls.find(x => x.id === wall) || {}).height || 42) : 0;
+    if (_kind === 'half') { ctx.fillStyle = '#FAFAFA'; ctx.fillRect(WX, WY + WH - _hw*scale, WW, _hw*scale); }
+    else if (!isIslandWall(wall) && _kind !== 'open') ctx.fillStyle = '#FAFAFA', ctx.fillRect(WX,WY,WW,WH);
+    if (layers.grid && !isIslandWall(wall) && _kind === 'full') {   // Layers ▸ Grid
       ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 0.5;
       const gs = 12*scale;
       for (let gx=WX; gx<=WX+WW; gx+=gs) { ctx.beginPath(); ctx.moveTo(gx,WY); ctx.lineTo(gx,WY+WH); ctx.stroke(); }
@@ -88,7 +92,7 @@ function renderElevation() {
     }
   }
   // South and west walls are mirrored in elevation (you face the opposite direction)
-  const flip = wall === 'south' || wall === 'west';
+  const flip = wallFlipped(r, wall);
   const eX = (offset, width) => flip
     ? WX + WW - (offset + width) * scale
     : WX + offset * scale;
@@ -298,7 +302,7 @@ function renderElevation() {
       west:  [{ adjWall:'south', atFarEnd:false, drawAtRight:false }, { adjWall:'north', atFarEnd:false, drawAtRight:true  }],
     };
     (cornerMap[wall] || []).forEach(({ adjWall, atFarEnd, drawAtRight }) => {
-      const adjLen = r.walls[adjWall] || 120;
+      const adjLen = wallLengthOf(r, adjWall) || 120;
       r.cabinets.filter(c => c.wall === adjWall && CORNER_CAB_TYPES.includes(c.type)).forEach(cab => {
         const off = cab.offset || 0;
         const atCorner = atFarEnd ? (off + cab.width >= adjLen - 1) : (off <= 1);
@@ -378,14 +382,18 @@ function renderElevation() {
   drawElevCountersAndTrim(ctx, r, p, wall, scale, floorY, eX, PDF);   // countertop, end panels, crown (counters.js)
   if (dimsOn) drawElevDimensionStrings(ctx, r, wall, scale, WX, WY, WW, WH, floorY, eX, PDF);
   if (!PDF) { drawElevGaps(ctx, r, wall, scale, floorY, eX); drawElevSelection(ctx, r, wall, scale, floorY, eX); drawElevGhost(ctx, r, wall, scale, floorY, eX); }
-  const _onIsland = isIslandWall(wall);     // an island side stands in the room: no wall or ceiling behind it
-  if (!_onIsland) {
+  const _wk = typeof wallKind === 'function' ? wallKind(r, wall) : 'full';
+  const _onIsland = isIslandWall(wall) || _wk === 'open';     // an island side or an open side: no wall or ceiling behind it
+  if (_wk === 'half') {
+    const _hh = (((ownedOutline(r) || { walls: [] }).walls.find(x => x.id === wall) || {}).height || 42) * scale;
+    ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY+WH-_hh,WW,_hh);
+  } else if (!_onIsland) {
     ctx.strokeStyle=PDF?'#1a1a1a':'#334155'; ctx.lineWidth=PDF?2.5:3; ctx.strokeRect(WX,WY,WW,WH);
     ctx.fillStyle=PDF?'#888888':'#94A3B8'; ctx.fillRect(WX,WY-3,WW,3);
   }
   ctx.fillStyle=PDF?'#1a1a1a':'#475569';
   const df=Math.max(10,scale*2.2); ctx.font=`700 ${df}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(fmtIn(wallLength), WX+WW/2, _onIsland ? floorY - 36*scale - (dimsOn ? 50 : 22) : WY-(dimsOn?66:20));
+  ctx.fillText((ownedOutline(r) ? fmtWallLen : fmtIn)(wallLength), WX+WW/2, _onIsland ? floorY - 36*scale - (dimsOn ? 50 : 22) : WY-(dimsOn?66:20));
   if (!_onIsland) { ctx.save(); ctx.translate(dimsOn ? WX-66 : WX-28, WY+WH/2); ctx.rotate(-Math.PI/2); ctx.fillText(fmtIn(ceiling),0,0); ctx.restore(); }
   const wallLabels = {north:'North',south:'South',east:'East',west:'West'};
   document.getElementById('elev-title').textContent = `${activeProj().customer} — ${activeRoom().name} · ${wallLabels[wall] ? wallLabels[wall] + ' Wall' : wallName(r, wall)} Elevation`;

@@ -914,18 +914,22 @@
   <div class="modal">
     <h3>Room Settings</h3>
     <div class="form-group"><label>Room Name</label><input type="text" id="rs-name"></div>
-    <div class="form-row">
+    <div id="rs-v2" style="display:none;margin-bottom:12px;">
+      <p class="form-hint" style="margin:0 0 8px;">This room's walls and corners are edited on the floor plan: drag a corner, or click a wall or corner to set lengths, cut a corner, or make a wall half height or open.</p>
+      <button type="button" class="btn btn-secondary" onclick="startShapeEdit()">Edit walls and corners</button>
+    </div>
+    <div class="form-row rs-v1">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="rs-north" min="12" max="1200"></div>
       <div class="form-group"><label>South Wall (in)</label><input type="number" id="rs-south" min="12" max="1200"></div>
     </div>
-    <div class="form-row">
+    <div class="form-row rs-v1">
       <div class="form-group"><label>East Wall (in)</label><input type="number" id="rs-east" min="12" max="1200"></div>
       <div class="form-group"><label>West Wall (in)</label><input type="number" id="rs-west" min="12" max="1200"></div>
     </div>
     <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="rs-ceiling" min="72" max="180"></div>
     <div id="rs-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
-    <div class="form-hint" style="margin-bottom:10px;">Shrinking a wall never deletes cabinets. Anything that no longer fits is outlined in red so you can move or resize it.</div>
-    <div class="form-group">
+    <div class="form-hint rs-v1" style="margin-bottom:10px;">Shrinking a wall never deletes cabinets. Anything that no longer fits is outlined in red so you can move or resize it.</div>
+    <div class="form-group rs-v1">
       <label>Shape</label>
       <div style="display:flex;gap:14px;margin-top:6px">
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
@@ -1162,6 +1166,7 @@
 <script src="/js/core.js" data-categories="essential"></script>
 <script src="/js/rooms.js" data-categories="essential"></script>
 <script src="/js/roommodel.js" data-categories="essential"></script>
+<script src="/js/shapeedit.js" data-categories="essential"></script>
 <script src="/js/sidebar.js" data-categories="essential"></script>
 <script src="/js/floorplan.js" data-categories="essential"></script>
 <script src="/js/view3d.js" data-categories="essential"></script>

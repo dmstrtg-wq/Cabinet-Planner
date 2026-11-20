@@ -16,7 +16,11 @@ function projectThumbSVG(p) {
   const w = roomW * scale, h = roomH * scale;
   const x = (W - w) / 2, y = (H - h) / 2;
   let path;
-  if (r.shape === 'L') {
+  if (r.outline && !r.outline.fromLegacy) {        // switched over (room model v2): its real outline
+    const { w: RW, h: RH } = roomSize(r), sc = Math.min((W - pad * 2) / RW, (H - pad * 2) / RH);
+    const ox = (W - RW * sc) / 2, oy = (H - RH * sc) / 2;
+    path = 'M' + roomPolygonPts(r).map(q => `${(ox + q[0] * sc).toFixed(1)},${(oy + q[1] * sc).toFixed(1)}`).join(' L') + ' Z';
+  } else if (r.shape === 'L') {
     const cutW = Math.min(r.cutW || roomW / 2, roomW * 0.9) * scale;
     const cutD = Math.min(r.cutD || roomH / 2, roomH * 0.9) * scale;
     const corner = r.corner || 'NE';
@@ -118,7 +122,7 @@ function renderRoomTabs() {
     bar.insertBefore(tab, addBtn);
   });
   const _titleR = activeRoom();
-  const _shapeTag = (_titleR && getLShapeData(_titleR)) ? ' ⌐' : '';
+  const _shapeTag = (_titleR && (getLShapeData(_titleR) || (ownedOutline(_titleR) && roomPolygonPts(_titleR).length > 4))) ? ' ⌐' : '';
   document.getElementById('plan-title').textContent = `${p.customer} — ${_titleR ? _titleR.name : ''}${_shapeTag} Floor Plan`;
   renderWallButtons();
 }

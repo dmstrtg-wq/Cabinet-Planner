@@ -57,7 +57,31 @@ function drawDimLine(ctx, x1, y1, x2, y2, label, isH, aboveOrLeft) {
   ctx.fillText(label, bx+bw/2, by+bh/2);
 }
 
+// A room that has switched over (room model v2): a chain along each wall, any angle,
+// 30px outside the wall line, labels upright
+function drawDimensionsAnyWall(ctx, r, scale, RX, RY) {
+  ctx.save(); ctx.lineWidth = 1; ctx.font = '600 9px sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  roomWallSegs(r).forEach(sg => {
+    const f = sg.frame; if (!f) return;
+    const cabs = r.cabinets.filter(c => c.wall === sg.id); if (!cabs.length) return;
+    const out = [-f.inward[0], -f.inward[1]];
+    const P = t => [RX + (f.start[0] + f.dir[0] * t) * scale + out[0] * 30, RY + (f.start[1] + f.dir[1] * t) * scale + out[1] * 30];
+    cabs.forEach(cab => {
+      const [x1, y1] = P(cab.offset || 0), [x2, y2] = P((cab.offset || 0) + cab.width);
+      ctx.strokeStyle = '#1D4ED8';
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      [[x1, y1], [x2, y2]].forEach(([x, y]) => { ctx.beginPath(); ctx.moveTo(x - out[0] * 5, y - out[1] * 5); ctx.lineTo(x + out[0] * 5, y + out[1] * 5); ctx.stroke(); });
+      const label = cab.width + '"', bw = ctx.measureText(label).width + 8, bh = 14;
+      const cx = (x1 + x2) / 2 + out[0] * 11, cy = (y1 + y2) / 2 + out[1] * 11;
+      ctx.fillStyle = '#DBEAFE'; ctx.fillRect(cx - bw / 2, cy - bh / 2, bw, bh);
+      ctx.strokeRect(cx - bw / 2, cy - bh / 2, bw, bh);
+      ctx.fillStyle = '#1D4ED8'; ctx.fillText(label, cx, cy);
+    });
+  });
+  ctx.restore();
+}
 function drawDimensions(ctx, r, scale, RX, RY, RW, RH, _ld) {
+  if (ownedOutline(r) && !isPlainBox(r)) return drawDimensionsAnyWall(ctx, r, scale, RX, RY);
   const walls = _ld ? ['north','south','east','west','step1','step2'] : ['north','south','east','west'];
   ctx.save();
   ctx.lineWidth = 1;

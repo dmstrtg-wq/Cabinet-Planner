@@ -204,11 +204,11 @@ function renderIsometric() {
 
   if (!r) { resizeIso3D(); return; }
 
-  const roomW   = Math.max(r.walls.north, r.walls.south, 48);
-  const roomD   = Math.max(r.walls.east,  r.walls.west,  48);
+  const { w: roomW, h: roomD } = roomSize(r);
   const ceiling = r.ceilingHeight || 96;
   const openings = r.openings || [];
-  const ld = getLShapeData(r); // null for rectangular rooms
+  const own = ownedOutline(r);              // room model v2: drawn from its own corners and walls
+  const ld = own ? null : getLShapeData(r); // null for rectangular rooms
 
   // Every wall knows which way is into the room, so it can fade when the camera is behind it
   function tagCutaway(mesh, wallName) {
@@ -220,7 +220,14 @@ function renderIsometric() {
   const wallColors = { north:0xF8FAFC, south:0xF1F5F9, east:0xEFF3F7, west:0xF0F4F8, step1:0xF4F6F8, step2:0xF4F6F8 };
 
   // ── Floor ──
-  if (ld) {
+  if (own && !isPlainBox(r)) {
+    const pts = roomPolygonPts(r), fShape = new THREE.Shape();
+    fShape.moveTo(pts[0][0], -pts[0][1]);
+    for (let i = 1; i < pts.length; i++) fShape.lineTo(pts[i][0], -pts[i][1]);
+    const fl = new THREE.Mesh(new THREE.ShapeGeometry(fShape), floorMaterial(activeProj()));
+    fl.rotation.x = -Math.PI/2; fl.position.y = 1; fl.receiveShadow = true;
+    root.add(fl);
+  } else if (ld) {
     // L-shaped floor via ShapeGeometry
     // THREE.Shape is in XY; after rotation.x = -PI/2: (sx, sy) → 3D (sx, 0, -sy)
     // So use (x, -z) to map to correct 3D (x, 0, z)
@@ -256,7 +263,23 @@ function renderIsometric() {
     root.add(mesh);
   }
 
-  if (ld) {
+  if (own) {
+    // Each wall along its own direction, standing just outside the room; half walls at their
+    // height, open sides left open
+    roomWallSegs(r).forEach(sg => {
+      const f = sg.frame; if (!f || sg.kind === 'open') return;
+      const len = Math.hypot(sg.b[0] - sg.a[0], sg.b[1] - sg.a[1]);
+      const h = sg.kind === 'half' ? Math.min(ceiling, sg.height || 42) : ceiling;
+      const mesh = buildWall3D(sg.id, len, h, openings, wallColors[sg.id] || 0xF4F6F8);
+      const th = Math.atan2(-f.dir[1], f.dir[0]);
+      mesh.rotation.y = th;
+      const lz = [Math.sin(th), Math.cos(th)];                      // where the extrusion runs (x, z)
+      const outwardZ = lz[0] * -f.inward[0] + lz[1] * -f.inward[1] > 0;
+      mesh.position.set(sg.a[0] + (outwardZ ? 0 : -f.inward[0] * WT), 0, sg.a[1] + (outwardZ ? 0 : -f.inward[1] * WT));
+      tagCutaway(mesh, sg.id);
+      root.add(mesh);
+    });
+  } else if (ld) {
     // Trace each polygon edge and build the matching wall panel
     const poly = ld.polygon, n = poly.length;
     for (let i=0; i<n; i++) {

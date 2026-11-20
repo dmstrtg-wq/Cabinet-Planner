@@ -860,7 +860,7 @@ function migrateProject(p) {
     // Diagonal corner uppers have 12" sides (older saves stored 24"/15", which drew them as deep boxes)
     r.cabinets.forEach(c => { if (c.type === 'diagWall') c.depth = 12; });
     // v2 → v3 (room model v2): only for accounts with the switch on (roommodel.js)
-    if (typeof roomV2On === 'function' && roomV2On()) ensureOutline(r);
+    if (typeof roomV2On === 'function' && roomV2On()) { ensureOutline(r); takeOverRoom(r); }
   });
   // A project only becomes v3 once a room has an outline, so older code can still open the rest
   p.schemaVersion = p.rooms.some(r => r.outline) ? 3 : 2;

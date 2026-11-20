@@ -46,7 +46,7 @@ function vanityBowls(v) {
 }
 function hasToeKick(cab) { return (COUNTER_CAB_TYPES.includes(cab.type) && !isEndPanel(cab.type)) || TALL_TYPES.includes(cab.type) || ['mediaBase', 'bench'].includes(cab.type) || isFloorFiller(cab); }
 function roomWalls(r) {
-  const o = roomOutline(r); if (o) return o.walls.filter(w => w.kind !== 'open').map(w => w.id);   // room model v2
+  const o = roomOutline(r); if (o) return o.walls.map(w => w.id);   // room model v2 (open sides too: cabinets can stand along them)
   return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])];
 }
 

@@ -330,8 +330,8 @@ function switchRoom(roomId) {
   state.activeRoomId = roomId; persist();
   // Reset to north if active wall doesn't exist on new room
   const nr = activeProj()?.rooms.find(r=>r.id===roomId);
-  if (nr && !getLShapeData(nr) && (state.activeWall==='step1'||state.activeWall==='step2')) {
-    state.activeWall = 'north';
+  if (nr && !isIslandWall(state.activeWall) && !wallFrame(nr, state.activeWall)) {   // that wall isn't in this room
+    state.activeWall = roomWalls(nr)[0] || 'north';
   }
   refreshPlacementOffsets();
   renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
@@ -342,6 +342,7 @@ function switchRoom(roomId) {
 // ════════════════════════════
 function getLShapeData(r) {
   if (!r || r.shape !== 'L' || !r.lCut) return null;
+  if (r.outline && !r.outline.fromLegacy) return null;   // switched over (room model v2): its outline is its shape
   const { corner, width: cW, depth: cD } = r.lCut;
   const roomW = Math.max(r.walls.north, r.walls.south, 48);
   const roomH = Math.max(r.walls.east,  r.walls.west,  48);
@@ -611,7 +612,8 @@ function renderWallButtons() {
   const container = document.getElementById('wall-grid');
   if (!container) return;
   const ld = r ? getLShapeData(r) : null;
-  const allWalls = [
+  const names = r ? outlineWallNames(r) : null;       // a room that has switched over: its own walls
+  const allWalls = names ? roomWalls(r).map(id => ({ id, label: names[id] + (wallKind(r, id) === 'open' ? ' (open)' : wallKind(r, id) === 'half' ? ' (half)' : '') })) : [
     {id:'north', label:'↑ North'},
     {id:'east',  label:'→ East'},
     {id:'south', label:'↓ South'},
@@ -647,11 +649,24 @@ function openRoomShapeModal() {
   document.getElementById('rs-lcut-fields').style.display = isL ? '' : 'none';
   document.getElementById('rs-name').value = r.name || '';
   setRoomDimFields('rs', { ...r.walls, ceiling: r.ceilingHeight || 96 });
+  // A room that has switched over (room model v2): name and ceiling here, walls on the floor plan
+  const v2 = !!ownedOutline(r);
+  document.getElementById('rs-v2').style.display = v2 ? '' : 'none';
+  document.querySelectorAll('#modal-room-shape .rs-v1').forEach(el => { el.style.display = v2 ? 'none' : ''; });
+  if (v2) document.getElementById('rs-lcut-fields').style.display = 'none';
   openModal('modal-room-shape');
 }
 
 function saveRoomShape() {
   const r = activeRoom(); if (!r) return;
+  if (ownedOutline(r)) {   // room model v2: only the name and ceiling change here
+    const c = parseFloat(document.getElementById('rs-ceiling').value);
+    if (!(c >= CEILING_MIN && c <= CEILING_MAX)) { const err = document.getElementById('rs-dim-error'); err.textContent = `Ceiling height must be between ${CEILING_MIN}" and ${CEILING_MAX}".`; err.style.display = 'block'; return; }
+    r.ceilingHeight = Math.round(c * 8) / 8;
+    r.name = document.getElementById('rs-name').value.trim() || r.name;
+    persist(); closeModal('modal-room-shape'); renderRoomTabs(); renderAll();
+    return;
+  }
   const dims = readRoomDimFields('rs'); if (!dims) return;
   const before = new Set(roomFitProblems(r).map(x => x.item.id));
   r.walls = dims.walls;
@@ -686,6 +701,7 @@ function saveRoomShape() {
 }
 function wallName(r, wall) {
   if (isIslandWall(wall)) { const isl = islandOfWall(r, wall); return `${(isl && isl.label) || 'Island'} ${ISLAND_SIDES[parseIslandWall(wall).side]} side`; }
+  const names = outlineWallNames(r); if (names && names[wall]) return names[wall] + ' wall';
   const ld = getLShapeData(r);
   if (wall === 'step1' || wall === 'step2') return ld ? ld[wall].label + ' wall' : 'inner wall';
   return wall.charAt(0).toUpperCase() + wall.slice(1) + ' wall';
@@ -723,7 +739,8 @@ function selectWall(wall) {
     step1: ld ? ld.step1.label + ' Wall' : 'Inner Wall 1',
     step2: ld ? ld.step2.label + ' Wall' : 'Inner Wall 2',
   };
-  const lbl = labels[wall] || (isIslandWall(wall) ? wallName(r, wall) : wall);
+  const lbl = (r && outlineWallNames(r) && !isIslandWall(wall)) ? wallName(r, wall).replace(/ wall$/, ' Wall')
+    : labels[wall] || (isIslandWall(wall) ? wallName(r, wall) : wall);
   document.querySelectorAll('.wall-btn').forEach(b => b.classList.toggle('active', b.dataset.wall === wall));
   document.getElementById('wall-list-label').textContent = lbl;
   document.getElementById('wall-add-label').textContent  = 'Add Cabinet — ' + lbl;
@@ -737,7 +754,13 @@ function renderElevWallTabs() {
   if (isIslandWall(state.elevWall) && !islandOfWall(r, state.elevWall)) state.elevWall = 'north';
   const tab = (w, l, t) => `<button class="elev-wall-tab${w === state.elevWall ? ' active' : ''}" data-wall="${w}" onclick="selectElevWall('${w}')"${t ? ` title="${escHtml(t)}"` : ''}>${l}</button>`;
   const many = r && (r.islands || []).length > 1;
-  el.innerHTML = [['north', '↑ North'], ['east', '→ East'], ['south', '↓ South'], ['west', '← West']].map(([w, l]) => tab(w, l)).join('')
+  // A room that has switched over: its own walls by compass name (open sides only when something is on them)
+  const names = r ? outlineWallNames(r) : null;
+  const mainTabs = names
+    ? r.outline.walls.filter(w => (w.kind || 'full') !== 'open' || [...r.cabinets, ...(r.appliances || [])].some(i => i.wall === w.id)).map(w => [w.id, names[w.id]])
+    : [['north', '↑ North'], ['east', '→ East'], ['south', '↓ South'], ['west', '← West']];
+  if (names && !mainTabs.some(([w]) => w === state.elevWall) && !isIslandWall(state.elevWall)) state.elevWall = mainTabs.length ? mainTabs[0][0] : 'north';
+  el.innerHTML = mainTabs.map(([w, l]) => tab(w, l)).join('')
     + (r ? (r.islands || []).map((isl, k) => `<span class="elev-tab-sep">${escHtml(many ? (isl.label || 'Island ' + (k + 1)) : 'Island')}</span>`
       + [['n', 'N'], ['e', 'E'], ['s', 'S'], ['w', 'W']].map(([sd, l]) => tab(islandWallId(isl, sd), l, wallName(r, islandWallId(isl, sd)))).join('')).join('') : '');
 }
@@ -1078,8 +1101,7 @@ function addIsland() {
   const width = parseInt(document.getElementById('island-width').value) || 36;
   const depth = parseInt(document.getElementById('island-depth').value) || 24;
   const label = document.getElementById('island-label').value.trim();
-  const roomW = Math.max(r.walls.north, r.walls.south, 48);
-  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const { w: roomW, h: roomH } = roomSize(r);
   const x = Math.max(6, Math.round((roomW - width) / 2));
   const y = Math.max(6, Math.round((roomH - depth) / 2));
   if (!r.islands) r.islands = [];
@@ -1158,8 +1180,7 @@ function saveEditIslandModal() {
   const newW = parseInt(document.getElementById('edit-isl-width').value) || isl.width;
   const newD = parseInt(document.getElementById('edit-isl-depth').value) || isl.depth;
   // keep within room if resized
-  const roomW = Math.max(r.walls.north, r.walls.south, 48);
-  const roomH = Math.max(r.walls.east,  r.walls.west,  48);
+  const { w: roomW, h: roomH } = roomSize(r);
   isl.width = newW; isl.depth = newD;
   isl.x = Math.min(isl.x, roomW - newW);
   isl.y = Math.min(isl.y, roomH - newD);
