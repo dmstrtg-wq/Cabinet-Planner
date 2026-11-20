@@ -55,7 +55,8 @@ function drawSelectionBox(ctx, x, y, w, h) {
 function drawFloorSelection(ctx, r, scale, RX, RY) {
   const it = getSelectedItem(); if (!it) return;
   let rc;
-  if ((r.islands && r.islands.includes(it)) || isFurniture(it)) rc = { x: it.x, y: it.y, w: it.width, h: it.depth };
+  if (r.islands && r.islands.includes(it)) rc = islandShape(it);   // (turned islands: the box around it)
+  else if (isFurniture(it)) rc = { x: it.x, y: it.y, w: it.width, h: it.depth };
   else { const rs = itemRects(r, it); rc = rs.length ? rectOfPts(rs.flatMap(shapePts)) : null; }
   if (rc) drawSelectionBox(ctx, RX + rc.x * scale, RY + rc.y * scale, rc.w * scale, rc.h * scale);
 }

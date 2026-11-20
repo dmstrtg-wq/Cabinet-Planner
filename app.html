@@ -719,6 +719,18 @@
       <label>Label</label>
       <input type="text" id="edit-isl-label" class="cp-input" placeholder="e.g. Kitchen Island" autocomplete="off">
     </div>
+    <div class="form-row" id="edit-isl-v2">
+      <div class="form-group">
+        <label for="edit-isl-rot">Turn (degrees)</label>
+        <input type="number" id="edit-isl-rot" class="cp-input" step="1" min="-180" max="360" style="margin-bottom:4px;">
+        <div class="isl-turns"><button type="button" class="btn btn-secondary" onclick="setIslandTurn(0)">0°</button><button type="button" class="btn btn-secondary" onclick="setIslandTurn(45)">45°</button><button type="button" class="btn btn-secondary" onclick="setIslandTurn(90)">90°</button><button type="button" class="btn btn-secondary" onclick="setIslandTurn(135)">135°</button></div>
+      </div>
+      <div class="form-group">
+        <label for="edit-isl-joined">Peninsula: joined end</label>
+        <select id="edit-isl-joined" class="cp-select" style="margin-bottom:4px;"></select>
+        <div class="form-hint" style="margin:0;">A peninsula's joined end meets the wall or counter run with no overhang.</div>
+      </div>
+    </div>
     <div class="form-group">
       <label>Sides</label>
       <div class="form-hint" style="margin:0 0 6px;">Build cabinets and drawers into a side, or give it a seating overhang for counter stools. The countertop is 36" high, and 15" of overhang is comfortable for knees.</div>
@@ -1171,6 +1183,7 @@
 <script src="/js/rooms.js" data-categories="essential"></script>
 <script src="/js/roommodel.js" data-categories="essential"></script>
 <script src="/js/shapeedit.js" data-categories="essential"></script>
+<script src="/js/anglejoints.js" data-categories="essential"></script>
 <script src="/js/sidebar.js" data-categories="essential"></script>
 <script src="/js/floorplan.js" data-categories="essential"></script>
 <script src="/js/view3d.js" data-categories="essential"></script>

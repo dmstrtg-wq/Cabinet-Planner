@@ -338,6 +338,17 @@ function renderIsometric() {
     return mesh;
   }
 
+  // A box from a shape's corners: square to the room → addBox as before; at an angle → turned
+  function addShapeBox(sh, y0, h, color) {
+    const q = sh.pts;
+    if (isAxisShape(q)) return addBox(sh.x, y0, sh.y, sh.w, h, sh.h, color);
+    const u = [q[1][0]-q[0][0], q[1][1]-q[0][1]], v = [q[3][0]-q[0][0], q[3][1]-q[0][1]], a = Math.hypot(...u), b = Math.hypot(...v);
+    if (a <= 0 || b <= 0 || h <= 0) return null;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(a, h, b), new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05 }));
+    mesh.position.set(q[0][0] + (u[0]+v[0])/2, y0 + h/2, q[0][1] + (u[1]+v[1])/2); mesh.rotation.y = -Math.atan2(u[1], u[0]);
+    mesh.castShadow = true; mesh.receiveShadow = true; root.add(mesh); return mesh;
+  }
+
   function addLabel(text, x, y, z, opts) {
     if (!text) return;
     const sprite = makeLabelSprite3D(text, opts);
@@ -364,7 +375,15 @@ function renderIsometric() {
     const baseCol = doorStyleInfo(cab.styleOverride || _p3d?.style).swatch;   // per-cabinet style wins
 
     let _m;
-    if (hasToeKick(cab)) {
+    const _f = wallFrame(r, cab.wall);
+    if (_f && !isAxisFrame(_f)) {
+      // On a wall at an angle: the same box and toe kick, turned to the wall
+      const wo = cab.wallOffset || 0, sh = d => shapeOf(frameQuad(_f, off, off + cab.width, wo, wo + d));
+      if (hasToeKick(cab)) {
+        _m = addShapeBox(sh(dep), TOE_KICK_H, h - TOE_KICK_H, baseCol);
+        addShapeBox(sh(dep - TOE_RECESS), 0, TOE_KICK_H, '#' + shade3D(baseCol, -70).toString(16).padStart(6, '0'));
+      } else _m = addShapeBox(sh(dep), baseY, h, baseCol);
+    } else if (hasToeKick(cab)) {
       // Recessed toe kick: the box starts 4.5" up, with a darker kick board set back 3"
       _m = addBox(pos.x0, TOE_KICK_H, pos.z0, pos.w, h - TOE_KICK_H, pos.d, baseCol);
       const kick = cabPos(cab.wall, off, cab.width, dep - TOE_RECESS, cab.wallOffset || 0);
@@ -376,7 +395,7 @@ function renderIsometric() {
     // Bumped out from the wall (7.1): filler casing on its open sides, in the cabinet's finish
     casingPieces(r, cab).forEach(pc => {
       const cr = casingRect(r, pc); if (!cr) return;
-      addBox(cr.x, pc.bottom, cr.y, cr.w, pc.height, cr.h, '#' + shade3D(baseCol, -6).toString(16).padStart(6, '0'));
+      addShapeBox(cr, pc.bottom, pc.height, '#' + shade3D(baseCol, -6).toString(16).padStart(6, '0'));
     });
     // Doors, drawer fronts and hardware in the cabinet's door style (fronts3d.js)
     const fronts = buildCabinetFronts3D(cab, r, _frontKit, _p3d);
@@ -404,7 +423,8 @@ function renderIsometric() {
     const inset = sd => has(sd) ? TOE_RECESS + 0.5 : 0;
     const bx = isl.x + inset('w'), bz = isl.y + inset('n');
     const bw = isl.width - inset('w') - inset('e'), bd = isl.depth - inset('n') - inset('s');
-    const _m = bw > 1 && bd > 1 ? addBox(bx, 0, bz, bw, h, bd, _styleHex) : null;
+    const _m = bw > 1 && bd > 1   // (turned with the island; at 0° this is the same box as before)
+      ? addShapeBox(shapeOf([[bx, bz], [bx + bw, bz], [bx + bw, bz + bd], [bx, bz + bd]].map(q => islandToRoom(isl, q[0], q[1]))), 0, h, _styleHex) : null;
     if (_m) _m.userData.itemId = isl.id;
     if (!built.length) addLabel(isl.label||'Island', isl.x+isl.width/2, h+3, isl.y+isl.depth/2, { fontSize:26, scale:0.05 });
   });

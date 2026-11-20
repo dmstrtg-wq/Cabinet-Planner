@@ -181,11 +181,17 @@ function calcIslandClearance(isl, r) {
   const { w: roomW, h: roomH } = roomSize(r);
   const ct = islandCounterRect(isl);                  // measured from the countertop edge (seating overhang included)
   const ix1 = ct.x, iy1 = ct.y, ix2 = ct.x + ct.w, iy2 = ct.y + ct.h;
+  // A peninsula's joined end (4.2): whatever it's joined to (on the far side of that end) doesn't count
+  const near = sh => { if (!beyondJoinedEnd(isl, sh)) minClear = Math.min(minClear, shapeDistance(ct, sh)); };
 
   let minClear = Math.min(ix1, iy1, roomW-ix2, roomH-iy2); // wall distances
   if (ownedOutline(r)) {   // a room that has switched over: its real walls (open sides don't count)
     minClear = Infinity;
-    roomWallSegs(r).filter(sg => sg.kind !== 'open').forEach(sg => { minClear = Math.min(minClear, shapeDistance(ct, shapeOf([sg.a, sg.b]))); });
+    roomWallSegs(r).filter(sg => sg.kind !== 'open').forEach(sg => near(shapeOf([sg.a, sg.b])));
+    if (!isFinite(minClear)) minClear = 999;
+  } else if (islandRot(isl) || isl.joined) {   // turned or joined: the room's four walls as lines
+    minClear = Infinity;
+    [[[0, 0], [roomW, 0]], [[roomW, 0], [roomW, roomH]], [[0, roomH], [roomW, roomH]], [[0, 0], [0, roomH]]].forEach(sg => near(shapeOf(sg)));
     if (!isFinite(minClear)) minClear = 999;
   }
 
@@ -195,13 +201,13 @@ function calcIslandClearance(isl, r) {
     if (own.has(it.id) || !(CATALOG[it.type] || APPLIANCES[it.type])) return;
     if (APPLIANCES[it.type] && APPLIANCES[it.type].wallMount) return;
     if (itemVerticalRange(it)[0] > 20) return;
-    itemRects(r, it).forEach(b => { minClear = Math.min(minClear, shapeDistance(ct, b)); });
+    itemRects(r, it).forEach(near);
   });
 
   // Other islands
   (r.islands||[]).forEach(other => {
     if (other.id === isl.id) return;
-    minClear = Math.min(minClear, shapeDistance(ct, islandCounterRect(other)));
+    near(islandCounterRect(other));
   });
 
   return Math.round(Math.max(0, minClear));
@@ -306,7 +312,30 @@ function renderCanvas() {
   const _flagRects = [];
   const cabs = r.cabinets.filter(layerShowsItem);   // Layers ▸ Base / Wall cabinets
 
+  // Cabinets and appliances on a wall at an angle (room model v2, turned islands): drawn as
+  // their real turned outline, label along the wall. Square walls keep the drawing below.
+  const _quadPath = pts => { ctx.beginPath(); pts.forEach((q, i) => { const X = RX + q[0]*scale, Y = RY + q[1]*scale; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.closePath(); };
+  function drawAngledOnFloor(it, wall, isCab) {
+    const f = wallFrame(r, wall); if (!f) return;
+    const sh = itemRect(r, { ...it, wall }, isCab ? (it.depth || CATALOG[it.type].depth) : itemDepth(it)); if (!sh) return;
+    const pts = sh.pts, upper = isCab ? itemLevel(it) === 'upper' : !!(APPLIANCES[it.type] || {}).wallMount;
+    const color = isCab ? CATALOG[it.type].color : ((APPLIANCES[it.type] || {}).color || '#64748B');
+    if (_fitIds.has(it.id)) _flagRects.push({ x: RX + sh.x*scale, y: RY + sh.y*scale, w: sh.w*scale, h: sh.h*scale });
+    ctx.save();
+    _quadPath(pts); ctx.globalAlpha = upper ? 0.15 : 0.88; ctx.fillStyle = color; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = upper || wall === state.activeWall ? color : 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5;
+    if (upper) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
+    if (!upper) { ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.beginPath();
+      ctx.moveTo(RX + pts[2][0]*scale, RY + pts[2][1]*scale); ctx.lineTo(RX + pts[3][0]*scale, RY + pts[3][1]*scale); ctx.stroke(); }
+    const cx = RX + pts.reduce((a, q) => a + q[0], 0) / 4 * scale, cy = RY + pts.reduce((a, q) => a + q[1], 0) / 4 * scale;
+    let ang = Math.atan2(f.dir[1], f.dir[0]); if (ang > Math.PI / 2 + 1e-6) ang -= Math.PI; else if (ang < -Math.PI / 2 - 1e-6) ang += Math.PI;
+    ctx.translate(cx, cy); ctx.rotate(ang);
+    ctx.fillStyle = upper ? '#1e293b' : '#fff'; ctx.font = `bold ${Math.max(7, Math.min(scale*1.8, 10))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(isCab ? fmtFrac(it.width) : ((APPLIANCES[it.type] || {}).abbr || ''), 0, 0);
+    ctx.restore();
+  }
   function drawCabOnFloor(cab, wall) {
+    { const _f = wallFrame(r, wall); if (_f && !isAxisFrame(_f)) { drawAngledOnFloor(cab, wall, true); return; } }
     const cat = CATALOG[cab.type];
     const cW = cab.width*scale, cD = cab.depth*scale;
     const cabOff = (cab.offset||0)*scale;
@@ -473,6 +502,7 @@ function renderCanvas() {
       ctx.fillStyle = '#fff'; ctx.fillText(acat.abbr, x + w/2, y + h*0.72);
       return;
     }
+    { const _f = wallFrame(r, wall); if (_f && !isAxisFrame(_f)) { drawAngledOnFloor(app, wall, false); return; } }
     ctx.globalAlpha=0.9; ctx.fillStyle=acat.color; ctx.fillRect(x,y,w,h); ctx.globalAlpha=1;
     ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1.5; ctx.strokeRect(x,y,w,h);
     // Burner circles for range/cooktop
@@ -530,6 +560,11 @@ function renderCanvas() {
     const fillCol    = clearOk ? '#D97706' : clearWarn ? '#D97706' : '#D97706'; // keep amber fill
     const glowCol    = clearOk ? 'rgba(22,163,74,0.2)' : clearWarn ? 'rgba(217,119,6,0.2)' : 'rgba(220,38,38,0.25)';
 
+    // A turned island (4.2): draw it in its own layout, turned about its center
+    const _rot = islandRot(isl);
+    ctx.save();
+    if (_rot) { const cx = ix + iw/2, cy = iy + ih/2; ctx.translate(cx, cy); ctx.rotate(_rot * Math.PI / 180); ctx.translate(-cx, -cy); }
+
     // Clearance glow ring
     ctx.save();
     ctx.strokeStyle = borderCol; ctx.lineWidth = 3; ctx.globalAlpha = 0.5;
@@ -540,7 +575,7 @@ function renderCanvas() {
     // Seating overhang: the countertop past the island's edge, dashed (NKBA plan convention)
     const _built = islandItems(r, isl).filter(layerShowsItem);
     if (['n', 's', 'e', 'w'].some(sd => islandOverhang(isl, sd))) {
-      const ct = islandCounterRect(isl);
+      const ct = islandCounterLocal(isl);
       ctx.save(); ctx.fillStyle = 'rgba(217,119,6,0.12)'; ctx.fillRect(RX + ct.x*scale, RY + ct.y*scale, ct.w*scale, ct.h*scale);
       ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.25; ctx.setLineDash([6,4]);
       ctx.strokeRect(RX + ct.x*scale, RY + ct.y*scale, ct.w*scale, ct.h*scale); ctx.restore();
@@ -574,13 +609,15 @@ function renderCanvas() {
       ctx.fillText(`${isl.width}"×${isl.depth}"`, ix+iw/2, iy+ih/2 + 6);
     }
 
+    ctx.restore();   // (the badge stays upright, under the island)
+    const _bb = islandShape(isl);
     // Clearance badge — bottom center of island
     const badgeTxt = (_built.length ? `${isl.label || 'Island'} ${isl.width}"×${isl.depth}" · ` : '') + (clearOk ? `✓ ${clearIn}" clear` : `⚠ ${clearIn}" clear`);
     const badgeCol = clearOk ? '#16a34a' : clearWarn ? '#d97706' : '#dc2626';
     ctx.fillStyle = badgeCol;
     ctx.font = `bold ${Math.max(8, Math.min(scale*1.5,10))}px sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText(badgeTxt, ix+iw/2, iy+ih+5);
+    ctx.fillText(badgeTxt, RX + (_bb.x + _bb.w/2)*scale, RY + (_bb.y + _bb.h)*scale + 5);
   });
 
   const _wallList = cabinetWalls(r);        // room walls, then island sides (drawn over the islands above)
@@ -594,6 +631,12 @@ function renderCanvas() {
   });
   _wallList.forEach(wall => cabs.filter(c => c.wall===wall && _isUpperCab(c)).forEach(cab => drawCabOnFloor(cab,wall)));
 
+  // Tapered fillers at angled corners (anglejoints.js): filler gray, like any filler
+  if (_own && layers.bases && typeof angleFillers === 'function') angleFillers(r).forEach(af => {
+    _quadPath(af.pts); ctx.save(); ctx.fillStyle = '#9CA3AF'; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+  });
+
   // Item numbers (Layers ▸ Item numbers): a small tag at the front edge of each piece,
   // matching the cut list and elevation tags
   if (showItemNumbers) {
@@ -605,7 +648,18 @@ function renderCanvas() {
     });
   }
 
+  const _anyWallOpenings = _own && !isPlainBox(r);
   (layers.openings ? (r.openings||[]) : []).forEach(op => {
+    if (_anyWallOpenings) {   // along the wall itself, whatever its angle, 8px into the room
+      const f = wallFrame(r, op.wall); if (!f) return;
+      const q = frameQuad(f, op.offset || 0, (op.offset || 0) + op.width, 0, 8 / scale);
+      const opColors = { door:'#d97706', window:'#0284c7', 'sink-loc':'#0891b2', arch:'#7c3aed' }, col = opColors[op.type] || '#d97706';
+      ctx.save(); _quadPath(q); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+      const mx = RX + (q[0][0] + q[2][0]) / 2 * scale, my = RY + (q[0][1] + q[2][1]) / 2 * scale;
+      ctx.fillStyle = col; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText({ door:'D', window:'W', 'sink-loc':'S', arch:'O' }[op.type] || '?', mx, my); ctx.restore();
+      return;
+    }
     const wall = op.wall, oW = op.width*scale, opOffset = (op.offset||0)*scale;
     let ox,oy,fw,fh;
     if      (wall==='north') { ox=RX+opOffset; oy=RY;      fw=oW; fh=8; }

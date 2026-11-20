@@ -431,15 +431,48 @@ function islandWallId(isl, side) { return 'isl:' + isl.id + ':' + side; }
 function parseIslandWall(wall) { const m = /^isl:(.+):([nsew])$/.exec(wall || ''); return m ? { id: m[1], side: m[2] } : null; }
 function isIslandWall(wall) { return typeof wall === 'string' && wall.startsWith('isl:'); }
 function islandOfWall(r, wall) { const p = parseIslandWall(wall); return p && r ? (r.islands || []).find(i => i.id === p.id) || null : null; }
+// An island can be turned (step 4.2): `isl.rotation` degrees, clockwise in the plan, about its
+// center. Everything about an island is worked out in its own unturned layout (x, y, width,
+// depth, as before) and then turned into the room with these; at 0° nothing changes.
+function islandRot(isl) { return (((+isl.rotation || 0) % 360) + 360) % 360; }
+function islandToRoom(isl, px, py) {
+  const a = islandRot(isl); if (!a) return [px, py];
+  const t = a * Math.PI / 180, c = Math.cos(t), s = Math.sin(t), cx = isl.x + isl.width / 2, cy = isl.y + isl.depth / 2;
+  return [cx + (px - cx) * c - (py - cy) * s, cy + (px - cx) * s + (py - cy) * c];
+}
+function islandVec(isl, vx, vy) {
+  const a = islandRot(isl); if (!a) return [vx, vy];
+  const t = a * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+  return [vx * c - vy * s, vx * s + vy * c];
+}
+// A frame worked out in the island's own layout, turned into the room
+function islandTurnFrame(isl, f) {
+  if (!f || !islandRot(isl)) return f;
+  return { start: islandToRoom(isl, f.start[0], f.start[1]), dir: islandVec(isl, f.dir[0], f.dir[1]), inward: islandVec(isl, f.inward[0], f.inward[1]), length: f.length };
+}
+// Keep an island (turned or not) inside the room's overall size; at 0° the same as before
+function keepIslandInRoom(isl, roomW, roomH) {
+  const b = islandShape(isl);
+  if (b.x < 0) isl.x -= b.x; if (b.y < 0) isl.y -= b.y;
+  if (b.x + b.w > roomW) isl.x -= Math.min(b.x + b.w - roomW, Math.max(0, b.x));
+  if (b.y + b.h > roomH) isl.y -= Math.min(b.y + b.h - roomH, Math.max(0, b.y));
+  isl.x = Math.round(isl.x * 1000) / 1000; isl.y = Math.round(isl.y * 1000) / 1000;
+}
+// The island's footprint (no countertop) as a shape
+function islandShape(isl) {
+  const { x, y, width: W, depth: D } = isl;
+  return shapeOf([[x, y], [x + W, y], [x + W, y + D], [x, y + D]].map(q => islandToRoom(isl, q[0], q[1])));
+}
 function islandSideFrame(isl, side) {
   const { x, y, width: W, depth: D } = isl, bNS = Math.min(ISLAND_BACK, D), bEW = Math.min(ISLAND_BACK, W);
+  let f = null;
   switch (side) {
-    case 's': return { start: [x, y + D - bNS],     dir: [1, 0],  inward: [0, 1],  length: W };
-    case 'n': return { start: [x + W, y + bNS],     dir: [-1, 0], inward: [0, -1], length: W };
-    case 'e': return { start: [x + W - bEW, y + D], dir: [0, -1], inward: [1, 0],  length: D };
-    case 'w': return { start: [x + bEW, y],         dir: [0, 1],  inward: [-1, 0], length: D };
+    case 's': f = { start: [x, y + D - bNS],     dir: [1, 0],  inward: [0, 1],  length: W }; break;
+    case 'n': f = { start: [x + W, y + bNS],     dir: [-1, 0], inward: [0, -1], length: W }; break;
+    case 'e': f = { start: [x + W - bEW, y + D], dir: [0, -1], inward: [1, 0],  length: D }; break;
+    case 'w': f = { start: [x + bEW, y],         dir: [0, 1],  inward: [-1, 0], length: D }; break;
   }
-  return null;
+  return islandTurnFrame(isl, f);
 }
 function islandWalls(r) { return ((r && r.islands) || []).flatMap(isl => ['s', 'n', 'e', 'w'].map(sd => islandWallId(isl, sd))); }
 // Every wall a cabinet can sit on: the room's walls, then the island sides
@@ -538,6 +571,8 @@ function shapeDistance(A, B) {
   return d;
 }
 
+// Is a wall square to the room (running exactly east–west or north–south)?
+function isAxisFrame(f) { return Math.abs(f.dir[0]) < 1e-9 || Math.abs(f.dir[1]) < 1e-9; }
 // Footprint of a wall item in room inches: { x, y, w, h, pts }.
 function itemRect(r, item, depth = itemDepth(item)) {
   const f = wallFrame(r, item.wall); if (!f) return null;
@@ -588,6 +623,7 @@ function quoteCabinets(room) {
     id: `${c.id}:case:${pc.side}`, type: 'filler3', wall: c.wall, width: pc.depth, height: pc.height,
     depth: 0.75, styleOverride: c.styleOverride || null, note: `Bump-out casing for ${itemLabel(c)}`, _casingFor: c.id,
   })));
+  if (typeof angleFillerPieces === 'function' && ownedOutline(room)) extra.push(...angleFillerPieces(room));   // tapered fillers at angled corners
   return room.cabinets.concat(extra);
 }
 // "Case in this fridge": a fridge end panel on each open side, and the uppers above it
@@ -710,7 +746,11 @@ function saveRoomShape() {
   }
 }
 function wallName(r, wall) {
-  if (isIslandWall(wall)) { const isl = islandOfWall(r, wall); return `${(isl && isl.label) || 'Island'} ${ISLAND_SIDES[parseIslandWall(wall).side]} side`; }
+  if (isIslandWall(wall)) {
+    const isl = islandOfWall(r, wall), sd = parseIslandWall(wall).side;
+    const f = isl && islandRot(isl) ? islandSideFrame(isl, sd) : null;      // turned: named by the way it faces
+    return `${(isl && isl.label) || 'Island'} ${f ? compassOf(f.inward[0], f.inward[1]).toLowerCase() : ISLAND_SIDES[sd]} side`;
+  }
   const names = outlineWallNames(r); if (names && names[wall]) return names[wall] + ' wall';
   const ld = getLShapeData(r);
   if (wall === 'step1' || wall === 'step2') return ld ? ld[wall].label + ' wall' : 'inner wall';
@@ -1145,16 +1185,28 @@ function openEditIslandModal(isl) {
   document.getElementById('edit-isl-width').value = isl.width;
   document.getElementById('edit-isl-depth').value = isl.depth;
   document.getElementById('edit-isl-label').value = isl.label || '';
+  document.getElementById('edit-isl-rot').value = islandRot(isl) > 180 ? islandRot(isl) - 360 : islandRot(isl);
+  // Turning and peninsulas come with the new room model: shown with the switch on, or once an island already uses them
+  document.getElementById('edit-isl-v2').style.display = (roomV2On() || islandRot(isl) || isl.joined) ? '' : 'none';
   renderIslandSides(isl);
   document.getElementById('modal-edit-island').classList.remove('hidden');
 }
 // One row per side: what's built in, its seating overhang, and buttons to add cabinets or stools
 const ISLAND_OVERHANGS = [0, 10, 12, 15, 18];
+function setIslandTurn(deg) { document.getElementById('edit-isl-rot').value = deg; }
+// A side's name: its compass way, once the island is turned (North, East… at 0°)
+function islandSideLabel(isl, sd) {
+  if (!islandRot(isl)) return { n: 'North', e: 'East', s: 'South', w: 'West' }[sd];
+  const f = islandSideFrame(isl, sd); return compassOf(f.inward[0], f.inward[1]);
+}
 function renderIslandSides(isl) {
   const r = activeRoom(), el = document.getElementById('edit-isl-sides'); if (!r || !el) return;
   const built = islandItems(r, isl);
+  const js = document.getElementById('edit-isl-joined');
+  if (js) js.innerHTML = `<option value="">Not joined</option>` + ['n', 'e', 's', 'w'].map(sd =>
+    `<option value="${sd}"${isl.joined === sd ? ' selected' : ''}>${islandSideLabel(isl, sd)} end</option>`).join('');
   el.innerHTML = `<span class="isl-side-head">Side</span><span class="isl-side-head">Now</span><span class="isl-side-head">Seating overhang</span><span class="isl-side-head">Add</span>`
-    + [['n', 'North'], ['e', 'East'], ['s', 'South'], ['w', 'West']].map(([sd, name]) => {
+    + ['n', 'e', 's', 'w'].map(sd => [sd, islandSideLabel(isl, sd)]).map(([sd, name]) => {
     const n = built.filter(i => parseIslandWall(i.wall).side === sd).length, oh = islandOverhang(isl, sd);
     const opts = [...new Set([...ISLAND_OVERHANGS, oh])].sort((a, b) => a - b)
       .map(v => `<option value="${v}"${v === oh ? ' selected' : ''}>${v ? `${v}"` : 'None'}</option>`).join('');
@@ -1196,6 +1248,13 @@ function saveEditIslandModal() {
   isl.y = Math.min(isl.y, roomH - newD);
   isl.label = document.getElementById('edit-isl-label').value.trim();
   readIslandSeating(isl);
+  // Turn (4.2) and peninsula end
+  const rot = Math.round((parseFloat(document.getElementById('edit-isl-rot').value) || 0) * 10) / 10;
+  const norm = ((rot % 360) + 360) % 360;
+  if (norm) isl.rotation = norm; else delete isl.rotation;
+  const jn = document.getElementById('edit-isl-joined').value;
+  if (jn) { isl.joined = jn; if (!isl.label) isl.label = 'Peninsula'; } else delete isl.joined;
+  keepIslandInRoom(isl, roomW, roomH);
   closeModal('modal-edit-island');
   persist(); renderCabinetList(); renderCanvas();
 }

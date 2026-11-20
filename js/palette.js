@@ -60,6 +60,7 @@ function snapCandidates(r, item) {
   const f = wallFrame(r, item.wall); if (!f) return [];
   const len = wallLength(r, item.wall), w = item.width, vr = itemVerticalRange(item);
   const cands = [0, len - w];
+  if (typeof angleSnapCandidates === 'function' && ownedOutline(r) && itemVerticalRange(item)[0] < 1) cands.push(...angleSnapCandidates(r, item));   // angled corners: fronts meet
   wallItems(r, item.wall).filter(i => i.id !== item.id && rangesOverlap(itemVerticalRange(i), vr))
     .forEach(i => {
       cands.push((i.offset || 0) + i.width, (i.offset || 0) - w);

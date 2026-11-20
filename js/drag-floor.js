@@ -42,7 +42,7 @@
     }
     for (const isl of (r.islands||[])) {
       const ix=RX+isl.x*scale, iy=RY+isl.y*scale, iw=isl.width*scale, ih=isl.depth*scale;
-      if (mx>=ix&&mx<=ix+iw&&my>=iy&&my<=iy+ih) return {cab:isl,wall:'island',x:ix,y:iy,w:iw,h:ih,isIsland:true};
+      if (pointInShape(islandShape(isl), (mx-RX)/scale, (my-RY)/scale)) return {cab:isl,wall:'island',x:ix,y:iy,w:iw,h:ih,isIsland:true};   // (its real outline, turned or not)
     }
     return null;
   }
@@ -127,7 +127,7 @@
     if (hit.isIsland) {
       drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startX:hit.cab.x, startY:hit.cab.y, scale:effectiveScale, isIsland:true };
     } else {
-      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:effectiveScale, isNS:hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
+      drag = { cabId:hit.cab.id, startMX:e.clientX-rect.left, startMY:e.clientY-rect.top, startOffset:hit.cab.offset||0, scale:effectiveScale, dir:(wallFrame(info.r, hit.wall) || { dir:[1,0] }).dir };   // slides along its wall, any angle
     }
     canvas.style.cursor = 'grabbing';
   });
@@ -150,8 +150,9 @@
         const isl = (info.r.islands||[]).find(i=>i.id===drag.cabId);
         if (isl) {
           const { w: roomW, h: roomH } = roomSize(info.r);
-          isl.x = Math.max(0, Math.min(roomW - isl.width,  Math.round(drag.startX + (mx-drag.startMX)/drag.scale)));
-          isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (my-drag.startMY)/drag.scale)));
+          isl.x = Math.round(drag.startX + (mx-drag.startMX)/drag.scale);
+          isl.y = Math.round(drag.startY + (my-drag.startMY)/drag.scale);
+          keepIslandInRoom(isl, roomW, roomH);
           const clr = calcIslandClearance(isl, info.r);
           const clrOk = clr >= 36, clrWarn = clr >= 24;
           const clrTxt = clrOk ? `✓ ${clr}" clearance` : clrWarn ? `⚠ ${clr}" — tight` : `✗ ${clr}" — too close!`;
@@ -161,7 +162,7 @@
           persist(); renderCanvas(); renderCabinetList();
         }
       } else {
-        const delta = drag.isNS ? (mx-drag.startMX) : (my-drag.startMY);
+        const delta = (mx-drag.startMX) * drag.dir[0] + (my-drag.startMY) * drag.dir[1];   // pointer movement along the wall
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta/drag.scale);
@@ -246,7 +247,7 @@
       } else {
         drag = { cabId: hit.cab.id, startMX: t.clientX-rect.left, startMY: t.clientY-rect.top,
                  startOffset: hit.cab.offset||0, scale: effectiveScale,
-                 isNS: hit.wall==='north'||hit.wall==='south'||hit.wall==='step2' };
+                 dir: (wallFrame(info.r, hit.wall) || { dir: [1, 0] }).dir };
       }
     }, { passive: false });
 
@@ -263,13 +264,14 @@
         const isl = (info.r.islands||[]).find(i => i.id === drag.cabId);
         if (isl) {
           const { w: roomW, h: roomH } = roomSize(info.r);
-          isl.x = Math.max(0, Math.min(roomW - isl.width, Math.round(drag.startX + (t.clientX-rect.left - drag.startMX) / drag.scale)));
-          isl.y = Math.max(0, Math.min(roomH - isl.depth, Math.round(drag.startY + (t.clientY-rect.top  - drag.startMY) / drag.scale)));
+          isl.x = Math.round(drag.startX + (t.clientX-rect.left - drag.startMX) / drag.scale);
+          isl.y = Math.round(drag.startY + (t.clientY-rect.top  - drag.startMY) / drag.scale);
+          keepIslandInRoom(isl, roomW, roomH);
           tooltip.style.display='block'; tooltip.textContent=`${isl.label||'Island'} · ${isl.x}", ${isl.y}"`;
           persist(); renderCanvas(); renderCabinetList();
         }
       } else {
-        const delta = drag.isNS ? (t.clientX-rect.left-drag.startMX) : (t.clientY-rect.top-drag.startMY);
+        const delta = (t.clientX-rect.left-drag.startMX) * drag.dir[0] + (t.clientY-rect.top-drag.startMY) * drag.dir[1];
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta / drag.scale);

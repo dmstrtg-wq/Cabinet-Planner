@@ -35,9 +35,11 @@ function addIslandStools(isl, side = 's') {
   const [sw, sd] = FURNITURE.stool.sizes[0];
   const out = Math.max(4, islandOverhang(isl, side) - 6);          // stool's near edge, past the island's edge
   const ns = side === 'n' || side === 's';
+  // (a turned island: stools are worked out in its own layout, then turned with it)
+  const toLocal = (px, py) => islandToRoom({ ...isl, rotation: -islandRot(isl) }, px, py);
   r.furniture = furnitureOf(r).filter(f => {
     if (f.type !== 'stool') return true;
-    const cx = f.x + f.width / 2, cy = f.y + f.depth / 2;
+    const [cx, cy] = toLocal(f.x + f.width / 2, f.y + f.depth / 2);
     const inSpan = ns ? cx > isl.x - 6 && cx < isl.x + isl.width + 6 : cy > isl.y - 6 && cy < isl.y + isl.depth + 6;
     const d = { s: cy - (isl.y + isl.depth), n: isl.y - cy, e: cx - (isl.x + isl.width), w: isl.x - cx }[side];
     return !(inSpan && d > 0 && d < 40);
@@ -46,7 +48,13 @@ function addIslandStools(isl, side = 's') {
     const c = gap * (k + 0.5) - sw / 2;
     const pos = side === 's' ? [isl.x + c, isl.y + isl.depth + out] : side === 'n' ? [isl.x + c, isl.y - out - sd]
       : side === 'e' ? [isl.x + isl.width + out, isl.y + c] : [isl.x - out - sw, isl.y + c];
-    const face = { s: 'n', n: 's', e: 'w', w: 'e' }[side];          // facing the island
+    let face = { s: 'n', n: 's', e: 'w', w: 'e' }[side];            // facing the island
+    if (islandRot(isl)) {
+      const [cx, cy] = islandToRoom(isl, pos[0] + sw / 2, pos[1] + sd / 2);
+      pos[0] = cx - sw / 2; pos[1] = cy - sd / 2;
+      const v = islandVec(isl, ...{ n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[face]);   // the nearest of the four ways
+      face = Math.abs(v[0]) > Math.abs(v[1]) ? (v[0] > 0 ? 'e' : 'w') : (v[1] > 0 ? 's' : 'n');
+    }
     addFurnitureTo(r, makeFurniture('stool', sw, sd, pos[0], pos[1], face));
   }
   return n;

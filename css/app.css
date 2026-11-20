@@ -527,6 +527,8 @@ body.panel-collapsed .panel-expand-tab { display: flex; }
 .style-code { font-size: 9px; font-weight: 700; color: var(--text-muted); }
 .wall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .elev-tab-sep { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 0 2px 0 10px; align-self: center; }
+.isl-turns { display: flex; gap: 4px; flex-wrap: wrap; }
+.isl-turns .btn { font-size: 11px; padding: 3px 8px; }
 .isl-sides { display: grid; grid-template-columns: auto 1fr auto auto; gap: 6px 8px; align-items: center; font-size: 12px; }
 .isl-sides .isl-side-name { font-weight: 700; }
 .isl-sides .isl-side-info { color: var(--text-muted); }

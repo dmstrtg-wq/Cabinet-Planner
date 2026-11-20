@@ -5,7 +5,7 @@ window.runRegression = async function (opts = {}) {
   eval(await (await fetch('/tools/regression/fixtures.js', { cache: 'reload' })).text());
   const fix = buildRegressionProject();
   const R3 = v => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v;
-  const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k === 'pts' || k === 'uuid' || k.startsWith('_') && k !== '_returnOf') ? undefined : R3(v)));
+  const clean = o => JSON.parse(JSON.stringify(o, (k, v) => (k === 'pts' || k === 'uuid' || k === 'cw' || k === 'ch' || k.startsWith('_') && k !== '_returnOf') ? undefined : R3(v)));
   const fnv = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); };
   const pix = cv => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let h = 2166136261; for (let i = 0; i < d.length; i += 3) { h ^= d[i]; h = Math.imul(h, 16777619); } return cv.width + 'x' + cv.height + ':' + (h >>> 0).toString(16); };
   // Put the fixture in as the open project (local demo storage only)

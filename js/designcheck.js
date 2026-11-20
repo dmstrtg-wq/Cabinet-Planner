@@ -112,6 +112,7 @@ function computeDesignIssues(r) {
     floorByWall[wa].forEach(A => {
       const sa = _dcSpan(fa, rectsOf(A));
       targets.forEach(T => {
+        if (T._island && rectsOf(A).every(b => beyondJoinedEnd(T, b))) return;   // the run a peninsula is joined to
         const st = _dcSpan(fa, rectsOf(T));
         const o0 = Math.max(sa.a0, st.a0), o1 = Math.min(sa.a1, st.a1);
         if (o1 - o0 < R.minOverlap) return;
@@ -131,7 +132,9 @@ function computeDesignIssues(r) {
     let need = level === 'tip' ? `${R.aisle.twoCook}" is comfortable for two cooks` : `${R.aisle.work}" is the guideline for a work aisle (${R.aisle.walkway}" absolute minimum)`;
     // Seating on the island side of this aisle: the stools need room too
     if (v.T._island) {
-      const fa = wallFrame(r, v.A.wall), sd = fa && { '0,1': 'n', '0,-1': 's', '-1,0': 'e', '1,0': 'w' }[fa.inward.join(',')];
+      // which island side faces this run: the run's direction, in the island's own (unturned) layout
+      const fa = wallFrame(r, v.A.wall), li = fa && islandVec({ ...v.T, rotation: -islandRot(v.T) }, fa.inward[0], fa.inward[1]);
+      const sd = li && [['n', [0, 1]], ['s', [0, -1]], ['e', [-1, 0]], ['w', [1, 0]]].find(([, d]) => li[0] * d[0] + li[1] * d[1] > 0.9)?.[0];
       if (sd && islandOverhang(v.T, sd)) need += `. This side has seating, so 44" lets people walk behind the stools`;
     }
     const from = _dcWallName(r, v.A.wall);
@@ -148,14 +151,21 @@ function computeDesignIssues(r) {
     const edge = { n: c.y, s: c.y + c.h, w: c.x, e: c.x + c.w }[sd], { w: RW, h: RH } = roomSize(r);
     let room = { n: edge, s: RH - edge, w: edge, e: RW - edge }[sd];
     // The seating edge as a frame: along the counter edge, "inward" pointing away from the island
-    const sf = { n: { start: [c.x, c.y], dir: [1, 0], inward: [0, -1] }, s: { start: [c.x, c.y + c.h], dir: [1, 0], inward: [0, 1] },
-                 w: { start: [c.x, c.y], dir: [0, 1], inward: [-1, 0] }, e: { start: [c.x + c.w, c.y], dir: [0, 1], inward: [1, 0] } }[sd];
-    const len = ns ? c.w : c.h;
+    // (worked out in the island's own layout, then turned with it)
+    const cl = islandCounterLocal(T);
+    const sf = islandTurnFrame(T, { n: { start: [cl.x, cl.y], dir: [1, 0], inward: [0, -1] }, s: { start: [cl.x, cl.y + cl.h], dir: [1, 0], inward: [0, 1] },
+                 w: { start: [cl.x, cl.y], dir: [0, 1], inward: [-1, 0] }, e: { start: [cl.x + cl.w, cl.y], dir: [0, 1], inward: [1, 0] } }[sd]);
+    const len = ns ? cl.w : cl.h;
     const consider = b => {
       const sp = shapeSpan(sf, shapePts(b));
       if (sp.a1 <= 0.5 || sp.a0 >= len - 0.5) return;
       if (sp.o0 >= -0.5) room = Math.min(room, Math.max(0, sp.o0));
     };
+    if (islandRot(T) && !ownedOutline(r)) {   // a turned island in a plain room: measure to the room's four walls
+      room = Infinity;
+      const { w: RW2, h: RH2 } = roomSize(r);
+      [[[0, 0], [RW2, 0]], [[RW2, 0], [RW2, RH2]], [[0, RH2], [RW2, RH2]], [[0, 0], [0, RH2]]].forEach(sg => consider(shapeOf(sg)));
+    }
     if (ownedOutline(r)) {   // a room that has switched over: its real walls (open sides don't count)
       room = Infinity;
       roomWallSegs(r).filter(sg => sg.kind !== 'open').forEach(sg => consider(shapeOf([sg.a, sg.b])));
@@ -163,7 +173,7 @@ function computeDesignIssues(r) {
     items.filter(i => _dcIsFloor(r, i) && notMine(i)(T)).forEach(i => _dcPlanRects(r, i).forEach(consider));
     islands.filter(o => o.id !== T.id).forEach(o => consider(o._rect));
     // (a counter run facing this side is already covered by the aisle check above)
-    const out = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[sd];
+    const out = islandVec(T, ...{ n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[sd]);   // (turned with the island)
     const facing = [...aisles.values()].some(v => v.T === T && (f => f && f.inward[0] * out[0] + f.inward[1] * out[1] < -0.99)(wallFrame(r, v.A.wall)));
     if (room < R.seating.behind && !facing)
       add(room < R.seating.behindMin ? 'problem' : 'warning', 'seat-room:' + T.id + sd, `${_dcIn(room)} behind the ${side} side seating at ${_dcLabel(T)}`,
@@ -362,6 +372,12 @@ function drawDesignCheckOnFloor(ctx, r, scale, RX, RY) {
     const focus = _dcFocus && _dcFocus.key === it.key && Date.now() < _dcFocus.until;
     const col = DC_LEVELS[it.level].color;
     it.rects.forEach(Rc => {
+      if (Rc.pts && !isAxisShape(Rc.pts) && Rc.pts.length >= 3) {   // at an angle: its real outline
+        ctx.beginPath(); Rc.pts.forEach((q, i) => { const X = RX + q[0] * scale, Y = RY + q[1] * scale; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }); ctx.closePath();
+        ctx.globalAlpha = focus ? 0.28 : 0.12; ctx.fillStyle = col; ctx.fill();
+        ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = focus ? 3 : 1.5; ctx.setLineDash(focus ? [] : [5, 3]); ctx.stroke();
+        return;
+      }
       const x = RX + Rc.x * scale, y = RY + Rc.y * scale, w = Rc.w * scale, h = Rc.h * scale;
       ctx.globalAlpha = focus ? 0.28 : 0.12; ctx.fillStyle = col; ctx.fillRect(x, y, w, h);
       ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = focus ? 3 : 1.5; ctx.setLineDash(focus ? [] : [5, 3]);

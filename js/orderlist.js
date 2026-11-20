@@ -63,7 +63,7 @@ function buildOrderList(p) {
       const fp = filler ? fillerPriceParts(cab.width) : null;
       const hinge = needsHinge(cab) ? (HINGE_LABEL[cab.hinge] || 'SPECIFY') : '';
       const desc = filler
-        ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}` + (cab._casingFor ? ' (bump-out casing)' : '')
+        ? `Filler, ${fp.stock}" stock — rip to ${fmtFrac(cab.width)} × ${fmtFrac(cab.height)}` + (cab._casingFor ? ' (bump-out casing)' : '') + (cab._angleFor ? ', tapered for an angled corner' : '')
         : CATALOG[cab.type].label + (cab.glassDoors ? ', glass doors' : '') + (cab.trash ? `, trash pull-out (${cab.trash === 'double' ? 'trash + recycle' : 'single'})` : '')
           + (cab.wallOffset ? `, set out ${fmtFrac(cab.wallOffset)} from wall` : '');
       const key = [orderSku(cab, st.code), st.code, hinge, cab.glassDoors ? 'G' : '', filler ? cab.width + 'x' + cab.height : '', cab.trash || '', cab.wallOffset || ''].join('|');

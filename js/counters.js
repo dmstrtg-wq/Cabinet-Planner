@@ -101,6 +101,8 @@ function counterRuns(r) {
   const kept = [];
   out.forEach(run => {
     kept.forEach(k => {
+      { const f1 = wallFrame(r, run.wall), f2 = wallFrame(r, k.wall), c = f1 && f2 ? Math.abs(f1.dir[0] * f2.dir[0] + f1.dir[1] * f2.dir[1]) : 0;
+        if (c > 0.02 && c < 0.98) return; }   // meeting at an angle: mitered below (anglejoints.js), not trimmed
       const A = wallStripRect(r, run.wall, run.a, run.b, run.depth), K = k.rect;
       if (!A || !K || !shapesOverlap(A, K)) return;
       const { a0: oa, a1: ob } = shapeSpan(wallFrame(r, run.wall), shapePts(K));
@@ -108,13 +110,31 @@ function counterRuns(r) {
     });
     if (run.b - run.a > 0.5) { run.rect = wallStripRect(r, run.wall, run.a, run.b, run.depth); kept.push(run); }
   });
+  // Runs meeting at an angled corner: each top cut on the corner's bisector (room model v2)
+  if (typeof angledCorners === 'function' && ownedOutline(r)) kept.forEach(run => { const pl = mitredCounterPoly(r, run, kept); if (pl) run.poly = pl; });
   return kept;
 }
-// The island top: 1" past each edge, or the seating overhang on a side that has one
+// The island top: 1" past each edge, or the seating overhang on a side that has one; flush on a
+// peninsula's joined end. In the island's own (unturned) layout:
+function islandCounterLocal(i) {
+  const o = sd => i.joined === sd ? 0 : (islandOverhang(i, sd) || COUNTER_SIDE);
+  return { x: i.x - o('w'), y: i.y - o('n'), w: i.width + o('w') + o('e'), h: i.depth + o('n') + o('s') };
+}
+// A peninsula's joined end as a frame: along that counter edge, "inward" pointing away from the
+// island (toward what it's joined to). Anything wholly on that side is what it's joined to.
+function islandJoinFrame(i) {
+  if (!i.joined) return null;
+  const { x, y, w, h } = islandCounterLocal(i);
+  const f = { n: { start: [x, y], dir: [1, 0], inward: [0, -1] }, s: { start: [x, y + h], dir: [1, 0], inward: [0, 1] },
+              w: { start: [x, y], dir: [0, 1], inward: [-1, 0] }, e: { start: [x + w, y], dir: [0, 1], inward: [1, 0] } }[i.joined];
+  return f ? islandTurnFrame(i, { ...f, length: i.joined === 'n' || i.joined === 's' ? w : h }) : null;
+}
+function beyondJoinedEnd(i, sh) { const jf = islandJoinFrame(i); return !!jf && shapeSpan(jf, shapePts(sh)).o0 >= -1; }
+// …and in the room (turned with the island): the box it fits in, its real corners, its own size
 function islandCounterRect(i) {
-  const o = sd => islandOverhang(i, sd) || COUNTER_SIDE;
-  const x = i.x - o('w'), y = i.y - o('n'), w = i.width + o('w') + o('e'), h = i.depth + o('n') + o('s');
-  return { x, y, w, h, pts: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], top: 34.5, islandId: i.id };   // (islands turn in step 4.2)
+  const { x, y, w, h } = islandCounterLocal(i);
+  const pts = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(q => islandToRoom(i, q[0], q[1]));
+  return { ...bboxOf(pts), pts, cw: w, ch: h, top: 34.5, islandId: i.id };
 }
 function islandCounterRects(r) { return (r.islands || []).map(islandCounterRect); }
 
@@ -162,8 +182,8 @@ function updateCountertopStats(p) {
   if (!p || !Array.isArray(p.rooms)) return;
   let inches = 0, sqIn = 0;
   p.rooms.forEach(r => {
-    counterRuns(r).forEach(run => { inches += run.b - run.a; sqIn += (run.b - run.a) * run.depth; });
-    islandCounterRects(r).forEach(c => { inches += c.w; sqIn += c.w * c.h; });
+    counterRuns(r).forEach(run => { inches += run.b - run.a; sqIn += run.poly ? polygonArea(run.poly) : (run.b - run.a) * run.depth; });
+    islandCounterRects(r).forEach(c => { inches += c.cw; sqIn += c.cw * c.ch; });   // (its own size, turned or not)
   });
   p.countertop = { ...projectCounter(p), linearFt: Math.round(inches / 12 * 10) / 10, sqFt: Math.round(sqIn / 144 * 10) / 10 };
 }
@@ -254,6 +274,32 @@ function _box3D(group, mat, x, y, z, w, h, d, opts = {}) {
   m.castShadow = opts.cast !== false; m.receiveShadow = true;
   group.add(m); return m;
 }
+// The same, from a shape's corners (rooms.js shapeOf): a box square to the room goes through
+// _box3D exactly as before; one at an angle is turned to match (room model v2, turned islands)
+function isAxisShape(pts) { return !pts || Math.abs(pts[0][0] - pts[1][0]) < 1e-9 || Math.abs(pts[0][1] - pts[1][1]) < 1e-9; }
+function _shapeBox3D(group, mat, sh, y, h, opts = {}) {
+  const q = sh.pts;
+  if (isAxisShape(q)) return _box3D(group, mat, sh.x, y, sh.y, sh.w, h, sh.h, opts);
+  const u = [q[1][0] - q[0][0], q[1][1] - q[0][1]], v = [q[3][0] - q[0][0], q[3][1] - q[0][1]];
+  const a = Math.hypot(u[0], u[1]), b = Math.hypot(v[0], v[1]);
+  if (a <= 0.01 || b <= 0.01 || h <= 0.01) return null;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(a, h, b), mat);
+  m.position.set(q[0][0] + (u[0] + v[0]) / 2, y + h / 2, q[0][1] + (u[1] + v[1]) / 2);
+  m.rotation.y = -Math.atan2(u[1], u[0]);
+  m.castShadow = opts.cast !== false; m.receiveShadow = true;
+  group.add(m); return m;
+}
+// A flat polygon (room inches) raised from y to y + h: mitered tops, tapered fillers
+function _prism3D(group, mat, pts, y, h, opts = {}) {
+  let P = pts.map(q => [q[0], -q[1]]);
+  if (P.reduce((a, q, i) => { const n = P[(i + 1) % P.length]; return a + q[0] * n[1] - n[0] * q[1]; }, 0) < 0) P = P.reverse();   // faces outward
+  const sh = new THREE.Shape();
+  P.forEach((q, i) => i ? sh.lineTo(q[0], q[1]) : sh.moveTo(q[0], q[1]));
+  const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false }), mat);
+  m.rotation.x = -Math.PI / 2; m.position.y = y;
+  m.castShadow = opts.cast !== false; m.receiveShadow = true;
+  group.add(m); return m;
+}
 // Countertops, sink bowls, end panels, crown and light rail for a room
 function buildCountersAndTrim3D(r, p) {
   const g = new THREE.Group();
@@ -263,25 +309,25 @@ function buildCountersAndTrim3D(r, p) {
     const t = tex.clone(); t.needsUpdate = true; t.repeat.set(Math.max(1, w / 24), Math.max(1, d / 24));
     return new THREE.MeshStandardMaterial({ map: t, roughness: ct.material === 'butcher' ? 0.75 : ct.material === 'laminate' ? 0.6 : 0.3, metalness: 0.02 });
   };
+  // A mitered top's texture coordinates are in inches: one texture tile per 24"
+  const counterMatInches = () => { const m = counterMat(1, 1); m.map.repeat.set(1 / 24, 1 / 24); return m; };
   const show = layers.bases;
   if (show) {
     counterRuns(r).forEach(run => {
       const R = run.rect; if (!R) return;
-      _box3D(g, counterMat(R.w, R.h), R.x, run.top, R.y, R.w, COUNTER_T, R.h);
+      if (run.poly) _prism3D(g, counterMatInches(), run.poly, run.top, COUNTER_T);   // mitered at an angled corner
+      else _shapeBox3D(g, counterMat(R.w, R.h), R, run.top, COUNTER_T);
       run.sinks.forEach(s => sinkBowl(run.wall, s, run.top));
     });
     // Sink: an undermount bowl cut into the top, 4"–20" out from the wall (or the cabinet backs on an island)
     function sinkBowl(wall, s, top) {
       const bw = Math.min(30, s.width - 6); if (bw < 8) return;
       const f = wallFrame(r, wall); if (!f) return;
-      const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
       const a = (s.offset || 0) + (s.width - bw) / 2, b = a + bw;
-      const pts = [P(a, 4), P(b, 4), P(a, 20), P(b, 20)];
-      const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
-      _box3D(g, new THREE.MeshStandardMaterial({ color: 0x8e979f, roughness: 0.35, metalness: 0.35 }),
-        Math.min(...xs), top + COUNTER_T - 0.05, Math.min(...ys), Math.max(...xs) - Math.min(...xs), 0.12, Math.max(...ys) - Math.min(...ys), { cast: false });
+      _shapeBox3D(g, new THREE.MeshStandardMaterial({ color: 0x8e979f, roughness: 0.35, metalness: 0.35 }),
+        shapeOf(frameQuad(f, a, b, 4, 20)), top + COUNTER_T - 0.05, 0.12, { cast: false });
     }
-    islandCounterRects(r).forEach(c => _box3D(g, counterMat(c.w, c.h), c.x, c.top, c.y, c.w, COUNTER_T, c.h));
+    islandCounterRects(r).forEach(c => _shapeBox3D(g, counterMat(c.w, c.h), c, c.top, COUNTER_T));
     (r.islands || []).forEach(isl => islandItems(r, isl).filter(i => i.type === 'sink' && layerShowsItem(i)).forEach(s => sinkBowl(s.wall, s, 34.5)));
     // Backsplash: a thin layer on the wall above each run
     counterRuns(r).forEach(run => backsplashPieces(r, p, run).forEach(pc => {
@@ -292,15 +338,20 @@ function buildCountersAndTrim3D(r, p) {
         t.repeat.set(Math.max(R.w, R.h) / 12, (pc.y1 - pc.y0) / 6);   // 12" texture = two 6" tiles across, 6" = two 3" rows
         mat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.25, metalness: 0.02 });
       } else mat = counterMat(Math.max(R.w, R.h), pc.y1 - pc.y0);
-      _box3D(g, mat, R.x, pc.y0, R.y, R.w, pc.y1 - pc.y0, R.h, { cast: false });
+      _shapeBox3D(g, mat, R, pc.y0, pc.y1 - pc.y0, { cast: false });
     }));
   }
+  // Tapered fillers at angled corners (anglejoints.js), in the cabinets' finish
+  if (layers.bases && typeof angleFillers === 'function' && ownedOutline(r)) angleFillers(r).forEach(af => {
+    const sw = doorStyleInfo(af.between[0].styleOverride || p.style).swatch;
+    _prism3D(g, new THREE.MeshStandardMaterial({ color: shade3D(sw, -4), roughness: 0.6 }), af.pts, TOE_KICK_H, af.height - TOE_KICK_H);
+  });
   // Finished end panels (in the door style's finish)
   endPanels(r).forEach(pn => {
     const isUpper = pn.bottom >= 40; if (isUpper ? !layers.uppers : !layers.bases) return;
     const R = wallStripRect(r, pn.wall, pn.a, pn.b, pn.depth); if (!R) return;
     const info = doorStyleInfo(p.style);
-    _box3D(g, new THREE.MeshStandardMaterial({ color: shade3D(info.swatch, -4), roughness: 0.5 }), R.x, pn.bottom, R.y, R.w, pn.top - pn.bottom, R.h);
+    _shapeBox3D(g, new THREE.MeshStandardMaterial({ color: shade3D(info.swatch, -4), roughness: 0.5 }), R, pn.bottom, pn.top - pn.bottom);
   });
   // Crown molding / light rail along the upper runs
   if (layers.uppers && (ct.crown || ct.lightRail)) {
@@ -309,11 +360,11 @@ function buildCountersAndTrim3D(r, p) {
       const a = run.a - (run.startFree ? END_PANEL_T + (ct.crown ? CROWN_PROJ : 0) : 0), b = run.b + (run.endFree ? END_PANEL_T + (ct.crown ? CROWN_PROJ : 0) : 0);
       if (ct.crown) {
         const R = wallStripRect(r, run.wall, a, b, run.depth + FRONT_T + CROWN_PROJ);
-        _box3D(g, mat, R.x, run.top, R.y, R.w, CROWN_H, R.h);
+        _shapeBox3D(g, mat, R, run.top, CROWN_H);
       }
       if (ct.lightRail) {
         const R = wallStripRect(r, run.wall, run.a, run.b, run.depth + FRONT_T + 0.5);
-        _box3D(g, mat, R.x, run.bottom - LIGHT_RAIL_H, R.y, R.w, LIGHT_RAIL_H, R.h, { cast: false });
+        _shapeBox3D(g, mat, R, run.bottom - LIGHT_RAIL_H, LIGHT_RAIL_H, { cast: false });
       }
     });
   }
