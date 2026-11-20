@@ -285,6 +285,8 @@ function openAddRoomModal() {
   const k = document.getElementById('ar-kind'); if (k) k.value = 'kitchen';
   syncStarterOption('ar');
   setRoomDimFields('ar', ROOM_DIM_DEFAULTS);
+  const dw = document.getElementById('ar-shape-draw-wrap'); if (dw) dw.style.display = roomV2On() ? 'flex' : 'none';
+  document.getElementById('ar-shape-rect').checked = true; toggleLCutFields('ar');
   openModal('modal-add-room');
   setTimeout(() => document.getElementById('ar-name').focus(), 50);
 }
@@ -308,7 +310,11 @@ function addRoom() {
       depth:  parseInt(document.getElementById('ar-cut-depth').value)  || 48,
     };
   }
-  if (STARTER_TEXT[kind] && arShape !== 'L' && document.getElementById('ar-starter')?.checked) applyStarterLayout(room);
+  const prevRoomId = state.activeRoomId;
+  if (arShape === 'draw') {      // drawn on the floor plan next (shapeedit.js); a blank 30' sheet until then
+    room.shape = 'rect'; room.walls = { north: 360, south: 360, east: 360, west: 360 }; room._drawing = true;
+  }
+  if (STARTER_TEXT[kind] && arShape === 'rect' && document.getElementById('ar-starter')?.checked) applyStarterLayout(room);
   p.rooms.push(room);
   state.activeRoomId = room.id;
   // Reset ar-shape radio to rect for next time
@@ -316,6 +322,7 @@ function addRoom() {
   document.getElementById('ar-lcut-fields').style.display = 'none';
   persist(); closeModal('modal-add-room');
   renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
+  if (room._drawing) startRoomDraw(room, prevRoomId);
 }
 function deleteRoom(roomId) {
   if (READ_ONLY) return;   // share link: view-only
@@ -631,9 +638,12 @@ function renderWallButtons() {
 }
 
 function toggleLCutFields(prefix) {
-  const isL = document.querySelector(`input[name="${prefix}-shape"]:checked`)?.value === 'L';
+  const shape = document.querySelector(`input[name="${prefix}-shape"]:checked`)?.value, isL = shape === 'L';
   const fields = document.getElementById(`${prefix}-lcut-fields`);
   if (fields) fields.style.display = isL ? '' : 'none';
+  // Draw it (room model v2): the room's size comes from the drawing
+  document.querySelectorAll(`#modal-add-room .${prefix}-dims`).forEach(el => { el.style.display = shape === 'draw' ? 'none' : ''; });
+  const hint = document.getElementById(`${prefix}-draw-hint`); if (hint) hint.style.display = shape === 'draw' ? '' : 'none';
 }
 
 function openRoomShapeModal() {

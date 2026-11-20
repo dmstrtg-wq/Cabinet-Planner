@@ -820,7 +820,7 @@ table.sq tr.sq-room td { background: #f8fafc; font-weight: 800; color: #0f766e; 
 .sq-tot > div { display: flex; justify-content: space-between; padding: 3px 0; }
 .sq-tot .sq-total { font-size: 17px; font-weight: 800; color: #166534; }
 /* Room shape editor (shapeedit.js) */
-.shape-edit-bar { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 12px; background: #1e293b; color: #fff; padding: 8px 10px 8px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(15,23,42,.25); max-width: calc(100% - 32px); }
+.shape-edit-bar { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 30; display: flex; align-items: center; gap: 12px; background: #1e293b; color: #fff; padding: 8px 10px 8px 14px; border-radius: 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(15,23,42,.25); max-width: calc(100% - 32px); }
 .shape-edit-bar .btn { padding: 5px 14px; font-size: 13px; }
 .shape-popover { width: 280px; background: var(--surface, #fff); border: 1px solid var(--border, #e2e8f0); border-radius: 10px; box-shadow: 0 10px 30px rgba(15,23,42,.22); padding: 12px; font-size: 13px; }
 .shape-popover .sp-title { font-weight: 700; margin-bottom: 8px; }
@@ -829,3 +829,6 @@ table.sq tr.sq-room td { background: #f8fafc; font-weight: 800; color: #0f766e; 
 .shape-popover .sp-hint { font-size: 11px; color: var(--text-muted, #64748b); margin: 2px 0 6px; }
 .shape-popover .sp-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .shape-popover .sp-actions .btn { font-size: 12px; padding: 5px 10px; }
+#room-draw-bar { flex-wrap: wrap; row-gap: 8px; width: min(560px, calc(100% - 32px)); }
+#room-draw-bar #room-draw-msg { flex-basis: 100%; }
+#room-draw-bar .btn { padding: 5px 10px; }

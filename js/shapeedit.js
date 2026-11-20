@@ -299,3 +299,157 @@ function spRemoveCorner(cid) { closeShapePopover(); shapeRemoveCorner(activeRoom
 
 // What sort of wall an item is on ('full' unless the room says otherwise)
 function wallKind(r, wall) { const o = ownedOutline(r), w = o && o.walls.find(x => x.id === wall); return w ? (w.kind || 'full') : 'full'; }
+
+// ════════════════════════════
+// DRAW A ROOM FROM SCRATCH (step 4.1e)
+// ════════════════════════════
+// Add Room → Draw it: a blank sheet; click to place each corner, the next wall follows the
+// pointer (snapping to the inch and to 90°/45°), type a length + Enter for an exact wall,
+// Backspace takes back a corner, click the first corner (or Finish) to close, Escape cancels.
+const roomDraw = { active: false, roomId: null, pts: [], cursor: null, prevRoomId: null, down: null };
+function startRoomDraw(room, prevRoomId) {
+  stopShapeEdit();
+  Object.assign(roomDraw, { active: true, roomId: room.id, pts: [], cursor: null, down: null, prevRoomId: prevRoomId || null });
+  if (state.viewMode !== 'floor') setViewMode('floor');
+  let bar = document.getElementById('room-draw-bar');
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'room-draw-bar'; bar.className = 'shape-edit-bar';
+    bar.innerHTML = `<span id="room-draw-msg"></span>
+      <label style="display:flex;align-items:center;gap:6px;">Length <input id="room-draw-len" class="cp-input" inputmode="decimal" aria-label="Length of the next wall in inches" style="width:70px;margin:0;padding:4px 6px;"> in</label>
+      <button class="btn btn-secondary" onclick="roomDrawUndo()">Undo corner</button>
+      <button class="btn btn-primary" id="room-draw-finish" onclick="finishRoomDraw()">Finish</button>
+      <button class="btn btn-secondary" onclick="cancelRoomDraw()">Cancel</button>`;
+    (document.getElementById('fp-viewport') || document.body).appendChild(bar);
+    document.getElementById('room-draw-len').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); roomDrawTypedLength(); }
+      else if (e.key === 'Escape') cancelRoomDraw();
+    });
+  }
+  bar.style.display = '';
+  roomDrawMsg();
+  renderCanvas(); fitView('floor');
+}
+function roomDrawMsg() {
+  const n = roomDraw.pts.length, el = document.getElementById('room-draw-msg'); if (!el) return;
+  el.textContent = n === 0 ? 'Click where the first corner goes.'
+    : n < 3 ? 'Click to place the next corner, or type a length and press Enter.'
+    : 'Keep going, or click the first corner to finish the room.';
+  const fin = document.getElementById('room-draw-finish'); if (fin) fin.disabled = n < 3;
+}
+// Where the next corner would land: whole inches, 90°/45° from the last corner, lined up with the first
+function _drawSnap(x, y, px) {
+  let p = [Math.round(x), Math.round(y)];
+  const pts = roomDraw.pts, last = pts[pts.length - 1], first = pts[0];
+  if (first && pts.length >= 3 && Math.hypot(p[0] - first[0], p[1] - first[1]) <= 10 * px) return { pt: first.slice(), close: true };
+  if (last) {
+    const vx = p[0] - last[0], vy = p[1] - last[1], L = Math.hypot(vx, vy);
+    if (L >= 1) {
+      const ang = Math.atan2(vy, vx), step = Math.PI / 4, a = Math.round(ang / step) * step;
+      if (Math.abs(ang - a) < 6 * Math.PI / 180) { const Lr = Math.round(L); p = [last[0] + Math.round(Math.cos(a) * Lr * 1000) / 1000, last[1] + Math.round(Math.sin(a) * Lr * 1000) / 1000]; }
+    }
+  }
+  if (first && pts.length >= 2) {      // line up with the first corner so the room closes square
+    if (Math.abs(p[0] - first[0]) <= 4 * px) p[0] = first[0];
+    if (Math.abs(p[1] - first[1]) <= 4 * px) p[1] = first[1];
+  }
+  return { pt: p, close: false };
+}
+function roomDrawAdd(pt) {
+  const pts = roomDraw.pts, last = pts[pts.length - 1];
+  if (last && Math.hypot(pt[0] - last[0], pt[1] - last[1]) < SHAPE_MIN_WALL) { showMoveTip(`Every wall needs to be at least ${SHAPE_MIN_WALL}" long.`); return; }
+  pts.push(pt); roomDrawMsg(); renderCanvas();
+}
+function roomDrawUndo() { roomDraw.pts.pop(); roomDrawMsg(); renderCanvas(); }
+function roomDrawTypedLength() {
+  const inp = document.getElementById('room-draw-len'), len = parseInches(inp.value);
+  const pts = roomDraw.pts, last = pts[pts.length - 1];
+  if (!last) { showMoveTip('Click where the first corner goes, then type the length of the first wall.'); return; }
+  if (!(len >= SHAPE_MIN_WALL)) { if (inp.value.trim() === '' && pts.length >= 3) finishRoomDraw(); else showMoveTip(`Enter a length of at least ${SHAPE_MIN_WALL}".`); return; }
+  const c = roomDraw.cursor || [last[0] + 1, last[1]];
+  let dx = c[0] - last[0], dy = c[1] - last[1]; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+  roomDrawAdd([Math.round((last[0] + dx * len) * 1000) / 1000, Math.round((last[1] + dy * len) * 1000) / 1000]);
+  inp.value = '';
+}
+function finishRoomDraw() {
+  const r = (activeProj().rooms || []).find(x => x.id === roomDraw.roomId), pts = roomDraw.pts;
+  if (!r || pts.length < 3) { showMoveTip('A room needs at least three corners.'); return; }
+  const corners = pts.map((q, i) => ({ id: 'c' + (i + 1), x: q[0], y: q[1] }));
+  const walls = corners.map((c, i) => ({ id: 'w' + (i + 1), from: c.id, to: corners[(i + 1) % corners.length].id, kind: 'full' }));
+  const o = { fromLegacy: false, corners, walls };
+  const bad = shapeProblem(o); if (bad) { showMoveTip(bad); return; }
+  r.outline = o; outlineChanged(o);
+  walls.forEach(w => _orientWall(r, w));
+  shapeNormalize(r);
+  const { w: W, h: H } = roomSize(r);
+  r.walls = { north: W, south: W, east: H, west: H }; r.shape = 'rect'; delete r.lCut; delete r._drawing;   // (old fields: its overall size)
+  endRoomDraw();
+  state.activeWall = walls[0].id; state.elevWall = walls[0].id;
+  persist(); renderWallButtons(); renderAll(); fitView('floor');
+  showMoveTip('Room drawn. Click a wall or corner in Room Settings → Edit walls and corners to fine-tune it.');
+}
+function cancelRoomDraw() {
+  const p = activeProj(), r = p && p.rooms.find(x => x.id === roomDraw.roomId);
+  endRoomDraw();
+  if (r && r._drawing && p.rooms.length > 1) {   // a room that was never drawn goes away again
+    p.rooms = p.rooms.filter(x => x !== r);
+    state.activeRoomId = p.rooms.some(x => x.id === roomDraw.prevRoomId) ? roomDraw.prevRoomId : p.rooms[p.rooms.length - 1].id;   // back where you were
+  } else if (r) delete r._drawing;
+  persist(); renderRoomTabs(); renderWallButtons(); renderAll();
+}
+function endRoomDraw() {
+  roomDraw.active = false; roomDraw.pts = []; roomDraw.cursor = null;
+  const bar = document.getElementById('room-draw-bar'); if (bar) bar.style.display = 'none';
+}
+function roomDrawOn() { const r = activeRoom(); return roomDraw.active && r && r.id === roomDraw.roomId; }
+(function wireRoomDraw() {
+  const cv = document.getElementById('floor-plan'); if (!cv) return;
+  cv.addEventListener('mousedown', e => {
+    if (!roomDrawOn() || e.button !== 0) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    roomDraw.down = [e.clientX, e.clientY];
+  }, true);
+  window.addEventListener('mouseup', e => {
+    if (!roomDrawOn() || !roomDraw.down) return;
+    const moved = Math.hypot(e.clientX - roomDraw.down[0], e.clientY - roomDraw.down[1]); roomDraw.down = null;
+    if (moved > 6) return;
+    const pt = _shapePt(e), s = _drawSnap(pt.x, pt.y, pt.px);
+    if (s.close) finishRoomDraw(); else roomDrawAdd(s.pt);
+  });
+  cv.addEventListener('mousemove', e => {
+    if (!roomDrawOn()) return;
+    const pt = _shapePt(e); roomDraw.cursor = _drawSnap(pt.x, pt.y, pt.px).pt; renderCanvas();
+  });
+  document.addEventListener('keydown', e => {
+    if (!roomDrawOn() || e.target.id === 'room-draw-len') return;
+    if (e.key === 'Escape') cancelRoomDraw();
+    else if (e.key === 'Backspace' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); roomDrawUndo(); }
+  });
+})();
+// The floor plan while drawing: grid, the corners placed so far, and the next wall following the pointer
+function drawRoomDraft(ctx, scale, RX, RY, RW, RH) {
+  const P = q => [RX + q[0] * scale, RY + q[1] * scale];
+  const k = 1 / Math.min(1, (vpState.floor && vpState.floor.zoom) || 1);   // lines and labels stay readable zoomed out
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF'; ctx.fillRect(RX, RY, RW, RH);
+  ctx.strokeStyle = '#E2E8F0'; ctx.lineWidth = 0.8;
+  for (let x = RX; x <= RX + RW + 0.1; x += 12 * scale) { ctx.beginPath(); ctx.moveTo(x, RY); ctx.lineTo(x, RY + RH); ctx.stroke(); }
+  for (let y = RY; y <= RY + RH + 0.1; y += 12 * scale) { ctx.beginPath(); ctx.moveTo(RX, y); ctx.lineTo(RX + RW, y); ctx.stroke(); }
+  const pts = roomDraw.pts, cur = roomDraw.cursor;
+  const label = (a, b) => { const len = Math.hypot(b[0] - a[0], b[1] - a[1]); if (len < 1) return;
+    const [mx, my] = P([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]);
+    ctx.font = `700 ${Math.round(12 * k)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    const t = fmtWallLen(len), w = ctx.measureText(t).width + 8 * k;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(mx - w / 2, my - 22 * k, w, 18 * k);
+    ctx.fillStyle = '#0f766e'; ctx.fillText(t, mx, my - 6 * k); };
+  ctx.strokeStyle = '#1E293B'; ctx.lineWidth = 3 * k; ctx.lineCap = 'round';
+  for (let i = 1; i < pts.length; i++) { ctx.beginPath(); ctx.moveTo(...P(pts[i - 1])); ctx.lineTo(...P(pts[i])); ctx.stroke(); label(pts[i - 1], pts[i]); }
+  if (cur && pts.length) {
+    ctx.save(); ctx.strokeStyle = '#0f766e'; ctx.setLineDash([8 * k, 6 * k]); ctx.lineWidth = 2 * k;
+    ctx.beginPath(); ctx.moveTo(...P(pts[pts.length - 1])); ctx.lineTo(...P(cur)); ctx.stroke(); ctx.restore();
+    label(pts[pts.length - 1], cur);
+  }
+  pts.forEach((q, i) => { const [x, y] = P(q); ctx.fillStyle = i === 0 && pts.length >= 3 ? '#D97706' : '#fff'; ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 2.5 * k;
+    ctx.beginPath(); ctx.arc(x, y, (i === 0 && pts.length >= 3 ? 9 : 6) * k, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); });
+  if (cur) { const [x, y] = P(cur); ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 1.5 * k; ctx.beginPath(); ctx.arc(x, y, 4 * k, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.restore();
+}

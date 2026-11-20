@@ -226,6 +226,8 @@ function renderCanvas() {
 
   // Canvas background
   ctx.fillStyle = '#F1F5F9'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Drawing a new room (shapeedit.js): just the sheet and the drawing so far
+  if (typeof roomDrawOn === 'function' && roomDrawOn()) { drawRoomDraft(ctx, scale, RX, RY, RW, RH); return; }
 
   // L-shape helper — build room polygon path
   // Room model v2 (roommodel.js): a room that has switched over is drawn from its own corners

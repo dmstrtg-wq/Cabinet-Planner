@@ -312,7 +312,7 @@ let _dcCache = { sig: null, issues: [] };
 let _dcFocus = null;                 // { key, until }
 const _dcCycle = {};                 // issue key → next item index (clicking again steps through its items)
 function designIssues(r) {
-  const sig = r ? JSON.stringify([r.walls, r.shape, r.ceilingHeight, r.cabinets, r.appliances, r.islands, r.openings, projectCounter(activeProj())]) : '';
+  const sig = r ? JSON.stringify([r.walls, r.shape, r.outline, r.ceilingHeight, r.cabinets, r.appliances, r.islands, r.openings, projectCounter(activeProj())]) : '';
   if (sig !== _dcCache.sig) _dcCache = { sig, issues: computeDesignIssues(r) };
   return _dcCache.issues;
 }
