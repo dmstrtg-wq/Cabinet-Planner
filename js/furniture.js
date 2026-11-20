@@ -13,7 +13,7 @@
 const FACES = { n: 'Faces north', s: 'Faces south', e: 'Faces east', w: 'Faces west' };
 function furnitureOf(r) { return (r && r.furniture) || []; }
 function isFurniture(item) { return !!(item && FURNITURE[item.type]); }
-function furnitureRect(f) { return { x: f.x, y: f.y, w: f.width, h: f.depth }; }
+function furnitureRect(f) { return shapeOf([[f.x, f.y], [f.x + f.width, f.y], [f.x + f.width, f.y + f.depth], [f.x, f.y + f.depth]]); }
 function makeFurniture(type, width, depth, x, y, face = 's') {
   return { id: uid(), type, x: Math.round(x), y: Math.round(y), width, depth, face: FURNITURE[type].faces ? face : null };
 }

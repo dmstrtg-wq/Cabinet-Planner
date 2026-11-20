@@ -45,7 +45,10 @@ function vanityBowls(v) {
   return [{ offset: a + w / 2 - 11, width: 22 }];
 }
 function hasToeKick(cab) { return (COUNTER_CAB_TYPES.includes(cab.type) && !isEndPanel(cab.type)) || TALL_TYPES.includes(cab.type) || ['mediaBase', 'bench'].includes(cab.type) || isFloorFiller(cab); }
-function roomWalls(r) { return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])]; }
+function roomWalls(r) {
+  const o = roomOutline(r); if (o) return o.walls.filter(w => w.kind !== 'open').map(w => w.id);   // room model v2
+  return ['north', 'south', 'east', 'west', ...(getLShapeData(r) ? ['step1', 'step2'] : [])];
+}
 
 // ════════════════════════════
 // RUNS
@@ -72,10 +75,7 @@ function runEndsFree(r, wall, band, a, b, ownIds) {
 // Plan-view rectangle (room inches) for a stretch [a,b] along a wall, `depth` deep
 function wallStripRect(r, wall, a, b, depth) {
   const f = wallFrame(r, wall); if (!f) return null;
-  const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
-  const pts = [P(a, 0), P(b, 0), P(a, depth), P(b, depth)];
-  const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
-  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  return shapeOf(frameQuad(f, a, b, 0, depth));
 }
 
 // Countertop runs for a room → [{ wall, a, b, depth, top, sinks, startFree, endFree, rect }]
@@ -102,10 +102,8 @@ function counterRuns(r) {
   out.forEach(run => {
     kept.forEach(k => {
       const A = wallStripRect(r, run.wall, run.a, run.b, run.depth), K = k.rect;
-      if (!A || !K || !(A.x < K.x + K.w - 0.01 && K.x < A.x + A.w - 0.01 && A.y < K.y + K.h - 0.01 && K.y < A.y + A.h - 0.01)) return;
-      const f = wallFrame(r, run.wall);
-      const along = [[K.x, K.y], [K.x + K.w, K.y + K.h]].map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
-      const oa = Math.min(...along), ob = Math.max(...along);
+      if (!A || !K || !shapesOverlap(A, K)) return;
+      const { a0: oa, a1: ob } = shapeSpan(wallFrame(r, run.wall), shapePts(K));
       if (oa <= run.a + 0.01) run.a = Math.max(run.a, ob); else if (ob >= run.b - 0.01) run.b = Math.min(run.b, oa);
     });
     if (run.b - run.a > 0.5) { run.rect = wallStripRect(r, run.wall, run.a, run.b, run.depth); kept.push(run); }
@@ -115,7 +113,8 @@ function counterRuns(r) {
 // The island top: 1" past each edge, or the seating overhang on a side that has one
 function islandCounterRect(i) {
   const o = sd => islandOverhang(i, sd) || COUNTER_SIDE;
-  return { x: i.x - o('w'), y: i.y - o('n'), w: i.width + o('w') + o('e'), h: i.depth + o('n') + o('s'), top: 34.5, islandId: i.id };
+  const x = i.x - o('w'), y = i.y - o('n'), w = i.width + o('w') + o('e'), h = i.depth + o('n') + o('s');
+  return { x, y, w, h, pts: [[x, y], [x + w, y], [x + w, y + h], [x, y + h]], top: 34.5, islandId: i.id };   // (islands turn in step 4.2)
 }
 function islandCounterRects(r) { return (r.islands || []).map(islandCounterRect); }
 

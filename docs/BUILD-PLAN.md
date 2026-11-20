@@ -265,7 +265,7 @@ Write `docs/ROOM-MODEL-V2.md` proposing:
 - How the quote groups line items by room.
 - Risks, a rollout plan (feature flag, owner accounts first), and a rollback path.
 - Done when: Dan approves the doc. Do not start 4.1 until then.
-- **Status: approved 2026-10-20** (docs/ROOM-MODEL-V2.md: switch on Dan's account first, compass wall names, peninsulas after draw mode and always extending a counter run). Next: 4.1a.
+- **Status: approved 2026-10-20** (docs/ROOM-MODEL-V2.md: switch on Dan's account first, compass wall names, peninsulas after draw mode and always extending a counter run). 4.1a built 2026-10-22 (real corners for every footprint; tools/regression proves no change). 4.1b built 2026-11-20 (js/roommodel.js: room.outline + conversion, switch = app_metadata.room_v2 set by supabase/supabase-room-model-switch.sql, schemaVersion 3 only for converted projects; 380+600 walls match the old model, regression identical with the switch on and off). Next: 4.1c (shape editor).
 
 **4.1 Polygon rooms**
 - Requirements: draw a room by clicking corners (live length labels, 90°/45° snapping), or start from a rectangle and edit. Support L-shaped rooms, angled walls, and bump-outs. Edit any wall length numerically. Soffits as an optional per-wall property (height + depth) that constrains upper heights.

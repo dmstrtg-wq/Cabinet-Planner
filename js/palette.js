@@ -28,7 +28,7 @@ function placementIssue(r, item) {
   if (half) return APPLIANCES[item.type] ? `Fit it inside the ${itemLabel(half)}` : `Half over the ${itemLabel(half)}`;
   // Footprint against the runs on the neighbouring walls (inside corners)
   // (corner cabinets count with both legs — itemRects)
-  const hit = (a, b) => a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01;
+  const hit = (a, b) => shapesOverlap(a, b);
   const mine = itemRects(r, item);
   const corner = roomItems(r).find(i => i.id !== item.id && i.wall && i.wall !== item.wall && rangesOverlap(itemVerticalRange(i), vr)
     && itemRects(r, i).some(b => mine.some(a => hit(a, b))))
@@ -71,8 +71,8 @@ function snapCandidates(r, item) {
     // other walls' runs, and a corner cabinet's leg on this wall
     itemRects(r, i).forEach(b => {
       if (i.wall === item.wall && !cornerInfo(r, i)) return;
-      const along = [[b.x, b.y], [b.x + b.w, b.y + b.h]].map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
-      cands.push(Math.max(...along), Math.min(...along) - w);
+      const sp = shapeSpan(f, shapePts(b));
+      cands.push(sp.a1, sp.a0 - w);
     });
   });
   return cands;

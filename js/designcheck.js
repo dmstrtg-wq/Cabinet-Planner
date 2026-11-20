@@ -31,7 +31,7 @@ const DC_LEVELS = { problem: { label: 'Problem', color: '#DC2626' }, warning: { 
 // ════════════════════════════
 // GEOMETRY HELPERS
 // ════════════════════════════
-const _dcCorners = R => [[R.x, R.y], [R.x + R.w, R.y], [R.x, R.y + R.h], [R.x + R.w, R.y + R.h]];
+const _dcCorners = R => shapePts(R);   // a shape's real corners (rooms.js, 4.1a)
 const _dcAlong = (f, q) => (q[0] - f.start[0]) * f.dir[0] + (q[1] - f.start[1]) * f.dir[1];
 const _dcOut = (f, q) => (q[0] - f.start[0]) * f.inward[0] + (q[1] - f.start[1]) * f.inward[1];
 const _dcPt = (f, t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
@@ -75,7 +75,7 @@ function computeDesignIssues(r) {
   const R = DESIGN_RULES, out = [];
   const walls = roomWalls(r);
   const items = [...r.cabinets, ...(r.appliances || [])].filter(i => i.wall && wallFrame(r, i.wall));
-  const islands = (r.islands || []).map(isl => { const c = islandCounterRect(isl); return { ...isl, _island: true, _rect: { x: c.x, y: c.y, w: c.w, h: c.h } }; });
+  const islands = (r.islands || []).map(isl => { const c = islandCounterRect(isl); return { ...isl, _island: true, _rect: { x: c.x, y: c.y, w: c.w, h: c.h, pts: c.pts } }; });
   const notMine = A => T => !(T._island && isIslandWall(A.wall) && parseIslandWall(A.wall).id === T.id);   // (a piece built into an island doesn't hit that island)
   const rectsOf = i => i._island ? [i._rect] : _dcPlanRects(r, i);
   const add = (level, key, title, detail, list, extraRects = [], wall = null) =>
@@ -145,12 +145,15 @@ function computeDesignIssues(r) {
       add('warning', 'seat-oh:' + T.id + sd, `${_dcName(T)} seating on the ${side} side has ${_dcIn(oh)} of overhang`,
         `Counter-height seating needs at least ${R.seating.overhang}" of overhang for knees. ${R.seating.comfort}" is more comfortable.`, [T]);
     const edge = { n: c.y, s: c.y + c.h, w: c.x, e: c.x + c.w }[sd], { w: RW, h: RH } = roomSize(r);
-    const lo = ns ? c.x : c.y, hi = ns ? c.x + c.w : c.y + c.h;
     let room = { n: edge, s: RH - edge, w: edge, e: RW - edge }[sd];
+    // The seating edge as a frame: along the counter edge, "inward" pointing away from the island
+    const sf = { n: { start: [c.x, c.y], dir: [1, 0], inward: [0, -1] }, s: { start: [c.x, c.y + c.h], dir: [1, 0], inward: [0, 1] },
+                 w: { start: [c.x, c.y], dir: [0, 1], inward: [-1, 0] }, e: { start: [c.x + c.w, c.y], dir: [0, 1], inward: [1, 0] } }[sd];
+    const len = ns ? c.w : c.h;
     const consider = b => {
-      if ((ns ? b.x + b.w : b.y + b.h) <= lo + 0.5 || (ns ? b.x : b.y) >= hi - 0.5) return;
-      const d = { n: edge - (b.y + b.h), s: b.y - edge, w: edge - (b.x + b.w), e: b.x - edge }[sd];
-      if (d >= -0.5) room = Math.min(room, Math.max(0, d));
+      const sp = shapeSpan(sf, shapePts(b));
+      if (sp.a1 <= 0.5 || sp.a0 >= len - 0.5) return;
+      if (sp.o0 >= -0.5) room = Math.min(room, Math.max(0, sp.o0));
     };
     items.filter(i => _dcIsFloor(r, i) && notMine(i)(T)).forEach(i => _dcPlanRects(r, i).forEach(consider));
     islands.filter(o => o.id !== T.id).forEach(o => consider(o._rect));

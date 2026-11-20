@@ -40,11 +40,9 @@ function cornerInfo(r, item) {
 }
 // Corner frame (u along the placed wall, v into the room) → room point
 function cornerPt(ci, u, v) { return [ci.C[0] + ci.U[0] * u + ci.V[0] * v, ci.C[1] + ci.U[1] * u + ci.V[1] * v]; }
-function rectOfPts(pts) {
-  const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
-  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
-}
-function cornerBox(ci, u0, u1, v0, v1) { return rectOfPts([cornerPt(ci, u0, v0), cornerPt(ci, u1, v0), cornerPt(ci, u0, v1), cornerPt(ci, u1, v1)]); }
+// The outline around a set of points (box + convex corners, rooms.js shapeOf)
+function rectOfPts(pts) { return shapeOf(convexHull(pts)); }
+function cornerBox(ci, u0, u1, v0, v1) { return shapeOf([cornerPt(ci, u0, v0), cornerPt(ci, u1, v0), cornerPt(ci, u1, v1), cornerPt(ci, u0, v1)]); }
 // Outline in (u,v): LS = L, DCW = five-sided with the angled front
 function cornerOutlineUV(item, ci) {
   const S = ci.S, L = ci.leg;

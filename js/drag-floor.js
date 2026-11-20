@@ -24,7 +24,7 @@
       if (!layerShowsItem(cab)) continue;
       // a corner cabinet can be grabbed on either leg
       const _rs = cornerInfo(r, cab) ? itemRects(r, cab) : [itemRect(r, cab, cab.depth)].filter(Boolean);
-      const _rc = _rs.find(b => { const x=RX+b.x*scale, y=RY+b.y*scale; return mx>=x&&mx<=x+b.w*scale&&my>=y&&my<=y+b.h*scale; });
+      const _rc = _rs.find(b => pointInShape(b, (mx-RX)/scale, (my-RY)/scale));
       if (!_rc) continue;
       const own = itemRect(r, cab, cab.depth) || _rc;
       const x=RX+own.x*scale, y=RY+own.y*scale, w=own.w*scale, h=own.h*scale;
@@ -34,7 +34,7 @@
       const acat=APPLIANCES[app.type]; if(!acat || !layerShowsItem(app)) continue;
       const _ra = itemRect(r, app, itemDepth(app)); if (!_ra) continue;
       const x=RX+_ra.x*scale, y=RY+_ra.y*scale, w=_ra.w*scale, h=_ra.h*scale;
-      if (mx>=x&&mx<=x+w&&my>=y&&my<=y+h) return {cab:app,wall:app.wall,x,y,w,h};
+      if (pointInShape(_ra, (mx-RX)/scale, (my-RY)/scale)) return {cab:app,wall:app.wall,x,y,w,h};
     }
     // Tables, chairs, stools (7.5) sit on top — they win the click
     for (const f of [...(r.furniture||[])].reverse()) {

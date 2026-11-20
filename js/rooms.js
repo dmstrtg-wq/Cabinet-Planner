@@ -385,9 +385,13 @@ function getLShapeData(r) {
 // is into the room. Every view positions items through wallFrame/itemRect, so adding
 // new wall kinds later (angled walls, Phase 4) only means teaching wallFrame about them.
 function roomSize(r) {
+  const o = roomOutline(r);
+  if (o) { const b = bboxOf(outlinePolygon(o)); return { w: Math.max(b.x + b.w, 48), h: Math.max(b.y + b.h, 48) }; }
   return { w: Math.max(r.walls.north, r.walls.south, 48), h: Math.max(r.walls.east, r.walls.west, 48) };
 }
 function wallFrame(r, wall) {
+  // Room model v2 (roommodel.js): rooms with an outline get their walls from it
+  if (!isIslandWall(wall) && roomOutline(r)) return outlineWallFrame(r, wall);
   const { w: W, h: H } = roomSize(r);
   switch (wall) {
     case 'north': return { start: [0, 0], dir: [1, 0], inward: [0, 1],  length: r.walls.north };
@@ -458,16 +462,79 @@ function shelfStack(item) {
   return { n, spacing: n > 1 ? Math.max(4, item.spacing || 12) : 0, t: item.height || 2.5 };
 }
 function shelfFinish(item) { return SHELF_FINISHES[item.shelfFinish] ? item.shelfFinish : 'wood'; }
-// Axis-aligned footprint of a wall item in room inches: { x, y, w, h }.
+// ── Shapes (Phase 4 step 4.1a) ──
+// A footprint is the box it fits in ({ x, y, w, h }, room inches) plus its real corners
+// (`pts`, a convex polygon). While every wall is square to the room the box IS the shape;
+// on an angled wall only `pts` is exact, so anything that cares about direction (overlap,
+// clicking, clearances, countertop corners, Design Check) works from the corners.
+function bboxOf(pts) {
+  const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+function shapeOf(pts) { const b = bboxOf(pts); b.pts = pts; return b; }
+function shapePts(s) { return s.pts || [[s.x, s.y], [s.x + s.w, s.y], [s.x + s.w, s.y + s.h], [s.x, s.y + s.h]]; }
+// The quad from t0 to t1 along a wall and d0 to d1 out from it (back-start, back-end, front-end, front-start)
+function frameQuad(f, t0, t1, d0, d1) {
+  const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
+  return [P(t0, d0), P(t1, d0), P(t1, d1), P(t0, d1)];
+}
+// Convex hull (monotone chain), counter-clockwise; used to merge shapes into one outline
+function convexHull(pts) {
+  const P = pts.map(q => [q[0], q[1]]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (P.length < 3) return P;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  P.forEach(q => { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 1e-9) lo.pop(); lo.push(q); });
+  P.slice().reverse().forEach(q => { while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], q) <= 1e-9) hi.pop(); hi.push(q); });
+  return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
+// Where a shape's corners land along a wall frame: { a0, a1 } along it, { o0, o1 } out from it
+function shapeSpan(f, pts) {
+  const al = pts.map(q => (q[0] - f.start[0]) * f.dir[0] + (q[1] - f.start[1]) * f.dir[1]);
+  const ou = pts.map(q => (q[0] - f.start[0]) * f.inward[0] + (q[1] - f.start[1]) * f.inward[1]);
+  return { a0: Math.min(...al), a1: Math.max(...al), o0: Math.min(...ou), o1: Math.max(...ou) };
+}
+// Do two shapes overlap by more than eps (inches)? Separating-axis test on both outlines;
+// for two boxes square to the room it is the same as the old box test.
+function shapesOverlap(A, B, eps = 0.01) {
+  const pa = shapePts(A), pb = shapePts(B);
+  for (const poly of [pa, pb]) for (let i = 0; i < poly.length; i++) {
+    const q = poly[i], n = poly[(i + 1) % poly.length];
+    let ax = -(n[1] - q[1]), ay = n[0] - q[0]; const L = Math.hypot(ax, ay); if (L < 1e-9) continue; ax /= L; ay /= L;
+    const pr = ps => ps.map(v => v[0] * ax + v[1] * ay);
+    const a = pr(pa), b = pr(pb);
+    if (Math.min(Math.max(...a), Math.max(...b)) - Math.max(Math.min(...a), Math.min(...b)) <= eps) return false;
+  }
+  return true;
+}
+function pointInShape(s, x, y) {
+  const pts = shapePts(s); let sign = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const q = pts[i], n = pts[(i + 1) % pts.length];
+    const c = (n[0] - q[0]) * (y - q[1]) - (n[1] - q[1]) * (x - q[0]);
+    if (Math.abs(c) < 1e-9) continue;
+    if (sign === 0) sign = Math.sign(c); else if (Math.sign(c) !== sign) return false;
+  }
+  return true;
+}
+// Shortest distance between two shapes (0 when they touch or overlap)
+function shapeDistance(A, B) {
+  if (shapesOverlap(A, B, 0)) return 0;
+  const pa = shapePts(A), pb = shapePts(B);
+  const segDist = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy;
+    const t = L2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2)) : 0;
+    return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); };
+  let d = Infinity;
+  [[pa, pb], [pb, pa]].forEach(([P, Q]) => P.forEach(p => Q.forEach((q, i) => { d = Math.min(d, segDist(p, q, Q[(i + 1) % Q.length])); })));
+  return d;
+}
+
+// Footprint of a wall item in room inches: { x, y, w, h, pts }.
 function itemRect(r, item, depth = itemDepth(item)) {
   const f = wallFrame(r, item.wall); if (!f) return null;
   const off = item.offset || 0, d0 = item.wallOffset || 0;                            // d0: brought out from the wall (7.1)
-  const ax = f.start[0] + f.dir[0] * off + f.inward[0] * d0, ay = f.start[1] + f.dir[1] * off + f.inward[1] * d0;   // start along wall
-  const bx = ax + f.dir[0] * item.width, by = ay + f.dir[1] * item.width;             // end along wall
-  const cx = ax + f.inward[0] * depth,   cy = ay + f.inward[1] * depth;               // pushed into room
-  const xs = [ax, bx, cx], ys = [ay, by, cy];
-  const x = Math.min(...xs), y = Math.min(...ys);
-  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+  return shapeOf(frameQuad(f, off, off + item.width, d0, d0 + depth));
 }
 
 // ════════════════════════════
@@ -503,7 +570,7 @@ function casingRect(r, pc) {
   const a = pc.cab.offset || 0, b = a + pc.cab.width, off = pc.cab.wallOffset || 0;
   const [t0, t1] = pc.side === 'start' ? [a, a + 0.75] : [b - 0.75, b];
   const P = (t, d) => [f.start[0] + f.dir[0] * t + f.inward[0] * d, f.start[1] + f.dir[1] * t + f.inward[1] * d];
-  return rectOfPts([P(t0, off - pc.depth), P(t1, off - pc.depth), P(t0, off), P(t1, off)]);
+  return shapeOf([P(t0, off - pc.depth), P(t1, off - pc.depth), P(t1, off), P(t0, off)]);
 }
 // Cabinets as priced on a quote: the room's cabinets, plus the casing filler for any
 // bumped-out ones (priced as filler stock, like any filler). Virtual — never saved.
@@ -625,7 +692,7 @@ function wallName(r, wall) {
 }
 function wallLengthOf(r, wall) { return wallLength(r, wall); }   // (for code with a local named wallLength)
 function wallLength(r, wall) {
-  if (isIslandWall(wall)) { const f = wallFrame(r, wall); return f ? f.length : 0; }
+  if (isIslandWall(wall) || roomOutline(r)) { const f = wallFrame(r, wall); return f ? f.length : 0; }
   if (wall === 'step1' || wall === 'step2') { const ld = getLShapeData(r); return ld ? ld[wall].length : 0; }
   return r.walls[wall] || 0;
 }

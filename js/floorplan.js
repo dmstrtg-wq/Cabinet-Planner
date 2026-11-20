@@ -182,16 +182,6 @@ function calcIslandClearance(isl, r) {
   const ct = islandCounterRect(isl);                  // measured from the countertop edge (seating overhang included)
   const ix1 = ct.x, iy1 = ct.y, ix2 = ct.x + ct.w, iy2 = ct.y + ct.h;
 
-  // Rect-to-rect axis-aligned clearance
-  function rectClear(ax1,ay1,ax2,ay2, bx1,by1,bx2,by2) {
-    const dx = Math.max(0, Math.max(bx1-ax2, ax1-bx2));
-    const dy = Math.max(0, Math.max(by1-ay2, ay1-by2));
-    if (dx===0 && dy===0) return 0;
-    if (dx===0) return dy;
-    if (dy===0) return dx;
-    return Math.sqrt(dx*dx + dy*dy);
-  }
-
   let minClear = Math.min(ix1, iy1, roomW-ix2, roomH-iy2); // wall distances
 
   // Cabinet and floor-appliance footprints (not the ones built into this island; uppers don't block the floor)
@@ -200,14 +190,13 @@ function calcIslandClearance(isl, r) {
     if (own.has(it.id) || !(CATALOG[it.type] || APPLIANCES[it.type])) return;
     if (APPLIANCES[it.type] && APPLIANCES[it.type].wallMount) return;
     if (itemVerticalRange(it)[0] > 20) return;
-    itemRects(r, it).forEach(b => { minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, b.x,b.y,b.x+b.w,b.y+b.h)); });
+    itemRects(r, it).forEach(b => { minClear = Math.min(minClear, shapeDistance(ct, b)); });
   });
 
   // Other islands
   (r.islands||[]).forEach(other => {
     if (other.id === isl.id) return;
-    const o = islandCounterRect(other);
-    minClear = Math.min(minClear, rectClear(ix1,iy1,ix2,iy2, o.x,o.y,o.x+o.w,o.y+o.h));
+    minClear = Math.min(minClear, shapeDistance(ct, islandCounterRect(other)));
   });
 
   return Math.round(Math.max(0, minClear));

@@ -807,7 +807,7 @@ async function syncActiveProject() {
 // A Supabase row keeps a few fields in their own columns and everything else in `data`.
 // projectToRow / rowToProject are the ONLY places that know this split, and `data` gets
 // every other field automatically — so a new project field can't be silently dropped.
-const PROJECT_SCHEMA_VERSION = 2;
+const PROJECT_SCHEMA_VERSION = 3;   // 3 = rooms may have an outline (room model v2, roommodel.js); projects without one stay 2
 const PROJECT_COLUMN_FIELDS = ['id', 'customer', 'type', 'notes', 'style', 'createdAt'];
 function projectToRow(p) {
   const data = {};
@@ -859,8 +859,11 @@ function migrateProject(p) {
     ensureItemNumbers(r);
     // Diagonal corner uppers have 12" sides (older saves stored 24"/15", which drew them as deep boxes)
     r.cabinets.forEach(c => { if (c.type === 'diagWall') c.depth = 12; });
+    // v2 → v3 (room model v2): only for accounts with the switch on (roommodel.js)
+    if (typeof roomV2On === 'function' && roomV2On()) ensureOutline(r);
   });
-  p.schemaVersion = PROJECT_SCHEMA_VERSION;
+  // A project only becomes v3 once a room has an outline, so older code can still open the rest
+  p.schemaVersion = p.rooms.some(r => r.outline) ? 3 : 2;
   return p;
 }
 function upsertProjectRow(p) {

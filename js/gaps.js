@@ -23,11 +23,9 @@ function wallObstacles(r, wall, band, excludeId) {
   roomItems(r).forEach(i => {
     if (!i.wall || i.wall === wall || i.id === excludeId || !rangesOverlap(itemVerticalRange(i), band)) return;
     itemRects(r, i).forEach(b => {             // a corner cabinet brings both legs
-    const corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x, b.y + b.h], [b.x + b.w, b.y + b.h]];
-    const along = corners.map(([x, y]) => (x - f.start[0]) * f.dir[0] + (y - f.start[1]) * f.dir[1]);
-    const depth = corners.map(([x, y]) => (x - f.start[0]) * f.inward[0] + (y - f.start[1]) * f.inward[1]);
-    if (Math.min(...depth) < stripDepth - 0.01 && Math.max(...depth) > 0.01) {
-      const a = Math.max(0, Math.min(...along)), z = Math.min(len, Math.max(...along));
+    const sp = shapeSpan(f, shapePts(b));
+    if (sp.o0 < stripDepth - 0.01 && sp.o1 > 0.01) {
+      const a = Math.max(0, sp.a0), z = Math.min(len, sp.a1);
       if (z > a) out.push([a, z]);
     }
     });

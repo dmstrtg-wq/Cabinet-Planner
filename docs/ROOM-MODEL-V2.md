@@ -64,9 +64,11 @@ All of these work on one room in the Floor Plan with a "Edit room shape" mode:
 
 ## Turning existing projects into the new model (no data loss)
 
-- Projects get `schemaVersion: 3` (today's projects are 2).
+- A project becomes `schemaVersion: 3` only once one of its rooms has an outline (projects without one stay 2, so older code can still open them).
 - `migrateProject()` turns every rectangle and L-shaped room into an outline whose wall ids are the old names (`north`, `east`, `south`, `west`, `step1`, `step2`). Cabinets, openings and islands don't move or change; island sides keep their `isl:` ids.
-- The original room data is kept on the project (`room._v2backup`) until Dan says it can go, so any project can be put back exactly as it was.
+- The original room fields (`walls`, `shape`, `lCut`) stay on the room, so deleting `outline` puts any room back exactly as it was (`revertRoomModel()` in js/roommodel.js). Until the shape editor edits a room, its outline is only a translation of those fields and is rebuilt when they change.
+- **Built 2026-11-20 (4.1b):** where an old wall's numbers don't match its drawn corners, the wall keeps them in `legacy` (start / length / inward). This happens on every L room's outer walls (they start at the room's outer corner, inside the cut-out) and on rectangles typed with uneven sides. It is what keeps every cabinet in place.
+- **Known old bug, found in 4.1b:** in L rooms the first inner wall (step1) faces into the cut-out, so cabinets on it are drawn outside the room, and the outer walls' measurements start inside the cut-out. The conversion keeps this (nothing moves in 4.1b). Fix in 4.1c, when the outline takes over: turn step1 to face the room and measure the outer walls from their real corners, moving affected cabinets to match, with a note on each room that changed.
 - A check runs on every migrated project: the floor plan, quote total, order list and cut list must come out identical before and after. If anything differs, that project stays on the old model and is reported.
 
 ## Build order (each step is pushed and tested before the next)
