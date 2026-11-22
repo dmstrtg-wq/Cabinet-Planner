@@ -40,6 +40,7 @@ function readRoomDimFields(prefix) {
 function openNewProjectModal() {
   ['np-customer','np-phone','np-email','np-company','np-notes','np-address','np-city'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   setRoomDimFields('np', ROOM_DIM_DEFAULTS);
+  renderShapePicker('np'); PHOTO.file.np = null; document.getElementById('np-photo-name').textContent = ''; document.getElementById('np-photo-file').value = '';
   document.getElementById('np-type').value = 'Kitchen';
   syncStarterOption('np');
   // Populate state dropdown if empty
@@ -61,6 +62,8 @@ function openNewProjectModal() {
 function createProject() {
   const customer = HOME_PRO ? `My ${document.getElementById('np-type').value.toLowerCase()} design` : document.getElementById('np-customer').value.trim();
   if (!customer) { document.getElementById('np-customer').focus(); return; }
+  const npShape = document.querySelector('input[name="np-shape"]:checked')?.value || 'rect';
+  if (npShape === 'photo' && (!PHOTO.file.np || !photoAllowed())) { if (!PHOTO.file.np) alert('Choose a picture of the room first.'); return; }
   const dims = readRoomDimFields('np'); if (!dims) return;
   const npType = document.getElementById('np-type').value;
   const room = {
@@ -70,7 +73,14 @@ function createProject() {
     ceilingHeight: dims.ceilingHeight,
     cabinets: [], openings: []
   };
-  if (room.kind === 'bath' && document.getElementById('np-starter')?.checked) bathStarterLayout(room);
+  if (npShape === 'L') {
+    room.shape = 'L';
+    room.lCut = { corner: document.getElementById('np-corner').value,
+      width: parseInt(document.getElementById('np-cut-width').value) || 48, depth: parseInt(document.getElementById('np-cut-depth').value) || 48 };
+  } else if (npShape === 'draw') {   // drawn on the floor plan next (shapeedit.js); a blank 30' sheet until then
+    room.shape = 'rect'; room.walls = { north: 360, south: 360, east: 360, west: 360 }; room._drawing = true;
+  }
+  if (room.kind === 'bath' && npShape === 'rect' && document.getElementById('np-starter')?.checked) bathStarterLayout(room);
   const proj = {
     id: newId(), customer,
     phone:   document.getElementById('np-phone').value.trim(),
@@ -89,6 +99,8 @@ function createProject() {
   persist();
   closeModal('modal-new-project');
   openProject(proj.id, room.id);
+  if (room._drawing) startRoomDraw(room, null);
+  if (npShape === 'photo') startRoomFromPhoto(room, PHOTO.file.np, null, true);   // the usual rectangle until the picture is read
 }
 function openEditProjectModal() {
   const p = activeProj(); if (!p) return;
@@ -285,14 +297,14 @@ function openAddRoomModal() {
   const k = document.getElementById('ar-kind'); if (k) k.value = 'kitchen';
   syncStarterOption('ar');
   setRoomDimFields('ar', ROOM_DIM_DEFAULTS);
-  const dw = document.getElementById('ar-shape-draw-wrap'); if (dw) dw.style.display = roomV2On() ? 'flex' : 'none';
-  document.getElementById('ar-shape-rect').checked = true; toggleLCutFields('ar');
+  renderShapePicker('ar'); PHOTO.file.ar = null; document.getElementById('ar-photo-name').textContent = ''; document.getElementById('ar-photo-file').value = '';
   openModal('modal-add-room');
   setTimeout(() => document.getElementById('ar-name').focus(), 50);
 }
 function addRoom() {
   const p = activeProj(); if (!p) return;
   const arShape = document.querySelector('input[name="ar-shape"]:checked')?.value || 'rect';
+  if (arShape === 'photo' && (!PHOTO.file.ar || !photoAllowed())) { if (!PHOTO.file.ar) alert('Choose a picture of the room first.'); return; }
   const dims = readRoomDimFields('ar'); if (!dims) return;
   const kind = document.getElementById('ar-kind')?.value || 'kitchen';
   const room = {
@@ -323,6 +335,7 @@ function addRoom() {
   persist(); closeModal('modal-add-room');
   renderRoomTabs(); renderWallButtons(); renderCabinetList(); renderCanvas();
   if (room._drawing) startRoomDraw(room, prevRoomId);
+  if (arShape === 'photo') startRoomFromPhoto(room, PHOTO.file.ar, prevRoomId, false);
 }
 function deleteRoom(roomId) {
   if (READ_ONLY) return;   // share link: view-only
@@ -673,12 +686,30 @@ function renderWallButtons() {
   container.innerHTML = allWalls.map(btn).join('') + isl;
 }
 
+// The room shape cards in New Project and Add Room: Rectangle, L-shape, and Draw it (the new
+// room model: any shape, drawn on the floor plan; shown with the switch on for now)
+const SHAPE_CARDS = [
+  { v: 'rect', t: 'Rectangle', d: 'Type the four wall lengths.', svg: '<rect x="4" y="6" width="28" height="20" />' },
+  { v: 'L', t: 'L-shape', d: 'A rectangle with one corner cut out.', svg: '<path d="M4 6h17v8h11v12H4z" />' },
+  { v: 'draw', t: 'Draw it', d: 'Any shape: angled walls, cut corners, open sides. Click each corner on the floor plan.', svg: '<path d="M4 26V6h18l10 10v10z" /><circle cx="22" cy="6" r="2.2" /><circle cx="32" cy="16" r="2.2" />' },
+  { v: 'photo', t: 'From a picture', d: 'Upload a sketch, floor plan or photo. We read the walls and cabinets for you to check.', svg: '<rect x="3" y="7" width="30" height="21" rx="2" /><circle cx="18" cy="17.5" r="5" /><path d="M12 7l2-3h8l2 3" />' },
+];
+function renderShapePicker(prefix) {
+  const el = document.getElementById(`${prefix}-shape-picker`); if (!el) return;
+  const cards = SHAPE_CARDS.filter(c => c.v !== 'draw' || roomV2On());
+  el.innerHTML = cards.map((c, i) => `<label class="shape-card">
+      <input type="radio" name="${prefix}-shape" id="${prefix}-shape-${c.v}" value="${c.v}" ${i === 0 ? 'checked' : ''} onchange="toggleLCutFields('${prefix}')">
+      <svg viewBox="0 0 36 32" width="36" height="32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${c.svg}</svg>
+      <span class="shape-card-t">${c.t}</span><span class="shape-card-d">${c.d}</span></label>`).join('');
+  toggleLCutFields(prefix);
+}
 function toggleLCutFields(prefix) {
   const shape = document.querySelector(`input[name="${prefix}-shape"]:checked`)?.value, isL = shape === 'L';
   const fields = document.getElementById(`${prefix}-lcut-fields`);
   if (fields) fields.style.display = isL ? '' : 'none';
   // Draw it (room model v2): the room's size comes from the drawing
-  document.querySelectorAll(`#modal-add-room .${prefix}-dims`).forEach(el => { el.style.display = shape === 'draw' ? 'none' : ''; });
+  document.querySelectorAll(`.${prefix}-dims`).forEach(el => { el.style.display = shape === 'draw' || shape === 'photo' ? 'none' : ''; });
+  const ph = document.getElementById(`${prefix}-photo-fields`); if (ph) ph.style.display = shape === 'photo' ? '' : 'none';
   const hint = document.getElementById(`${prefix}-draw-hint`); if (hint) hint.style.display = shape === 'draw' ? '' : 'none';
 }
 

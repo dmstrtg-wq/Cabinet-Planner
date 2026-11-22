@@ -446,3 +446,5 @@ Before any detour, ask: **does this move us toward paying cabinet customers?** R
 
 Open decisions (Dan): which tiers get 8.1/8.2 (suggested Silver + Gold, maybe a limited taste in the demo); whether homeowners get it (8.4).
 
+
+- **5.4 Picture to room built 2026-11-22** (js/photoroom.js + netlify/functions/room-from-photo.js; New Project / Add Room → From a picture; review before build; everyone signed in, daily limits by plan). Also 2026-11-22: room shape cards (Rectangle / L-shape / Draw it / From a picture) in New Project and Add Room.

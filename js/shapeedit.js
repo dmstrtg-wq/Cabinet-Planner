@@ -393,6 +393,8 @@ function cancelRoomDraw() {
   if (r && r._drawing && p.rooms.length > 1) {   // a room that was never drawn goes away again
     p.rooms = p.rooms.filter(x => x !== r);
     state.activeRoomId = p.rooms.some(x => x.id === roomDraw.prevRoomId) ? roomDraw.prevRoomId : p.rooms[p.rooms.length - 1].id;   // back where you were
+  } else if (r && r._drawing) {     // the project's only room: the usual starting rectangle
+    delete r._drawing; r.walls = { ...ROOM_DIM_DEFAULTS }; delete r.walls.ceiling; delete r.outline;
   } else if (r) delete r._drawing;
   persist(); renderRoomTabs(); renderWallButtons(); renderAll();
 }

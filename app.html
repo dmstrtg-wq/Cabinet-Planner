@@ -815,16 +815,40 @@
       <div class="form-group"><label>State</label><select id="np-state"><option value="">— State —</option></select></div>
     </div>
     <div class="form-group np-pro"><label>Notes</label><textarea id="np-notes" rows="2" placeholder="Contact info, additional notes…" style="resize:vertical"></textarea></div>
-    <div class="section-divider">First Room Dimensions</div>
-    <div class="form-row">
+    <div class="section-divider">First Room</div>
+    <div class="form-group"><label>Room shape</label><div class="shape-picker" id="np-shape-picker" role="radiogroup" aria-label="Room shape"></div></div>
+    <div id="np-photo-fields" style="display:none;margin:2px 0 12px;">
+      <label class="btn btn-secondary" for="np-photo-file" style="display:inline-block;cursor:pointer;">Choose a picture</label>
+      <input type="file" id="np-photo-file" accept="image/*,application/pdf" style="position:absolute;left:-9999px;" onchange="photoFileChosen('np')">
+      <span id="np-photo-name" style="font-size:12px;color:var(--text-muted);margin-left:8px;"></span>
+      <p class="form-hint" style="margin:6px 0 0;">A sketch or floor plan with measurements works best. A photo of the room works too; you'll check the wall lengths afterward. You'll see what we read before anything is built.</p>
+    </div>
+    <p id="np-draw-hint" class="form-hint" style="display:none;margin:2px 0 12px;">After you create the project, click on the floor plan to place each corner. Lengths snap to the inch and angles to 90° and 45°, and you can type an exact length. Click the first corner to finish.</p>
+    <div class="form-row np-dims">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="np-north" value="120" min="12" max="1200"></div>
       <div class="form-group"><label>South Wall (in)</label><input type="number" id="np-south" value="120" min="12" max="1200"></div>
     </div>
-    <div class="form-row">
+    <div class="form-row np-dims">
       <div class="form-group"><label>East Wall (in)</label><input type="number" id="np-east" value="96" min="12" max="1200"></div>
       <div class="form-group"><label>West Wall (in)</label><input type="number" id="np-west" value="96" min="12" max="1200"></div>
     </div>
     <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="np-ceiling" value="96" min="72" max="180"><div class="form-hint">Typical: 96" (8 ft) or 108" (9 ft)</div></div>
+    <div id="np-lcut-fields" style="display:none;border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+      <div class="form-group">
+        <label for="np-corner">Cut Corner</label>
+        <select id="np-corner" style="width:100%">
+          <option value="NE">Top-Right (NE)</option>
+          <option value="NW">Top-Left (NW)</option>
+          <option value="SE">Bottom-Right (SE)</option>
+          <option value="SW">Bottom-Left (SW)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="np-cut-width">Cut Width (in)</label><input type="number" id="np-cut-width" value="48" min="12" placeholder="48"></div>
+        <div class="form-group"><label for="np-cut-depth">Cut Depth (in)</label><input type="number" id="np-cut-depth" value="48" min="12" placeholder="48"></div>
+      </div>
+      <p style="font-size:11px;color:#64748b;margin:0">Width &amp; Depth are the size of the corner removed.</p>
+    </div>
     <div id="np-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-new-project')">Cancel</button>
@@ -878,6 +902,7 @@
       <div class="form-group" id="ar-starter-group" style="display:none;align-self:end;"><label style="display:flex;align-items:center;gap:6px;font-weight:500;text-transform:none;letter-spacing:0;cursor:pointer;">
         <input type="checkbox" id="ar-starter"> <span id="ar-starter-text"></span></label></div>
     </div>
+    <div class="form-group"><label>Room shape</label><div class="shape-picker" id="ar-shape-picker" role="radiogroup" aria-label="Room shape"></div></div>
     <div class="form-row ar-dims">
       <div class="form-group"><label>North Wall (in)</label><input type="number" id="ar-north" value="120" min="12" max="1200"></div>
       <div class="form-group"><label>South Wall (in)</label><input type="number" id="ar-south" value="120" min="12" max="1200"></div>
@@ -888,21 +913,13 @@
     </div>
     <div class="form-group"><label>Ceiling Height (in)</label><input type="number" id="ar-ceiling" value="96" min="72" max="180"></div>
     <div id="ar-dim-error" role="alert" style="display:none;color:var(--danger);font-size:13px;font-weight:600;margin-top:4px;"></div>
-    <div class="form-group">
-      <label>Room Shape</label>
-      <div style="display:flex;gap:14px;margin-top:6px">
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
-          <input type="radio" name="ar-shape" id="ar-shape-rect" value="rect" checked onchange="toggleLCutFields('ar')"> Rectangle
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:500">
-          <input type="radio" name="ar-shape" id="ar-shape-L" value="L" onchange="toggleLCutFields('ar')"> L-Shape
-        </label>
-        <label id="ar-shape-draw-wrap" style="display:none;align-items:center;gap:5px;cursor:pointer;font-weight:500">
-          <input type="radio" name="ar-shape" id="ar-shape-draw" value="draw" onchange="toggleLCutFields('ar')"> Draw it
-        </label>
-      </div>
+    <div id="ar-photo-fields" style="display:none;margin:2px 0 12px;">
+      <label class="btn btn-secondary" for="ar-photo-file" style="display:inline-block;cursor:pointer;">Choose a picture</label>
+      <input type="file" id="ar-photo-file" accept="image/*,application/pdf" style="position:absolute;left:-9999px;" onchange="photoFileChosen('ar')">
+      <span id="ar-photo-name" style="font-size:12px;color:var(--text-muted);margin-left:8px;"></span>
+      <p class="form-hint" style="margin:6px 0 0;">A sketch or floor plan with measurements works best. A photo of the room works too; you'll check the wall lengths afterward. You'll see what we read before anything is built.</p>
     </div>
-    <p id="ar-draw-hint" class="form-hint" style="display:none;">After you add the room, click on the floor plan to place each corner. Lengths snap to the inch and angles to 90° and 45°, and you can type an exact length. Click the first corner to finish.</p>
+    <p id="ar-draw-hint" class="form-hint" style="display:none;margin:2px 0 12px;">After you add the room, click on the floor plan to place each corner. Lengths snap to the inch and angles to 90° and 45°, and you can type an exact length. Click the first corner to finish.</p>
     <div id="ar-lcut-fields" style="display:none;border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
       <div class="form-group">
         <label>Cut Corner</label>
@@ -1184,6 +1201,7 @@
 <script src="/js/roommodel.js" data-categories="essential"></script>
 <script src="/js/shapeedit.js" data-categories="essential"></script>
 <script src="/js/anglejoints.js" data-categories="essential"></script>
+<script src="/js/photoroom.js" data-categories="essential"></script>
 <script src="/js/sidebar.js" data-categories="essential"></script>
 <script src="/js/floorplan.js" data-categories="essential"></script>
 <script src="/js/view3d.js" data-categories="essential"></script>
