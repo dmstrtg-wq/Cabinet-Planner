@@ -670,3 +670,8 @@ Claude tested locally with a stand-in server answer modeled on Dan's sketch (doc
 - Tips updated to point at the new menus, plus a tip for Room Settings. Also fixed: the item list printed raw wall ids for island sides and reshaped rooms ("W3", "Isl:…:s"); it now prints the wall's name.
 Claude tested locally at desktop width: every Show checkbox (incl. Work triangle), Lists → Item list, Room Settings, Job and Help menus, elevation toolbar, demo hides Prices and order lists; phone layout unchanged; copy check clean.
 - [ ] After push: click through Room Settings, Show, Lists and the Job / Help menus on your account (Prices should appear under Show for you).
+
+### Picture upload fix (2026-11-22) — push only
+- Dan's first real test failed: the log row had 0 tokens, so the AI call errored before answering, and the reason wasn't saved.
+- Changed: model claude-opus-5-5 → claude-sonnet-5-5, effort medium → low, max 12k tokens, server fallback removed (all to answer well inside Netlify's time limit). A failure's reason is now saved in price_import_log.model after a "|" and printed in the Netlify function log.
+- [ ] After push: upload the graph-paper sketch again. If it fails, run the log SQL; the model column will say why.

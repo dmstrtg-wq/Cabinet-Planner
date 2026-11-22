@@ -15,7 +15,7 @@
  * price_import_log (step 'room-photo'; counts and tokens only, never the picture).
  *
  * Env vars: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY
- *   optional: ROOM_PHOTO_MODEL (default claude-opus-5-5)
+ *   optional: ROOM_PHOTO_MODEL (default claude-sonnet-5-5: fast enough to answer inside Netlify's time limit)
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -23,7 +23,7 @@ const sdk = require('@anthropic-ai/sdk');
 const Anthropic = sdk.default || sdk;
 
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-const MODEL = process.env.ROOM_PHOTO_MODEL || 'claude-opus-5-5';
+const MODEL = process.env.ROOM_PHOTO_MODEL || 'claude-sonnet-5-5';
 const PER_DAY = { free: 3, silver: 10, gold: 25 };
 const MAX_BODY = 5 * 1024 * 1024;   // Netlify's request limit is 6 MB
 
@@ -120,18 +120,17 @@ exports.handler = async (event) => {
   const kind = String(body.kind || '').replace(/[^a-z ]/gi, '').slice(0, 20);
 
   const client = new Anthropic({ timeout: 55 * 1000, maxRetries: 0 });   // Netlify ends a function at 60 s
-  let result = null, usage = {}, ok = false, error = null;
+  let result = null, usage = {}, ok = false, error = null, reason = '';   // reason: why it failed, saved in the log
   try {
     const response = await client.beta.messages.create({
       model: MODEL,
-      max_tokens: 16000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',                      // if the model declines, the API retries on a fallback model
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: SCHEMA } },
+      max_tokens: 12000,
+      output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },   // low effort keeps it well under the time limit
       system: SYSTEM,
       messages: [{ role: 'user', content: [picture, { type: 'text', text: `This is ${kind ? `a ${kind}` : 'a room'}. Describe it.` }] }],
     });
     usage = response.usage || {};
+    reason = response.stop_reason || '';
     if (response.stop_reason === 'refusal') error = "We couldn't read that picture. Please try another one, or draw the room instead.";
     else if (response.stop_reason === 'max_tokens') error = 'That picture has more than we can read at once. Try a picture of one room.';
     else {
@@ -140,15 +139,17 @@ exports.handler = async (event) => {
       ok = true;
     }
   } catch (e) {
+    reason = `${e.constructor?.name || 'Error'} ${e.status || ''} ${String(e.message || '').slice(0, 160)}`.trim();
+    console.error('room-from-photo', reason);
     if (e instanceof SyntaxError) error = "We couldn't read that picture. Please try another one.";
     else if (e instanceof Anthropic.RateLimitError) error = 'We are busy right now. Please try again in a minute.';
     else if (e instanceof Anthropic.BadRequestError) error = "We couldn't open that file. Please use a clear photo or a PDF.";
     else if (e instanceof Anthropic.APIConnectionError) error = 'That took too long. Please try again, or use a smaller picture.';   // (timeouts too)
-    else { error = 'Something went wrong reading the picture. Please try again.'; console.error('room-from-photo', e); }
+    else error = 'Something went wrong reading the picture. Please try again.';
   }
 
   await db.from('price_import_log').insert({
-    user_id: userId, import_id: requestId, step: 'room-photo', model: MODEL,
+    user_id: userId, import_id: requestId, step: 'room-photo', model: ok ? MODEL : `${MODEL} | ${reason}`.slice(0, 250),   // no error column, so a failure's reason rides along here
     items: result ? (result.runs || []).reduce((n, r) => n + (r.items || []).length, 0) : 0,
     input_tokens: usage.input_tokens || 0, output_tokens: usage.output_tokens || 0, ok,
   });
