@@ -49,21 +49,35 @@ function syncLayerControls() {
   document.querySelectorAll('.dims-btn').forEach(b => b.classList.toggle('active', layers.dims));
   document.querySelectorAll('.itemnum-btn').forEach(b => b.classList.toggle('active', layers.itemNums));
   document.querySelectorAll('[data-layer]').forEach(cb => { cb.checked = !!layers[cb.dataset.layer]; });
+  document.querySelectorAll('[data-extra="tri"]').forEach(cb => { cb.checked = typeof showWorkTriangle !== 'undefined' && !!showWorkTriangle; });
+  document.querySelectorAll('[data-extra="prices"]').forEach(cb => { cb.checked = typeof pricingOn === 'function' && pricingOn(); });
   const hidden = LAYER_DEFS.filter(([k]) => k !== 'dims' && !layers[k]).length;
   document.querySelectorAll('.layers-btn-count').forEach(el => { el.textContent = hidden ? `(${hidden} off)` : ''; });
 }
 
+// Prices on the drawing and side list (the old Pricing switch, now Show ▾ ▸ Prices; Silver+)
+function setPricesShown(on) {
+  const t = document.getElementById('pricing-toggle-2'); if (!t) return;
+  t.checked = !!on; onPricingToggle(); syncLayerControls();
+}
 function toggleLayersMenu(btn) {
   const menu = btn.parentElement.querySelector('.layers-menu');
   const open = menu.classList.contains('hidden');
+  if (typeof closeListsMenus === 'function') closeListsMenus();
   document.querySelectorAll('.layers-menu').forEach(m => m.classList.add('hidden'));
   if (open) { menu.classList.remove('hidden'); syncLayerControls(); }
 }
+// The Show ▾ menu (2026-11-22, toolbar clean-up): the drawing aids first (dimensions, item
+// numbers, the work triangle on the floor plan, prices), then what's drawn (the layers)
 function buildLayersMenus() {
   document.querySelectorAll('.layers-menu').forEach(menu => {
-    menu.innerHTML = LAYER_DEFS.map(([k, label]) =>
-      `<label class="layers-row"><input type="checkbox" data-layer="${k}" onchange="setLayer('${k}', this.checked)"> ${label}</label>`).join('') +
-      '<div class="layers-note">Also applies to Print Plans and PDF export (printed drawings always keep their dimensions).</div>';
+    const onFloor = !!menu.closest('#view-floor');
+    const row = ([k, label]) => `<label class="layers-row"><input type="checkbox" data-layer="${k}" onchange="setLayer('${k}', this.checked)"> ${label}</label>`;
+    menu.innerHTML = LAYER_DEFS.slice(0, 2).map(row).join('')
+      + (onFloor ? `<label class="layers-row"><input type="checkbox" data-extra="tri" onchange="toggleWorkTriangle()"> Work triangle</label>` : '')
+      + `<label class="layers-row prices-row"><input type="checkbox" data-extra="prices" onchange="setPricesShown(this.checked)"> Prices</label>`
+      + `<div class="layers-head">On the drawing</div>` + LAYER_DEFS.slice(2).map(row).join('')
+      + '<div class="layers-note">Also applies to Export Plans (printed drawings always keep their dimensions).</div>';
   });
   syncLayerControls();
 }

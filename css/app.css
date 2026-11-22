@@ -864,3 +864,19 @@ table.sq tr.sq-room td { background: #f8fafc; font-weight: 800; color: #0f766e; 
 .photo-item { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .photo-item .photo-item-wall { margin-left: auto; color: var(--text-muted); font-size: 12px; }
 .photo-notes { margin: 0; padding-left: 18px; font-size: 13px; color: #475569; }
+/* Toolbar clean-up (2026-11-22): Room Settings · Show ▾ · Measure · Lists ▾, and the header's Job ▾ / Help ▾ */
+.layers-head { font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; padding: 8px 6px 2px; border-top: 1px solid var(--border); margin-top: 4px; }
+.lists-wrap, .hdr-menu-wrap { position: relative; display: inline-block; }
+.lists-menu, .hdr-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 500; background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.16); padding: 6px; min-width: 220px; display: flex; flex-direction: column; gap: 2px; }
+.lists-menu.hidden, .hdr-menu.hidden { display: none; }
+.lists-menu { min-width: 280px; }
+.hdr-menu-right { left: auto; right: 0; }
+.lists-item, .hdr-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 7px 9px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; border-radius: 6px; }
+.lists-item b { display: block; font-weight: 700; }
+.lists-item span { display: block; font-size: 11.5px; color: var(--text-muted); line-height: 1.35; margin-top: 1px; }
+.lists-item:hover, .hdr-menu button:hover, .lists-item:focus-visible, .hdr-menu button:focus-visible { background: #f1f5f9; outline: none; }
+/* Who sees what: order lists are Silver+, prices Silver+, never in the demo; homeowners get no Job menu */
+body.demo-mode .lists-menu .order-only, body.free-tier .lists-menu .order-only,
+body.demo-mode .prices-row, body.pricing-locked .prices-row,
+body.home-mode #job-wrap,
+body.share-mode #room-settings-btn, body.share-mode .lists-wrap, body.share-mode .prices-row { display: none !important; }

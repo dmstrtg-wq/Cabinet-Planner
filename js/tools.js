@@ -137,7 +137,7 @@ function togglePanel() {
 function toggleSummary() {
   const el = document.getElementById('summary-table');
   const open = el.classList.toggle('summary-open');
-  document.getElementById('summary-toggle-btn').classList.toggle('active', open);
+  const sb = document.getElementById('summary-toggle-btn'); if (sb) sb.classList.toggle('active', open);
 }
 
 // ════════════════════════════
@@ -174,7 +174,7 @@ function renderCutList() {
     const cat = item.kind === 'cabinet' ? CATALOG[item.type] : APPLIANCES[item.type];
     const label = cat ? cat.label : item.type;
     const depth = item.depth || (cat && cat.depth) || '—';
-    const wallLabel = item.wall ? item.wall.charAt(0).toUpperCase()+item.wall.slice(1) : '—';
+    const wallLabel = item.wall ? wallName(r, item.wall).replace(/ wall$/, '') : '—';
     return `<tr>
       <td><span class="cutlist-num">${item.itemNum}</span></td>
       <td>${escHtml(label)}</td>
@@ -193,12 +193,29 @@ function renderCutList() {
 
 function toggleWorkTriangle() {
   showWorkTriangle = !showWorkTriangle;
-  document.getElementById('tri-btn').classList.toggle('active', showWorkTriangle);
+  if (typeof syncLayerControls === 'function') syncLayerControls();   // (Show ▾ ▸ Work triangle)
   renderCanvas();
 }
 
-function toggleMoreTools() {
-  document.getElementById('tb-more-menu').classList.toggle('hidden');
+// Lists ▾ (item list, order list) and the header's Job ▾ / Help ▾ menus (2026-11-22)
+function closeListsMenus() { document.querySelectorAll('.lists-menu').forEach(m => m.classList.add('hidden')); }
+function toggleListsMenu(btn) {
+  const m = btn.parentElement.querySelector('.lists-menu'), open = m.classList.contains('hidden');
+  closeListsMenus(); document.querySelectorAll('.layers-menu').forEach(x => x.classList.add('hidden'));
+  if (open) m.classList.remove('hidden');
+}
+function closeHdrMenus() { document.querySelectorAll('.hdr-menu').forEach(m => m.classList.add('hidden')); }
+function toggleHdrMenu(btn) {
+  const m = btn.parentElement.querySelector('.hdr-menu'), open = m.classList.contains('hidden');
+  closeHdrMenus(); if (open) { m.classList.remove('hidden'); const first = m.querySelector('button:not([style*="none"])'); if (first) first.focus(); }
+}
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('.lists-wrap')) closeListsMenus();
+  if (!e.target.closest('.hdr-menu-wrap')) closeHdrMenus();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeListsMenus(); closeHdrMenus(); } });
+function toggleMoreTools() {   // (the ⋯ More menu is gone; kept so an old reference does nothing)
+  const m = document.getElementById('tb-more-menu'); if (m) m.classList.toggle('hidden');
 }
 document.addEventListener('click', function(e) {
   const wrap = document.getElementById('tb-more-wrap');
