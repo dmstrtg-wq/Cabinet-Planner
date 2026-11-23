@@ -675,3 +675,11 @@ Claude tested locally at desktop width: every Show checkbox (incl. Work triangle
 - Dan's first real test failed: the log row had 0 tokens, so the AI call errored before answering, and the reason wasn't saved.
 - Changed: model claude-opus-5-5 → claude-sonnet-5-5, effort medium → low, max 12k tokens, server fallback removed (all to answer well inside Netlify's time limit). A failure's reason is now saved in price_import_log.model after a "|" and printed in the Netlify function log.
 - [ ] After push: upload the graph-paper sketch again. If it fails, run the log SQL; the model column will say why.
+
+### Picture upload: reading fixes after Dan's "Photo test 2" (2026-11-22) — push only
+- Cause of the failures before that: the Anthropic API key in Netlify was invalid; Dan replaced it.
+- Photo test 2 came out as a 24"-deep strip: the AI took the line along the cabinet fronts as a wall, so the "room" was the cabinet footprint and the bases faced into it.
+- Fixes: the instructions now explain walls vs. cabinet fronts (close the room with open walls at least 48" past the cabinets), corner cabinets (lazy Susan, DWC) and leaving room for them on the other wall, width × height sizes (24x36), gaps between uppers (new gap_before_in), and separate drawings on the page (listed in Notes, never made into walls).
+- App side: the review screen warns when there's less than 3' of floor in front of a cabinet wall; uppers keep their drawn gaps; a run that hits a corner cabinet at either end slides clear (12/24/36").
+- Claude tested locally with mocked answers: the bad reading shows the warning; a correct reading of the sketch builds the L kitchen (lazy Susan in the corner, sink, DW, uppers with the gap over the sink, range wall clear of the corner). The real AI hasn't seen the new instructions yet.
+- [ ] After push: upload the same sketch into a new project and check the 3D view.

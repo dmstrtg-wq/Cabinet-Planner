@@ -36,12 +36,13 @@ const json = (statusCode, obj) => ({ statusCode, headers: { 'Content-Type': 'app
 const num = { type: 'number' };
 const item = {
   type: 'object', additionalProperties: false,
-  required: ['code', 'type', 'width_in', 'height_in', 'note'],
+  required: ['code', 'type', 'width_in', 'height_in', 'gap_before_in', 'note'],
   properties: {
     code: { type: 'string', description: 'The code as written (B24, SB36, W3042, DW, 36" HOOD), or a short name if none is written.' },
     type: { type: 'string', enum: [...CABINET_TYPES, ...APPLIANCE_TYPES] },
     width_in: num,
     height_in: { anyOf: [num, { type: 'null' }], description: 'Only when the code or picture gives it (W3042 → 42); otherwise null.' },
+    gap_before_in: { type: 'number', description: 'Empty space between the previous piece (or the run start) and this one, as drawn; 0 when they touch.' },
     note: { type: 'string', description: 'Extras written with it (2 roll-out trays, tray dividers, glass doors), or "".' },
   },
 };
@@ -66,6 +67,8 @@ const SCHEMA = {
 
 const SYSTEM = `You turn a picture of a room into a plan for a kitchen and bath cabinet design app. The picture is either a sketch or floor plan (hand drawn or printed, usually with measurements and cabinet codes written on it) or a photo of a real room.
 
+WALLS VS. CABINET FRONTS (the most common mistake): a cabinet sketch usually draws only the cabinets, as a band along the walls. The walls are the OUTER lines the cabinets sit against. The line along the front of the cabinets, about 24" out from the wall for base cabinets (12" for uppers), is the cabinet fronts, never a wall, even when it is drawn as a solid line that closes the shape. The room is the open floor in front of the cabinets. When the picture doesn't show the rest of the room, close it with "open" walls (measured: false) placed far enough out that the floor in front of every cabinet is at least 48" deep, and far enough to hold any island that is placed in the room.
+
 Describe the room in inches, looking down from above, with x to the right and y downward as the picture is drawn (for a photo, as if you were looking down at the floor plan of what you see).
 
 corners: the room's outline, clockwise as seen from above, starting at the top-left-most corner. Wall k runs from corner k to corner k+1 (the last wall closes back to corner 0), so walls has exactly as many entries as corners. Keep every angle you see: most corners are 90°, but angled (45°) walls and cut corners are common.
@@ -75,10 +78,13 @@ corners: the room's outline, clockwise as seen from above, starting at the top-l
 
 openings: doors, windows and wide openings in a wall: offset_in is the distance from the wall's first corner (corner k) to the near edge of the opening, along the wall.
 
-runs: the cabinets and appliances along each wall, in order going from the wall's first corner toward its second. One run per wall per level: "base" (base cabinets, drawer bases, sink bases, dishwashers, ranges, base fillers), "upper" (wall cabinets, hoods, upper fillers), "tall" (pantries, oven cabinets, refrigerators, linen towers). start_offset_in is the gap from the wall's first corner to the first item when you can tell it (0 when the run starts in the corner), otherwise null. List pieces in order with no gaps unless a gap is clearly drawn (then add a "filler" item for it only if it is labeled as one).
+runs: the cabinets and appliances along each wall, in order going from the wall's first corner toward its second. One run per wall per level: "base" (base cabinets, drawer bases, sink bases, dishwashers, ranges, base fillers), "upper" (wall cabinets, hoods, upper fillers), "tall" (pantries, oven cabinets, refrigerators, linen towers). start_offset_in is the gap from the wall's first corner to the first item when you can tell it (0 when the run starts in the corner), otherwise null. List pieces in order. gap_before_in is the empty space drawn before a piece (common for uppers: a gap over a sink or window); use 0 when pieces touch. Add a "filler" item only when one is labeled.
+- Corner cabinets (lazy Susan, blind corner, diagonal corner base or wall cabinet) sit where two walls meet. List each one once, as the first or last piece of one wall's run, and leave room for it on the other wall: that wall's run must stop short of (or start after) the corner by the corner cabinet's size along that wall (36 for a 36" lazy Susan, 24 for a 24" diagonal wall cabinet). Set start_offset_in to make that true, or null when you can't tell. A diagonal corner wall cabinet (DWC, often drawn across the corner above a lazy Susan) is type diagWall on the upper run.
+- Sizes written as width × height (24x36 next to an upper is 24" wide, 36" tall; 12x36 is 12" wide, 36" tall) give the height too.
 - Read codes the usual way: B24 is a 24" base, DB30 a 30" drawer base (the (3) means 3 drawers), SB36 a 36" sink base, BMW24 a 24" base for a microwave drawer (type mwDrawerBase), W3042 a 30" wide 42" tall wall cabinet, W1542 15" × 42", DWP / BEP an end panel (basePanel, width 0.75), REP / FEP a refrigerator end panel, a range drawn with 4 burners and a hood above it is a range plus a hood, DW a dishwasher (24" unless marked).
 - Put extras written next to a cabinet in note ("w/ RT x2" → "2 roll-out trays", "w/ TC" → "tray dividers").
 - Something you can see but can't place on a wall (a run that bends into the room, a peninsula), describe in notes rather than guessing.
+- Other drawings on the same page that are not placed in the room (an elevation of another wall, an island or pantry wall drawn off to the side with no position) must NOT become walls or runs. List each in notes with its overall size and pieces in order, for example: "Separate drawing, 63 1/2" wide: filler, 30" × 90" tall pantry 24" deep, 30" × 24" wall cabinet 18" deep, 24" × 96" end panel." Add one as an island only when its position in the room is drawn.
 
 islands: free-standing islands: x, y is the island's center, width_in along its long side, depth_in across, rotation_deg 0 when its long side runs left to right.
 

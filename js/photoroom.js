@@ -149,6 +149,7 @@ function renderPhotoReview() {
     ${items.length ? `<div class="photo-section">Cabinets and appliances (${items.length})</div><div class="photo-items">${itemRows}</div>` : ''}
     ${(res.islands || []).length ? `<div class="photo-section">Islands</div><p style="font-size:13px;margin:0;">${res.islands.map(i => `${fmtFrac(i.width_in)} × ${fmtFrac(i.depth_in)}${i.note ? ' (' + escHtml(i.note) + ')' : ''}`).join('; ')}</p>` : ''}
     ${(res.notes || []).length ? `<div class="photo-section">Notes</div><ul class="photo-notes">${res.notes.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>` : ''}
+    <div id="photo-warn" class="photo-warn" style="display:none;"></div>
     <div id="photo-err" style="color:#b91c1c;font-size:13px;min-height:18px;"></div>
     <div class="modal-footer"><button class="btn btn-secondary" onclick="cancelRoomFromPhoto()">Cancel</button>
       <button class="btn btn-primary" onclick="buildRoomFromPhoto()">Build the room</button></div>
@@ -182,6 +183,7 @@ function photoPreview() {
       let t = rn.start_offset_in || 0;
       const deep = rn.level === 'upper' ? 12 : 24;
       (rn.items || []).forEach(it => {
+        t += Math.max(0, +it.gap_before_in || 0);
         const t0 = t, t1 = t + (it.width_in || 0); t = t1;
         const c = [[t0, 0], [t1, 0], [t1, deep], [t0, deep]].map(([u, v]) => P([q[0] + dir[0] * u + inn[0] * v, q[1] + dir[1] * u + inn[1] * v]));
         g.beginPath(); c.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
@@ -197,6 +199,12 @@ function photoPreview() {
     const [cx, cy] = P([i.x, i.y]); g.save(); g.translate(cx, cy); g.rotate((i.rotation_deg || 0) * Math.PI / 180);
     g.fillStyle = 'rgba(217,119,6,0.5)'; g.fillRect(-i.width_in / 2 * s, -i.depth_in / 2 * s, i.width_in * s, i.depth_in * s); g.restore();
   });
+  const warn = document.getElementById('photo-warn');
+  if (warn) {
+    const shallow = photoTooShallow(res, pts);
+    warn.style.display = shallow ? '' : 'none';
+    warn.textContent = shallow ? `The room looks too shallow for its cabinets: there's less than 3 feet of floor in front of wall ${shallow}. The line along the cabinet fronts may have been read as a wall. Fix the wall lengths, or choose Cancel and draw the room instead.` : '';
+  }
   // a last wall far off its read direction means the lengths don't close the room
   const err = document.getElementById('photo-err');
   if (err) {
@@ -205,6 +213,22 @@ function photoPreview() {
     const off = Math.abs(((d1 - d0 + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) * 180 / Math.PI;
     err.textContent = off > 3 ? "These lengths don't close the room squarely. Check them; the last wall will be set to whatever closes it." : '';
   }
+}
+
+// The first wall (1-based) with base or tall cabinets but less than 36" of floor in front of them, or 0
+function photoTooShallow(res, pts) {
+  const n = pts.length, tn = photoTurn(pts);
+  const inside = (x, y) => { let c = false; for (let i = 0, j = n - 1; i < n; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  for (const rn of res.runs || []) {
+    if (rn.level === 'upper' || !(rn.items || []).length || rn.wall < 0 || rn.wall >= n) continue;
+    const a = pts[rn.wall], b = pts[(rn.wall + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const dir = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], inn = [-dir[1] * tn, dir[0] * tn];
+    let t = rn.start_offset_in || 0, t0 = null;
+    rn.items.forEach(it => { t += Math.max(0, +it.gap_before_in || 0); if (t0 == null) t0 = t; t += +it.width_in || 0; });
+    const mid = Math.min(L - 1, Math.max(1, (t0 + t) / 2)), reach = 24 + 36;
+    if (!inside(a[0] + dir[0] * mid + inn[0] * reach, a[1] + dir[1] * mid + inn[1] * reach)) return rn.wall + 1;
+  }
+  return 0;
 }
 
 // ── Build ──
@@ -237,6 +261,7 @@ function buildRoomFromPhoto() {
     let pos = run.start_offset_in || 0;
     const placed = [];
     (run.items || []).forEach((it, ii) => {
+      pos += Math.max(0, +it.gap_before_in || 0);   // empty space drawn before this piece (uppers over a sink)
       const width = Math.max(0.75, +it.width_in || 0), here = pos; pos += width;
       if (!keep.has(run.wall + ':' + ri + ':' + ii)) return;
       const type = it.type === 'filler' ? 'filler3' : it.type;
@@ -256,13 +281,16 @@ function buildRoomFromPhoto() {
       piece.itemNum = ++num;
       placed.push(piece);
     });
-    // A run that starts in a corner already taken by the next wall's run: move it out by that run's depth (a blind corner)
-    if (placed.length && run.start_offset_in == null) {
-      const first = placed.reduce((a, b) => Math.abs(place(wallId, 0, 0) - a.offset) <= Math.abs(place(wallId, 0, 0) - b.offset) ? a : b);
-      if (/in the corner/.test(placementIssue(r, first) || '')) {
-        const shift = run.level === 'upper' ? 12 : 24, sign = walls.find(x => x.id === wallId).from === startOf[wallId] ? 1 : -1;
-        placed.forEach(pc => { pc.offset = Math.round((pc.offset + sign * shift) * 1000) / 1000; });
-      }
+    // A run that runs into a corner cabinet (or the next wall's run) at either end: slide it clear by the
+    // smallest standard amount that fixes every clash without pushing a piece off the wall
+    const cornerHit = () => placed.some(pc => /in the corner/.test(placementIssue(r, pc) || ''));
+    if (placed.length && cornerHit()) {
+      const before = placed.map(pc => pc.offset);
+      const ok = [12, 24, 36, -12, -24, -36].some(d => {
+        placed.forEach((pc, i) => { pc.offset = Math.round((before[i] + d) * 1000) / 1000; });
+        return !cornerHit() && !placed.some(pc => placementIssue(r, pc));
+      });
+      if (!ok) placed.forEach((pc, i) => { pc.offset = before[i]; });   // leave it outlined in red for the user
     }
   });
   // Doors, windows and openings
