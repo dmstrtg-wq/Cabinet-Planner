@@ -46,7 +46,16 @@
       const y = Math.max(WY, floorY - tIn*scale);
       if (mx>=x&&mx<=x+cW&&my>=y&&my<=y+cH) return cab;
     }
-    return apps.find(hitApp) || null;
+    const app = apps.find(hitApp); if (app) return app;
+    // Doors and windows (behind the cabinets): the opening plus its casing
+    if (layers.openings) {
+      for (const op of (r.openings || []).filter(o => o.wall === wall && o.type !== 'sink-loc')) {
+        const bot = op.type === 'window' ? (op.sillHeight ?? 36) : 0, pad = 3.5 * scale;
+        const x = eX(op.offset || 0, op.width), y = floorY - (bot + op.height) * scale;
+        if (mx >= x - pad && mx <= x + op.width * scale + pad && my >= y - pad && my <= floorY - bot * scale + pad) return { ...op, _opening: true };
+      }
+    }
+    return null;
   }
 
   const canvas  = document.getElementById('elevation-plan');
@@ -60,6 +69,7 @@
     const hit  = hitTestElevCab((e.clientX-rect.left)/ze, (e.clientY-rect.top)/ze, info);
     if (!hit) return;
     e.preventDefault();
+    if (hit._opening) { openOpeningPopover((info.r.openings || []).find(o => o.id === hit.id), e.clientX, e.clientY); return; }
     openItemPopover(hit, e.clientX, e.clientY);
   });
 
@@ -81,9 +91,9 @@
       return;
     }
     e.preventDefault();
-    if (selectedItemId !== cab.id) selectItem(cab.id);
+    if (!cab._opening && selectedItemId !== cab.id) selectItem(cab.id);
     const effectiveElevScale = info.scale * vpState.elev.zoom;
-    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startOffset: cab.offset || 0, scale: effectiveElevScale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
+    elevDrag = { cabId: cab.id, startMX: e.clientX - rect.left, startMY: e.clientY - rect.top, startSill: cab.sillHeight ?? 36, startOffset: cab.offset || 0, scale: effectiveElevScale, wallLength: info.wallLength, cabWidth: cab.width, wall: info.wall };
     canvas.style.cursor = 'grabbing';
   });
 
@@ -108,6 +118,15 @@
       const delta = mx - elevDrag.startMX;
       const flip  = wallFlipped(activeRoom(), elevDrag.wall);
       const raw   = elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale;
+      const op = (info.r.openings||[]).find(o=>o.id===elevDrag.cabId);
+      if (op) {
+        const res = resolveOpeningOffset(info.r, op, raw, e.altKey);   // Option/Alt: no snapping
+        // A window also moves up and down (doors and openings stay on the floor)
+        const sill = op.type === 'window' ? resolveWindowSill(info.r, op, elevDrag.startSill - (my - elevDrag.startMY) / elevDrag.scale) : op.sillHeight;
+        if (res.offset !== op.offset || sill !== op.sillHeight) { op.offset = res.offset; if (op.type === 'window') op.sillHeight = sill; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+        tooltip.style.display = 'block'; tooltip.textContent = openingDragText(op, res);
+        return;
+      }
       const cab = info.r.cabinets.find(c=>c.id===elevDrag.cabId) || (info.r.appliances||[]).find(a=>a.id===elevDrag.cabId);
       if (cab) {
         const newOffset = resolveMoveOffset(info.r, cab, raw);
@@ -121,7 +140,7 @@
         canvas.style.cursor = 'grab';
         if (elevHover !== cab.id) {
           elevHover = cab.id;
-          const lbl = CATALOG[cab.type]?.label || APPLIANCES[cab.type]?.label || cab.type;
+          const lbl = cab._opening ? (OPENING_LABELS[cab.type] || 'Opening') : (CATALOG[cab.type]?.label || APPLIANCES[cab.type]?.label || cab.type);
           tooltip.style.display = 'block';
           tooltip.textContent = `${lbl} · ${cab.offset || 0}" from left — drag to move`;
         }
@@ -186,18 +205,19 @@
       const now = Date.now();
       if (now - elvLastTapTime < 350 && elvLastTapId === cab.id) {
         elvLastTapTime = 0; elvLastTapId = null;
+        if (cab._opening) { openOpeningPopover((info.r.openings || []).find(o => o.id === cab.id), t.clientX, t.clientY); e.preventDefault(); return; }
         openItemPopover(cab, t.clientX, t.clientY);
         e.preventDefault();
         return;
       }
       elvLastTapTime = now; elvLastTapId = cab.id;
-      if (selectedItemId !== cab.id) selectItem(cab.id);
+      if (!cab._opening && selectedItemId !== cab.id) selectItem(cab.id);
 
       // Phone is view-only
       if (window.innerWidth <= 767) return;
 
       e.preventDefault();
-      elevDrag = { cabId: cab.id, startMX: t.clientX-rect.left, startOffset: cab.offset||0,
+      elevDrag = { cabId: cab.id, startMX: t.clientX-rect.left, startMY: t.clientY-rect.top, startSill: cab.sillHeight ?? 36, startOffset: cab.offset||0,
                    scale: info.scale * vpState.elev.zoom, wallLength: info.wallLength,
                    cabWidth: cab.width, wall: info.wall };
     }, { passive: false });
@@ -208,6 +228,14 @@
       const rect = canvas.getBoundingClientRect(); const t = e.touches[0];
       const delta = t.clientX - rect.left - elevDrag.startMX;
       const flip  = wallFlipped(activeRoom(), elevDrag.wall);
+      const op = (info.r.openings||[]).find(o => o.id === elevDrag.cabId);
+      if (op) {
+        const res = resolveOpeningOffset(info.r, op, elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale);
+        const sill = op.type === 'window' ? resolveWindowSill(info.r, op, elevDrag.startSill - (t.clientY - rect.top - elevDrag.startMY) / elevDrag.scale) : op.sillHeight;
+        if (res.offset !== op.offset || sill !== op.sillHeight) { op.offset = res.offset; if (op.type === 'window') op.sillHeight = sill; persist(); renderElevation(); renderCanvas(); renderCabinetList(); }
+        tooltip.style.display='block'; tooltip.textContent = openingDragText(op, res);
+        e.preventDefault(); return;
+      }
       const cab = info.r.cabinets.find(c => c.id === elevDrag.cabId) || (info.r.appliances||[]).find(a => a.id === elevDrag.cabId);
       if (cab) {
         const newOffset = resolveMoveOffset(info.r, cab, elevDrag.startOffset + (flip ? -delta : delta) / elevDrag.scale);

@@ -120,6 +120,33 @@ function resolveMoveOffset(r, item, raw) {
   stops.push(cur);
   return stops.sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
 }
+// Where a dragged door or window should go (inches from the wall's left end, as the sidebar shows it).
+// It stays on the wall and snaps within 2" to: centered on a sink (or range) below it (this wins), lined up with
+// a cabinet edge, or the wall ends; otherwise it moves in 1/2" steps. Returns { offset, why }.
+function resolveOpeningOffset(r, op, raw, free) {
+  const len = wallLength(r, op.wall) || 0, max = Math.max(0, len - op.width);
+  const cands = [{ at: 0, why: 'at the corner' }, { at: max, why: 'at the corner' }];
+  [...(r.cabinets || []), ...(r.appliances || [])].filter(it => it.wall === op.wall).forEach(it => {
+    const a = it.offset || 0, b = a + it.width;
+    if (it.type === 'sink' || it.type === 'range' || it.type === 'cooktop') {
+      cands.push({ at: (a + b) / 2 - op.width / 2, why: `centered on the ${it.type === 'sink' ? 'sink' : it.type}`, first: true });
+    }
+    cands.push({ at: a, why: 'lined up with a cabinet' }, { at: b - op.width, why: 'lined up with a cabinet' });
+  });
+  const near = free ? null : cands.filter(c => c.at >= 0 && c.at <= max && Math.abs(c.at - raw) <= 2)
+    .sort((x, y) => (y.first ? 1 : 0) - (x.first ? 1 : 0) || Math.abs(x.at - raw) - Math.abs(y.at - raw))[0];   // centering wins
+  const offset = near ? Math.round(near.at * 8) / 8 : Math.max(0, Math.min(max, Math.round(raw * 2) / 2));
+  return { offset, why: near ? near.why : '' };
+}
+// A window's height off the floor while it's dragged up or down: 1/2" steps, never below the floor or through the ceiling
+function resolveWindowSill(r, op, raw) {
+  const top = (r.ceilingHeight || 96) - op.height;
+  return Math.max(0, Math.min(Math.max(0, top), Math.round(raw * 2) / 2));
+}
+function openingDragText(op, res) {
+  const up = op.type === 'window' ? ` · ${fmtFrac(op.sillHeight ?? 36)} off the floor` : '';
+  return `${OPENING_LABELS[op.type] || 'Opening'} · ${fmtFrac(res.offset)} from left${up}${res.why ? ' · ' + res.why : ''}`;
+}
 function showMoveTip(text, bad) {
   const t = document.getElementById('drag-tooltip'); if (!t) return;
   t.textContent = text; t.style.display = 'block'; t.style.background = bad ? '#b91c1c' : '#1e293b';

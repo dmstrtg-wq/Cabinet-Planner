@@ -683,3 +683,12 @@ Claude tested locally at desktop width: every Show checkbox (incl. Work triangle
 - App side: the review screen warns when there's less than 3' of floor in front of a cabinet wall; uppers keep their drawn gaps; a run that hits a corner cabinet at either end slides clear (12/24/36").
 - Claude tested locally with mocked answers: the bad reading shows the warning; a correct reading of the sketch builds the L kitchen (lazy Susan in the corner, sink, DW, uppers with the gap over the sink, range wall clear of the corner). The real AI hasn't seen the new instructions yet.
 - [ ] After push: upload the same sketch into a new project and check the 3D view.
+
+### Drag doors and windows (2026-11-22, Dan: "I don't always know the exact from-left dimensions") — push only
+- Floor plan: grab a door or window on the wall line (the grab zone reaches 6" outside the wall, so it works even with cabinets in front) and slide it along the wall. Elevation: grab the window or door (or its trim) and slide it.
+- Snaps within 2": centered on a sink, range or cooktop on that wall (wins over the others), lined up with a cabinet edge, or the wall ends; otherwise 1/2" steps. The tooltip says "Window · 49 1/2" from left · centered on the sink". Undo works as for cabinets. Double-click does nothing on an opening (the sidebar still has its trim switch and remove button).
+- The "From left" hint under Add Opening now says you can add it and drag it into place.
+- Claude tested locally: floor-plan drag and elevation drag both move the window and snap to the sink center.
+- [ ] After push: drag a window over a sink in plan and elevation; undo it.
+- **Added the same day (Dan: "add up and down movement along with double click… free movement"):** in the elevation a window drags in any direction (up/down changes its height off the floor, 1/2" steps, never through the floor or ceiling); doors stay on the floor. Hold Option/Alt while dragging to turn snapping off. Double-click any door, window or opening (plan or elevation) for an edit box: width, height, off the floor (windows), from left, Trim, Remove. Cabinets in front still win the click (a window behind uppers is grabbed in the plan, or from its uncovered part).
+- [ ] After push: in the elevation drag a window up and down; double-click it, change width and trim.

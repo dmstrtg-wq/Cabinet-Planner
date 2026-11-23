@@ -17,6 +17,15 @@
   function hitTestCab(mx,my,info) {
     if (READ_ONLY) return null;   // share link: clicks pan, never pick up a cabinet
     const {scale,RX,RY,RW,RH,r} = info;
+    // Doors and windows: a band along the wall line, from 6" outside the room to 2" in, so one
+    // can be grabbed even with cabinets in front of it
+    if (layers.openings) {
+      for (const op of (r.openings || [])) {
+        const f = wallFrame(r, op.wall); if (!f) continue;
+        const q = shapeOf(frameQuad(f, op.offset || 0, (op.offset || 0) + op.width, -6, 2));
+        if (pointInShape(q, (mx-RX)/scale, (my-RY)/scale)) return { cab: op, wall: op.wall, isOpening: true };
+      }
+    }
     // Only what's visible (Layers) can be clicked; uppers first, since they draw on top of bases
     const isUpper = c => c.type === 'wall' || c.type === 'diagWall';
     for (const cab of [...r.cabinets.filter(isUpper), ...r.cabinets.filter(c => !isUpper(c))]) {
@@ -48,6 +57,11 @@
   }
   const canvas  = document.getElementById('floor-plan');
   const tooltip = document.getElementById('drag-tooltip');
+  function dragOpening(r, op, raw, free) {
+    const res = resolveOpeningOffset(r, op, raw, free);   // Option/Alt: no snapping
+    if (res.offset !== op.offset) { op.offset = res.offset; persist(); renderCanvas(); renderCabinetList(); }
+    tooltip.style.display = 'block'; tooltip.textContent = openingDragText(op, res);
+  }
   // Measure tool: click to set points
   canvas.addEventListener('click', e => {
     if (!measureState.active) return;
@@ -84,6 +98,7 @@
     const hit  = hitTestCab((e.clientX-rect.left)/z, (e.clientY-rect.top)/z, info);
     if (!hit) return;
     e.preventDefault();
+    if (hit.isOpening) { openOpeningPopover(hit.cab, e.clientX, e.clientY); return; }
     if (hit.isFurniture) openItemPopover(hit.cab, e.clientX, e.clientY);
     else if (hit.isIsland) openEditIslandModal(hit.cab);
     else openItemPopover(hit.cab, e.clientX, e.clientY);
@@ -121,7 +136,7 @@
       return;
     }
     e.preventDefault();
-    if (selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
+    if (!hit.isOpening && selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
     // Scale is in internal px/inch; need to divide visual delta by cssZoom to get internal delta
     const effectiveScale = info.scale * vpState.floor.zoom;
     if (hit.isIsland) {
@@ -163,6 +178,8 @@
         }
       } else {
         const delta = (mx-drag.startMX) * drag.dir[0] + (my-drag.startMY) * drag.dir[1];   // pointer movement along the wall
+        const op = (info.r.openings||[]).find(o=>o.id===drag.cabId);
+        if (op) { dragOpening(info.r, op, drag.startOffset + delta/drag.scale, e.altKey); return; }
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta/drag.scale);
@@ -176,6 +193,7 @@
         canvas.style.cursor = 'grab';
         if (hoverCabId!==hit.cab.id) {
           hoverCabId=hit.cab.id;
+          if (hit.isOpening) { tooltip.style.display='block'; tooltip.textContent=`${OPENING_LABELS[hit.cab.type]||'Opening'} · ${fmtFrac(hit.cab.offset||0)} from left · drag to move`; return; }
           const lbl = hit.isIsland ? (hit.cab.label || 'Island') : (CATALOG[hit.cab.type]?.label || APPLIANCES[hit.cab.type]?.label || hit.cab.type);
           const pos = hit.isIsland ? `${hit.cab.x}", ${hit.cab.y}" from NW` : `${hit.cab.offset||0}" from left`;
           const hint = hit.isIsland ? ' · dbl-click to edit' : (CATALOG[hit.cab.type] || APPLIANCES[hit.cab.type]) ? ' · dbl-click to edit' : ' — drag to move';
@@ -227,6 +245,7 @@
       const now = Date.now();
       if (now - fpLastTapTime < 350 && fpLastTapId === hit.cab.id) {
         fpLastTapTime = 0; fpLastTapId = null;
+        if (hit.isOpening) { openOpeningPopover(hit.cab, t.clientX, t.clientY); e.preventDefault(); return; }
         if (hit.isFurniture) openItemPopover(hit.cab, t.clientX, t.clientY);
         else if (hit.isIsland) openEditIslandModal(hit.cab);
         else openItemPopover(hit.cab, t.clientX, t.clientY);
@@ -234,7 +253,7 @@
         return;
       }
       fpLastTapTime = now; fpLastTapId = hit.cab.id;
-      if (selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
+      if (!hit.isOpening && selectedItemId !== hit.cab.id) selectItem(hit.cab.id);
 
       // Phone is view-only — no dragging
       if (window.innerWidth <= 767) return;
@@ -272,6 +291,8 @@
         }
       } else {
         const delta = (t.clientX-rect.left-drag.startMX) * drag.dir[0] + (t.clientY-rect.top-drag.startMY) * drag.dir[1];
+        const op = (info.r.openings||[]).find(o=>o.id===drag.cabId);
+        if (op) { dragOpening(info.r, op, drag.startOffset + delta / drag.scale); e.preventDefault(); return; }
         const cab = info.r.cabinets.find(c=>c.id===drag.cabId) || (info.r.appliances||[]).find(a=>a.id===drag.cabId);
         if (cab) {
           const newOffset = resolveMoveOffset(info.r, cab, drag.startOffset + delta / drag.scale);

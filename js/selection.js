@@ -197,6 +197,57 @@ function openItemPopover(item, clientX, clientY) {
   pop.querySelector('select, input')?.focus();
 }
 
+// Double-click a door, window or opening: its size, where it sits, and its trim
+function openOpeningPopover(op, clientX, clientY) {
+  if (READ_ONLY) return;
+  const r = activeRoom(); if (!r || !op) return;
+  closeItemPopover();
+  const pop = document.createElement('div');
+  pop.id = 'item-popover'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Edit opening');
+  pop.style.cssText = 'position:fixed;z-index:9200;width:260px;background:var(--surface,#fff);border:1px solid var(--border,#e2e8f0);border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.22);padding:12px;font-size:13px;';
+  const row = (label, control) => `<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0;"><span style="color:var(--text-muted,#64748b);font-weight:600;font-size:12px;">${label}</span>${control}</label>`;
+  const inch = (f, v) => `<input data-f="${f}" type="text" inputmode="decimal" class="cp-input" style="width:110px;" value="${escHtml(fmtFrac(v).replace('"', ''))}">`;
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <strong>${escHtml(OPENING_LABELS[op.type] || 'Opening')}</strong>
+      <button data-act="close" aria-label="Close" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted,#64748b);line-height:1;">×</button></div>`;
+  html += row('Width (in)', inch('width', op.width));
+  html += row('Height (in)', inch('height', op.height));
+  if (op.type === 'window') html += row('Off the floor (in)', inch('sillHeight', op.sillHeight ?? 36));
+  html += row('From left (in)', inch('offset', op.offset || 0));
+  if (op.type !== 'sink-loc') html += `<label style="display:flex;align-items:center;gap:8px;margin:8px 0 2px;font-size:12px;font-weight:600;cursor:pointer;"><input data-f="trim" type="checkbox"${op.noTrim ? '' : ' checked'}> Trim (casing${op.type === 'window' ? ', sill and apron' : ''})</label>`;
+  html += `<div style="display:flex;gap:6px;margin-top:10px;">
+      <button data-act="del" style="flex:1;padding:6px 8px;border-radius:6px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:600;font-size:12px;">Remove</button></div>`;
+  pop.innerHTML = html;
+  document.body.appendChild(pop);
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  pop.style.left = Math.max(8, Math.min(clientX + 12, window.innerWidth - w - 8)) + 'px';
+  pop.style.top  = Math.max(8, Math.min(clientY + 12, window.innerHeight - h - 8)) + 'px';
+  _popover = pop;
+  setTimeout(() => document.addEventListener('mousedown', _popoverOutside, true), 0);
+  const redraw = () => { persist(); renderCabinetList(); renderCanvas(); renderElevation(); if (state.viewMode === '3d' && typeof renderIsometric === 'function') renderIsometric(); };
+  pop.addEventListener('change', e => {
+    const f = e.target.dataset.f; if (!f) return;
+    const len = wallLength(r, op.wall) || 0, ceiling = r.ceilingHeight || 96, v = parseInches(e.target.value);
+    if (f === 'trim') { if (e.target.checked) delete op.noTrim; else op.noTrim = true; }
+    else if (f === 'width' && v > 0) op.width = Math.min(v, len || v);
+    else if (f === 'height' && v > 0) op.height = Math.min(v, ceiling);
+    else if (f === 'sillHeight' && v >= 0) op.sillHeight = v;
+    else if (f === 'offset' && v >= 0) op.offset = v;
+    // keep it on the wall and under the ceiling
+    op.offset = Math.max(0, Math.min(op.offset || 0, Math.max(0, len - op.width)));
+    if (op.type === 'window') op.sillHeight = Math.max(0, Math.min(op.sillHeight ?? 36, Math.max(0, ceiling - op.height)));
+    redraw();
+    if (f !== 'trim') { const b = pop.getBoundingClientRect(); openOpeningPopover(op, b.left - 12, b.top - 12); }   // show the cleaned-up numbers
+  });
+  pop.addEventListener('click', e => {
+    const act = e.target.dataset.act; if (!act) return;
+    if (act === 'close') closeItemPopover();
+    else if (act === 'del') { closeItemPopover(); removeOpening(op.id); }
+  });
+  pop.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeItemPopover(); } });
+  pop.querySelector('input')?.focus();
+}
+
 function applyItemEdit(item, field, value) {
   const filler = isFiller(item.type);
   if (field === 'note') item.note = value.trim();
